@@ -11,3 +11,10 @@ This repository is for [planning of our work](https://github.com/orgs/ufal/proje
 - https://github.com/ufal/atrium-translator
 
 Presentation of the project (as of March 2026): [Google Slides](https://docs.google.com/presentation/d/13Be8n7tgebw3GVEgJuB3m1FdnrfKvAGHWvYHA9X4Ma4/edit?usp=sharing) [Zenodo](https://zenodo.org/records/19500212)
+
+ARUP/ARUB contacts for result updates: 
+- krivankova@arup.cas.cz
+- krofta@arup.cas.cz
+- lecbychova@arub.cz
+- novak@arup.cas.cz
+- spacil@arub.cz
