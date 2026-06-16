@@ -1,0 +1,156 @@
+name: ATRIUM Docker Tool Template
+
+on:
+  workflow_call:
+    inputs:
+      image-name:
+        required: true
+        type: string
+      apt-packages:
+        required: false
+        type: string
+        default: ""
+      pre-install-torch:
+        required: false
+        type: string
+        default: ""
+      requirements:
+        required: false
+        type: string
+        default: "requirements.txt requirements-test.txt"
+      hf-model-cache:
+        required: false
+        type: boolean
+        default: false
+      build-targets:
+        required: false
+        type: string
+        default: '["base"]'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Cache HuggingFace Models
+        if: inputs.hf-model-cache == true
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-models-${{ hashFiles('**/*.py') }}
+          restore-keys: hf-models-
+
+      - name: Install APT packages
+        if: inputs.apt-packages != ''
+        run: sudo apt-get update && sudo apt-get install -y ${{ inputs.apt-packages }}
+
+      - name: Pre-install PyTorch
+        if: inputs.pre-install-torch != ''
+        run: pip install ${{ inputs.pre-install-torch }} --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install dependencies
+        run: |
+          for req in ${{ inputs.requirements }}; do
+            if [ -f "$req" ]; then pip install -r "$req"; fi
+          done
+          pip install pytest pytest-cov ruff
+
+      - name: Lint with Ruff
+        continue-on-error: true
+        run: ruff check .
+
+      - name: Test & Coverage
+        run: pytest -m "not slow" --cov --cov-report=term-missing --cov-report=xml
+
+      - name: Coverage to Step Summary
+        run: |
+          echo "### Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          coverage report >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Coverage Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+      - name: Upload to Codecov
+        if: env.CODECOV_TOKEN != ''
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  docker-build-smoke:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: ${{ fromJSON(inputs.build-targets) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Smoke Build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: ${{ matrix.target == 'base' && '' || matrix.target }}
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-and-push:
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/v') || github.event.release.target_commitish != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        target: ${{ fromJSON(inputs.build-targets) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: ${{ matrix.target == 'base' && '' || matrix.target }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            ATRIUM_RUNNER_REPO=${{ github.repository }}
+            ATRIUM_RUNNER_REF=${{ github.ref_name }}
+            ATRIUM_RUNNER_IMAGE=ghcr.io/${{ inputs.image-name }}:${{ github.ref_name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

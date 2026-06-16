@@ -1,0 +1,11 @@
+[run]
+source = .
+omit =
+    tests/*
+    setup/*
+    service/*
+    *paradata.py
+
+[report]
+# fail_under = 80  # Disabled for initial rollout over "not slow" subsets
+show_missing = True
