@@ -63,18 +63,23 @@ jobs:
           done
           pip install pytest pytest-cov ruff
 
+      - name: Prepare environment
+        run: if [ -f ".env.example" ]; then cp .env.example .env; fi
+
       - name: Lint with Ruff
         continue-on-error: true
         run: ruff check .
 
       - name: Test & Coverage
-        run: pytest -m "not slow" --cov --cov-report=term-missing --cov-report=xml
+        env:
+          PYTHONPATH: .
+        run: python -m pytest -m "not slow" --cov=. --cov-report=term-missing --cov-report=xml
 
       - name: Coverage to Step Summary
         run: |
           echo "### Coverage Report" >> $GITHUB_STEP_SUMMARY
           echo '```text' >> $GITHUB_STEP_SUMMARY
-          coverage report >> $GITHUB_STEP_SUMMARY
+          python -m coverage report >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Coverage Artifact
