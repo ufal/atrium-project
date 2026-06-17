@@ -79,10 +79,12 @@ jobs:
         run: python -m pytest -m "not slow" --cov=. --cov-report=term-missing --cov-report=xml
 
       - name: Coverage to Step Summary
+        continue-on-error: true
         run: |
           echo "### Coverage Report" >> $GITHUB_STEP_SUMMARY
           echo '```text' >> $GITHUB_STEP_SUMMARY
-          python -m coverage report >> $GITHUB_STEP_SUMMARY
+          python -m coverage combine 2>/dev/null || true
+          python -m coverage report >> $GITHUB_STEP_SUMMARY || true
           echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Coverage Artifact
