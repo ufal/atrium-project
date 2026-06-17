@@ -55,13 +55,13 @@
 
 **Coverage gaps (the heart of this axis)**
 
-| Untested surface | File | Note |
-|---|---|---|
-| `ImageClassifier` train/load/save/from_hub | `classifier.py` | GPU/network → mark `@slow` **and** add light unit tests for pure helpers (collate, split already partly covered) |
-| **`YOLOClassifier` — entirely untested** | `yolo_classifier.py` | whole alternative model path has zero tests |
-| CLI parsing / config merge / dispatch | `run.py` (715 LOC) | no tests for argparse + config precedence |
-| FastAPI endpoints | `service/api.py` | see F‑S2 |
-| `ModelManager` | `service/inference.py` | only exercised via manual client |
+| Untested surface                           | File                   | Note                                                                                                             |
+|--------------------------------------------|------------------------|------------------------------------------------------------------------------------------------------------------|
+| `ImageClassifier` train/load/save/from_hub | `classifier.py`        | GPU/network → mark `@slow` **and** add light unit tests for pure helpers (collate, split already partly covered) |
+| **`YOLOClassifier` — entirely untested**   | `yolo_classifier.py`   | whole alternative model path has zero tests                                                                      |
+| CLI parsing / config merge / dispatch      | `run.py` (715 LOC)     | no tests for argparse + config precedence                                                                        |
+| FastAPI endpoints                          | `service/api.py`       | see F‑S2                                                                                                         |
+| `ModelManager`                             | `service/inference.py` | only exercised via manual client                                                                                 |
 
 **Review actions**
 - [ ] Add a per‑function coverage matrix to the review (module → function → tested? slow?).
@@ -410,6 +410,141 @@ grep -i version CITATION.cff para_config.txt; git tag -l    # release-history cr
 
 ---
 
+# Code‑Review Plan 4/4 — `atrium-nlp-enrich`
 
+> **Context.** Same review round ([atrium‑project#10](https://github.com/ufal/atrium-project/issues/10)). This is the **most heterogeneous** repo — a shell+Python hybrid that orchestrates external UDPipe/NameTag REST APIs into TEITOK output, plus optional KeyBERT/YAKE keywords and a heavy LLM‑enrichment stack. Its API service uniquely **shells out to the pipeline as a subprocess**, and it has the **lowest test coverage (~15–20 %)** and the **largest untested module** (`llm_utils.py`, 2,122 LOC). Latest release ≈ `v0.14.0` (pre‑release).
 
+**Repo in one line:** CSV → NLP **enrichment** pipeline (manifest → UDPipe → NameTag → stats/TEITOK, + keywords + LLM), driven by `api_*.sh` shell scripts and a subprocess‑spawning FastAPI wrapper.
+
+---
+
+## 1. Program architecture
+
+| Layer        | Files                                                                                                                                                                                                                         | ~LOC | Role                                                       |
+|--------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------|------------------------------------------------------------|
+| Orchestrator | `run_pipeline.py`                                                                                                                                                                                                             | 586  | runs the 4 stages + optional keywords/LLM; merges paradata |
+| Shell stages | `api_1_manifest.sh` … `api_4_stats.sh`, `api_flexiconv.sh`                                                                                                                                                                    | 279  | stage entry points calling the Python utils                |
+| `api_util/`  | `build_manifest_row.py` (98), `chunk.py` (81), `call_udpipe.py` (135), `call_nametag.py` (228), `summarize_nt_udp.py` (616), `teitok_alto.py` (668), `teitok_read.py` (82), `flexiconv_convert.py` (71), `api_common.sh` (96) | —    | manifest build, chunking, REST clients, TEITOK gen/read    |
+| Extensions   | `keywords.py` (730), `llm_run.py` (520), `llm_utils.py` (2122), `vocab_manager.py` (253), `fix_teitok_bboxes.py` (111)                                                                                                        | —    | keyword + LLM enrichment                                   |
+| Service      | `service/api.py` (316), `service/enrichment.py` (472), `service/jobs.py` (24)                                                                                                                                                 | —    | FastAPI wrapper + job queue                                |
+| Shared       | `atrium_paradata.py` (476), `para_licenses.py` (234)                                                                                                                                                                          | —    | provenance + license                                       |
+
+**Findings**
+- **F‑A1:** "API" is **overloaded** — it means both the external UDPipe/NameTag REST calls **and** the FastAPI wrapper. The docs must disambiguate (this confuses the "API service" review axis).
+- **F‑A2:** `llm_utils.py` at **2,122 LOC** is a monolith and the single largest untested surface — a prime refactor/test target.
+- **F‑A3 (strength):** clean `api_util/` namespace; no dead code found.
+
+**Review actions:** verify config precedence across `config_api.txt`/`kw_config.txt`/`llm_config.txt`; review `chunk.py` sentence‑boundary logic (feeds every downstream stage); confirm the `api_*.sh` error propagation (a failed stage must stop the run).
+
+---
+
+## 2. Merged pipeline & API service ⚠️ (subprocess coupling is the distinctive risk)
+
+**Current state.** FastAPI `service/api.py` (`/enrich`, `/enrich_text`, `/info`, `/health`). `service/enrichment.py::PipelineManager` **normalizes the upload, builds an isolated per‑job workspace, and spawns `run_pipeline.py` as a subprocess**, mapping its exit code to HTTP (0→200, 3→503 degraded, 1/2→502). `jobs.py` tracks jobs in‑memory under a `MAX_CONCURRENT_JOBS` (=2) semaphore, with keyword‑method graceful degradation (`keybert`→`yake`).
+
+**Findings**
+- **F‑S1:** unlike the sibling services that **import** core logic, this one **shells out** to the CLI. That's a legitimate isolation choice but couples the API to (a) the **exit‑code contract**, (b) **workspace creation/cleanup**, and (c) **subprocess concurrency**. Each needs explicit review and tests.
+- **F‑S2:** workspace lifecycle — confirm `api_jobs/<job_id>/` is always cleaned up (success **and** failure) to avoid temp‑dir leaks.
+- **F‑S3:** in‑memory `jobs.py` means job state is lost on restart and unbounded over time — acceptable for now, but document the limitation.
+
+**Review actions:** add tests pinning the **exit‑code→HTTP** mapping and the `keybert→yake` fallback (the existing `service/test_api.py` mocks the subprocess — extend it); verify cleanup on exceptions; confirm the semaphore actually bounds concurrent subprocesses.
+
+---
+
+## 3. Unit‑test coverage per function (lowest of the four)
+
+**Current state.** 9 files / ~1,722 lines. **Well covered:** `teitok_read`, `atrium_paradata` (full); **partial:** `teitok_alto`, `summarize_nt_udp` utils, `call_udpipe.merge_conllu_chunks`, `keywords`, `flexiconv_convert`, `run_pipeline` (config/stage‑order), `service` (normalize + status mapping). `pytest.ini` has a `slow` marker.
+
+**Coverage gaps (ranked)**
+
+| Untested                                          | LOC  | Risk          | Note                                                                                       |
+|---------------------------------------------------|------|---------------|--------------------------------------------------------------------------------------------|
+| `llm_utils.py`                                    | 2122 | **Very High** | model backends; test pure helpers (prompt build, output parse/validate) with models mocked |
+| `llm_run.py`                                      | 520  | High          | config + orchestration untestable only via `@slow` today                                   |
+| **all `api_*.sh` shell scripts**                  | 279  | High          | zero automated coverage; no `shellcheck`                                                   |
+| `chunk.py`                                        | 81   | Medium‑High   | **pure logic, easy + high‑value** to test                                                  |
+| `call_udpipe()` / `call_nametag()` core + retries | 363  | Medium        | mock `requests`; test error/timeout/retry                                                  |
+| `build_manifest_row.py`                           | 98   | Medium        | CSV/XLSX parsing untested                                                                  |
+| `vocab_manager.py`                                | 253  | Medium        | OAI‑PMH harvest + taxonomy untested                                                        |
+
+**Review actions:** prioritize **`chunk.py`** and **manifest/CSV parsing** (cheap, pure, high‑value); add mocked‑`requests` tests for the REST clients; extract testable helpers out of `llm_utils.py` and cover them with models mocked; add `shellcheck` for the shell layer.
+
+---
+
+## 4. Docker + GitHub Actions ("already done — to be expanded")
+
+**Current state.** **Multi‑stage Dockerfile** with three targets — `base` (`run_pipeline.py`), `api` (`uvicorn service.api:app`), `llm` (`llm_run.py`) — non‑root, `HF_HOME` cache. `docker-compose.yaml` exposes `nlp` / `nlp-api` (port 8000, profile) / `nlp-llm` (profile); `docker-compose.gpu.yaml` adds nvidia runtime. `docker.yaml` calls the shared reusable workflow `@main` with **`build-targets: ["base","api","llm"]`** — the only repo exercising the multi‑target matrix. Requirements are split (`requirements.txt`, `requirements_llm.txt`, `requirements_flexiconv.txt`, `requirements-test.txt`, `service/requirements.txt`).
+
+**Findings**
+- **F‑D1:** **No local `ruff.toml`, `.coveragerc`, or `.github/dependabot.yml`** — add from templates. With split requirements, the Dependabot `pip` config and torch/transformers ignores matter most here.
+- **F‑D2:** shell‑heavy repo with **no shell linting** — add `shellcheck` (fits the non‑blocking‑lint CI pattern).
+- **F‑D3:** the 3‑target smoke build is the heaviest CI of the four — confirm the `llm` target build stays within runner limits (it pulls torch/transformers).
+
+**Review actions:** add the three template files + a `shellcheck` step; verify each Docker target's entrypoint matches its compose service; confirm reusable‑workflow ref consistency (`@main`).
+
+---
+
+## 5. File‑tree structure
+
+**Current state.** Well‑organized: shell entry points at root, Python helpers in `api_util/`, isolated `service/`, co‑located `tests/` with `fixtures/`, `ker_data/` pickles for the legacy KER backend.
+
+**Findings**
+- **F‑T1:** root mixes shell stages, CLI orchestrator, and heavy LLM modules — consider grouping (e.g. `llm/`) for navigability, low priority.
+- **F‑T2:** `ker_data/*.pickle` committed — confirm these are intended runtime assets, not stale artifacts.
+- **F‑T3:** `requirements_llm.txt` reportedly has an empty vLLM line / torch via compose — verify the dependency set is coherent.
+
+**Review actions:** confirm `.dockerignore`/`.gitignore` exclude `data_samples/`, `ker_data/` where appropriate; validate every `requirements_*.txt` installs cleanly in its target.
+
+---
+
+## 6. Documentation — CONTRIBUTING.md (release history in specific)
+
+**Current state.** README (~69 KB) is thorough (esp. the TEITOK format). CONTRIBUTING (~15 KB) has a Release History table (`v0.1.0 → v0.14.0`; v0.11.0 "merged pipeline", v0.12.0 "API service wrapper", v0.14.0 Flexiconv) plus branches, PR/commit format, conventions, test layout.
+
+**Findings (release‑history focus)**
+- **F‑R1 (version skew):** `CITATION.cff` = **v1.0.0** (2026‑03‑02) vs CONTRIBUTING latest **v0.14.0** and project doc referencing **v0.14.0**. Reconcile and pick a canonical source.
+- **F‑R2:** docs split the "API" meaning across README + `service/README.md` — unify and disambiguate external‑API vs service (ties to F‑A1).
+- **F‑R3:** gaps — no troubleshooting (LINDAT downtime, OOM, API timeouts), no Docker quickstart, no `shellcheck`/Ruff mention.
+
+**Review actions:** sync `CITATION.cff` ↔ Release History ↔ `git tag -l`; add a troubleshooting + Docker‑quickstart section; clearly separate "external NLP APIs" from "our FastAPI service" in the docs.
+
+---
+
+## 7. Prioritized review backlog
+
+| Pri    | Item                                                                                        | Axis         | Refs   |
+|--------|---------------------------------------------------------------------------------------------|--------------|--------|
+| **P0** | Test `chunk.py` + manifest CSV/XLSX parsing (cheap, pure, high‑value)                       | Tests        | §3     |
+| **P0** | Carve testable helpers out of `llm_utils.py` (2122 LOC) and cover them                      | Tests / Arch | F‑A2   |
+| **P0** | Resolve version skew (CITATION v1.0.0 ↔ Release History v0.14.0 ↔ tags)                     | Docs         | F‑R1   |
+| **P1** | Pin API subprocess contract: exit‑code→HTTP, workspace cleanup, concurrency, degradation    | Merge / API  | F‑S1‑3 |
+| **P1** | Mocked‑`requests` tests for `call_udpipe`/`call_nametag` (errors/retries/timeouts)          | Tests        | §3     |
+| **P1** | Add `ruff.toml` + `.coveragerc` + `dependabot.yml` + `shellcheck`                           | CI           | F‑D1‑2 |
+| **P2** | Tests for `vocab_manager.py`; disambiguate "API" in docs; troubleshooting/Docker quickstart | Tests / Docs | F‑R2‑3 |
+
+---
+
+## 8. How to verify
+
+```bash
+cd atrium-nlp-enrich
+python -m compileall -q .
+ruff check .                                                # add ruff.toml first
+shellcheck api_*.sh api_util/*.sh                           # proposed shell lint
+pytest -m "not slow" --cov=. --cov-report=term-missing
+docker compose --profile api up --build                     # smoke FastAPI (subprocess spawn path)
+curl -s localhost:8000/health; curl -s localhost:8000/info | jq .
+grep -i version CITATION.cff; git tag -l                    # release-history cross-check
+```
+
+---
+
+## All four plans — cross‑repo common threads
+
+The same four issues recur in every repo and are the fastest wins across the board:
+
+1. **Version skew** — `CITATION.cff` lags the real release line in **all four** (page‑classification 1.0.0 vs v1.4.0‑beta; translator v0.5.1 vs v0.6.1; alto v1.0.0 vs v0.18.0; nlp v1.0.0 vs v0.14.0). Pick one canonical version source per repo and sync.
+2. **CI config not localized** — `ruff.toml` / `.coveragerc` / `dependabot.yml` exist as templates in `atrium-project/docs/templates/` but are largely **absent in the repos**; Dependabot is drafted but unadopted; Ruff and coverage gates are non‑blocking/disabled (deliberate, ready to ratchet).
+3. **Untested orchestration/entry points** — the core `run.py`/`main.py`/`run_pipeline.py` and the FastAPI services are the least‑tested code in every repo, while the **shared `.coveragerc` omits `service/*`** so the API isn't even measured.
+4. **"Merged pipeline & API service" maturity varies** — alto‑postprocess (imports core) is the reference; page‑classification reuses the class but duplicates the registry/ensemble; nlp‑enrich shells out via subprocess; **translator has no service at all** (the biggest single gap).
 
