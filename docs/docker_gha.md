@@ -37,30 +37,25 @@ packages: write}`; implements `docker/metadata-action` for tagging; bakes proven
 
 ---
 
-## Current-State Audit (Post-Rollout)
-
-All component repositories have successfully migrated to the centralized template, aligning their environments and resolving previous discrepancies.
-
-| Tool                    | Workflow file | Action majors | Python | Test cmd        | Build gate        | Provenance args |
-|-------------------------|---------------|---------------|--------|-----------------|-------------------|-----------------|
-| **translator**          | `docker.yml`  | Node 24       | 3.11   | `-m "not slow"` | `needs: test`+tag | Present         |
-| **alto-postprocess**    | `docker.yml`  | Node 24       | 3.11   | `-m "not slow"` | `needs: test`+tag | Present         |
-| **nlp-enrich**          | `docker.yml`  | Node 24       | 3.11   | `-m "not slow"` | `needs: test`+tag | Present         |
-| **page-classification** | `docker.yml`  | Node 24       | 3.11   | `-m "not slow"` | `needs: test`+tag | Present         |
-
----
-
-## Expansion Details
+## Expansion Details (Rollout Completed)
 
 * **Coverage (Step Summary & Codecov):** Coverage is generated via `--cov` flags and parsed inline for the Step Summary. 
-It utilizes `actions/upload-artifact@v4` and `codecov/codecov-action@v4` (guarded by `if: env.CODECOV_TOKEN != ''`) to 
-process the `coverage.xml`. The initial [.coveragerc](templates/.coveragerc) setup begins non-blocking.
-* **Ruff Linting:** An identical, non-blocking [ruff.toml](templates/ruff.toml) configuration is shared across all 
-four repositories.
-* **Dependency Updates:** Weekly automated updates for `pip` and `github-actions` are deferred for a future iteration, 
-utilizing a ready-to-use [dependabot.yml](templates/dependabot.yml) draft available in the [templates](templates) directory.
+It utilizes `actions/upload-artifact@v4` and `codecov/codecov-action@v4` to process the `coverage.xml`. The `.coveragerc` template has now been **localized** across all four repositories to accurately scope code coverage (e.g., initially omitting `service/*` in certain repos, with current LLM-driven review rounds expanding API test coverage).
+* **Ruff Linting:** The non-blocking `ruff.toml` configuration has been successfully **localized** into all four repositories.
+* **Dependency Updates:** Automated updates for `pip` and `github-actions` are now fully active via `dependabot.yml` configurations **localized** across all four repositories.
 
 ---
+
+## Current-State Audit & Rollout Status
+
+All component repositories have successfully migrated to the centralized template, and as of the latest LLM Review & Docker GH Actions alignment push (June 2026), all local CI configurations (`ruff.toml`, `.coveragerc`, `dependabot.yml`) have been successfully deployed directly to each repo.
+
+| Tool                    | Workflow file | Action majors | Python | Test cmd        | Local CI Configs (Ruff/Cov/Dependabot) |
+|-------------------------|---------------|---------------|--------|-----------------|----------------------------------------|
+| **translator**          | `docker.yml`  | Node 24       | 3.11   | `-m "not slow"` | ✅ Present                              |
+| **alto-postprocess**    | `docker.yml`  | Node 24       | 3.11   | `-m "not slow"` | ✅ Present                              |
+| **nlp-enrich**          | `docker.yml`  | Node 24       | 3.11   | `-m "not slow"` | ✅ Present                              |
+| **page-classification** | `docker.yml`  | Node 24       | 3.11   | `-m "not slow"` | ✅ Present                              |
 
 ## Rollout Status & Verification
 
@@ -68,9 +63,9 @@ The rollout sequence for the unified CI/CD wrapper was completed successfully ac
 
 * **Deployment Logs:**
 * `atrium-translator`:  Release `v0.6.1` successfully passed actions checks
-* `atrium-page-classification`: Release `v1.4.0-beta` successfully passed actions checks
-* `atrium-alto-postprocess`: Release `v0.18.0` successfully passed actions checks
-* `atrium-nlp-enrich`: Release `v0.14.0` successfully passed actions checks
+* `atrium-page-classification`: Release `v1.4.1-beta` successfully passed actions checks
+* `atrium-alto-postprocess`: Release `v0.18.1` successfully passed actions checks
+* `atrium-nlp-enrich`: Release `v0.14.1` successfully passed actions checks
 
 * **Provenance Verification:** For all tagged builds, `ATRIUM_RUNNER_REPO`, `ATRIUM_RUNNER_REF`, and 
 `ATRIUM_RUNNER_IMAGE` are successfully passed through the Dockerfile ARGs and recorded directly into the output 
