@@ -1,0 +1,46 @@
+# ATRIUM — GPU inference tests on a self-hosted runner (TEMPLATE)
+#
+# ⚠️ INFRA-GATED — requires an ARUP-provided self-hosted runner with an NVIDIA GPU,
+#    registered to the repo/org with the labels [self-hosted, gpu] and the NVIDIA
+#    Container Toolkit / drivers installed. Until that runner exists this workflow
+#    will simply queue. Owner: @rharasim.
+#
+# Why: the real paths of these tools are CUDA paths that ubuntu-latest cannot run —
+#   - page-classification: ViT/RegNetY inference (the tool is GPU-first)
+#   - alto-postprocess:    LayoutReader / Qwen2.5 perplexity / GLM-4v extraction
+#   - nlp-enrich:          the optional `llm` build target
+# PR CI can only ever test the CPU fallback. This job exercises the GPU code.
+#
+# Opt-in: manual dispatch + a weekly run. Drop in as .github/workflows/gpu-inference.yml.
+
+name: GPU Inference Tests
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * 0"   # weekly, Sunday 02:00 UTC
+
+jobs:
+  gpu-tests:
+    runs-on: [self-hosted, gpu]   # PARAM: match the labels of your ARUP runner
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Show GPU
+        run: nvidia-smi
+
+      - name: Install dependencies (CUDA torch)
+        run: |
+          python -m pip install --upgrade pip
+          # PARAM: install the CUDA torch wheel matching the runner's driver, e.g. cu121/cu126
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+          for req in requirements.txt requirements-test.txt; do
+            if [ -f "$req" ]; then pip install -r "$req"; fi
+          done
+          pip install pytest
+
+      - name: Run GPU (slow) tests
+        env:
+          PYTHONPATH: .
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python -m pytest -m slow -v --tb=short

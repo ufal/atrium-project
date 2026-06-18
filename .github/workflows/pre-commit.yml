@@ -1,0 +1,29 @@
+# ATRIUM — pre-commit in CI (TEMPLATE)
+#
+# Runs the repo's .pre-commit-config.yaml in CI so the hooks (ruff, shellcheck,
+# whitespace/large-file guards...) are actually enforced, not just available
+# locally. Closes the parity gap: pre-commit config is present in alto + page,
+# MISSING in nlp + translator (see plan_repo_review.md, thread B).
+#
+# Pair this with .pre-commit-config.example.yaml (copy to .pre-commit-config.yaml).
+# Drop in as .github/workflows/pre-commit.yml.
+
+name: pre-commit
+
+on:
+  pull_request:
+    branches: [test, master]
+  push:
+    branches: [test, master]
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - run: pip install pre-commit
+      - run: pre-commit run --all-files --show-diff-on-failure
