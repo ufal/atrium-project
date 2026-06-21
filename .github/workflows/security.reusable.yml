@@ -95,10 +95,14 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Trivy scan (image -> SARIF)
-        # SECURITY: aquasecurity/trivy-action tags <= 0.34.2 were compromised
-        # (Mar 2026 supply-chain incident). Use >= 0.35.0 and pin to a commit SHA
-        # in production. Verify latest at https://github.com/aquasecurity/trivy-action/releases
-        uses: aquasecurity/trivy-action@0.36.0
+        # SECURITY: aquasecurity/trivy-action tags <= 0.34.2 were compromised in the
+        # 2026-03-19 supply-chain incident (GHSA-69fq-xp46-6x23) — 76/77 tags were
+        # force-pushed to credential-stealing malware. Remediation re-published the
+        # legitimate tags WITH a "v" prefix, so the bare "0.36.0" no longer resolves;
+        # the tag is "v0.36.0". Use >= v0.35.0 (protected by GitHub immutable releases)
+        # and ideally pin to that release's commit SHA. Latest tag is verified at
+        # https://github.com/aquasecurity/trivy-action/releases
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ inputs.image-ref }}
           format: sarif
@@ -127,6 +131,14 @@ jobs:
           image: ${{ inputs.image-ref }}
           format: spdx-json
           output-file: sbom.spdx.json
+          # On a tag/release, sbom-action otherwise ATTACHES the SBOM to the GitHub
+          # Release, which needs `contents: write`; this job runs least-privilege with
+          # `contents: read`, so that step fails with "Resource not accessible by
+          # integration". Keep the SBOM as the workflow artifact below instead. To
+          # attach it to the release, set this `true` and grant `contents: write` on
+          # BOTH this job AND the caller's `security` job (caller perms cap the
+          # reusable workflow's token).
+          upload-release-assets: false
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v4
         with:
