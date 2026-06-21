@@ -22,12 +22,33 @@ repository, ensuring localized control over quality thresholds.
 GitHub Container Registry (GHCR) trigger automatically on version tags (`v*`).
 * **Version Syncing:** The `CITATION.cff` files are now synced with internal `para_config` tags across the board.
 
-### Repository-Specific CI Highlights
+### Reusable Templates (`atrium-project`)
 
-* **`atrium-alto-postprocess`:** The healthiest CI pipeline. It currently features full `.pre-commit-config.yaml` integration and pipeline test coverage.
-* **`atrium-translator`:** CI now tests both the CLI and the newly merged FastAPI layer via `httpx` TestClient suites.
-* **`atrium-page-classification`:** CI localized for heavy GPU/ViT endpoints, utilizing a centralized `model_registry` for robust configuration testing.
-* **`atrium-nlp-enrich`:** CI now effectively tests subprocess-spawning API contracts and includes `pydantic>=2` resolution.
+The output includes foundational templates designed to be dropped into or called by individual tool repositories:
+
+* **CodeQL:** Static security and quality scanning for Python.
+* **Dependabot:** Weekly update schedules for `github-actions` and `pip`.
+* **Docker Build & Publish:** A template workflow that calls a reusable Docker tool workflow (`docker-tool.reusable.yml`).
+* **GPU Inference Tests:** A template configured for self-hosted GPU runners.
+* **Pre-commit:** A CI job to run `.pre-commit-config.yaml`.
+* **Scheduled Smoke Tests:** A template for nightly slow-lane testing.
+* **Secret Scanning:** A template utilizing Gitleaks for history sweeps.
+* **ATRIUM Security Template:** A reusable workflow (`security.reusable.yml`) that handles version consistency checks, 
+Trivy container image scanning, and SBOM generation.
+* **ATRIUM Docker Tool Template:** A reusable workflow (`docker-tool.reusable.yml`) handling environment setup, linting, 
+testing with coverage, and multi-target Docker builds.
+
+### Localized Repository Workflows
+
+The output also contains the specific implementations of these workflows across the four active tool repositories:
+
+* **`atrium-alto-postprocess`:** Includes localized workflows for CodeQL, Docker Build & Publish, pre-commit, 
+Automated Releases, Scheduled Smoke Tests, and Security & Supply-chain scanning.
+* **`atrium-nlp-enrich`:** Features workflows for CodeQL, multi-target Docker builds (`base`, `api`, `llm`), GPU 
+Inference Tests, an advisory (non-blocking) pre-commit run, Releases, Scheduled Smoke Tests, Security scans, and a dedicated Shellcheck workflow.
+* **`atrium-page-classification`:** Contains localized configurations for Docker Build & Publish, GPU Inference Tests,
+pre-commit, Automated Releases, Scheduled Smoke Tests (including HuggingFace caching steps), and Security Scans.
+* **`atrium-translator`:** Includes workflows for CodeQL, Docker Build & Push, Scheduled Smoke Testing Suites, Release Bundling, and Security Scans.
 
 ---
 

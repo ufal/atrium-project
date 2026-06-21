@@ -1,0 +1,49 @@
+# atrium-project — generic self-hosted GPU inference tests
+# Drops into: .github/workflows/gpu-inference.yml
+#
+# ⚠️ INFRA-GATED — requires an ARUP self-hosted runner with an NVIDIA GPU
+# registered with labels [self-hosted, gpu] and NVIDIA Container Toolkit installed.
+
+name: GPU Inference Tests
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * 0"   # weekly, Sunday 02:00 UTC
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  # Template vars to be localized per repository:
+  APT_PACKAGES: "build-essential g++ libgl1 libglib2.0-0 poppler-utils"
+  REQUIREMENTS: "requirements.txt service/requirements.txt requirements-test.txt setup/requirements.txt"
+
+jobs:
+  gpu-tests:
+    runs-on: [self-hosted, gpu]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show GPU
+        run: nvidia-smi
+
+      - name: Install APT packages
+        if: env.APT_PACKAGES != ''
+        run: sudo apt-get update && sudo apt-get install -y ${{ env.APT_PACKAGES }}
+
+      - name: Install dependencies (CUDA torch)
+        run: |
+          python -m pip install --upgrade pip
+          # cu126 matches the standard Dockerfile TORCH_INDEX_URL for GPU builds
+          pip install torch==2.7.1 torchvision==0.22.1 \
+              --index-url https://download.pytorch.org/whl/cu126
+              
+          for req in ${{ env.REQUIREMENTS }}; do
+            if [ -f "$req" ]; then pip install -r "$req"; fi
+          done
+          pip install pytest
+
+      - name: Run GPU (slow) tests
+        env:
+          PYTHONPATH: .
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python -m pytest -m slow -v --tb=short
