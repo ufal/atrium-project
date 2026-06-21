@@ -210,3 +210,97 @@ matches the repo's Node-24 action baseline.
    confirm the job fails with the `::error::` annotation.
 5. **Adoption pin:** replace `@main` in the reusable caller with a tag/SHA, and re-confirm the security
    action versions are still current (CodeQL/Trivy/gitleaks move fast).
+
+   
+# NEXT STAGE
+
+An audit of the workflow configurations across the ATRIUM repositories reveals that while the bulk of the baseline 
+automation has been successfully deployed, there are several architectural deviations, redundant files, and a 
+critical security gap that need to be synchronized with the master plan.
+
+Here is the exact breakdown of what is currently misaligned and how to resolve it.
+
+---
+
+## 1. Critical Security Gap (P0 Check)
+
+### `atrium-page-classification`
+
+* **Missing P0 Secret Scanner:** The repository currently has no `secret-scan.yml` workflow. The master plan 
+explicitly flags this as a **P0 priority item** to prevent regressions due to a historical plaintext HuggingFace 
+token leak in `setup/config.txt`.
+
+
+* **Centralization Bypass:** It is completely missing the centralized `security.yml` caller. Instead, it uses 
+standalone `image-scan.yml` and `version-check.yml` files. This completely bypasses the DRY centralized security 
+architecture.
+
+
+
+---
+
+## 2. Redundant Workflow Work (DRY Cleanup)
+
+The uniform security bundle `security.reusable.yml` centralizes three key actions into one pipeline: the container 
+image vulnerability scan (Trivy), the SPDX SBOM generation, and the **version-consistency check**. Centralized 
+callers invoke this via `security.yml`.
+
+Because the version-consistency check is already baked into the central security workflow, keeping a standalone 
+`version-check.yml` alongside an active `security.yml` causes the check to execute twice per run.
+
+* **`atrium-translator`:** Contains both `security.yml` and `version-check.yml`. The standalone `version-check.yml` 
+is redundant and should be deleted.
+
+
+* **`atrium-alto-postprocess`:** Contains both `security.yml` and `version-check.yml`. The standalone 
+`version-check.yml` is redundant and should be deleted.
+
+---
+
+## 3. Repository Hygiene & File Standardizations
+
+### `atrium-nlp-enrich`
+
+* **Extension Mismatch:** The mainline pipeline caller is named `docker.yaml` instead of standardizing on the `.yml` 
+extension used across the rest of the project ecosystem. Rename this to `docker.yml` for uniform tracking.
+
+
+### `atrium-project`
+
+* **Unintended Active Pipelines:** The central project repository currently hosts active workflows like `gpu-inference.yml`
+and `scheduled-smoke.yml` directly in its active `.github/workflows/` directory. Because `atrium-project` acts as a 
+master documentation and planning repo rather than an application runtime environment, running these heavy integration 
+workflows here will trigger unnecessary failures due to missing code dependencies. These belong strictly inside the 
+`docs/templates/workflows/` folder as pristine references.
+
+
+
+---
+
+## 4. Per-Repo Cleanup Action Plan
+
+Use this checklist to clean up your workspace and bring all repositories to a complete, production-ready state:
+
+| Repository              | Current File State                                   | Required Action                                                                                                                    |
+|-------------------------|------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| **`atrium-project`**    | Active testing pipelines in `.github/workflows/`<br> | **Remove** `gpu-inference.yml` and `scheduled-smoke.yml` from active workflows; ensure they exist only in your template directory. |
+| **`atrium-translator`** | Redundant version-checking pipelines                 |                                                                                                                                    |
+
+| **Delete** `.github/workflows/version-check.yml` (The version check runs inside `security.yml`).
+
+ |
+| **`atrium-nlp-enrich`** | Non-standard filename extensions | **Rename** `.github/workflows/docker.yaml` to `docker.yml`. |
+| **`atrium-page-classification`** | Missing central security wrapper & missing P0 secrets vault
+
+ | 1. **Delete** `image-scan.yml` and `version-check.yml`.
+
+<br>
+
+<br>2. **Add** the central `security.yml` caller.<br>
+
+<br>3. **Add** `secret-scan.yml` (P0 Priority blocker). |
+| **`atrium-alto-postprocess`** | Redundant version-checking pipelines
+
+ | **Delete** `.github/workflows/version-check.yml` (Handled by the central security loop).
+
+ |
