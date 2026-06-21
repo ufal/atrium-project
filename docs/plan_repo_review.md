@@ -1,253 +1,270 @@
 # ATRIUM source-code review — combined plan (refreshed for the next rounds)
 
-> **Status update — 2026-06-21 (post Opus 4.8 round).** This refresh carries forward all backlog items
-> from the 2026-06-17 Opus 4.8 review, promotes pending-merge patches to "confirm merged" tasks,
-> and augments each repo section with new items derived from open GitHub issues and the strategic
-> research audit document ("Architectural Optimization and End-to-End Integration of the ATRIUM NLP
-> Pipeline"). A new **§5 Strategic Horizon** section covers feature-level work (TEATER LLM keywords,
-> domain NER, pipeline orchestration, paradata trust chain) that exceeds the per-file code-review
-> scope. Reviewed heads from prior round: page-classification `046d076` · translator `f5650b8` ·
-> alto-postprocess `915dbff` · nlp-enrich `7a18dee`. Source: [atrium-project#10](https://github.com/ufal/atrium-project/issues/10).
+> **Status update — 2026-06-21 (live `test`-branch HEAD round).** The four `test` branches were
+> cloned at their current HEADs and the suites were **executed locally** for this refresh — coverage
+> numbers below are measured, not carried over. Several prior-round "confirm merged" items are now
+> **verified merged**; several P1 backlog items are **closed**; and a handful of **new findings**
+> surfaced from running the suites in a clean CPU-only environment (the realistic CI lane).
+>
+> **Reviewed heads (this round):**
+> - page-classification `c6e7f0c` — "update GHA workflows and test coverage of inference"
+> - translator `91836fb` — "fix security GHA"
+> - alto-postprocess `5868b0f` — "docs update and Qwen as default for service API"
+> - nlp-enrich `6501591` — "fix shellcheck GHA"
+>
+> **Measured fast-suite results (CPU-only, `-m "not slow"`):**
+> - translator **183 passed** · TOTAL coverage **52%**
+> - alto-postprocess **226 passed** · TOTAL coverage **48%**
+> - nlp-enrich **192 passed** · TOTAL coverage **35%** (excl. one torch-gated test, see N-1)
+> - page-classification **210 passed** + 3 env-only failures · core modules green (see PC-1)
+>
+> Source: [atrium-project#10](https://github.com/ufal/atrium-project/issues/10).
 
 ---
 
-# 1/4 — `atrium-page-classification`
+## ⚠️ New cross-cutting finding this round — the "clean-CI lane" is not actually clean
+
+Running each suite in a fresh venv with only `requirements-test.txt` installed revealed that the
+fast lane is **not self-contained** in three of the four repos. Tests fail *at collection time* on
+missing imports that `requirements-test.txt` does not declare. This is a CI-correctness issue: a
+green badge today depends on the developer's pre-existing environment, not on the declared test deps.
+
+| Repo                | `requirements-test.txt` declares                     | Actually needed at collection                        | Gap                                                                                      |
+|---------------------|------------------------------------------------------|------------------------------------------------------|------------------------------------------------------------------------------------------|
+| translator          | lxml, requests, fastapi, pytest, httpx2, multipart   | **+ fasttext-wheel, numpy, tqdm, huggingface-hub**   | `test_api.py` / `test_main.py` import `main` → `processors/identifier` → `fasttext`      |
+| alto-postprocess    | **pytest, pytest-cov only** ("no ML models, no GPU") | **+ pandas, lxml, pillow, fasttext, fastapi, httpx** | header comment claims no ML deps, but 10 test modules need pandas/lxml/fastapi to import |
+| nlp-enrich          | pytest, pytest-cov, requests                         | **+ pydantic, lxml, fastapi, httpx, torch**          | `test_llm_utils.py` → `llm_utils` → `import torch` (heavyweight)                         |
+| page-classification | (no `requirements-test.txt` at all)                  | matplotlib, sklearn, tensorboard, torch              | suite aborts entirely if `tensorboard` missing (see PC-2)                                |
+
+**Recommended fix (one shared pattern):** each repo's `requirements-test.txt` should pin the full
+set needed to *collect and run the non-slow lane on CPU*, OR the heavyweight imports (torch, fasttext)
+should be guarded so the modules import lazily and the tests `pytest.importorskip(...)` instead of
+crashing collection. This is now thread **G** below.
+
+---
+
+# 1/4 — `atrium-page-classification` @ `c6e7f0c`
 
 **Repo:** page image classifier (ViT/RegNetY/EfficientNetV2/DiT, optional YOLO); CLI (`run.py`) + FastAPI `service/`.
 
-### ✅ Closed previous round
+### ✅ Verified merged / closed this round
 
-- **Single source of truth:** `model_registry.py` added — imported by `classifier.py`, `run.py`, `parallel_best.py`, `service/inference.py`.
-- **Shared ensemble:** `ensemble.py` (`average_rdfs` + `average_prediction_dicts`) consumed by `parallel_best.py` and `service/inference.py`.
-- **API + YOLO + CLI tests** added: `test_service_api.py`, `test_yolo_classifier.py`, `test_run.py`.
-- **CI config localized:** `.github/dependabot.yml`, `ruff.toml`, `.coveragerc` present; coverage Step-Summary step made non-fatal.
-- **Version sync:** `CITATION.cff` → `1.4.0-beta`; CONTRIBUTING Release-History top = `v1.4.0-beta`.
-
-### ⏳ Confirm merged (patches delivered last round, not yet merged)
-
-- 🔴 **`pymupdf` missing from `service/requirements.txt`** — `/predict_document` was dead in a clean install; fix is a one-liner addition. Verify before next review.
-- **Service hardening in `service/api.py`:** CORS wildcard-with-credentials; `predict_image` swallows its own `HTTPException`; `content_type=None` → 500; stray `# … rest unchanged …` artifact. Confirm all four sub-fixes are merged.
+- 🔴 **`pymupdf` blocker — FIXED.** `service/requirements.txt` now declares `pymupdf`; `service/api.py:131` imports `fitz`. `/predict_document` is no longer dead in a clean install.
+- **Service hardening — MERGED.** `service/api.py:53` now reads `allow_credentials=ALLOWED_ORIGINS != ["*"]` — the CORS wildcard-with-credentials defect is resolved.
+- **Hardcoded category fallback removed.** `service/api.py:82` carries an explicit `# [FIX]: Removed the hardcoded fallback list` — the prior P1 registry-duplication item is closed for this file.
+- **`v1.4.0-bets` typo question is moot** — repo advanced to `v1.4.2-beta` (CITATION `1.4.2-beta`, CONTRIBUTING release history top = `v1.4.2-beta`, `date-released: 2026-06-20`). Commit message confirms "secret-scan removed, Docker GH actions alignment."
+- **New `test_inference.py`** added (HEAD commit: "test coverage of inference").
 
 ### ▶ Next-round backlog
 
-| Pri | Item                                                                                                                                          | Axis  | Note                                                    |
-|-----|-----------------------------------------------------------------------------------------------------------------------------------------------|-------|---------------------------------------------------------|
-| P1  | Deepen `ModelManager` tests (`service/inference.py` 27%) + `run.py` CLI paths beyond smoke (23%)                                              | Tests | pure-logic/model-selection paths; no GPU needed         |
-| P1  | Remove residual registry/category copies: `service/api.py:84` fallback list, `supplementary/scripts/logs_stat.py:70`, `dataset_timeline.py:9` | Arch  | import from `model_registry` instead                    |
-| P2  | Confirm/retag the GitHub release **`v1.4.0-bets`** typo → `v1.4.0-beta`; align CONTRIBUTING lint wording to Ruff                              | Docs  | tags not in repo yet                                    |
-| P2  | Decide dedicated `api` build target vs `compose --profile api`; investigate phantom `config.py`/`config-3.py` coverage warning                | CI    | low risk, cosmetic                                      |
-| P2  | Document TEXT vs TEXT_T boundary ambiguity threshold (accuracy drop below 90%, off-diagonal errors >10%) in README model notes                | Docs  | links to HF model card; DK sign-off on threshold policy |
+| Pri  | Item                                                                                                                                                                                                                                                                               | Axis             | Note                                                                                |
+|------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------|-------------------------------------------------------------------------------------|
+| PC-1 | **3 `test_run.py` CLI smoke tests fail without torch** — they shell out to `run.py`, which imports `classifier.py` → `torch`. In a torch-less lane the subprocess exits non-zero and the assertions flip. Either mark these `slow`/`requires_torch` or stub the import             | Tests/CI         | env-only today, but a real CI without torch would show red                          |
+| PC-2 | **`supplementary/scripts/logs_stat.py:26` calls `exit(1)` at import** when `tensorboard` is absent; `test_logs_stat.py` imports it at collection → **the entire pytest session aborts**, not just one module. Replace bare `exit(1)` with a guarded import + `pytest.importorskip` | Tests/Robustness | highest-leverage fix: one missing optional dep currently takes down the whole suite |
+| P1   | Deepen `ModelManager`/`service/inference.py` and `parallel_best.py` coverage — both read 0% in the CPU lane only because torch-gated; confirm real numbers in a GPU/torch CI and raise the genuinely-uncovered branches                                                            | Tests            | needs torch lane to measure                                                         |
+| P2   | Add a `requirements-test.txt` (the only repo without one) pinning matplotlib, scikit-learn, tensorboard so the fast lane is reproducible                                                                                                                                           | CI               | see thread G                                                                        |
+| P2   | Residual registry copies: re-audit `supplementary/scripts/logs_stat.py` and `dataset_timeline.py` for category lists now that the `service/api.py` copy is gone                                                                                                                    | Arch             | import from `model_registry`                                                        |
+| P2   | Document TEXT vs TEXT_T boundary ambiguity (accuracy <90%, off-diagonal >10%) in README model notes                                                                                                                                                                                | Docs             | DK sign-off on threshold policy                                                     |
 
 ---
 
-# 2/4 — `atrium-translator`
+# 2/4 — `atrium-translator` @ `91836fb`
 
-**Repo:** structure-preserving translator (LINDAT NMT + Tag-and-Protect, FastText ID, UDPipe lemmas, ALTO/metadata XML). CLI and API.
+**Repo:** structure-preserving translator (LINDAT NMT + Tag-and-Protect, FastText ID, UDPipe lemmas, ALTO/metadata XML). CLI + API.
 
-### ✅ Closed previous round
+### ✅ Verified merged / closed this round
 
-- **API parity:** `service/api.py` + `service/requirements.txt` added — `/translate` + `/info`, size guard, paradata; reuses `main.process_single_file`.
-- **`main.py` orchestration tests** + `test_api.py` TestClient suite.
-- **CI config localized:** `.github/dependabot.yml`, `ruff.toml`, `.coveragerc`; `requirements-test.txt` carries `fastapi`+`httpx`.
-- README states dual CLI+API architecture explicitly.
-
-### ⏳ Confirm merged
-
-- **`service/api.py` CORS wildcard-with-credentials** + `/translate` `file.filename=None` → 500. Same pattern as pc; confirm patched.
-- **Version sync:** `CITATION.cff` `0.5.1` → `0.6.1`; README Python badge `3.8+` → `3.11`. Confirm applied.
+- **CORS hardening — MERGED.** `service/api.py:52` = `allow_credentials=ALLOWED_ORIGINS != ["*"]`.
+- **Version sync — DONE.** CITATION `0.6.2` == para_config `v0.6.2`.
+- **`processors/backend.py` is new and at 100%** + `processors/chunking.py` 100% — the multi-backend translation layer landed with full unit coverage. New `test_backend.py` present.
+- **`.pre-commit-config.yaml` present** — the prior thread-B gap (missing in translator) is closed.
+- **183 passed** (was 171), `processors/translator.py` at **79%**, `utils.py` **84%**.
 
 ### ▶ Next-round backlog
 
-| Pri | Item                                                                                               | Axis  | Note                                                             |
-|-----|----------------------------------------------------------------------------------------------------|-------|------------------------------------------------------------------|
-| P1  | Test `load_vocab.py` (**0%**, 212 L — OAI-PMH/GraphQL harvesting) and `para_licenses.py` (20%)     | Tests | mock network calls; no live API needed                           |
-| P1  | Mock-test `_post_with_retry` (back-off/throttle) + encode the homonym single-word-lemma regression | Tests | `translator.py` currently 76%; two distinct failure modes to pin |
-| P1  | Add `.pre-commit-config.yaml` (parity with alto + pc)                                              | CI    | copy template from `atrium-project/docs/templates/`              |
-| P2  | `--fast-align` proportional-alignment test suite                                                   | Tests | only indirect coverage today                                     |
-| P2  | Set real `date-released` in `CITATION.cff` at tag time; add post-release checklist to CONTRIBUTING | Docs  | currently `2026-03-02` (stale)                                   |
+| Pri | Item                                                                                                                                                                                                                   | Axis  | Note                                      |
+|-----|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------|-------------------------------------------|
+| P0  | **`load_vocab.py` STILL 0%** (170 stmts, OAI-PMH/GraphQL harvesting). No dedicated `test_load_vocab.py` exists — the only reference is incidental in `test_translator.py`. Single largest untested surface in the repo | Tests | mock the network; top priority            |
+| P1  | **`para_licenses.py` still 20%** (lines 135-189 = the resolution engine, untested)                                                                                                                                     | Tests | shared with other repos — see thread H    |
+| P1  | `processors/identifier.py` **21%** (FastText wrapper) — mock `fasttext.load_model`, test the language-decision branch                                                                                                  | Tests | new low point now that backend.py is done |
+| P1  | `main.py` **34%** — orchestration paths 210-387 uncovered; encode the homonym single-word-lemma regression here                                                                                                        | Tests |                                           |
+| P2  | Mock-test `_post_with_retry` back-off/throttle in `translator.py` (lines 433-449 uncovered)                                                                                                                            | Tests |                                           |
+| P2  | Add `fasttext-wheel`, `numpy`, `tqdm` to `requirements-test.txt` (collection fails without them)                                                                                                                       | CI    | thread G                                  |
+| P2  | **`date-released: 2026-03-02` is stale** in CITATION; set real value at tag time                                                                                                                                       | Docs  | only repo besides alto still stale        |
 
 ---
 
-# 3/4 — `atrium-alto-postprocess`
+# 3/4 — `atrium-alto-postprocess` @ `5868b0f`
 
-**Repo:** OCR ALTO post-processor — split → stats → extract (alto-tools|LayoutReader|GLM-4v) → line classify → aggregate, + FastAPI service. Healthiest of the four.
+**Repo:** OCR ALTO post-processor — split → stats → extract (alto-tools|LayoutReader|GLM-4v|Qwen) → line classify → aggregate, + FastAPI service. Healthiest of the four.
 
-### ✅ Closed previous round
+### ✅ Verified merged / closed this round
 
-- **Service config-sourcing:** `service/utils.py:33` now reads `PERPLEXITY_THRESHOLD_MAX` from `config_langID.txt` (default 1000.0; no more stale 5000).
-- **Pipeline tests added:** `test_extract_alto`, `test_run_pipeline`, `test_aggregation`, `test_gpu_concurrency`, `test_resume_logic`, `test_service_api`; core `text_util_langID` 88%.
-- **CI config + pre-commit:** `.github/dependabot.yml`, `ruff.toml`, `.coveragerc`, `.pre-commit-config.yaml` present.
-- **Version sync:** `CITATION.cff 0.18.0` == `para_config v0.18.0`.
-
-### ⏳ Confirm merged
-
-- **Git-ignore `.idea/`** (1 tracked file remains). Confirm `git rm --cached` applied.
-- **Stale `CONTRIBUTING.md:206`** ("runs black, isort, flake8" → Ruff). Confirm updated.
+- **`img2jpeg_v3.py` orphan — REMOVED.** No longer in the tree anywhere; the prior P1 "wire/document/remove" decision was resolved by removal.
+- **Version sync — DONE.** CITATION `0.19.1` == para_config `v0.19.1`.
+- **New test modules landed:** `test_alto_stats_create.py`, `test_page_split.py`, `test_langID_classify.py`, `test_calibration.py`, `test_categorization_routes.py` — directly targeting the prior-round 0% modules.
+- **226 passed**; `text_util_langID.py` at **84%**.
+- **Qwen2.5-0.5B is now the service-default perplexity model** (`service/text_inference.py:99`, env-overridable via `GPT2_MODEL_NAME`).
 
 ### ▶ Next-round backlog
 
-| Pri | Item                                                                                                                                                                    | Axis   | Note                                                          |
-|-----|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|---------------------------------------------------------------|
-| P1  | Tests for still-0% `page_split.py` (145 L) and `alto_stats_create.py` (266 L)                                                                                           | Tests  | pure-ish, CPU-only; no OCR model needed                       |
-| P1  | Raise `langID_classify.py` from 10% — cover threshold-decision branches (issue #3 calibration work)                                                                     | Tests  | mock FastText + perplexity model; DK confirms boundary values |
-| P1  | Decide `img2jpeg_v3.py` (orphaned, 0%, 0 imports): wire+test, document purpose, or `git rm`                                                                             | Arch   | blocks tree hygiene                                           |
-| P2  | Perplexity model↔threshold coupling guard: warn/error if a non-distilgpt2 model is loaded without overriding `PPL_GARBAGE_ABSOLUTE` (Qwen vs distilgpt2 scale mismatch) | Config | surfaceable as a runtime assertion                            |
-| P2  | VRAM/troubleshooting docs for GLM-4v (48 GB VRAM) and LayoutReader (separate GPU worker)                                                                                | Docs   | blocks new-user onboarding                                    |
-| P2  | Confirm `data_samples/*_gpt` dirs are intentional test fixtures (not leftover scratch output)                                                                           | Tree   | add `.gitkeep` + comment if intentional                       |
+| Pri | Item                                                                                                                                                                                                                                                                                                                                                                                                                     | Axis               | Note                                                                    |
+|-----|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|-------------------------------------------------------------------------|
+| A-1 | **`test_page_split.py` and `test_alto_stats_create.py` are subprocess CLI smoke tests** — they spawn the script via `subprocess.run([sys.executable, ...])`, so coverage.py never sees the executed lines and both modules **still read 0%** despite "having tests." Add in-process tests that `import` the module and call its functions for real coverage                                                              | Tests              | the tests assert the CLI contract but exercise no importable logic      |
+| A-2 | 🟠 **Qwen-default raises the perplexity-coupling risk to urgent.** Default model changed to `Qwen/Qwen2.5-0.5B` but `PERPLEXITY_THRESHOLD_MAX` default is still `1000.0` (calibrated for distilgpt2's scale). Qwen and distilgpt2 produce perplexities on different scales — the threshold is now silently mis-coupled unless overridden. Add a runtime guard that warns/errors if model and threshold scale don't match | Config/Correctness | promoted from P2 to near-blocker because the default flipped this round |
+| P1  | Raise `langID_classify.py` from **35%** — lines 232-392 and 617-726 (the threshold-decision core, issue #3 calibration) still uncovered despite the new test file                                                                                                                                                                                                                                                        | Tests              | mock FastText + Qwen; DK confirms boundary values                       |
+| P1  | `alto_stats_create.py` **0%** and `page_split.py` **0%** — fold the in-process tests from A-1 here                                                                                                                                                                                                                                                                                                                       | Tests              | CPU-only, pure-ish                                                      |
+| P1  | `extract_LLM_ALTO_2_TXT.py` **0%** (137 stmts) — the GLM-4v extraction path has no coverage                                                                                                                                                                                                                                                                                                                              | Tests              | mock the VLM call                                                       |
+| P2  | **Fix `requirements-test.txt` header** — it claims "no ML models, no GPU libraries" but 10 modules need pandas/lxml/fastapi to import. Either add them or make the claim true                                                                                                                                                                                                                                            | CI/Docs            | thread G; misleading as written                                         |
+| P2  | VRAM/troubleshooting docs: GLM-4v (48 GB) vs Qwen2.5-0.5B (small) vs LayoutReader — now that Qwen is default, document the model-selection matrix                                                                                                                                                                                                                                                                        | Docs               | HEAD already did a "docs update"; extend it                             |
 
 ---
 
-# 4/4 — `atrium-nlp-enrich`
+# 4/4 — `atrium-nlp-enrich` @ `6501591`
 
 **Repo:** CSV → NLP enrichment (manifest → UDPipe → NameTag → TEITOK, + keywords + LLM) via `api_*.sh` shell + FastAPI wrapper. Still the lowest-coverage repo.
 
-### ✅ Closed previous round
+### ✅ Verified merged / closed this round
 
-- **High-value tests:** `test_chunk.py` (`chunk.py` 0→86%), `test_remote_apis.py` (UDPipe 53% / NameTag 56%), `test_api_service.py` (subprocess contract; `service/api.py` 59%, `enrichment.py` 63%, `jobs.py` 77%), `test_llm_utils.py` (`llm_utils.py` 0→17%).
-- **CI config:** `.github/dependabot.yml`, `ruff.toml`, `.coveragerc`; `pydantic>=2` (and `pydantic==2.13.3` in `requirements_llm.txt`).
-
-### ⏳ Confirm merged
-
-- **Version sync:** `CITATION.cff 0.14.0` → `0.14.1`. Confirm applied.
+- **`shellcheck.yml` workflow added** — the prior thread-D gap is closed (shell layer now linted in CI).
+- **`.pre-commit-config.yaml` present** — thread-B gap closed.
+- **Version sync — DONE.** CITATION `0.14.2` == para_config `v0.14.2`; `date-released: 2026-06-21` (current).
+- **New `test_keywords.py` + `test_summarize_utils.py`** added; `192 passed`.
+- `api_util/teitok_alto.py` **80%**, `teitok_read.py` **100%**, `chunk.py` **86%**, `flexiconv_convert.py` **90%**, `service/rescale.py` **90%**.
 
 ### ▶ Next-round backlog
 
-| Pri | Item                                                                                                                                                                     | Axis       | Note                                                      |
-|-----|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|-----------------------------------------------------------|
-| P0  | Continue carving testable helpers from `llm_utils.py` (17% of 676 stmts) — extract prompt-building, JSON schema assembly, and logit-processor wiring into pure functions | Tests/Arch | prerequisite for TEATER issue #6 implementation           |
-| P0  | **[issue #6]** Implement TEATER LLM keyword extraction — prompt contract, JSON schema output template, thesaurus-term ranking; wire to `keywords.py` (19%)               | Feature    | see §5.1 for full scope; DK supplies thesaurus snapshot   |
-| P1  | Cover `llm_run.py` (**0%**, 212 L), `vocab_manager.py` (15%), `summarize_nt_udp.py` (16%), `keywords.py` (19%), `fix_teitok_bboxes.py` (0%)                              | Tests      | all pure-ish; mock vLLM backend                           |
-| P1  | Add **`shellcheck`** lint pass on `api_*.sh` shell layer + add to `.pre-commit-config.yaml`                                                                              | CI         | shell layer is completely unlinted; only shell-heavy repo |
-| P1  | Add `.pre-commit-config.yaml` (parity with alto + pc)                                                                                                                    | CI         | copy template; shellcheck hook added above goes here      |
-| P2  | Disambiguate "API" terminology in docs (external UDPipe/NameTag endpoints vs our own FastAPI)                                                                            | Docs       | causes confusion in issue comments                        |
-| P2  | Docker quickstart / troubleshooting section in README                                                                                                                    | Docs       | no current container guidance for end-users               |
-| P2  | Exclude/relocate `service/test_api.py` (manual integration client, counted as 0% by pytest)                                                                              | Tests      | cosmetic but inflates uncovered-lines count               |
-| P2  | Set real `date-released` in `CITATION.cff` at tag time; add to CONTRIBUTING post-release checklist                                                                       | Docs       | —                                                         |
+| Pri | Item                                                                                                                                                                                                                                                                                                                                                                                                                                                | Axis       | Note                                                |
+|-----|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|-----------------------------------------------------|
+| N-1 | **`test_llm_utils.py` aborts collection without `torch`** — `llm_utils.py:42` does a top-level `import torch`, so the unit test can't run in a CPU lane and `llm_utils.py` measured **0%** here (was reported 17%). Guard the torch import or `importorskip` so the pure-logic helpers (`_should_process_line`, `validate_llm_output`, `get_context_window`) are testable without torch                                                             | Tests/Arch | prerequisite for issue #6; also a thread-G instance |
+| N-2 | **`shellcheck.yml` has a structural defect.** It runs `ludeeus/action-shellcheck` (scandir `.`) as a **blocking** first step, *then* a second `actions/checkout` + a manual `continue-on-error: true` shellcheck. The header comment says "never block a merge," but the first action is not `continue-on-error` and will fail the job on any finding. Also the second checkout is redundant. Make the action step `continue-on-error` or remove it | CI         | the workflow does the opposite of its stated intent |
+| P0  | **[issue #6, open]** TEATER LLM keyword extraction — depends on N-1 carving. `keywords.py` is **21%** (lines 288-835 uncovered = the extraction core). Implement prompt contract + JSON-schema output, wire to existing KER baseline                                                                                                                                                                                                                | Feature    | DK supplies thesaurus snapshot; see §5.1            |
+| P1  | Still-0% modules: `llm_run.py` (212 stmts), `vocab_manager.py` (144 stmts), `fix_teitok_bboxes.py` (74 stmts)                                                                                                                                                                                                                                                                                                                                       | Tests      | mock vLLM backend                                   |
+| P1  | `summarize_nt_udp.py` **16%** (269 of 320 stmts uncovered) — largest untested logic block in the repo                                                                                                                                                                                                                                                                                                                                               | Tests      | pure-ish CoNLL-U processing                         |
+| P2  | `service/test_api.py` (manual integration client) still counted as 0% by coverage — exclude via `.coveragerc` `omit`                                                                                                                                                                                                                                                                                                                                | Tests      | cosmetic, inflates miss count                       |
+| P2  | Add `pydantic`, `lxml`, `fastapi`, `httpx` to `requirements-test.txt`                                                                                                                                                                                                                                                                                                                                                                               | CI         | thread G                                            |
 
 ---
 
 # Cross-repo status & next-round threads
 
-## Closed across the board (previous round)
+## Closed / verified across the board this round
 
-1. **Version skew → synced in all four** (`CITATION` versions aligned to `para_config` version strings in each repo).
-2. **CI config localized in all four** — `ruff.toml` / `.coveragerc` / `dependabot.yml` present per repo.
-3. **Orchestration/entry points tested** — `run.py` / `main.py` / `run_pipeline.py` and every FastAPI service now have suites.
-4. **FastAPI parity reached** — all four repos ship a FastAPI layer (alto = import-reuse; pc = shared registry/ensemble; nlp = subprocess; translator = `process_single_file` reuse).
+1. **`.pre-commit-config.yaml` parity — ACHIEVED.** Present in all four repos now (was missing in nlp + translator last round). Thread B closed.
+2. **`shellcheck` for nlp's shell layer — LANDED** (workflow present, though see N-2 for the config defect). Thread D substantially closed.
+3. **Version sync holds** in all four (CITATION == para_config version string in each).
+4. **CORS wildcard-with-credentials — MERGED** in both pc and translator. Prior thread-A patches confirmed.
 
 ## Active cross-repo threads
 
-**A. Service-layer hardening** — CORS wildcard-with-credentials pattern and `None` content-type/filename guards recur in pc and translator. Patches delivered last round; **confirm merged in both** before next review. Any new endpoint in any repo should run through the hardening checklist:
-- `allow_credentials=True` requires an explicit origin list, never `"*"`.
-- Every upload endpoint must guard `file.filename is None` and `content_type is None` before use.
+**G. (NEW, highest priority) Make the fast test lane self-contained.** Three of four repos fail
+collection in a clean env because `requirements-test.txt` under-declares deps, and heavyweight
+imports (`torch`, `fasttext`) crash collection rather than skipping. Two acceptable fixes, pick one
+per repo: (a) pin the full CPU-runnable dep set in `requirements-test.txt`, or (b) make the
+heavyweight imports lazy and have the tests `pytest.importorskip("torch")`. Page-classification needs
+a `requirements-test.txt` created from scratch. This blocks any honest `--fail-under` gate (thread E).
 
-**B. `.pre-commit-config.yaml` parity** — present in pc + alto; **missing in nlp + translator**. Target: all four repos run the same hook set (ruff-format, ruff-check, shellcheck for nlp, trailing-whitespace, end-of-file-fixer).
+**H. `para_licenses.py` coverage frontier.** The computed-license resolution engine (most-restrictive-wins)
+is **20%** in translator and similarly low elsewhere; it's a ported, near-identical module across
+repos. Write the test suite once against the shared logic and replicate — high value, low effort,
+no mocking of models or network required.
 
-**C. Coverage depth on entry/IO modules** — the shared low-coverage frontier across repos:
+**I. Subprocess-vs-import test pattern.** alto-postprocess (A-1) and page-classification (`test_run.py`)
+both have "tests" that shell out to a script as a subprocess. These verify the CLI contract but
+contribute **zero coverage** and can't pinpoint failures. Where the goal is coverage, add in-process
+tests that import and call functions; keep the subprocess test only as a thin CLI-smoke layer.
 
-| Module                 | Repo                | Current % | Blocker                     |
-|------------------------|---------------------|-----------|-----------------------------|
-| `load_vocab.py`        | translator          | 0%        | network mock needed         |
-| `llm_run.py`           | nlp-enrich          | 0%        | vLLM mock needed            |
-| `page_split.py`        | alto-postprocess    | 0%        | pure-ish                    |
-| `alto_stats_create.py` | alto-postprocess    | 0%        | pure-ish                    |
-| `llm_utils.py`         | nlp-enrich          | 17%       | carving prerequisite for #6 |
-| `ModelManager`         | page-classification | 27%       | pure-logic paths            |
+**J. Coverage depth on entry/IO modules (refreshed measured numbers).**
 
-**D. `shellcheck` for nlp's shell layer** — `api_udpipe.sh`, `api_nametag.sh`, and related scripts are fully unlinted. Add `shellcheck` to pre-commit and CI (advisory, `continue-on-error: true` initially).
+| Module                      | Repo       | Measured % (this round) | Note                          |
+|-----------------------------|------------|-------------------------|-------------------------------|
+| `load_vocab.py`             | translator | **0%**                  | no dedicated test at all — P0 |
+| `llm_run.py`                | nlp-enrich | **0%**                  | vLLM mock                     |
+| `vocab_manager.py`          | nlp-enrich | **0%**                  |                               |
+| `fix_teitok_bboxes.py`      | nlp-enrich | **0%**                  |                               |
+| `alto_stats_create.py`      | alto       | **0%**                  | subprocess-only test (A-1)    |
+| `page_split.py`             | alto       | **0%**                  | subprocess-only test (A-1)    |
+| `extract_LLM_ALTO_2_TXT.py` | alto       | **0%**                  | GLM-4v path                   |
+| `summarize_nt_udp.py`       | nlp-enrich | **16%**                 | largest logic block           |
+| `keywords.py`               | nlp-enrich | **21%**                 | issue #6 prerequisite         |
+| `langID_classify.py`        | alto       | **35%**                 | issue #3 calibration          |
+| `main.py`                   | translator | **34%**                 | orchestration                 |
 
-**E. Ratchet the CI gates** — now that `ruff.toml` and `.coveragerc` are in every repo, consider enabling:
-- `ruff check` as a **blocking** step (currently advisory in most repos).
-- `pytest --cov --fail-under=<N>` once per-repo baselines stabilise (suggest 60% for nlp-enrich, 75% for others).
-- Fail fast on new `ruff` violations in PR diffs (`--diff` mode).
+**E. Ratchet CI gates** — unchanged in intent, but **gated on thread G**: a `--fail-under` gate is
+meaningless while the suite can't collect in CI's own environment. Sequence: fix G first, establish
+measured baselines (translator ~52%, alto ~48%, nlp ~35%, pc TBD under torch), then set `fail_under`
+~5 points below baseline per repo and make `ruff check` blocking.
 
-**F. Release hygiene** — two recurring problems:
-- `v1.4.0-bets` tag typo in page-classification: retag before next public announcement.
-- `date-released` stale in translator (`2026-03-02`) and nlp-enrich CITATION: add to post-release checklist in each repo's CONTRIBUTING.
+**F. Release hygiene** — `date-released` is current in pc (`2026-06-20`) and nlp (`2026-06-21`) but
+**still stale** in translator and alto (`2026-03-02`). Add a post-release checklist line to those two
+CONTRIBUTING files. The `v1.4.0-bets` tag concern is retired (pc moved to `v1.4.2-beta`).
 
 ---
 
 # §5 — Strategic Horizon (feature + research milestones)
 
-Items in this section exceed the per-file code-review scope. They are scoped from open GitHub issues and the strategic research audit. Each maps to one or more backlog entries above; this section provides rationale and sequencing context.
+Unchanged in structure from the prior refresh; status notes updated against this round's findings.
 
 ## §5.1 — TEATER LLM keyword extraction [`atrium-nlp-enrich` issue #6, open]
 
-**Goal:** The locally-running LLM instance receives an input document, the TEATER topic thesaurus, and a JSON output template, then returns a filled template containing related thesaurus terms.
+**Status:** still open, still "In Progress" on the ATRIUM project board. The blocking prerequisite is
+now sharper: **N-1** (decouple `llm_utils.py` from a top-level torch import) must land before the
+pure-logic helpers can be unit-tested, and `keywords.py` is only **21%** covered. Implementation
+outline unchanged: `LLMKeywordExtractor` wrapping the existing backend, thesaurus in the system
+prompt, JSON-schema-constrained output via xgrammar/Pydantic, KER fallback, paradata logging of the
+thesaurus version hash. **Close criterion:** `test_keywords.py` covers the LLM branch ≥ 60% and DK
+signs off on a five-document sample run.
 
-**Prerequisites (all must close before production wiring):**
-- `llm_utils.py` P0 carving (4/4 backlog) — prompt-builder and schema-assembly must be pure functions.
-- `keywords.py` P1 test coverage — existing KER pipeline tests needed as regression baseline before adding LLM branch.
-- DK to supply a canonical TEATER thesaurus snapshot (format TBD: flat list, JSON-LD, or SKOS).
+## §5.2 — Domain-specific NameTag NER model [`atrium-nlp-enrich` issue #7]
 
-**Implementation outline:**
-1. Add `LLMKeywordExtractor` class to `keywords.py` wrapping existing `llm_utils.py` backend.
-2. Prompt contract: system prompt carries the thesaurus terms, user message carries the document chunk(s), output constrained to JSON schema via `xgrammar`/Pydantic.
-3. Ranking/filtering: threshold on LLM confidence or term co-occurrence; fallback to KER if LLM call fails.
-4. Paradata: log thesaurus version hash, model name/version, token counts per call in `atrium_paradata.py`.
-
-**Milestone:** Close issue #6 when `test_keywords.py` covers the LLM branch ≥ 60% and DK signs off on a sample TEATER run against five real documents.
-
-## §5.2 — Domain-specific NameTag NER model [`atrium-nlp-enrich` issue #7, referenced open]
-
-**Goal:** Fine-tune a NameTag 3 model on Czech archaeological domain text (AMCR/ARÚP corpus) for entity types: `PER`, `ORG`, `LOC`, `PERIOD`, `MATERIAL`, `SITE`.
-
-**Prerequisites:**
-- ARÚP to supply annotated NER training set (DK + David Novák coordination).
-- `call_nametag` coverage (currently 56%) must include the new model endpoint before wiring.
-- Decide: local NameTag 3 instance or LINDAT REST API — each has different latency / offline-capability tradeoffs.
-
-**Sequencing:** This is a multi-week ML training task; it does not block the code-review rounds but should be tracked as a separate GitHub milestone (`Q3 [WP4/WP5: NER training]`). The `atrium-nlp-enrich` pipeline already has a NameTag slot; the work is mostly data-curation + fine-tuning, not architecture change.
+**Status:** unchanged — a multi-week ML training task tracked as a separate milestone, not blocking
+code-review rounds. `call_nametag.py` is at **56%**; cover the new model endpoint before wiring.
+Decision still open: local NameTag 3 instance vs LINDAT REST (latency/offline tradeoff).
 
 ## §5.3 — End-to-end pipeline orchestration
 
-**Current state:** Four independent repos are operated by chained bash scripts. The `atrium-nlp-enrich` FastAPI service provides async job queuing internally, but there is no cross-service orchestration layer.
-
-**Scaling target:** The research audit identifies the need to transition from local multiprocessing queues to a horizontally-scalable, event-driven topology. Concrete options in scope for the project horizon:
-
-| Option                                      | Complexity | Notes                                                           |
-|---------------------------------------------|------------|-----------------------------------------------------------------|
-| Shell-script glue with polling              | Low        | Current state; adequate for batch runs on a single cluster node |
-| Python `asyncio` coordinator (`run_all.py`) | Medium     | Suitable for single-machine multi-GPU batch; no new infra       |
-| Message queue (RabbitMQ / Redis Streams)    | High       | Enables horizontal scale; overkill unless multi-node needed     |
-
-**Recommended next step:** Add a `run_all.py` integration driver that chains the four service calls (page-classification → alto-postprocess → nlp-enrich → translator) with retry logic and shared paradata accumulation. This can be built on top of the existing FastAPI `/info` + job endpoints without changing any repo internals.
-
-**GitHub tracking:** Open a new issue in `atrium-project` for this integration driver; link it to the four per-repo service tests.
+**Status:** no cross-service orchestration layer landed this round. Recommendation stands: add a
+`run_all.py` integration driver chaining page-classification → alto-postprocess → nlp-enrich →
+translator over the existing FastAPI `/info` + job endpoints, with retry logic and shared paradata
+accumulation. Open a tracking issue in `atrium-project`.
 
 ## §5.4 — Paradata trust chain and reproducibility
 
-**Current state:** `atrium_paradata.py` logs tool name, version, repo URL, Python env, and a `run_id` per execution cycle. Paradata is serialized to JSON in a dedicated `paradata/` directory.
-
-**Strategic requirement (from DARIAH/Horizon mandate):** Provenance must be sufficient for a third-party researcher to identify and re-run a specific historical pipeline configuration; quarantine all outputs if a model version is later found to produce hallucinations.
-
-**Concrete enhancements:**
-
-1. **TEATER thesaurus version hash** — when `keywords.py` uses LLM extraction, log the SHA-256 of the thesaurus file used (issue #6 prerequisite).
-2. **Model version pinning** — `para_config.txt` in each repo should carry the exact HuggingFace revision string (not just the model name) to make paradata logs replayable.
-3. **Paradata schema version** — add a `schema_version` field to the top-level paradata JSON so downstream consumers can handle format evolution gracefully.
-4. **YAML reproducibility snapshot** — for each batch run, emit a companion `<run_id>_replay.yaml` that captures all config constants, model revisions, and input file hashes in a format that can be fed back to re-run the exact same configuration. This satisfies the DARIAH reproducibility requirement without requiring blockchain/ledger infrastructure.
-
-**GitHub tracking:** This can be a single issue in `atrium-project` with sub-tasks per repo.
+**Status:** `para_config.txt` now carries a `version` field per repo (verified), a step toward
+replayable provenance. Remaining: pin exact HF revision strings (not just model names) in
+`para_config.txt`; add a `schema_version` field to the paradata JSON; emit a `<run_id>_replay.yaml`
+snapshot per batch. With **Qwen now the alto default**, model-revision pinning is more important —
+paradata must record which perplexity model produced a given line's quality routing.
 
 ## §5.5 — CI/CD gates and release automation
 
-The GitHub Actions workflow suite (`codeql.yml`, `security.yml`, `pre-commit.yml`, `scheduled-smoke.yml`, `gitleaks.yml`, `release.yml`, `image-scan.yml`, `gpu-inference.yml`) is in place across all four repos. Remaining gaps:
+**Status this round:** the workflow suite is present in all four repos (`codeql`, `security`,
+`pre-commit`, `scheduled-smoke`, `release`, `docker`, plus `gpu-inference` in pc + nlp and
+`shellcheck` in nlp). Note: **`secret-scan`/gitleaks was folded into `security.yml`** (pc commit
+message confirms "secret-scan removed"). Remaining gaps:
 
-| Gap                                                                                                | Repo(s)    | Action                                                              |
-|----------------------------------------------------------------------------------------------------|------------|---------------------------------------------------------------------|
-| `GITLEAKS_LICENSE` org secret not confirmed set                                                    | All        | Verify in org settings; Gitleaks workflow silently skips without it |
-| `gpu-inference.yml` self-hosted runner (`@rharasim`) not confirmed registered                      | nlp-enrich | Ping `@rharasim`; add runner health check job                       |
-| GHCR published packages — confirm `image-scan.yml` has correct image path per repo                 | pc, alto   | Check `ghcr.io/ufal/<repo>` image exists before scan step           |
-| `pre-commit.yml` is advisory (`continue-on-error: true`) in all four — no plan to make it blocking | All        | Revisit after coverage baselines settle; see thread E above         |
+| Gap                                                         | Repo(s)                   | Action                                                      |
+|-------------------------------------------------------------|---------------------------|-------------------------------------------------------------|
+| `shellcheck.yml` blocking-vs-advisory defect (N-2)          | nlp                       | make the action step `continue-on-error`                    |
+| `GITLEAKS_LICENSE` org secret confirmation                  | all                       | verify in org settings (gitleaks silently skips without it) |
+| `gpu-inference.yml` self-hosted runner (`@rharasim`) health | pc, nlp                   | add a runner health-check job                               |
+| Fast lane not reproducible in CI (thread G)                 | translator, alto, nlp, pc | precondition for `fail_under`                               |
 
 ---
 
-## Per-repo "How to verify" (unchanged recipe)
+## Per-repo "How to verify" (updated recipe — install the FULL test deps, not just `requirements-test.txt`)
 
 ```bash
 python -m compileall -q .
 ruff check --config <atrium-project/docs/templates/ruff.toml> .
+
+# NOTE (thread G): requirements-test.txt currently under-declares deps in 3/4 repos.
+# Until fixed, install the real CPU set explicitly, e.g.:
+#   translator:  + fasttext-wheel numpy tqdm huggingface-hub
+#   alto:        + pandas lxml pillow fasttext fastapi httpx
+#   nlp:         + pydantic lxml fastapi httpx   (torch for test_llm_utils)
+#   pc:          + matplotlib scikit-learn tensorboard   (torch for inference/yolo/classifier)
+
 pytest -m "not slow" --cov=. --cov-report=term-missing
 # services: uvicorn/compose up, hit /info + DoS guards
 # cross-check: CITATION.cff version == para_config version == latest git tag
