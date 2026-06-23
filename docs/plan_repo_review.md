@@ -50,6 +50,56 @@ The synchronization hub for orchestration and future scaling.
 * **Focus:** Engineering hardware fail-over logic (GPU to CPU), legal review of paradata licensing, and finalizing a 
 cross-repository Docker Compose wrapper to simplify pipeline initialization.
 
+### 1. Architectural Philosophy
+
+The Atrium ecosystem utilizes a **federated repository model** to balance shared infrastructure with independent research velocity.
+
+* **Core (`atrium-project`)**: The authoritative source for shared utilities, schemas, and interfaces.
+* **Satellite Repositories**: Independent repositories (e.g., `atrium-nlp-enrich`, `atrium-page-classification`) maintain their own release cycles.
+
+### 2. Dependency & Versioning
+
+* **Mechanism**: Git submodules pinned to specific commits or tags. This ensures deterministic, reproducible builds.
+* **Versioning**: Semantic Versioning (Major.Minor.Patch) is mandatory for the shared core.
+* **Dependency Rule**: If code is reused by two or more repositories, it **must** be migrated to `atrium-project`.
+
+### 3. Developer Workflow
+
+Developers should never edit shared code directly inside a detached submodule. The standard workflow for updates:
+
+1. **Modify**: Update `atrium-project`, commit, push, and create a new version tag.
+2. **Pull**: In the downstream repository, fetch the new tag:
+
+```bash
+cd src/atrium/shared
+git fetch --tags
+git checkout v1.x.x
+```
+
+3. **Commit**: Update the submodule reference in the downstream project
+
+```bash
+cd ../../..
+git add src/atrium/shared
+git commit -m "chore: upgrade atrium-project to v1.x.x"
+```
+
+## 4. Reproducibility & CI
+
+* **CI Integrity**: Every CI pipeline must explicitly run `git submodule update --init --recursive` to prevent build failures.
+* **Experiment Metadata**: Every experiment result must store:
+* Project commit hash
+* Shared (`atrium-project`) commit hash
+* Configuration file reference
+* Dataset version
+
+## 5. Future Roadmap
+
+* **Packaging**: Transitioning toward a distributable `atrium-core` package (PyPI/private index).
+* **Tracking**: Full integration with MLflow or Weights & Biases.
+* **Data**: Implementing DVC or Git LFS for large research datasets.
+* **Documentation**: Launching a centralized docs portal (`docs.atrium-project.org`).
+
 ---
 
 ## 🚀 Upgraded Phased Strategic Roadmap
