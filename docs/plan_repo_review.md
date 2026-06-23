@@ -43,20 +43,7 @@ use direct Python module imports will provide accurate coverage metrics and expo
 
 ---
 
-## 🔬 Repository Diagnostics
-
-### 🧠 atrium-nlp-enrich
-
-The most computationally intensive node, responsible for NER and LLM-constrained decoding.
-
-* **Status:** 🔴 **Red.** CI failure is driven by top-level `import torch` statements in `llm_utils.py` that crash 
-CPU-only CI runners, and Shellcheck configuration warnings.
-* **Operational Note:** Qwen 2.5 14B (AWQ) is confirmed as the gold standard, effectively utilizing LogitMatch to
-mitigate "Country Default" hallucinations.
-* **Action:** Move heavy imports behind function guards/lazy-loaders. Add `SECURITY.md` to repository root. Fix 
-Shellcheck `continue-on-error` directives.
-
-### 📁 atrium-project
+## 🔬 Repository Diagnostics - 📁 atrium-project
 
 The synchronization hub for orchestration and future scaling.
 
