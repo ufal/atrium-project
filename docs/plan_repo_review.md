@@ -52,7 +52,7 @@ The foundational ingestion layer for the pipeline, handling image sorting and la
 * **Status:** ✅ CI is green. Formal GitHub releases are active (15+ releases to date).
 * **Key Updates:** Integration of `pymupdf` (fitz) for optimized PDF extraction, runtime VRAM profiling, and successful 
 architecture alignment to `EfficientNetV2-M`.
-* **Action:** Ensure `CITATION.cff`, README, and GitHub release tags remain in strict lockstep.
+* **Action:** Ensure `CITATION.cff`, README, and GitHub release tags remain in strict lockstep - **DONE**
 
 ### 2. 📄 atrium-alto-postprocess
 
@@ -73,15 +73,6 @@ CPU-only CI runners, and Shellcheck configuration warnings.
 mitigate "Country Default" hallucinations.
 * **Action:** Move heavy imports behind function guards/lazy-loaders. Add `SECURITY.md` to repository root. Fix 
 Shellcheck `continue-on-error` directives.
-
-### 4. 🌐 atrium-translator
-
-The concluding node executing in-place translation of enriched XML formats.
-
-* **Status:** ✅ Green.
-* **Key Updates:** Successful alignment of `CITATION.cff` with release v0.7.0 and established paradata testing patterns.
-* **Action:** Expand `requirements-test.txt` to include necessary testing libraries (`numpy`, `tqdm`, `huggingface-hub`)
-to prevent import errors in local environments.
 
 ### 5. 📁 atrium-project
 
