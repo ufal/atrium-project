@@ -45,25 +45,7 @@ use direct Python module imports will provide accurate coverage metrics and expo
 
 ## 🔬 Repository Diagnostics
 
-### 1. 🖼️ atrium-page-classification
-
-The foundational ingestion layer for the pipeline, handling image sorting and layout analysis.
-
-* **Status:** ✅ CI is green. Formal GitHub releases are active (15+ releases to date).
-* **Key Updates:** Integration of `pymupdf` (fitz) for optimized PDF extraction, runtime VRAM profiling, and successful 
-architecture alignment to `EfficientNetV2-M`.
-* **Action:** Ensure `CITATION.cff`, README, and GitHub release tags remain in strict lockstep - **DONE**
-
-### 2. 📄 atrium-alto-postprocess
-
-The core refinement tier, processing raw ALTO XML and assigning algorithmic quality scores.
-
-* **Status:** ✅ CI is operational.
-* **Key Updates:** Successful split-resource queuing (CPU workers for I/O; GPU worker for Qwen 2.5 0.5B perplexity scoring).
-* **Action:** Update documentation to reflect `PERPLEXITY_THRESHOLD_MAX = 1000.0`. Refactor tests to invoke application
-logic directly rather than using shell subprocesses to improve branch coverage.
-
-### 3. 🧠 atrium-nlp-enrich
+### 🧠 atrium-nlp-enrich
 
 The most computationally intensive node, responsible for NER and LLM-constrained decoding.
 
@@ -74,7 +56,7 @@ mitigate "Country Default" hallucinations.
 * **Action:** Move heavy imports behind function guards/lazy-loaders. Add `SECURITY.md` to repository root. Fix 
 Shellcheck `continue-on-error` directives.
 
-### 5. 📁 atrium-project
+### 📁 atrium-project
 
 The synchronization hub for orchestration and future scaling.
 
