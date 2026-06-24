@@ -1,157 +1,333 @@
-# 🏛️ ATRIUM Ecosystem Architecture and Source-Code Verification Audit · Opus 4.8 Round (2026-06-22)
+# 🧭 ATRIUM Ecosystem — Repository Review & Forward Strategy
 
-## 🗺️ Ecosystem Architecture and Baseline Verification
+_Maintainer: lutsai.k@gmail.com · Last reviewed: 2026-06-24_
+_Repos: atrium-project (hub) · atrium-page-classification · atrium-alto-postprocess ·
+atrium-nlp-enrich · atrium-translator_
 
-The computational ecosystem is divided into five primary repositories, each handling a discrete, specialized phase of 
-the document processing pipeline. The baseline review, evaluated against the current state of the main branches,
-demonstrates profound progress in operationalizing machine learning workflows. While core functionalities are maturing, 
-the audit highlights specific areas for refinement regarding test dependency management, paradata centralization, and 
-version synchronization.
+## 🧭 1. Scope & method
+This document is the single hub-level record of (a) the ecosystem's architecture, (b) the
+standing cross-repo workstreams, and (c) the phased roadmap. Findings below were verified
+against the live `test` branches (HEADs newer than earlier review baselines), not against
+stale snapshots. Each open item carries a `repo:file:line` pointer.
 
-The integration remains highly sequential: visual classification, structural parsing/OCR refinement, language modeling,
-and final translation. Infrastructural alignment is critical to prevent downstream cascading errors.
+## 🏗️ 2. Ecosystem architecture (as-built)
+Five repositories, **not** a monorepo and **not** git-submodules:
 
-| Repository Module              | Active HEAD Commit | Operational Scope                        | Live CI Health | Fast-Suite Testing Metrics |
-|--------------------------------|--------------------|------------------------------------------|----------------|----------------------------|
-| **atrium-page-classification** | c6e7f0c            | Visual ingestion, DLA, image sorting     | ✅ Green        | 210 passed                 |
-| **atrium-translator**          | 91836fb            | In-place ALTO/AMCR English translation   | ✅ Green        | 183 passed                 |
-| **atrium-alto-postprocess**    | 5868b0f            | OCR refinement, perplexity scoring       | ✅ Green        | 226 passed                 |
-| **atrium-nlp-enrich**          | 6501591            | Semantic tagging, TEATER JSON extraction | 🔴 **Red**     | 192 passed                 |
-| **atrium-project**             | dbcb6e7            | Master planning, roadmap orchestration   | ➖ N/A          | Documentation hub          |
-
----
-
-## 🧵 Systemic Cross-Repository Technical Threads
-
-These macroscopic threads require coordinated remediation to move from academic prototype to production-grade standards.
-
-* **🧪 Thread G: Testing Environment Instability & Dependency Bleed**
-Across all repositories, Python test requirements (`requirements-test.txt`) remain under-declared. Heavyweight libraries 
-(PyTorch, FastText, etc.) are imported eagerly, causing CI runner exhaustion on CPU-only lanes. Implementing lazy-importing
-wrappers or `@pytest.importorskip` decorators is necessary to isolate unit logic from deep learning runtimes.
-* **📋 Thread H: Paradata Provenance Traceability Drift**
-While paradata modules exist (`atrium_paradata.py`, `para_licenses.py`), they have diverged between repositories. 
-The `atrium-translator` repository has successfully implemented dedicated unit tests for paradata, which should serve 
-as the blueprint for the rest of the ecosystem to ensure standardized provenance logging.
-* **🏷️ Thread F: Release Management & Version Hygiene**
-Release hygiene has improved significantly, with formal GitHub releases now active for key repositories. However, 
-there remains a systemic need to strictly synchronize semantic versions across internal APIs, `CITATION.cff` files, 
-and external Zenodo deployments to avoid confusion.
-* **⚙️ Thread I: Subprocess Testing Overhead**
-Current CI metrics are artificially suppressed by executing CLI tests via shell subprocesses. Refactoring these to 
-use direct Python module imports will provide accurate coverage metrics and expose hidden regressions.
-
----
-
-## 🔬 Repository Diagnostics - 📁 atrium-project
-
-The synchronization hub for orchestration and future scaling.
-
-* **Focus:** Engineering hardware fail-over logic (GPU to CPU), legal review of paradata licensing, and finalizing a 
-cross-repository Docker Compose wrapper to simplify pipeline initialization.
-
-### 1. Architectural Philosophy
-
-The Atrium ecosystem utilizes a **federated repository model** to balance shared infrastructure with independent research velocity.
-
-* **Core (`atrium-project`)**: The authoritative source for shared utilities, schemas, and interfaces.
-* **Satellite Repositories**: Independent repositories (e.g., `atrium-nlp-enrich`, `atrium-page-classification`) maintain their own release cycles.
-
-### 2. Dependency & Versioning
-
-* **Mechanism**: Git submodules pinned to specific commits or tags. This ensures deterministic, reproducible builds.
-* **Versioning**: Semantic Versioning (Major.Minor.Patch) is mandatory for the shared core.
-* **Dependency Rule**: If code is reused by two or more repositories, it **must** be migrated to `atrium-project`.
-
-### 3. Developer Workflow
-
-Developers should never edit shared code directly inside a detached submodule. The standard workflow for updates:
-
-1. **Modify**: Update `atrium-project`, commit, push, and create a new version tag.
-2. **Pull**: In the downstream repository, fetch the new tag:
-
-```bash
-cd src/atrium/shared
-git fetch --tags
-git checkout v1.x.x
+```
+atrium-project (hub)
+  ├─ docs/templates/         ruff.toml, .pre-commit-config, CONTRIBUTING, shared/*
+  └─ .github/workflows/*.reusable.yml   ← called by every tool repo via `@test`
+Pipeline data flow (container images over a shared volume):
+  page-classification → alto-postprocess → nlp-enrich → translator
 ```
 
-3. **Commit**: Update the submodule reference in the downstream project
+* **CI is genuinely centralised.** Every tool repo calls the hub's reusable workflows
+  (`security.reusable.yml`, lint, tests) pinned `@test`. This is the real, working
+  federation point.
+* **Shared *code* is NOT centralised.** `atrium_paradata.py` and `para_licenses.py` are
+  **copy-pasted** into each repo and have **diverged** (see §5.H). There is no
+  `.gitmodules`; the "submodule core" described in earlier notes does not exist.
 
-```bash
-cd ../../..
-git add src/atrium/shared
-git commit -m "chore: upgrade atrium-project to v1.x.x"
+**Decision (this review): adopt a "canonical drop-in + CI drift-check" model** — the hub
+holds the canonical copies under `docs/templates/shared/`; a reusable drift-check workflow
+fails any repo whose copy diverges. Real packaging (`atrium-core` on an index) is recorded
+as a *future* option, not adopted now (keeps the zero-install, copy-paste ergonomics the
+repos already rely on).
+
+## 🔄 3. Baseline reconciliation
+The tool branches advanced past the prior review baselines (mostly Dependabot bumps plus
+targeted fixes), so several earlier findings are already closed — notably nlp Shellcheck
+(now 0 findings on shellcheck 0.9.0 **and** 0.10.0) and nlp test-requirements. Verified
+green ecosystem-wide today: **`compileall` OK** and **`ruff check` (shared config) → "All
+checks passed!"** in all four tool repos.
+
+## 📊 4. Status matrix (open items only)
+
+| ID | Item                                                          | pc            | translator | alto        | nlp     |
+|----|---------------------------------------------------------------|---------------|------------|-------------|---------|
+| F1 | API `/info` version hard-coded, drifts from `para_config.txt` | ✗             | ✗          | ✗ (missing) | ✗       |
+| F2 | `CITATION.cff` `date-released` stale (`2026-03-02`)           | ok            | ✗          | ✗           | ok      |
+| G1 | Eager heavy imports break the no-model fast lane              | ✗             | ok         | ok          | ✗       |
+| G2 | `requirements-test.txt` not at repo root                      | `setup/` only | ok         | ok          | ok      |
+| H1 | `para_licenses.py` dedup logic diverged; **0 tests**          | ✗             | ✗          | ✓ blueprint | ✗       |
+| H2 | `atrium_paradata.py` 4 diverged copies                        | ✗             | ✗          | ✗           | ✗       |
+| I1 | `subprocess` CLI-smoke tests instead of in-process            | 1 file        | none       | 2 files     | 2 files |
+
+Legend: ✗ open · ok already fine · ✓ source-of-truth to propagate.
+
+## 🧩 5. Workstreams
+
+### 🏷️ F — Release & version hygiene
+* **F1:** Replace hard-coded API versions with `_read_tool_version()` reading
+  `para_config.txt [tool] version` (the value `security.reusable.yml` already validates
+  against `CITATION.cff` and the tag). Locations:
+  `pc:service/api.py:39` (`1.4.0-beta`), `translator:service/api.py:47` (`0.6.2`),
+  `nlp:service/api.py:59` (`0.11.0`), `alto:service/text_api.py:43` (no `version=` at all).
+* **F2:** Set `date-released` to each tag's real date —
+  `translator:CITATION.cff` and `alto:CITATION.cff` (both `2026-03-02`, versions 0.7.0 /
+  0.19.2).
+
+### 📦 G — Dependency isolation (fast lane)
+* **G1 (pc, nlp):** `pc:run.py` and `pc:classifier.py:9` import `torch/pandas/sklearn` at
+  module top; `nlp:tests/test_llm_utils.py` cannot collect because `llm_utils` builds a
+  `torch.bfloat16` registry at import. Fix: lazy-load heavy deps inside the functions that
+  use them; where a torch-free import is impractical, gate the test with
+  `pytest.importorskip("torch")`.
+* **G2 (pc):** add a root `requirements-test.txt` mirroring `setup/requirements-test.txt`.
+
+### 🔗 H — Shared-code provenance
+* **H1:** alto's `merge_effective_licenses` (`alto:para_licenses.py:167-188`) **dedups**
+  the component union on `(name, license)` before resolving; pc/translator/nlp use the
+  naive union (double-counts a component used in multiple stages). Propagate alto's version
+  to all repos and add the shared `tests/test_para_licenses.py` (currently **zero**
+  coverage of the license engine anywhere).
+* **H2:** the four `atrium_paradata.py` copies differ (382/382/478/469 lines). Lift the
+  superset into the hub canonical copy, re-sync all repos, and enforce with the drift-check
+  (§8). No risky in-place merge of repo-specific logic this round.
+
+### 🧪 I — Test quality (real coverage)
+Replace `subprocess.run([...,"--help"])` CLI-smoke tests with in-process
+`main([...])`/parser calls so the entrypoint actually counts toward coverage. Targets and
+exact refactors are in `docs/refactors/subprocess-to-inprocess.md` (Part C of the review
+delivery). Leave alone the two nlp tests that *mock* `subprocess.run`
+(`test_api_service.py`, `test_flexiconv_convert.py`) — those are already correct in-process
+tests.
+
+## 🗂️ 6. Per-repository diagnostics
+* **page-classification** — close F1, G1, G2, H1, I1; biggest single item is extracting
+  `build_parser()`/`main(argv)` from the `run.py` `__main__` block (enables both G1 and I1).
+  Confirm `img2jpeg_v3.py` stays README-referenced.
+* **translator** — strongest repo (lazy fasttext, vocabulary tested, no subprocess tests).
+  Close F1, F2, H1. Next: LLM-backend parity tests (issue #4).
+* **alto-postprocess** — the `para_licenses` blueprint; export it to the hub. Close F1
+  (add `version=` to `text_api.py`), F2, I1 (2 files). Keep the `PERPLEXITY_THRESHOLD_MAX`
+  Qwen guard (advisory, not a bug).
+* **nlp-enrich** — Shellcheck already green. Flip ruff pre-commit to advisory
+  (`--fix`, drop `--exit-non-zero-on-fix`) to match the other repos; G1 test guard; H1;
+  I1 (the subprocess twin in `test_cli.py` is redundant with the existing in-process test).
+
+## 🛣️ 7. Phased roadmap
+* **Phase 0 — hygiene (mechanical):** F1, F2, nlp ruff advisory. Low risk.
+* **Phase 1 — dependency isolation:** G1, G2. Restores an honest fast lane.
+* **Phase 2 — provenance & coverage:** H1 (+ shared resolver tests), H2 convergence, I1.
+* **Phase 3 — orchestration & gates:** pipeline compose scaffold (§8), drift-check
+  workflow, and **ratchet ruff to blocking in all 4 repos** (safe: all currently at 0
+  findings) + set `fail_under` to each repo's measured fast-lane coverage.
+* **Phase 4 — blocked (documented, not actioned):** gitleaks secret-scan (needs
+  ARUB/ARUP policy sign-off); GPU-runner workflows (needs self-hosted `[self-hosted,gpu]`).
+
+## 🔁 8. Cross-service orchestration (Issue #18)
+`atrium-project/compose/docker-compose.pipeline.yml` chains the published GHCR images
+pc → alto → nlp → translator over a shared `atrium_data` volume, each stage gated on the
+previous completing successfully (`depends_on: condition: service_completed_successfully`).
+Plus `compose/README.md` documenting the `/data` stage contract, image tags, and a GPU
+override. Scaffold — per-tool CLI flags to be reconciled with each entrypoint.
+
+## 🛡️ 9. Drift-check (enforces §2 decision)
+`atrium-project/.github/workflows/paradata-drift.reusable.yml`: hash each repo's
+`para_licenses.py` / `atrium_paradata.py` against `docs/templates/shared/*`; fail on
+divergence (allow-list genuinely repo-specific blocks). Each repo adds a ~12-line caller.
+
+## 📍 10. Exact change locations
+| Item          | Path:line                                            |
+|---------------|------------------------------------------------------|
+| F1 pc         | `atrium-page-classification/service/api.py:39`       |
+| F1 translator | `atrium-translator/service/api.py:47`                |
+| F1 nlp        | `atrium-nlp-enrich/service/api.py:59`                |
+| F1 alto       | `atrium-alto-postprocess/service/text_api.py:43`     |
+| F2            | `{translator,alto}/CITATION.cff` (date-released)     |
+| G1 pc         | `run.py` top imports; `classifier.py:9`; `run.py:10` |
+| G1 nlp        | `tests/test_llm_utils.py` (importorskip)             |
+| H1 blueprint  | `atrium-alto-postprocess/para_licenses.py:167-188`   |
+| nlp ruff      | `atrium-nlp-enrich/.pre-commit-config.yaml:6`        |
+
+---
+
+
+## 🧪 Appendix B — Exact subprocess → in-process refactors
+
+**Scope:** 5 files / 10 subprocess invocations. **Leave untouched:** nlp `test_api_service.py` and `test_flexiconv_convert.py` — they *mock* `subprocess.run` to test in-process logic and are already correct.
+
+### C1 — nlp `tests/test_cli.py` (simplest: delete the redundant twin)
+The in-process test already exists (`test_manifest_generation_direct` → `cli_main(["--stages","manifest"])`). The `@slow` subprocess copy tests nothing new.
+
+```diff
+-from __future__ import annotations
+-
+-import subprocess
+-import sys
+-from pathlib import Path
+-
+-import pytest
+-
+-# Update this to your actual module path
+ from run_pipeline import main as cli_main
+
+
+ def test_manifest_generation_direct(monkeypatch, tmp_path: Path):
+     """Unit-style test: call the CLI entry point directly."""
+     rc = cli_main(["--stages", "manifest"])
+     assert rc == 0
+-
+-@pytest.mark.slow
+-def test_manifest_generation_smoke_subprocess(tmp_path: Path):
+-    result = subprocess.run(
+-        [sys.executable, "run_pipeline.py", "--stages", "manifest"],
+-        capture_output=True, text=True, check=False,
+-    )
+-    assert result.returncode == 0, result.stderr
+```
+*(Keep `from pathlib import Path` if `tmp_path` typing is retained — here the direct test doesn't use it, so it's removed.)*
+
+### C2 — alto `alto_stats_create.py` + `tests/test_alto_stats_create.py`
+**Entrypoint (1-line change):** make `main` accept argv.
+```diff
+# alto_stats_create.py
+-def main():
++def main(argv=None):
+     parser = argparse.ArgumentParser()
+     parser.add_argument("input_folder", help="Folder containing ALTO XML files or subfolders with them")
+     parser.add_argument("-o", "--output", default="alto_stats.csv", help="Output CSV file path")
+     ...
+-    args = parser.parse_args()
++    args = parser.parse_args(argv)
+```
+**Test (in-process):**
+```python
+import pytest
+from alto_stats_create import main
+
+def test_alto_stats_cli_help(capsys):
+    with pytest.raises(SystemExit) as e:      # argparse exits 0 on --help
+        main(["--help"])
+    assert e.value.code == 0
+    assert "input_folder" in capsys.readouterr().out
+
+def test_alto_stats_missing_args(capsys):
+    with pytest.raises(SystemExit) as e:      # missing required positional → exit 2
+        main([])
+    assert e.value.code == 2
+    assert "required" in capsys.readouterr().err.lower()
 ```
 
-## 4. Reproducibility & CI
+### C3 — alto `page_split.py` + `tests/test_page_split.py`
+Identical shape (two required positionals `input_dir`, `output_dir`).
+```diff
+# page_split.py
+-def main():
++def main(argv=None):
+     parser = argparse.ArgumentParser(...)
+     parser.add_argument("input_dir", ...)
+     parser.add_argument("output_dir", ...)
+     ...
+-    args = parser.parse_args()
++    args = parser.parse_args(argv)
+```
+```python
+import pytest
+from page_split import main
 
-* **CI Integrity**: Every CI pipeline must explicitly run `git submodule update --init --recursive` to prevent build failures.
-* **Experiment Metadata**: Every experiment result must store:
-* Project commit hash
-* Shared (`atrium-project`) commit hash
-* Configuration file reference
-* Dataset version
+def test_page_split_cli_help(capsys):
+    with pytest.raises(SystemExit) as e:
+        main(["--help"])
+    assert e.value.code == 0
+    assert "input_dir" in capsys.readouterr().out
 
-## 5. Future Roadmap
+def test_page_split_cli_missing_args():
+    with pytest.raises(SystemExit) as e:
+        main([])
+    assert e.value.code == 2
+```
 
-* **Packaging**: Transitioning toward a distributable `atrium-core` package (PyPI/private index).
-* **Tracking**: Full integration with MLflow or Weights & Biases.
-* **Data**: Implementing DVC or Git LFS for large research datasets.
-* **Documentation**: Launching a centralized docs portal (`docs.atrium-project.org`).
+### C4 — nlp `summarize_nt_udp.py` + `tests/test_teitok_integraion.py`
+**Entrypoint:** extract the parser so tests can introspect flags without a subprocess.
+```diff
+# api_util/summarize_nt_udp.py
+-def main():
+-    parser = argparse.ArgumentParser()
++def build_parser():
++    parser = argparse.ArgumentParser()
+     ...
+     parser.add_argument("--dpi", type=_float_or_none, default=os.environ.get("IMAGE_DPI"), ...)
+     parser.add_argument("--alto-dpi", type=_float_or_none, default=os.environ.get("ALTO_DPI"), help="Source ALTO DPI")
+     ...
++    return parser
++
++def main(argv=None):
++    args = build_parser().parse_args(argv)
+     ...
+```
+**Test (replaces the subprocess `--help` block; the threading test below it stays):**
+```python
+from api_util.summarize_nt_udp import build_parser
+
+def test_cli_argparse_dpi_support():
+    """summarize_nt_udp must expose --dpi and --alto-dpi."""
+    help_text = build_parser().format_help()
+    assert "--dpi" in help_text
+    assert "--alto-dpi" in help_text
+```
+*(Drops `import subprocess`, `import os`, the `PYTHONPATH` env juggling, and the `script_path` lookup.)*
+
+### C5 — pc `run.py` + `tests/test_run.py` (the invasive one)
+`run.py` has no functions — everything is under `if __name__ == "__main__":` (line 23) and the top imports are heavy. Refactor in three moves:
+
+**(i) Lazy heavy imports** — move `import pandas as pd`, `import numpy as np`, `from sklearn… `, `from classifier import …`, `from yolo_classifier import …` out of module top into the functions/`main` that use them, so `import run` is cheap.
+
+**(ii) Extract `build_parser()` and `main(argv)`:**
+```python
+def build_parser(defaults) -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Page sorter based on ViT / YOLO-cls")
+    # ... lines 65–166 verbatim, reading defaults.* instead of module locals ...
+    return parser
+
+def main(argv=None) -> int:
+    config = configparser.ConfigParser()
+    config.read(os.path.join(os.path.dirname(__file__), "setup", "config.txt"))
+    defaults = _read_defaults(config)              # the block currently at lines 25–63
+    args = build_parser(defaults).parse_args(argv)
+    # ... existing body (lines 176→end) ...
+    #   line 196:  raise ValueError(f"Revision {args.revision} is not supported…")  ← unchanged
+    #   line 276:  return 0   # was sys.exit(0) on the empty-dir guard
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+```
+
+**(iii) Test (in-process):**
+```python
+import pytest
+import run
+
+def test_cli_help_flag(capsys):
+    with pytest.raises(SystemExit) as e:
+        run.main(["--help"])
+    assert e.value.code == 0
+    out = capsys.readouterr().out
+    assert "Page sorter based on ViT" in out and "--topn" in out and "--best" in out
+
+def test_cli_invalid_revision():
+    # validation at run.py:196 raises before any model load → fast, no torch needed
+    with pytest.raises(ValueError, match="Revision v99.9 is not supported"):
+        run.main(["-rev", "v99.9", "--eval"])
+
+def test_cli_missing_input(tmp_path):
+    empty = tmp_path / "empty"; empty.mkdir()
+    with pytest.raises(SystemExit) as e:   # empty-dir guard returns 0 (run.py:276)
+        run.main(["-d", str(empty)])
+    assert e.value.code == 0
+```
+**Note on the old `--topn 999` test:** `--topn` is `type=int` with no argparse bound, so 999 parses fine and only fails deep in classification — a poor *fast* unit test. Recommended: add an explicit early guard in `main()` (`if args.topn > len(CATEGORIES): raise ValueError(...)`) and unit-test that raise in-process; otherwise keep a single `@pytest.mark.slow` subprocess smoke for the full run. Flag for your call.
 
 ---
 
-## 🚀 Upgraded Phased Strategic Roadmap
-
-### ⚡ Phase 0: Immediate Triaging & CI Stabilization
-
-* **Repair CI (nlp-enrich):** Inject `continue-on-error: true` into the Shellcheck job and gate heavy `torch` imports
-behind lazy-loading functions/guards.
-* **Version Convergence:** Audit and lock version strings across Zenodo, APIs, and citations.
-
-### 📅 Phase 1: Dependency Management
-
-* **Requirements Hygiene:** Audit and complete `requirements-test.txt` for every repository.
-* **Import Optimization:** Apply `@pytest.importorskip` across all repositories to prevent CPU-only CI crashes.
-
-### 📅 Phase 2: Core Coverage & Provenance Standardization
-
-* **Refactor Tests:** Migrate CLI-based tests in `alto-postprocess` to direct Python imports.
-* **Centralize Paradata:** Refactor the existing paradata logic into a unified shared submodule to prevent further 
-drift between repositories.
-
-### 📅 Phase 3: Orchestration & Hardware Scaling
-
-* **Containerization:** Execute Issue #18 by deploying the cross-repository Docker Compose matrix.
-* **Hardware Resilience:** Develop runtime monitors to trigger GPU→CPU fail-overs upon VRAM saturation.
-
-### 🏁 Phase 4: Ground Truth & Security
-
-* **Domain Training:** Finalize NameTag3 ontological fine-tuning (Issue #7).
-* **Hardening:** Implement org-wide automated secret scanning and standardized `SECURITY.md` protocols.
-
----
-
-#### 📚 Works cited
-
-1. Classification of historical page images using ViT and CNN - for ATRIUM project - GitHub, [https://github.com/ufal/atrium-page-classification](https://github.com/ufal/atrium-page-classification)
-2. ufal/atrium-translator: ATRIUM project in-place translation ... - GitHub, [https://github.com/ufal/atrium-translator](https://github.com/ufal/atrium-translator)
-3. Extract keywords from the user-defined "vocabulary" using LLM request (TEATER topics) · Issue #6 · ufal/atrium-nlp-enrich - GitHub, [https://github.com/ufal/atrium-nlp-enrich/issues/6](https://github.com/ufal/atrium-nlp-enrich/issues/6)
-4. ATRIUM's page classifier: Classification of historical page images using fine-tuned ViT, RegNetY,and EfficientNetV2 models | Zenodo, [https://zenodo.org/records/20737616](https://zenodo.org/records/20737616)
-5. ATRIUM's page classifier: Classification of historical page images using fine-tuned ViT, RegNetY,and EfficientNetV2 models | Zenodo, [https://zenodo.org/records/20737638](https://zenodo.org/records/20737638)
-6. ATRIUM's page classifier: Classification of historical page images using fine-tuned ViT, RegNetY,and EfficientNetV2 models - Zenodo, [https://zenodo.org/records/20681312](https://zenodo.org/records/20681312)
-7. ufal/atrium-alto-postprocess: Post processing of ALTO XML files - GitHub, [https://github.com/ufal/atrium-alto-postprocess](https://github.com/ufal/atrium-alto-postprocess)
-8. (PDF) Page image classification for content-specific data processing - ResearchGate, [https://www.researchgate.net/publication/394100556_Page_image_classification_for_content-specific_data_processing](https://www.researchgate.net/publication/394100556_Page_image_classification_for_content-specific_data_processing)
-9. Calibration of the categorization logic applied to the set of extracted, [https://github.com/ufal/atrium-alto-postprocess/issues/3](https://github.com/ufal/atrium-alto-postprocess/issues/3)
-10. Issues · ufal/atrium-alto-postprocess - GitHub, [https://github.com/ufal/atrium-alto-postprocess/issues](https://github.com/ufal/atrium-alto-postprocess/issues)
-11. ufal - ÚFAL · GitHub, [https://github.com/ufal](https://github.com/ufal)
-12. Q1-Q2 [WP4 / WP5: Mid-Project Workflow Beta Testing & Integration] · Milestone #1 - GitHub, [https://github.com/ufal/atrium-nlp-enrich/milestone/1](https://github.com/ufal/atrium-nlp-enrich/milestone/1)
-13. NER - Training of domain-specific NameTag model · Issue #7 · ufal/atrium-nlp-enrich, [https://github.com/ufal/atrium-nlp-enrich/issues/7](https://github.com/ufal/atrium-nlp-enrich/issues/7)
-14. Security - Overview · ufal/atrium-nlp-enrich - GitHub, [https://github.com/ufal/atrium-nlp-enrich/security](https://github.com/ufal/atrium-nlp-enrich/security)
-15. atrium-translator/main.py at master · ufal/atrium-translator · GitHub, [https://github.com/ufal/atrium-translator/blob/master/main.py](https://github.com/ufal/atrium-translator/blob/master/main.py)
-16. Workflows - ATRIUM Project, [https://atrium-research.eu/workflows/](https://atrium-research.eu/workflows/)
-17. ufal/atrium-project: Repository backing the Project for ... - GitHub, [https://github.com/ufal/atrium-project](https://github.com/ufal/atrium-project)
-18. Issues · ufal/atrium-project - GitHub, [https://github.com/ufal/atrium-project/issues](https://github.com/ufal/atrium-project/issues)
-19. Issues · ufal/atrium-nlp-enrich - GitHub, [https://github.com/ufal/atrium-nlp-enrich/issues](https://github.com/ufal/atrium-nlp-enrich/issues)
-20. ufal repositories - GitHub, [https://github.com/orgs/ufal/repositories](https://github.com/orgs/ufal/repositories)
+### 📋 Summary — what changes where
+| File                                                   | Entrypoint change                                         | Test change                                        |
+|--------------------------------------------------------|-----------------------------------------------------------|----------------------------------------------------|
+| nlp `test_cli.py`                                      | none                                                      | delete redundant `@slow` subprocess twin           |
+| alto `alto_stats_create.py`                            | `main(argv=None)` + `parse_args(argv)`                    | help/missing-args in-process                       |
+| alto `page_split.py`                                   | `main(argv=None)` + `parse_args(argv)`                    | help/missing-args in-process                       |
+| nlp `summarize_nt_udp.py`                              | extract `build_parser()`                                  | `--dpi/--alto-dpi` via `format_help()`             |
+| pc `run.py`                                            | extract `build_parser()`+`main(argv)`, lazy heavy imports | 3 in-process tests (+topn decision)                |
+| nlp `test_api_service.py`, `test_flexiconv_convert.py` | —                                                         | **leave as-is (mock subprocess, already correct)** |
