@@ -144,71 +144,9 @@ divergence (allow-list genuinely repo-specific blocks). Each repo adds a ~12-lin
 ---
 
 
-## 🧪 Appendix B — Exact subprocess → in-process refactors
+# 🧪 Appendix B — Exact subprocess → in-process refactors
 
 **Scope:** 5 files / 10 subprocess invocations. **Leave untouched:** nlp `test_api_service.py` and `test_flexiconv_convert.py` — they *mock* `subprocess.run` to test in-process logic and are already correct.
-
-### C1 — nlp `tests/test_cli.py` (simplest: delete the redundant twin)
-The in-process test already exists (`test_manifest_generation_direct` → `cli_main(["--stages","manifest"])`). The `@slow` subprocess copy tests nothing new.
-
-```diff
--from __future__ import annotations
--
--import subprocess
--import sys
--from pathlib import Path
--
--import pytest
--
--# Update this to your actual module path
- from run_pipeline import main as cli_main
-
-
- def test_manifest_generation_direct(monkeypatch, tmp_path: Path):
-     """Unit-style test: call the CLI entry point directly."""
-     rc = cli_main(["--stages", "manifest"])
-     assert rc == 0
--
--@pytest.mark.slow
--def test_manifest_generation_smoke_subprocess(tmp_path: Path):
--    result = subprocess.run(
--        [sys.executable, "run_pipeline.py", "--stages", "manifest"],
--        capture_output=True, text=True, check=False,
--    )
--    assert result.returncode == 0, result.stderr
-```
-*(Keep `from pathlib import Path` if `tmp_path` typing is retained — here the direct test doesn't use it, so it's removed.)*
-
-### C2 — alto `alto_stats_create.py` + `tests/test_alto_stats_create.py`
-**Entrypoint (1-line change):** make `main` accept argv.
-```diff
-# alto_stats_create.py
--def main():
-+def main(argv=None):
-     parser = argparse.ArgumentParser()
-     parser.add_argument("input_folder", help="Folder containing ALTO XML files or subfolders with them")
-     parser.add_argument("-o", "--output", default="alto_stats.csv", help="Output CSV file path")
-     ...
--    args = parser.parse_args()
-+    args = parser.parse_args(argv)
-```
-**Test (in-process):**
-```python
-import pytest
-from alto_stats_create import main
-
-def test_alto_stats_cli_help(capsys):
-    with pytest.raises(SystemExit) as e:      # argparse exits 0 on --help
-        main(["--help"])
-    assert e.value.code == 0
-    assert "input_folder" in capsys.readouterr().out
-
-def test_alto_stats_missing_args(capsys):
-    with pytest.raises(SystemExit) as e:      # missing required positional → exit 2
-        main([])
-    assert e.value.code == 2
-    assert "required" in capsys.readouterr().err.lower()
-```
 
 ### C3 — alto `page_split.py` + `tests/test_page_split.py`
 Identical shape (two required positionals `input_dir`, `output_dir`).
@@ -325,9 +263,6 @@ def test_cli_missing_input(tmp_path):
 ### 📋 Summary — what changes where
 | File                                                   | Entrypoint change                                         | Test change                                        |
 |--------------------------------------------------------|-----------------------------------------------------------|----------------------------------------------------|
-| nlp `test_cli.py`                                      | none                                                      | delete redundant `@slow` subprocess twin           |
-| alto `alto_stats_create.py`                            | `main(argv=None)` + `parse_args(argv)`                    | help/missing-args in-process                       |
-| alto `page_split.py`                                   | `main(argv=None)` + `parse_args(argv)`                    | help/missing-args in-process                       |
 | nlp `summarize_nt_udp.py`                              | extract `build_parser()`                                  | `--dpi/--alto-dpi` via `format_help()`             |
 | pc `run.py`                                            | extract `build_parser()`+`main(argv)`, lazy heavy imports | 3 in-process tests (+topn decision)                |
 | nlp `test_api_service.py`, `test_flexiconv_convert.py` | —                                                         | **leave as-is (mock subprocess, already correct)** |
