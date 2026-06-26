@@ -1,0 +1,26 @@
+name: Paradata Drift Check
+on:
+  workflow_call:
+
+jobs:
+  drift-check:
+    name: Verify Canonical Paradata Integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout caller tool repository
+        uses: actions/checkout@v4
+        with:
+          path: tool-repo
+
+      - name: Checkout ATRIUM hub repository
+        uses: actions/checkout@v4
+        with:
+          repository: ufal/atrium-project
+          ref: test
+          path: hub-repo
+
+      - name: Verify atrium_paradata.py parity
+        run: diff -u tool-repo/atrium_paradata.py hub-repo/docs/templates/shared/atrium_paradata.py
+
+      - name: Verify para_licenses.py parity
+        run: diff -u tool-repo/para_licenses.py hub-repo/docs/templates/shared/para_licenses.py

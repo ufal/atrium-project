@@ -172,11 +172,13 @@ against the shared `ruff.toml` template before opening a PR.
 ---
 
 ## 🔗 Shared ("drop-in") code
-`atrium_paradata.py` and `para_licenses.py` are **canonical** in
-`ufal/atrium-project/docs/templates/shared/` and copied verbatim into each repo. Do not
-fork their logic locally — edit the canonical copy, then re-sync. CI
-(`paradata-drift.reusable.yml`) fails if a repo's copy diverges from canonical.
+`atrium_paradata.py` and `para_licenses.py` are **canonical** in `ufal/atrium-project/docs/templates/shared/` and 
+copied verbatim into each tool repository. 
 
+* **Do not fork their logic locally:** Edit the canonical copy in the hub, then re-sync to the tools. 
+* **CI Drift-Check:** The workflow (`paradata-drift.reusable.yml`) will fail the build if a repository's copy diverges from the canonical source.
+* **Configuration:** `para_config.txt` is strictly the *only* per-repo dependency (located typically at root, though `page-classification` secures it in `setup/para_config.txt`).
+* **Migrations & Versioning:** See `docs/paradata-schema.md` for our schema versioning policies.
 ---
 
 ## 📁 Repository Documentation Management
