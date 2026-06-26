@@ -168,7 +168,7 @@ class ParadataLogger:
         duration_min = duration_sec / 60.0 if duration_sec > 0 else 0.0
 
         skipped_count = len(self._skipped)
-        
+
         if processed_total is not None:
             processed_docs = processed_total
         elif self._docs_processed > 0:
@@ -269,12 +269,14 @@ class ParadataLogger:
 # Reader & Migration
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def _migrate_1_0_to_2_0(record: Dict[str, Any]) -> Dict[str, Any]:
     new_record = dict(record)
     new_record["schema_version"] = "2.0"
     if "docker_image" not in new_record:
         new_record["docker_image"] = ""
     return new_record
+
 
 def migrate_paradata(record: Dict[str, Any]) -> Dict[str, Any]:
     """Applies schema migrations up to the current SCHEMA_VERSION."""
@@ -283,25 +285,28 @@ def migrate_paradata(record: Dict[str, Any]) -> Dict[str, Any]:
         record = _migrate_1_0_to_2_0(record)
     return record
 
+
 def load_paradata(path: str) -> Dict[str, Any]:
     """Reads a paradata file, migrating older schemas transparently."""
     with open(path, "r", encoding="utf-8") as fh:
         data = json.load(fh)
-    
+
     v = data.get("schema_version", "1.0")
     major = int(v.split(".")[0])
     current_major = int(SCHEMA_VERSION.split(".")[0])
-    
+
     if major > current_major:
         raise ValueError(f"Schema version {v} is newer than supported {SCHEMA_VERSION}. Please update tools.")
     elif major < current_major:
         data = migrate_paradata(data)
-    
+
     return data
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Merging Logic
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def merge_paradata_files(json_paths: List[str], input_file: str, out_path: str) -> str:
     steps: List[Dict[str, Any]] = []
@@ -310,16 +315,18 @@ def merge_paradata_files(json_paths: List[str], input_file: str, out_path: str) 
 
     for p in json_paths:
         data = load_paradata(p)
-        steps.append({
-            "program": data.get("program"),
-            "tool_version": data.get("tool_version"),
-            "repository": data.get("repository"),
-            "docker_image": data.get("docker_image"),
-            "run_id": data.get("run_id"),
-            "duration_seconds": data.get("duration_seconds"),
-            "license": data.get("license"),
-            "config": data.get("config"),
-        })
+        steps.append(
+            {
+                "program": data.get("program"),
+                "tool_version": data.get("tool_version"),
+                "repository": data.get("repository"),
+                "docker_image": data.get("docker_image"),
+                "run_id": data.get("run_id"),
+                "duration_seconds": data.get("duration_seconds"),
+                "license": data.get("license"),
+                "config": data.get("config"),
+            }
+        )
         if data.get("license_detail"):
             license_blocks.append(data["license_detail"])
         total_duration += float(data.get("duration_seconds") or 0.0)
@@ -351,6 +358,7 @@ def merge_paradata_files(json_paths: List[str], input_file: str, out_path: str) 
         json.dump(payload, fh, ensure_ascii=False, indent=2)
     print(f"[paradata] Merged single-file log → {out_path}", flush=True)
     return out_path
+
 
 def merge_run_paradata(
     json_paths: List[str],
@@ -387,7 +395,7 @@ def merge_run_paradata(
             formats[ftype] = formats.get(ftype, 0) + int(cnt or 0)
 
         total_duration += float(data.get("duration_seconds") or 0.0)
-        
+
         # Only take input_files_total from the very first stage
         if first_stage:
             total_inputs = int(stats.get("input_files_total") or 0)
@@ -405,22 +413,24 @@ def merge_run_paradata(
         if en and (latest is None or en > latest):
             latest = en
 
-        stages.append({
-            "order": order,
-            "program": data.get("program"),
-            "script": cfg.get("script"),
-            "method": cfg.get("method"),
-            "run_id": data.get("run_id"),
-            "input_dir": cfg.get("input_dir"),
-            "input_csv": cfg.get("input_csv"),
-            "output_dir": cfg.get("output_dir") or cfg.get("output_csv") or cfg.get("output_manifest"),
-            "output_formats": out_counts,
-            "duration_seconds": data.get("duration_seconds"),
-            "license": data.get("license"),
-            "input_files_total": stats.get("input_files_total"),
-            "successfully_processed": stats.get("successfully_processed"),
-            "skipped_files": stats.get("skipped_files"),
-        })
+        stages.append(
+            {
+                "order": order,
+                "program": data.get("program"),
+                "script": cfg.get("script"),
+                "method": cfg.get("method"),
+                "run_id": data.get("run_id"),
+                "input_dir": cfg.get("input_dir"),
+                "input_csv": cfg.get("input_csv"),
+                "output_dir": cfg.get("output_dir") or cfg.get("output_csv") or cfg.get("output_manifest"),
+                "output_formats": out_counts,
+                "duration_seconds": data.get("duration_seconds"),
+                "license": data.get("license"),
+                "input_files_total": stats.get("input_files_total"),
+                "successfully_processed": stats.get("successfully_processed"),
+                "skipped_files": stats.get("skipped_files"),
+            }
+        )
 
         if data.get("license_detail"):
             license_blocks.append(data["license_detail"])
@@ -464,7 +474,9 @@ def merge_run_paradata(
         "skipped_stages": skipped_stages or [],
         "license_note": (
             "Effective license/intermediate_formats reflect EXECUTED stages only; skipped: " + ", ".join(skipped_stages)
-        ) if skipped_stages else "",
+        )
+        if skipped_stages
+        else "",
         "merged_at": datetime.now(tz=timezone.utc).isoformat(),
     }
 
@@ -485,6 +497,7 @@ def _sanitise(obj: Any, _depth: int = 0) -> Any:
     if isinstance(obj, (str, int, float, bool)) or obj is None:
         return obj
     return str(obj)
+
 
 def _cli() -> None:
     import argparse
@@ -523,7 +536,7 @@ def _cli() -> None:
     me.add_argument("--paths", nargs="+", required=True)
     me.add_argument("--out", required=True)
     me.add_argument("--pipeline", default=None)
-    
+
     mi = sub.add_parser("migrate")
     mi.add_argument("--path", required=True)
 

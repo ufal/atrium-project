@@ -94,12 +94,14 @@ _ALIASES: Dict[str, str] = {
     "glm-4 license": "glm-4",
 }
 
+
 def normalise_license(name: str) -> str:
     """Map a free-text license string to a canonical key. Unknown -> as-is."""
     if not name:
         return ""
     key = name.strip()
     return _ALIASES.get(key.lower(), key)
+
 
 def resolve_effective_license(
     components_used: Iterable[Tuple[str, str]],
@@ -113,12 +115,14 @@ def resolve_effective_license(
     for name, raw_lic in components_used:
         lic = normalise_license(raw_lic)
         rank = LICENSE_RANK.get(lic)
-        catalogue.append({
-            "name": name,
-            "license": lic,
-            "license_url": LICENSE_URL.get(lic, ""),
-            "rank": rank if rank is not None else -1,
-        })
+        catalogue.append(
+            {
+                "name": name,
+                "license": lic,
+                "license_url": LICENSE_URL.get(lic, ""),
+                "rank": rank if rank is not None else -1,
+            }
+        )
         if rank is None:
             unknown.append(lic)
             rank = max(LICENSE_RANK.values())
@@ -166,6 +170,7 @@ def resolve_effective_license(
         "notes": " ".join(parts),
     }
 
+
 def merge_effective_licenses(
     license_blocks: Iterable[Dict[str, object]],
 ) -> Dict[str, object]:
@@ -173,8 +178,8 @@ def merge_effective_licenses(
     Merge several per-tool license resolutions into one effective license.
 
     (#12) The union of components across blocks is DEDUPLICATED on
-    (name, license) before resolving. Always-on components otherwise repeat once 
-    per stage, inflating the component catalogue. Deduping ensures the reported 
+    (name, license) before resolving. Always-on components otherwise repeat once
+    per stage, inflating the component catalogue. Deduping ensures the reported
     count reflects the unique set.
     """
     seen: set = set()
