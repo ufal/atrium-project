@@ -266,15 +266,7 @@ Based on the digest, here are suggested new issues grouped by repo, targeting ga
 **`[Feature]` End-to-end integration smoke test across all four pipeline stages**
 No issue tracks a pipeline-wide regression test. A minimal fixture (single-page ALTO → postprocess → translate → enrich → TEITOK) run in CI would catch cross-repo interface breakage early, especially given the `@test`-pinned reusable workflow architecture. Prerequisite: #18 (Docker wrapper). Milestone: *Q1-Q2*.
 
-### `ufal/atrium-alto-postprocess`
-
-**`[Task]` Regression test suite for the rotation false-positive guard**
-The `ROT_WHITELIST`/`ROT_GHOSTLIST`/`analyze_rotation_signals()` stack was added specifically to prevent valid Czech prose from being demoted to `Trash` by `pp_inverted_run`. No issue tracks maintaining test coverage as constants are tuned (via #5) or category logic is updated (via #2/#3). A targeted regression fixture with Czech prose examples should be a gating test. Milestone: *Q1-Q2*.
-
 ### `ufal/atrium-nlp-enrich`
 
 **`[Task]` TEITOK output XML schema validation step**
 `atrium-translator` performs XSD validation; `atrium-nlp-enrich` produces TEITOK XML but has no equivalent validation gate. A schema-conformance check at the end of `api_4_stats.sh` would catch malformed output before it reaches downstream consumers or the LINDAT dataset release. Milestone: *Q1-Q2*.
-
-**`[Task]` `flexiconv` adapter coverage in the test suite**
-Issue #10 adds `flexiconv` support for PAGE XML/hOCR/plain input, but no issue tracks that these paths are covered by tests. Given the bbox alignment logic in `api_4_stats.sh` is calibrated against ALTO geometry, non-ALTO inputs need specific fixture coverage to catch coordinate-scaling regressions.
