@@ -24,3 +24,6 @@ jobs:
 
       - name: Verify para_licenses.py parity
         run: diff -u tool-repo/para_licenses.py hub-repo/docs/templates/shared/para_licenses.py
+
+      - name: Verify test_para_licenses.py parity
+        run: diff -u tool-repo/tests/test_para_licenses.py hub-repo/docs/templates/shared/test_para_licenses.py
