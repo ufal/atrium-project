@@ -8,12 +8,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout caller tool repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: tool-repo
 
       - name: Checkout ATRIUM hub repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ufal/atrium-project
           ref: test
