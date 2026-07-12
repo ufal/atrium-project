@@ -1,5 +1,6 @@
-# 📓 atrium-project — agent_dev_logs/DEVLOG.md (history seed)
-> _Hub/planning repo. Reconstructed from 15 open issues. `test` HEAD `11ba0ff` (2026-06-24)._
+# 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
+> _Hub/planning repo. 14 open issues. `test` HEAD `c4a99f3` (2026-07-12)._
+> _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2706.md`._
 
 ## 2026-03-13
 - **#4 SSH Open Marketplace records** — Opened by stranak: create SSHOMP records for every tool in our workflows (UDPipe ✅, NameTag ✅, rest TBD).
@@ -120,3 +121,38 @@
 - **#15** — arXiv `2606.07558` updated with the new dataset link (references only).
 - **#16** — Both arXiv versions (`2507.21114`, `2606.07558`) updated with the new dataset licensing link.
 - **#29 Add `agent_dev_logs` directory per repo** — Opened by K4TEL (this initiative): per-repo markdown dev logs on `test`, seeded from issue history, replacing agent work-documentation in issue comments.
+
+## 2026-06-26
+- **#10** — Opus 4.8 follow-ups consolidated: nlp shellcheck RED, `/info` version drift in pc + translator APIs, `para_licenses.py` dedup landed only in alto (divergent elsewhere, zero tests everywhere), nlp ruff blocking against the advisory-first policy, secret scanning unverified; `docs/plan_repo_review.md` re-confirmed as the single source of truth for the 5-phase remediation.
+- **#18** — Opening task list checked off — ✅ docker builds on new tags/releases, ✅ test-set coverage for new commits + report generation, ✅ pip dependency updates. **Proposal**: an end-to-end integration smoke test (single-page ALTO → postprocess → translate → enrich → TEITOK) run in CI — no issue tracks pipeline-wide regression yet.
+
+## 2026-06-27
+- Cross-repo state digest **`digests/project_state_2706.md`** committed: distributed architecture, per-phase repo state, bottlenecks/risks, priority action map, and the test-branch HEAD table; all five repos' `test` branches updated the same day.
+
+## 2026-06-28
+- **#18** — Caller workflows renamed to the `.caller.example.yml` suffix (`4340a21`); `security.caller.example.yml` dropped.
+
+## 2026-06-29
+- **#24** — Proposed spinning the LLM subtasks into a separate repository.
+
+## 2026-07-01
+- **#24** — `atrium-llm-enrich` built out end to end under `K4TEL/` per `plans/24.plan.md`: engine byte-identical from nlp-enrich, OpenRouter/Ollama/local (transformers/vLLM/BnB) backends behind `llm_client_shared.py`, rewritten multi-stage Dockerfile, 8 GHA workflows + dependabot, compose files, tests.
+
+## 2026-07-02
+- **#24** — Draft repo announced in the issue thread ("created a draft repo").
+
+## 2026-07-03
+- **#24** — Review pass over the 4 new modules; client tests (`29ae7d8`); repo **transferred `K4TEL` → `ufal`**; suite at 47 tests at review time.
+
+## 2026-07-06
+- **#22** — [`opendatalab/MinerU`](https://github.com/opendatalab/mineru) flagged as an open-source parser candidate producing Markdown (relevant to the Markdown-bridge route).
+
+## 2026-07-12
+- **#18** — Cross-cutting template bugs all **fixed on HEAD**: the Codecov secrets-context gate, the action-version floor (versions bumped in the yml files), and the caller renames; `paradata-drift` renamed **`para-drift.reusable.yml`** with **license-parity steps by default** (`para_licenses.py` / `tests/test_para_licenses.py` diffed against `docs/templates/shared/`); `docs/docker_gha.md` refreshed. Remaining: translator pilot caller verification, rharasim end-to-end run, and the pipeline-wide smoke test.
+- **#22** — Benchmark-harness primitives landed in `ufal/atrium-llm-enrich` (`f2ec956`): `eval_metrics.py` (CER/WER, normalized edit distance, entity F1 aligned to CNEC/TEATER, optional TEDS) + `sample_stratify.py` (quality-stratified page sampling from alto per-page stats, 80/10/10 manifest). Tier thresholds remain uncalibrated placeholders pending real-corpus calibration.
+- **#24** — llm-enrich suite at **83 tests** (license test `83d7480` + client tests since the 07-03 review); the real per-`MODEL_KEY` licensing pass with DanaKriv still pending (hub #9 precedent); repo-side follow-ups now tracked in [`ufal/atrium-llm-enrich#8`](https://github.com/ufal/atrium-llm-enrich/issues/8) (opened today).
+- **#4** — Digest rewritten (the previous file was a stray copy of the *translator* #4 digest): all four SSHOMP tool records live with license tables; the workflow-records item stays parked on the marketplace 500 error.
+- **agent_dev_logs** — Full cross-repo digest/plan refinement pass: 27 files refreshed against live issue exports + repo HEADs across all six repos (residual-staleness audit clean); per-repo DEVLOG timeline indexes refreshed (this file included). Known gap: `atrium-nlp-enrich` **#11** has no issue-log export yet.
+
+---
+_Timeline index refreshed 2026-07-12 against `test` HEAD and the refreshed digests/plans. Nothing removed from the issues themselves (per #29); this file is a derived reading aid in `agent_dev_logs/`._
