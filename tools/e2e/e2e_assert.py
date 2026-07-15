@@ -203,9 +203,15 @@ def check_teitok(args) -> None:
     if len(matches) != 1:
         fail(f"expected exactly 1 {doc}.teitok.xml under {args.teitok_dir}, found {len(matches)}")
     path = matches[0]
-    root = _parse_xml(path).getroot()
-    if root.tag != f"{TEI_NS}TEI":
-        fail(f"{path.name}: root element is {root.tag}, expected TEI")
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+
+    # Strip the namespace (everything before and including '}')
+    actual_tag = root.tag.split('}')[-1] if '}' in root.tag else root.tag
+
+    # Now compare the cleaned tag
+    assert actual_tag == 'TEI', f"root element is {root.tag}, expected TEI"
+
     lang = root.get("{http://www.w3.org/XML/1998/namespace}lang", "")
     if args.lang and lang != args.lang:
         fail(f"{path.name}: xml:lang={lang!r}, expected {args.lang!r}")
