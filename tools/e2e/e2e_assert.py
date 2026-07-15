@@ -203,7 +203,7 @@ def check_teitok(args) -> None:
     if len(matches) != 1:
         fail(f"expected exactly 1 {doc}.teitok.xml under {args.teitok_dir}, found {len(matches)}")
     path = matches[0]
-    tree = ET.parse(file_path)
+    tree = ET.parse(path)
     root = tree.getroot()
 
     # Strip the namespace (everything before and including '}')
