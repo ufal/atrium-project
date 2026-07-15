@@ -1,0 +1,486 @@
+categ,quality_score,file,page_num,line_num,text,original_text,split_ws,split_we,lang,lang_score,original_lang,orig_lang_score,perplex,word_count,char_count,garbage_density,upper,repeated,ldl_fuses,fused_words,gibberish,weird_wx,word_weird,vowel_ratio,rot_ratio,caps_header,allcaps_novowel,lowppl_clear,cleanprose_clear,trash_threshold,noisy_threshold,clear_threshold,pp_dedup,pp_surrounded_trash,pp_inverted_run,pp_page_context
+Non-text,0.0,CTX192601143,1,1,Iv,Iv,,,,0.0,,0.0,0.0,0,2,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4490,CTX192601143,1,2,STÁ r,STÁ r,,,ces_Latn,0.7500,gle_Latn,0.8241,850.00,2,5,0.0000,0,0,0,0,0,0,0.4250,0.2500,0.2500,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,1,3,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.1367,CTX192601143,1,4,/ UoMunLow.,/ UoMunLow.,,,ces_Latn,0.7500,fin_Latn,0.4296,850.00,2,11,0.1818,1,0,0,0,0,0,0.6750,0.4000,0.8750,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,1,5,25,25,,,,0.0,,0.0,0.0,0,2,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,1,6,C LaN-n 0(/r“ (A 30 Gx A 25 so pgAuc4pi) dato md3óny,C LaN-n 0(/r“ (A 30 Gx A 25 so pgAuc4pi) dato md3óny,,,ces_Latn,0.7500,lmo_Latn,0.3385,1064.00,12,52,0.1154,2,0,3,0,0,0,0.2000,0.3235,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.2586,CTX192601143,1,7,"PRa< (memuX MW~Nofkc nCn.d, 07.,","PRa< (memuX MW~Nofkc nCn.d, 07.,",,,ces_Latn,0.7500,epo_Latn,0.1854,1000.00,5,32,0.2188,4,0,0,0,0,0,0.8700,0.1538,0.6842,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,1,8,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3938,CTX192601143,1,9,"' "" ' ‘ ' ' ' "" ‘ , Xo Ajhog ) • 0 ""dle /co* / AO4 6« dez","' "" ' ‘ ' ' ' "" ‘ , Xo Ajhog ) • 0 ""dle /co* / AO4 6« dez",,,ces_Latn,0.7500,glg_Latn,0.7731,880.00,21,57,0.2982,0,0,2,0,0,0,0.3405,0.2353,0.5882,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4318,CTX192601143,1,10,e Q m. n e lopoln . — O,e Q m. n e lopoln . — O,,,ces_Latn,0.7500,glg_Latn,0.5442,1208.00,9,23,0.1304,0,0,0,0,0,0,0.6722,0.3333,0.8333,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,1,11,"A*20.. ,","A*20.. ,",,,,0.0,,0.0,0.0,0,8,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,1,12,ô |WCO 0 9 ( / 0 0,ô |WCO 0 9 ( / 0 0,,,,0.0,,0.0,0.0,0,18,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,1,13,A . 0U A •,A . 0U A •,,,,0.0,,0.0,0.0,0,10,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,1,14,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3298,CTX192601143,1,15,"RAnkmds.ns d LAoan NC.nwwvu ""A~,wAonhal","RAnkmds.ns d LAoan NC.nwwvu ""A~,wAonhal",,,ces_Latn,0.7500,lim_Latn,0.5805,4352.00,5,39,0.1282,4,1,0,2,0,1,0.7200,0.2571,0.6000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,1,16,kioum Lly ad luo a/l6 707 (woln.,kioum Lly ad luo a/l6 707 (woln.,,,ces_Latn,0.7500,fin_Latn,0.4715,1000.00,7,32,0.0938,0,0,1,1,0,0,0.0500,0.4091,0.5263,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,1,17,". . , t , , / 9J09., , I",". . , t , , / 9J09., , I",,,,0.0,,0.0,0.0,0,24,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.1512,CTX192601143,1,18,gLo wo MUlm.,gLo wo MUlm.,,,eng_Latn,0.5324,eng_Latn,0.5324,59904.00,3,12,0.0833,2,0,0,0,0,0,0.7500,0.3000,0.6667,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,1,19,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5115,CTX192601143,1,20,"""g fou "" **3044 A. N(Rdi?""","g fou "" **3044 A. N(Rdi?""",,,ces_Latn,0.7500,cat_Latn,0.9982,3168.00,6,26,0.3077,0,1,0,0,0,0,0.2667,0.2353,0.4444,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.6071,CTX192601143,1,21,wL-U~ kyuto Cona JaaVHUoaAL,wL-U~ kyuto Cona JaaVHUoaAL,,,ces_Latn,0.7500,fin_Latn,0.8718,8640.00,4,27,0.0741,2,1,0,1,0,0,0.3625,0.5000,0.4545,False,False,False,False,False,True,False,False,False,True,True
+Trash,0.5263,CTX192601143,1,22,((onuou WwaN .K,((onuou WwaN .K,,,ces_Latn,0.7500,afr_Latn,0.4058,6304.00,3,15,0.2000,1,0,0,1,1,1,0.6000,0.3846,0.8000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.3503,CTX192601143,1,23,"2. WA, W'TxfVuUL .","2. WA, W'TxfVuUL .",,,ces_Latn,0.7500,nld_Latn,0.8588,9152.00,4,18,0.2222,1,0,0,0,0,0,0.4250,0.2143,0.6000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.3365,CTX192601143,1,24,""" 0 ANUdn—0 "" /rM?""(42 /gA 4 C olo64.""",""" 0 ANUdn—0 "" /rM?""(42 /gA 4 C olo64.",,,ces_Latn,0.7500,glg_Latn,0.1470,828.00,9,38,0.2632,3,0,1,0,0,0,0.4833,0.2174,0.5385,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,1,25,"Na 0/AAu , doM3","Na 0/AAu , doM3",,,,0.0,,0.0,0.0,0,15,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,1,26,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.8345,CTX192601143,1,27,e.ao u,e.ao u,,,ces_Latn,0.7500,bos_Latn,0.8229,850.00,2,6,0.1667,0,0,0,0,0,0,0.0000,0.8000,0.7500,False,False,False,False,False,False,True,False,False,True,False
+Trash,0.5499,CTX192601143,1,28,b0—lixk,b0—lixk,,,ces_Latn,0.7500,azj_Latn,0.4531,850.00,1,7,0.1429,0,0,1,0,0,0,0.3500,0.1667,0.4000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5004,CTX192601143,1,29,"(8 aqlui (i *),zoyolonnk. /","(8 aqlui (i *),2oyolonnk. /",,,ces_Latn,0.7500,azj_Latn,0.7303,2976.00,5,27,0.2593,0,1,0,1,0,0,0.2400,0.3636,0.6000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,1,30,WVL A,WVL A,,,eng_Latn,0.9771,eng_Latn,0.9771,850.00,2,5,0.0000,0,0,0,0,0,0,0.3500,0.2500,0.5000,True,False,False,False,True,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,1,31,i,i,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,1,32,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4700,CTX192601143,1,33,A he (9 Aon&r ( 3 dvz NoreKy <,A he (9 Aon&r ( 3 dvz NoreKy <,,,slk_Latn,0.5960,slk_Latn,0.5960,4928.00,9,30,0.1333,1,0,0,0,0,0,0.4167,0.3500,0.6250,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,1,34,"A &a e2 Xu Ao AJ o • ""(ouaa ona éoropuo%o cowkn4 VacRlow","A &a e2 Xu Ao AJ o • ""(ouaa ona éoropuo%o cowkn4 VacRlow",,,ces_Latn,0.7500,glg_Latn,0.7747,7136.00,13,56,0.0893,1,1,2,1,2,0,0.4115,0.5476,0.5676,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4523,CTX192601143,1,35,"mQG4nU. OQok)S<l. A jan(ou, q4 3 e. cllouAd mAlawinl ~ zoolok’ -","mQG4nU. OQok)S<l. A jan(ou, q4 3 e. cllouAd mAlawinl ~ zoolok’ -",,,ces_Latn,0.1012,ces_Latn,0.1012,828.00,12,64,0.1562,4,1,2,1,0,0,0.3042,0.3400,0.5750,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,1,36,". U 5, 09 . A. . / _ V -/ ( -",". U 5, 09 . A. . / _ V -/ ( -",,,,0.0,,0.0,0.0,0,29,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5212,CTX192601143,1,37,A PO%«/U 0A2N(oMIL N Nowec,A PO%«/U 0A2N(oMIL N Nowec,,,pol_Latn,0.4354,pol_Latn,0.4354,2048.00,5,26,0.1538,1,0,1,0,0,0,0.3700,0.4000,0.6875,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,1,38,"'V ,","'V ,",,,,0.0,,0.0,0.0,0,4,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,1,39,"""0"" /le""","0"" /le""",,,,0.0,,0.0,0.0,0,8,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,1,40,. //,. //,,,,0.0,,0.0,0.0,0,4,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.2148,CTX192601143,1,41,"""/4AAwo 4 {""","/4AAwo 4 {""",,,ces_Latn,0.7500,ewe_Latn,0.5623,11072.00,3,12,0.3333,0,1,1,0,1,0,0.3167,0.3750,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,1,42,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,1,43,"Comu N /09 (, /cho A.hle,","Comu N /09 (, /cho A.hle,",,,ces_Latn,0.7500,spa_Latn,0.1727,2800.00,6,25,0.2400,0,0,0,0,0,0,0.1417,0.2778,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4507,CTX192601143,1,44,"M."" 24 £0 Aonda 4 oc","M."" 24 £0 Aonda 4 oc",,,ces_Latn,0.7500,swe_Latn,0.4791,2048.00,6,20,0.1500,0,0,0,0,0,0,0.4000,0.3636,0.6250,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.0142,CTX192601143,1,45,-v/as* yXk),-v/as* yXk),,,ces_Latn,0.7500,vie_Latn,0.2172,850.00,2,11,0.3636,1,0,0,0,0,0,0.8750,0.2000,0.6667,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4638,CTX192601143,1,46,"424 3 Awduk-o fl*o ""Ca ° 4o9lko"" ""oecN(or. Z"""" V (9—n( ""*","424 3 Awduk-o fl*o ""Ca ° 4o9lko"" ""oecN(or. Z"""" V (9—n( ""*",,,slk_Latn,0.3745,slk_Latn,0.3745,968.00,12,57,0.2632,1,0,2,0,0,0,0.1167,0.2564,0.5833,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4061,CTX192601143,1,47,V XUC2 —,V XUC2 —,,,ces_Latn,0.7500,ast_Latn,0.9855,2320.00,3,8,0.1250,0,0,1,0,0,0,0.5667,0.2000,0.7500,True,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,1,48,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4323,CTX192601143,1,49,""" ‘ ' ‘(Ga0a)ANlon Ar ccéonŇgr ro(eri""",""" ‘ ' ‘(Ga0a)ANlon Ar ccéonŇgr ro(eri",,,fra_Latn,0.2512,fra_Latn,0.2512,8640.00,7,38,0.2105,1,1,1,0,0,0,0.1643,0.3226,0.3043,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.6471,CTX192601143,1,50,Lurku . Qol ~ A.,Lurku . Qol ~ A.,,,ces_Latn,0.7500,uzn_Latn,0.9294,4608.00,5,16,0.1875,0,0,0,0,0,0,0.0400,0.3333,0.4444,False,False,False,False,False,True,False,False,False,True,True
+Trash,0.2788,CTX192601143,1,51,AW A X/wU,AW A X/wU,,,ces_Latn,0.7500,twi_Latn,0.9435,26624.00,3,9,0.1111,1,0,0,0,0,0,0.6667,0.4286,0.6667,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,1,52,"Cowokuu,4l uoxa.Lelisly AkueMlioóy,Emkoonočoky)(jioe","Cowokuu,4l uoxa.Lelisly AkueMlioóy,Emkoonočoky)(jioe",,,ces_Latn,0.7500,fin_Latn,0.3973,2048.00,3,52,0.0962,1,0,0,1,1,0,0.2167,0.5306,0.5909,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4132,CTX192601143,1,53,60Di(Ako XGAo dfie.’Uz. Ma0lo/ci oUru* dlé°Aduooc4/y,60Di(Ako XGAo dfie.’Uz. Ma0lo/ci oUru* dlé°Aduooc4/y,,,ces_Latn,0.2346,ces_Latn,0.2346,2176.00,6,52,0.1538,2,0,3,1,1,0,0.4250,0.4651,0.5429,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4686,CTX192601143,1,54,"Ane? \ C ko NCnuAL* Gnkúpu4o coscAo Ncuaxd,2""4L4 dcA.R*.,/oPC.K/Chu.","Ane? \ C ko NCnuAL* Gnkúpu4o coscAo Ncuaxd,2""4L4 dcA.R*.,/oPC.K/Chu.",,,ces_Latn,0.7500,vie_Latn,0.4144,2256.00,9,68,0.1912,3,0,2,0,0,0,0.3444,0.2857,0.4884,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4917,CTX192601143,1,55,"(oL, —oy Mgnqd ) olgwv Puoe 4cpveCnw fo89u. dy 9 -0 I c kW i","(oL, —oy Mgnqd ) olgwv Puoe 4cpveCnw fo89u. dy 9 -0 I c kW i",,,ces_Latn,0.7500,lmo_Latn,0.9909,1128.00,15,60,0.1000,3,0,2,2,1,0,0.6467,0.3171,0.6857,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,1,56,- - / LaA -7 ‘),- - / LaA -7 ‘),,,,0.0,,0.0,0.0,0,15,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,2,1,"Oadeji MelQcl, oělueó AXowusnu (Xulie?","Oadeji MelQcl, oělueó AXowusnu (Xulie?",,,ces_Latn,0.7500,yor_Latn,0.4744,4352.00,5,38,0.0789,2,0,0,1,1,0,0.2600,0.5000,0.6129,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,2,2,"""C. > - ""","C. > - """,,,,0.0,,0.0,0.0,0,9,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5117,CTX192601143,2,3,"""a(NU./ Adlwul /A-AV 4 56 e / NLoM.M""","""a(NU./ Adlwul /A-AV 4 56 e / NLoM.M",,,ces_Latn,0.7500,ron_Latn,0.3594,1496.00,8,37,0.2432,1,0,0,0,0,0,0.2188,0.2963,0.6111,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,2,4,"""Aldo ANAunclog.cNUL, dpévdjäi ""","Aldo ANAunclog.cNUL, dpévdjäi """,,,ces_Latn,0.7500,ltz_Latn,0.1766,4608.00,4,32,0.1250,1,0,0,0,0,0,0.1125,0.3448,0.4800,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,2,5,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4575,CTX192601143,2,6,"Foe 6 ‘ g< Awiw "" , 7 89énwv < "" ^0","Foe 6 ‘ g< Awiw "" , 7 89énwv < "" ^0",,,ces_Latn,0.7500,lmo_Latn,0.7944,552.00,12,35,0.2000,0,0,1,0,0,1,0.4167,0.2632,0.5833,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,2,7,"ovo (4 conovz "" k 2 / A *al ga wdk.","ovo (4 conovz "" k 2 / A *al ga wdk.",,,ces_Latn,0.7500,som_Latn,0.2328,2112.00,11,35,0.1429,0,0,0,0,0,0,0.3682,0.3043,0.5556,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,2,8,Wus Novuu (onL.,Wus Novuu (onL.,,,ces_Latn,0.7500,twi_Latn,0.7504,22016.00,3,15,0.1333,1,0,0,0,0,0,0.6000,0.3846,0.9091,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,2,9,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4733,CTX192601143,2,10,"a M. AKegneo"" o G—n & /3°9 ANKCeCné (eov(,RMNC4 (nsg*","a M. AKegneo"" o G—n & /3°9 ANKCeCné (eov(,RMNC4 (nsg*",,,ces_Latn,0.4947,ces_Latn,0.4947,2800.00,10,53,0.2075,2,0,2,0,0,0,0.3350,0.2683,0.5667,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4668,CTX192601143,2,11,"(093%mM ""s 0A","(093%mM ""s 0A",,,eng_Latn,0.2049,eng_Latn,0.2049,1280.00,3,13,0.2308,1,0,1,0,0,0,0.1333,0.1429,0.7500,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,2,12,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,2,13,"o/UJw— zoqLAo_.(Rnckod., 000/0070702 ~ Luvo Alde,","o/UJw— 2oqLAo_.(Rnckod., 000/0070702 ~ Luvo Alde,",,,ces_Latn,0.7500,epo_Latn,0.3520,472.00,6,49,0.2041,1,0,0,0,0,0,0.1750,0.2941,0.6250,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5500,CTX192601143,2,14,""" 4 Afooggje""",""" 4 Afooggje",,,ces_Latn,0.7500,nno_Latn,0.8780,3168.00,3,13,0.1538,0,1,0,0,0,0,0.2000,0.4000,0.3750,False,False,False,False,False,True,False,False,False,True,True
+Trash,0.4856,CTX192601143,2,15,"Bala «a "" ged d *i—, M fod gi/vuu.^","Bala «a "" ged d *i—, M fod gi/vuu.^",,,ces_Latn,0.7500,mos_Latn,0.6139,9152.00,9,35,0.2286,0,0,0,0,0,0,0.3222,0.3333,0.5263,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,2,16,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4736,CTX192601143,2,17,M /MLonwi AA 6 em k,M /MLonwi AA 6 em k,,,ces_Latn,0.7500,xho_Latn,0.4620,7616.00,6,19,0.0526,1,0,0,0,0,0,0.5500,0.3846,0.5833,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.1722,CTX192601143,2,18,LonX AAA*4 ;,LonX AAA*4 ;,,,ces_Latn,0.7500,glg_Latn,0.7952,11072.00,3,12,0.1667,1,1,0,1,0,0,0.4000,0.4444,0.4286,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5485,CTX192601143,2,19,Ms M oRuiAC a AXAMsouCtwM,Ms M oRuiAC a AXAMsouCtwM,,,eng_Latn,0.8492,eng_Latn,0.8492,3168.00,5,25,0.0000,2,0,0,1,0,0,0.3500,0.4286,0.5714,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,2,20,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3416,CTX192601143,2,21,": ~eAG,‘ • /qa,‘ /L, I Ronwl W",": ~eAG,‘ • /qa,‘ /L, I Ronwl W",,,eng_Latn,0.4146,eng_Latn,0.4146,1984.00,8,30,0.3333,1,0,0,0,0,0,0.5625,0.2174,0.4615,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5950,CTX192601143,2,22,"UoyjoAeAkJACdoby,Ne0U Alaol ZUlMJL /LAz, Alkky","UoyjoAeAkJACdoby,Ne0U Alaol ZU1MJL /LAz, Alkky",,,ces_Latn,0.7500,hun_Latn,0.5364,2624.00,5,46,0.0652,3,1,1,1,0,0,0.2900,0.4634,0.4737,False,False,False,False,False,True,False,False,False,True,True
+Empty,0.0,CTX192601143,2,23,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,2,24,w. 2 9981/,w. 2 9981/,,,,0.0,,0.0,0.0,0,10,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3848,CTX192601143,2,25,"I C-. eCo M. * . , . a,","I C-. eCo M. * . , . a,",,,ces_Latn,0.7500,cat_Latn,0.5325,940.00,9,23,0.3478,1,0,0,0,0,0,0.3389,0.2667,0.4286,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,2,26,. ■ _ .I J r o,. ■ _ .I J r o,,,,0.0,,0.0,0.0,0,14,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4546,CTX192601143,2,27,"""CNu C vaw. Nvs""","""CNu C vaw. Nvs",,,ces_Latn,0.7500,vie_Latn,0.7057,9792.00,4,16,0.1875,1,0,0,0,0,0,0.8250,0.1538,0.7000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5763,CTX192601143,2,28,"64/on/""94 00N924""9 0oe"" /Ct/G""TV4047 leto /to","64/on/""94 00N924""9 0oe"" /Ct/G""TV4047 leto /to",,,ces_Latn,0.7500,epo_Latn,0.0777,444.00,6,45,0.2000,0,0,3,0,0,0,0.1583,0.2400,0.5625,False,False,False,False,False,True,False,False,False,True,True
+Trash,0.4459,CTX192601143,2,29,"“y4 4 * 1&aN49 Galcn, 00/ e"" - brk"" &"" /"" colsh d 44 ""e • NNoso, 0","“y4 4 * 1&aN49 Galcn, 00/ e"" - brk"" &"" /"" colsh d 44 ""e • NNoso, 0",,,ces_Latn,0.7500,glg_Latn,0.1565,416.00,18,66,0.2273,2,1,2,0,0,0,0.5167,0.2051,0.5833,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,2,30,"go04 344* Auý- Nudky oi oiti 0dCla. AKog,ndgé Pe* 63 /šbo0d","go04 344* Auý- Nudky oi oiti 0dCla. AKog,ndgé Pe* 63 /šbo0d",,,ces_Latn,0.7500,hun_Latn,0.2033,1032.00,11,59,0.1017,2,0,4,1,1,0,0.1909,0.4250,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5258,CTX192601143,2,31,"MxAck Alodny."" 7oky,6 N3 Aa 0/2«4 ÍwAqmZ ba0epu2","MxAck Alodny."" 7oky,6 N3 Aa 0/2«4 ÍwAqmZ ba0epu2",,,ces_Hang,0.5000,kor_Hang,0.2097,1496.00,8,48,0.1042,2,0,4,0,0,0,0.2375,0.3939,0.6071,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,2,32,/ A,/ A,,,,0.0,,0.0,0.0,0,3,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,2,33,olie,olie,,,ces_Latn,0.7500,dan_Latn,0.9559,1.00,1,4,0.0000,0,0,0,0,1,0,0.0000,0.7500,0.5000,False,False,False,False,True,False,False,False,False,False,False
+Empty,0.0,CTX192601143,2,34,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,2,35,Alh A /adoen : Mld olryylondeo/t,Alh A /adoen : Mld olryylondeo/t,,,ces_Latn,0.7500,hun_Latn,0.3710,5920.00,6,32,0.0938,0,1,0,0,0,0,0.1417,0.4074,0.5833,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,2,36,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5243,CTX192601143,2,37,0 4 A/odolonAy/n. eootmt,0 4 A/odolonAy/n. eootmt,,,ces_Latn,0.7500,xho_Latn,0.2751,3168.00,4,24,0.1250,1,0,0,1,0,0,0.1875,0.4737,0.6875,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4533,CTX192601143,2,38,ea Nonc % (uoookou 7Q*o 3,ea Nonc % (uoookou 7Q*o 3,,,ces_Latn,0.4104,ces_Latn,0.4104,1000.00,6,25,0.1200,0,1,1,1,1,0,0.6417,0.5556,0.8000,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,2,39,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,2,40,UOA,UOA,,,,0.0,,0.0,0.0,0,3,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5227,CTX192601143,2,41,NU -,NU -,,,ces_Latn,0.7500,ron_Latn,0.9999,392.00,2,4,0.2500,0,0,0,0,0,0,0.0000,0.3333,1.0000,True,False,False,False,True,False,False,False,False,True,False
+Trash,0.5863,CTX192601143,2,42,/tolLa Lyže m A «MLM O Puiaa (,/tolLa Lyže m A «MLM O Puiaa (,,,ces_Latn,0.7500,fin_Latn,0.9374,6720.00,8,30,0.1000,1,1,0,1,1,0,0.4000,0.4348,0.4500,False,False,False,False,False,True,False,False,False,True,True
+Empty,0.0,CTX192601143,2,43,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,2,44,", msdic P/Aor.N .Clxovlo olch’dllo",", msdic P/Aor.N .Clxovlo olch’dllo",,,ces_Latn,0.7500,glg_Latn,0.6213,6304.00,5,34,0.1471,0,1,0,0,0,0,0.1900,0.2333,0.5200,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.3795,CTX192601143,2,45,L.o /WUA 0 • 9(o,L.o /WUA 0 • 9(o,,,ces_Latn,0.7500,ewe_Latn,0.8948,2976.00,5,16,0.2500,0,0,1,0,0,0,0.5700,0.4000,0.6667,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,2,46,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4856,CTX192601143,2,47,ANlw Ao Abni . V /P 0o %,ANlw Ao Abni . V /P 0o %,,,ces_Latn,0.7500,glg_Latn,0.7091,2720.00,8,24,0.1250,1,0,1,0,0,0,0.4438,0.3750,0.6154,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,2,48,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,2,49,", 039 — JNNW A cowów",", 039 — JNNW A cowów",,,pol_Latn,0.9989,pol_Latn,0.9989,1368.00,6,20,0.1000,0,1,0,0,0,1,0.4333,0.2500,0.6000,False,False,False,False,True,False,False,False,False,False,False
+Empty,0.0,CTX192601143,2,50,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,2,51,4.,4.,,,,0.0,,0.0,0.0,0,2,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,2,52,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4310,CTX192601143,2,53,"(2.7"" 90onU* /VorNgs A (Vjuv^","(2.7"" 90onU* /VorNgs A (Vjuv^",,,eng_Latn,0.2730,eng_Latn,0.2730,776.00,5,29,0.2414,2,0,2,0,0,0,0.2900,0.2381,0.7143,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5112,CTX192601143,2,54,"vui 40 "" o 3 — ANKC i / / |","vui 40 "" o 3 — ANKC i / / |",,,ces_Latn,0.7500,cat_Latn,0.9958,968.00,11,27,0.1852,0,0,0,0,0,0,0.3682,0.3571,0.4444,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5473,CTX192601143,2,55,M(do0y/30 A ol- (036 el. 200 (on,M(do0y/30 A ol- (036 el. 200 (on,,,ces_Latn,0.7500,hun_Latn,0.2373,392.00,7,32,0.1875,0,0,1,0,0,0,0.2714,0.3529,0.7273,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,2,56,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5500,CTX192601143,2,57,VI © AUW,VI © AUW,,,ces_Latn,0.7500,nld_Latn,0.9292,18304.00,3,8,0.1250,0,0,0,0,0,0,0.0667,0.5000,0.6000,True,False,False,False,False,True,False,False,False,True,True
+Empty,0.0,CTX192601143,2,58,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4575,CTX192601143,2,59,cM< A0N? oly/dóorier /d*r*,cM< A0N? oly/dóorier /d*r*,,,ces_Latn,0.7500,hun_Latn,0.4523,2176.00,4,26,0.2308,1,0,1,0,0,0,0.3000,0.3182,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,2,60,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5426,CTX192601143,2,61,Ad (oA Ao.CCAUA,Ad (oA Ao.CCAUA,,,ces_Latn,0.7500,min_Latn,0.9048,7136.00,3,15,0.1333,1,1,0,1,0,0,0.2000,0.6154,0.3636,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4925,CTX192601143,2,62,° 47,° 47,,,eng_Latn,0.9914,eng_Latn,0.9914,45.25,2,4,0.2500,0,0,0,0,0,0,0.0000,0.0000,0.0000,False,False,False,False,True,False,False,False,False,False,False
+Trash,0.4746,CTX192601143,2,63,"nngy /NC —4uhe Gu ,648,074%","nngy /NC —4uhe Gu ,648,074%",,,eng_Latn,0.2478,eng_Latn,0.2478,2112.00,5,27,0.1852,0,1,1,0,0,0,0.1000,0.2500,0.6364,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,2,64,"c."".","c."".",,,,0.0,,0.0,0.0,0,4,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.2660,CTX192601143,3,1,/7y 3/20,/7y 3/20,,,eng_Latn,0.6103,eng_Latn,0.6103,50.50,2,8,0.2500,0,0,1,0,0,0,0.0750,0.3333,1.0000,False,False,False,False,True,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,2,Zn* 44 2,Zn* 44 2,,,,0.0,,0.0,0.0,0,8,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,3,3,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5241,CTX192601143,3,4,"e xe‘w Aasn / do dry A / % MLCeevor.nnd ,","e xe‘w Aasn / do dry A / % MLCeevor.nnd ,",,,ces_Latn,0.7500,glg_Latn,0.8613,5568.00,11,41,0.1463,1,1,0,0,0,0,0.4091,0.3226,0.7200,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4620,CTX192601143,3,5,LAraAu. koWlomn‘4. NuAe — a 4ws,LAraAu. koWlomn‘4. NuAe — a 4ws,,,ces_Latn,0.7500,tur_Latn,0.1464,1000.00,6,31,0.1290,3,0,1,2,1,0,0.3167,0.4167,0.5500,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.6434,CTX192601143,3,6,"(""Gko ANf Vj/AO ai osnwo 0dHeto","(""Gko ANf Vj/AO ai osnwo 0dHeto",,,ces_Latn,0.7500,epo_Latn,0.7520,2112.00,6,31,0.0968,2,0,1,0,0,0,0.1417,0.4000,0.5455,False,False,False,False,False,True,False,False,False,True,True
+Empty,0.0,CTX192601143,3,7,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,8,. V M < C < 0,. V M < C < 0,,,,0.0,,0.0,0.0,0,13,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.7999,CTX192601143,3,9,i Mco kokltlou s Gounn 41,i Mco kokltlou s Gounn 41,,,ces_Latn,0.7500,ltz_Latn,0.5022,1752.00,6,25,0.0000,0,1,0,0,0,0,0.0583,0.3889,0.5556,False,False,False,False,False,True,False,False,False,True,True
+Trash,0.3183,CTX192601143,3,10,. C A l NA,. C A l NA,,,ces_Latn,0.7500,ast_Latn,0.9823,3824.00,5,10,0.1000,0,0,0,0,0,0,0.6100,0.3333,0.2000,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,3,11,P. e oRu .,P. e oRu .,,,,0.0,,0.0,0.0,0,10,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,12,H,H,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5318,CTX192601143,3,13,"m. Alouilea""; AOg/UGnCvet •A a AGuiouA","m. Alouilea""; AOg/UGnCvet •A a AGuiouA",,,ces_Latn,0.7500,por_Latn,0.3537,3600.00,6,38,0.1316,2,0,0,2,2,0,0.2167,0.5455,0.4286,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,3,14,"NMlol,. mlereém A% Mtflluío ewo zuró nosAtylw £dQ.ÍaJ<. fwU3","NMlol,. mlereém A% Mtflluío ewo 2uró nosAtylw £dQ.ÍaJ<. fwU3",,,ces_Latn,0.7500,hun_Latn,0.3095,4080.00,9,60,0.1167,4,1,1,1,0,0,0.3222,0.3529,0.5455,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,3,15,) 4 4Mq,) 4 4Mq,,,,0.0,,0.0,0.0,0,7,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,16,"A Q/ 0 ,","A Q/ 0 ,",,,,0.0,,0.0,0.0,0,8,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,3,17,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,18,A . i A..,A . i A..,,,,0.0,,0.0,0.0,0,9,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.1723,CTX192601143,3,19,"VSlAC,","VSlAC,",,,ces_Latn,0.7500,swe_Latn,0.8954,850.00,1,6,0.1667,1,0,0,0,0,0,0.4500,0.1667,0.4000,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,3,20,"r C , A","r C , A",,,,0.0,,0.0,0.0,0,7,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.1968,CTX192601143,3,21,5. / d e U,5. / d e U,,,ces_Latn,0.7500,glg_Latn,0.3486,1000.00,5,10,0.2000,0,0,0,0,0,0,0.6100,0.4000,1.0000,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,3,22,(,(,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,3,23,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4637,CTX192601143,3,24,"/ / 9 oll 00A h* 4. «Nu (& í u 4Gr, %7v1 éo","/ / 9 oll 00A h* 4. «Nu (& í u 4Gr, %7v1 éo",,,ces_Latn,0.7500,isl_Latn,0.6096,458.00,14,43,0.2093,0,0,3,0,0,0,0.3786,0.3043,0.4286,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,3,25,' n,' n,,,,0.0,,0.0,0.0,0,3,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,26,A,A,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,27,m O / • í L 4 No NwO w,m O / • í L 4 No NwO w,,,,0.0,,0.0,0.0,0,22,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,3,28,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3788,CTX192601143,3,29,(wi Y /. AMCoMmow . Lono v AnAu/,(wi Y /. AMCoMmow . Lono v AnAu/,,,deu_Latn,0.3520,deu_Latn,0.3520,6304.00,8,32,0.1562,2,0,0,0,1,0,0.8187,0.4000,0.7000,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,3,30,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,31,"_ , n .","_ , n .",,,,0.0,,0.0,0.0,0,7,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,3,32,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5205,CTX192601143,3,33,A{ a —o ~ • tlleh 62 M « u o o Ju e Lad o /,A{ a —o ~ • tlleh 62 M « u o o Ju e Lad o /,,,ces_Latn,0.7500,glg_Latn,0.3648,1408.00,17,43,0.1395,0,1,0,0,0,0,0.5441,0.4400,0.5263,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,3,34,"0, 20 N l","0, 20 N l",,,,0.0,,0.0,0.0,0,9,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4580,CTX192601143,3,35,". A ' 9 Ca Eo % e, N d /zi Awo / A M A",". A ' 9 Ca Eo % e, N d /2i Awo / A M A",,,ces_Latn,0.7500,glg_Latn,0.3783,1000.00,16,38,0.1579,0,0,0,0,0,0,0.5187,0.4545,0.5625,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,3,36,-0 A V,-0 A V,,,,0.0,,0.0,0.0,0,6,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,37,d Ď &/ A,d Ď &/ A,,,,0.0,,0.0,0.0,0,8,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,3,38,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5126,CTX192601143,3,39,X. —ollon(d 4 AGGhly ~ nos.,X. —ollon(d 4 AGGhly ~ nos.,,,eng_Latn,0.5550,eng_Latn,0.5550,3168.00,6,27,0.1852,1,2,0,0,0,0,0.2333,0.2381,0.5625,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,3,40,Z,Z,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,41,n J,n J,,,,0.0,,0.0,0.0,0,3,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,42,",( 0 _ o J 0.",",( 0 _ o J 0.",,,,0.0,,0.0,0.0,0,13,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,43,""""" 0 /"" i 4. A/) — 70 1""",""""" 0 /"" i 4. A/) — 70 1",,,,0.0,,0.0,0.0,0,24,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,44,.0 V,.0 V,,,,0.0,,0.0,0.0,0,4,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5440,CTX192601143,3,45,( so wu o mAdr8 oÚ A (oju Aa,( so wu o mAdr8 oÚ A (oju Aa,,,ces_Latn,0.7500,yor_Latn,0.8465,2176.00,9,28,0.0714,2,0,1,0,0,0,0.4389,0.5789,0.5882,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,3,46,p . are C6a 2 2,p . are C6a 2 2,,,eng_Latn,0.9976,eng_Latn,0.9976,286.00,6,15,0.0667,0,0,1,0,0,0,0.4500,0.4286,0.3333,False,False,False,False,True,False,False,False,False,False,False
+Empty,0.0,CTX192601143,3,47,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,48,(w e . M ad Vo / A/we 0,(w e . M ad Vo / A/we 0,,,,0.0,,0.0,0.0,0,23,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,3,49,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4444,CTX192601143,3,50,A « Au nú %o ADc%o M,A « Au nú %o ADc%o M,,,slk_Latn,0.9975,slk_Latn,0.9975,19456.00,7,20,0.1500,1,0,0,0,0,0,0.4571,0.5000,0.5455,False,False,False,False,True,False,False,False,False,False,False
+Trash,0.3826,CTX192601143,3,51,"wAeh I. , &- Ax 3 N 2 < an ko /","wAeh I. , &- Ax 3 N 2 < an ko /",,,ces_Latn,0.7500,war_Latn,0.9554,1064.00,12,31,0.1935,1,0,0,0,0,0,0.5042,0.3333,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,3,52,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,53,* c ? 9 (A No N ‘,* c ? 9 (A No N ‘,,,,0.0,,0.0,0.0,0,17,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,54,3 y A .,3 y A .,,,,0.0,,0.0,0.0,0,7,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,3,55,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,56,N,N,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,3,57,Kou Au md,Kou Au md,,,ces_Latn,0.9710,ces_Latn,0.9710,268288.00,3,9,0.0000,0,0,0,0,0,0,0.0000,0.5714,0.7143,False,False,False,False,True,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,58,9,9,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,3,59,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,60,AOA M .,AOA M .,,,,0.0,,0.0,0.0,0,7,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,3,61,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,62,• a; - /7 •,• a; - /7 •,,,,0.0,,0.0,0.0,0,11,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,63,r # i' n .,r # i' n .,,,,0.0,,0.0,0.0,0,10,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,64,AU VU VW ( (N N V L (/,AU VU VW ( (N N V L (/,,,,0.0,,0.0,0.0,0,22,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,3,65,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,66,"$ d.du, %(ol & n ( 064","$ d.du, %(ol & n ( 064",,,,0.0,,0.0,0.0,0,22,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,67,"J 2 •, ,","J 2 •, ,",,,,0.0,,0.0,0.0,0,8,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4871,CTX192601143,3,68,A’ p NCo 4 OU EU PO /V & U.,A’ p NCo 4 OU EU PO /V & U.,,,ces_Latn,0.7500,por_Latn,0.6998,1984.00,10,27,0.1481,1,0,0,0,0,0,0.4700,0.4706,0.8462,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,3,69,"7) , a d ( 7","7) , a d ( 7",,,,0.0,,0.0,0.0,0,12,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,70,V *,V *,,,,0.0,,0.0,0.0,0,3,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,71,‘ zvCore f( vt C,‘ 2vCore f( vt C,,,,0.0,,0.0,0.0,0,16,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,72,V,V,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,73,0 I,0 I,,,,0.0,,0.0,0.0,0,3,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,3,74,"bua. n(alya, olnce Ms <(Ay Xanlop w , wo amceklí","bua. n(alya, olnce Ms <(Ay Xanlop w , wo amceklí",,,ces_Latn,0.3231,ces_Latn,0.3231,2400.00,10,48,0.1250,0,0,0,0,1,0,0.1650,0.3846,0.5758,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,3,75,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,76,M c (Me<,M c (Me<,,,,0.0,,0.0,0.0,0,8,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3723,CTX192601143,3,77,". 04 í Aou.3N g "" N.K MPPVov« me • UWVNAAaM",". 04 í Aou.3N g "" N.K MPPVov« me • UWVNAAaM",,,ces_Latn,0.7500,lim_Latn,0.2761,1864.00,11,43,0.1395,2,2,1,2,0,0,0.5364,0.3333,0.7083,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5389,CTX192601143,3,78,"/e008Vt0,0/44AM4 40 « i dw A Valin« < rrt — pori nm nSoohyc","/e008Vt0,0/44AM4 40 « i dw A Valin« < rrt — pori nm nSoohyc",,,ces_Latn,0.7500,lmo_Latn,0.3279,940.00,13,59,0.1186,1,0,1,1,0,0,0.3308,0.2973,0.5333,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,3,79,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,3,80,"""1042 ""","1042 """,,,,0.0,,0.0,0.0,0,7,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.1216,CTX192601143,5,1,W3/ÍÍ,W3/ÍÍ,,,ces_Latn,0.7500,gle_Latn,0.6528,850.00,1,5,0.2000,0,1,1,0,0,0,0.7000,0.5000,0.3333,True,False,False,False,True,False,False,False,False,True,False
+Trash,0.4988,CTX192601143,6,1,"oPn4MW9 %60 MFNe0o odici,ak rzAoGskgi « i /% A3e9 AN(s4,83°","oPn4MW9 %60 MFNe0o odici,ak rzAoGskgi « i /% A3e9 AN(s4,83°",,,ces_Latn,0.7500,bos_Latn,0.4110,1544.00,10,59,0.1356,4,0,4,0,1,0,0.2600,0.3500,0.5312,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,6,2,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.2099,CTX192601143,6,3,"ClAŕ,","ClAŕ,",,,eng_Latn,0.8959,eng_Latn,0.8959,850.00,1,5,0.2000,1,0,0,0,0,0,0.2500,0.2000,0.0000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,6,4,"s AocäUoy"". n(ialbnv O""ýon (ACA (o / N* 7-, Ai•","s AocäUoy"". n(ialbnv O""ýon (ACA (o / N* 7-, Ai•",,,ces_Latn,0.7500,epo_Latn,0.2282,3824.00,10,47,0.2340,1,0,0,1,2,0,0.1900,0.4324,0.5385,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4679,CTX192601143,6,5,wR’du A.CGcAlu ) J. j? wak w. <. AQA.X Allu W- AQa. aq ~,wR’du A.CGcAlu ) J. j? wak w. <. AQA.X Allu W- AQa. aq ~,,,ces_Latn,0.7500,quy_Latn,0.9284,1128.00,14,56,0.2143,3,1,0,0,0,0,0.2536,0.2791,0.3871,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,6,6,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4762,CTX192601143,6,7,nocAol ( HvuknC,nocAol ( HvuknC,,,ces_Latn,0.7500,lim_Latn,0.4839,3824.00,3,15,0.0667,2,0,0,0,0,0,0.1667,0.3077,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,6,8,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,6,9,m m I,m m I,,,,0.0,,0.0,0.0,0,5,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3677,CTX192601143,6,10,ts§ AN.A,ts§ AN.A,,,deu_Latn,0.8725,deu_Latn,0.8725,850.00,2,8,0.2500,0,0,0,0,0,0,0.2000,0.2857,0.4000,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,6,11,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3425,CTX192601143,6,12,"/NUs -A / P A ""*","/NUs -A / P A ""*",,,eng_Latn,0.4244,eng_Latn,0.4244,3168.00,6,16,0.3125,1,0,0,0,0,0,0.4417,0.2727,0.6667,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,6,13,O 4 ~ . J~ A é N •,O 4 ~ . J~ A é N •,,,,0.0,,0.0,0.0,0,18,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5910,CTX192601143,6,14,(olnnrto Mdilanu j n,(olnnrto Mdilanu j n,,,ces_Latn,0.7500,epo_Latn,0.9506,14208.00,4,20,0.0500,0,1,0,1,0,0,0.5125,0.2941,0.5625,False,False,False,False,False,True,False,False,False,True,True
+Non-text,0.0,CTX192601143,6,15,A A w. A. Q ( /A% 0/ 0,A A w. A. Q ( /A% 0/ 0,,,,0.0,,0.0,0.0,0,22,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,6,16,"/n, 10 7 ..","/n, 10 7 ..",,,,0.0,,0.0,0.0,0,11,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,6,17,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,6,18,C,C,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,6,19,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,6,20,/,/,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,6,21,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,6,22,/,/,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,6,23,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,6,24,N,N,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,6,25,/ ' V U / . .,/ ' V U / . .,,,,0.0,,0.0,0.0,0,13,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3607,CTX192601143,6,26,"RQ.w. • /K 4. n AAo, AWH.‘","RQ.w. • /K 4. n AAo, AWH.‘",,,ces_Latn,0.7500,lim_Latn,0.9289,1408.00,7,26,0.3077,2,0,0,1,0,0,0.3857,0.2105,0.4545,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,6,27,"> ‘ d 0, í , 4,","> ‘ d 0, í , 4,",,,,0.0,,0.0,0.0,0,15,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,6,28,"46 F* n"" f0 F3NW4 4 ■ /( <","46 F* n"" f0 F3NW4 4 ■ /( <",,,,0.0,,0.0,0.0,0,26,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,6,29,f* n (« /3 G**,f* n (« /3 G**,,,,0.0,,0.0,0.0,0,14,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,6,30,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.2189,CTX192601143,6,31,(CA wO,(CA wO,,,deu_Latn,0.6390,deu_Latn,0.6390,850.00,2,6,0.1667,1,0,0,0,0,0,0.2250,0.4000,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,6,32,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5333,CTX192601143,6,33,All U KX 2. %,All U KX 2. %,,,eng_Latn,0.5477,eng_Latn,0.5477,1408.00,5,13,0.1538,0,0,0,0,0,0,0.3200,0.2500,0.3333,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,6,34,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3697,CTX192601143,6,35,( (.‘ oWy | A /reM L,( (.‘ oWy | A /reM L,,,pol_Latn,0.9950,pol_Latn,0.9950,9792.00,7,20,0.3000,2,0,0,0,0,0,0.4429,0.2857,0.6250,False,False,False,False,True,False,False,False,False,False,False
+Empty,0.0,CTX192601143,6,36,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4744,CTX192601143,6,37,/0Uoow / K 0N w 4 AAw /tO 2,/0Uoow / K 0N w 4 AAw /tO 2,,,pol_Latn,0.3903,pol_Latn,0.3903,216.00,9,27,0.1111,2,0,2,1,1,0,0.9167,0.4000,0.6667,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4601,CTX192601143,6,38,~wojry(o—w a NMakANCG>o*Ru,~wojry(o—w a NMakANCG>o*Ru,,,ces_Latn,0.7500,epo_Latn,0.3637,8640.00,3,26,0.1923,1,0,0,0,0,1,0.4833,0.3333,0.5263,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,6,39,í . . UA U.j (> J A •/,í . . UA U.j (> J A •/,,,,0.0,,0.0,0.0,0,22,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,6,40,MN’U 7 (030 o* A 0 9*&*00 (°0F1*9,MN’U 7 (030 o* A 0 9*&*00 (°0F1*9,,,,0.0,,0.0,0.0,0,33,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3511,CTX192601143,6,41,"ANK.Cv 449 Nlof"",N*Vd AlNow /*Y""PV% /eNNA. ANun /02.‘","ANK.Cv 449 Nlof"",N*Vd AlNow /*Y""PV% /eNNA. ANun /02.‘",,,ces_Latn,0.7500,epo_Latn,0.3660,1368.00,8,53,0.2453,4,1,0,0,0,0,0.3938,0.2195,0.6786,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,6,42,"OlcOJ Q( A, a","OlcOJ Q( A, a",,,ces_Latn,0.7500,epo_Latn,0.9978,688.00,4,13,0.1538,1,0,0,0,0,0,0.4875,0.4000,0.3750,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.1901,CTX192601143,6,43,(ul Coo’cC,(ul Coo’cC,,,ces_Latn,0.7500,ron_Latn,0.7842,850.00,2,10,0.2000,1,0,0,0,0,0,0.3250,0.3333,0.4286,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,6,44,"—AV 0 A""A—, 83 /","—AV 0 A""A—, 83 /",,,,0.0,,0.0,0.0,0,16,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,6,45,J. cA. 2 L ML .0o.Au.,J. cA. 2 L ML .0o.Au.,,,,0.0,,0.0,0.0,0,21,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,6,46,N t M,N t M,,,,0.0,,0.0,0.0,0,5,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,6,47,"oT° f N""CoN • N","oT° f N""CoN • N",,,,0.0,,0.0,0.0,0,15,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,6,48,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.1208,CTX192601143,6,49,4 M/~O,4 M/~O,,,ces_Latn,0.7500,vie_Latn,0.8634,850.00,2,6,0.3333,0,0,0,0,0,0,0.3250,0.2500,1.0000,True,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,6,50,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,6,51,(/,(/,,,,0.0,,0.0,0.0,0,2,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,6,52,47 . — i J 7 /,47 . — i J 7 /,,,,0.0,,0.0,0.0,0,14,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,6,53,u / Nuy elole &,u / Nuy elole &,,,ces_Latn,0.7500,vie_Latn,0.4961,3168.00,5,15,0.1333,0,0,0,0,0,0,0.0000,0.5455,0.7778,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,6,54,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4830,CTX192601143,6,55,' mi (e. Aho /,' mi (e. Aho /,,,ces_Latn,0.7500,plt_Latn,0.7479,1648.00,5,14,0.2857,0,0,0,0,0,0,0.2800,0.4000,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4142,CTX192601143,6,56,Wkiko w0lwv«.) .,Wkiko w0lwv«.) .,,,pol_Latn,0.4871,pol_Latn,0.4871,3824.00,3,16,0.2500,0,0,1,0,0,1,0.4000,0.1538,0.5556,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,6,57,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,6,58,•g,•g,,,,0.0,,0.0,0.0,0,2,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,6,59,• 0o,• 0o,,,,0.0,,0.0,0.0,0,4,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,6,60,(W.,(W.,,,,0.0,,0.0,0.0,0,3,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,6,61,doč,doč,,,,0.0,,0.0,0.0,0,3,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,7,1,) í /,) í /,,,,0.0,,0.0,0.0,0,5,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.1580,CTX192601143,7,2,O-%y/,O-%y/,,,ces_Tibt,0.5000,bod_Tibt,0.4256,850.00,1,5,0.6000,0,0,0,0,0,0,0.0000,0.4000,1.0000,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,7,3,", /",", /",,,,0.0,,0.0,0.0,0,3,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4428,CTX192601143,7,4,": r(l0 Abý A’Alo wo"" /",": r(l0 Abý A’Alo wo"" /",,,slk_Latn,0.5217,slk_Latn,0.5217,17152.00,6,22,0.2273,0,0,1,0,1,0,0.1250,0.3750,0.3636,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,7,5,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,7,6,yhN 2,yhN 2,,,,0.0,,0.0,0.0,0,5,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3170,CTX192601143,7,7,"N /0r/c A~r/4AGQo ANCa,%o /&","N /0r/c A~r/4AGQo ANCa,%o /&",,,ces_Latn,0.7500,epo_Latn,0.3613,1280.00,5,28,0.2857,1,0,2,0,0,0,0.4400,0.2727,0.3571,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4851,CTX192601143,7,8,ARoogy Cocl č 648A.) « Srnséy • N rrodlo———,ARoogy Cocl č 648A.) « Srnséy • N rrodlo———,,,ces_Latn,0.7089,ces_Latn,0.7089,3168.00,9,43,0.1628,1,1,1,0,0,0,0.2944,0.3125,0.4800,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,7,9,WLAlor A+ . A o 0 A Alg 2000. //A,WLAlor A+ . A o 0 A Alg 2000. //A,,,ces_Latn,0.7500,cat_Latn,0.4144,268.00,10,33,0.1515,1,0,0,0,0,0,0.4350,0.4211,0.2143,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,7,10,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,7,11,/C .,/C .,,,,0.0,,0.0,0.0,0,4,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,7,12,J,J,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,7,13,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4661,CTX192601143,7,14,"AM’eR, o""Oieg","AM’eR, o""Oieg",,,deu_Latn,0.1338,deu_Latn,0.1338,850.00,2,13,0.2308,1,0,0,1,1,0,0.4250,0.5000,0.5556,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.1711,CTX192601143,7,15,(/Le (Me,(/Le (Me,,,ces_Latn,0.7500,ewe_Latn,0.3089,850.00,2,8,0.3750,0,0,0,0,0,0,0.0000,0.2857,0.7500,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,7,16,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,7,17,t,t,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,7,18,0 .,0 .,,,,0.0,,0.0,0.0,0,3,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,7,19,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,7,20,MV,MV,,,,0.0,,0.0,0.0,0,2,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3195,CTX192601143,7,21,"""Cgley/N o*""","Cgley/N o*""",,,ces_Latn,0.7500,vie_Latn,0.8803,850.00,2,12,0.3333,0,0,0,0,0,0,0.2000,0.2727,0.5714,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.2284,CTX192601143,7,22,At — OV 0d,At — OV 0d,,,eng_Latn,0.9515,eng_Latn,0.9515,5568.00,4,10,0.1000,0,0,1,0,0,0,0.3875,0.3333,0.6000,False,False,False,False,True,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,7,23,V,V,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,7,24,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,7,25,"A goli—i /ANGC,j0&Ao Awliole /ei","A goli—i /ANGC,j0&Ao Awliole /ei",,,ces_Latn,0.7500,cym_Latn,0.2169,10432.00,5,32,0.1562,1,0,1,0,0,0,0.2400,0.4815,0.3182,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4759,CTX192601143,7,26,— 4 fw 2. 02 02 wion ARop—e olnu N 6m,— 4 fw 2. 02 02 wion ARop—e olnu N 6m,,,ces_Latn,0.7500,epo_Latn,0.3379,296.00,11,37,0.0811,1,0,0,0,0,0,0.8182,0.3500,0.7059,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4068,CTX192601143,7,27,Gln4) senlwu~ /*N8 APorc *re.voAšdxo e4002-. ^AJ,Gln4) senlwu~ /*N8 APorc *re.voAšdxo e4002-. ^AJ,,,ces_Latn,0.7500,epo_Latn,0.9289,3376.00,7,48,0.1875,2,0,3,0,0,0,0.5214,0.2778,0.5926,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.3145,CTX192601143,7,28,&0C/70eQ.AMWM(M4oKUMN.TL{ 7,&0C/70eQ.AMWM(M4oKUMN.TL{ 7,,,ces_Latn,0.7500,kal_Latn,0.0817,472.00,2,27,0.2222,1,1,1,0,0,0,0.8500,0.1905,0.6667,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,7,29,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.1591,CTX192601143,7,30,/w0 ARo Qe,/w0 ARo Qe,,,ces_Latn,0.7500,lmo_Latn,0.9999,4608.00,3,10,0.1000,1,0,1,0,0,0,0.7167,0.4286,0.6667,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.0000,CTX192601143,7,31,(/v-Q,(/v-Q,,,eng_Latn,0.6734,eng_Latn,0.6734,850.00,1,5,0.6000,0,0,0,0,0,0,0.6500,0.0000,1.0000,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,7,32,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,7,33,C.,C.,,,,0.0,,0.0,0.0,0,2,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,7,34,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4976,CTX192601143,7,35,*op AQC.A /W*~4 peh (rs AR0&. Mit,*op AQC.A /W*~4 peh (rs AR0&. Mit,,,deu_Latn,0.2132,deu_Latn,0.2132,3600.00,7,33,0.2424,0,0,1,0,0,0,0.2500,0.2400,0.4706,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,7,36,e A Al (oo-M. RWXXcuq Auo y,e A Al (oo-M. RWXXcuq Auo y,,,ces_Latn,0.7500,spa_Latn,0.8235,5568.00,7,27,0.1111,1,1,0,2,0,1,0.3857,0.4762,0.6667,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.0819,CTX192601143,7,37,n.. ~neL..,n.. ~neL..,,,ces_Latn,0.7500,vie_Latn,0.3889,850.00,2,10,0.5000,1,0,0,0,0,0,0.3250,0.1111,0.7500,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5170,CTX192601143,7,38,"vhMi~o SA ngir ehai—a~—t M (ULOqwAN- , 9i (E22rupo /á7zi","vhMi~o SA ngir ehai—a~—t M (ULOqwAN- , 9i (E22rupo /á7zi",,,ces_Latn,0.7500,tso_Latn,0.0737,2800.00,10,56,0.1607,2,0,3,0,0,0,0.3000,0.3953,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,8,1,e,e,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3360,CTX192601143,8,2,"""č 94 kt ek «doky(ak, eg 8o/erCa< ""","č 94 kt ek «doky(ak, eg 8o/erCa< """,,,ces_Latn,0.4152,ces_Latn,0.4152,2256.00,8,35,0.2000,1,0,1,0,0,0,0.4938,0.3200,0.3889,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4369,CTX192601143,8,3,"ju, v / CA. U A’","ju, v / CA. U A’",,,slk_Latn,0.4130,slk_Latn,0.4130,1320.00,6,16,0.2500,0,0,0,0,0,0,0.4167,0.3636,0.4286,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,8,4,Uloak.Cl (j/a~o Nyvorow %A Xod2,Uloak.Cl (j/a~o Nyvorow %A Xod2,,,ces_Latn,0.7500,hun_Latn,0.5578,7616.00,5,31,0.1613,0,0,1,0,0,0,0.1900,0.3846,0.5714,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4823,CTX192601143,8,5,/QnAl zalu m /GRu6 ANC.Cw Au 6 ow,/QnAl 2alu m /GRu6 ANC.Cw Au 6 ow,,,pol_Latn,0.9241,pol_Latn,0.9241,3600.00,8,33,0.0909,3,0,1,0,0,0,0.3750,0.3333,0.5238,False,False,False,False,True,False,False,False,False,False,False
+Trash,0.4567,CTX192601143,8,6,"oluc. (82AU""AXAL (C","oluc. (82AU""AXAL (C",,,ces_Latn,0.7500,ast_Latn,0.2909,1456.00,3,19,0.2105,0,1,1,0,0,0,0.5167,0.4000,0.3636,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,8,7,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,8,8,kolokohve ANUANL:H 06 01 m Aw A,kolokohve ANUANL:H 06 01 m Aw A,,,ces_Latn,0.7500,ilo_Latn,0.4622,502.00,7,31,0.0323,0,0,0,0,0,0,0.3714,0.4286,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4706,CTX192601143,8,9,"ta< (SnCoMim, sakic"" J ANe","ta< (SnCoMim, sakic"" J ANe",,,ces_Latn,0.7500,epo_Latn,0.2433,6304.00,5,26,0.1538,2,0,0,0,0,0,0.3500,0.3182,0.4444,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4959,CTX192601143,8,10,U«al.L.co AoMCkeh‘MLeMi4- Ku,U«al.L.co AoMCkeh‘MLeMi4- Ku,,,ces_Latn,0.7500,est_Latn,0.2990,24960.00,3,28,0.1786,1,0,1,0,0,0,0.4000,0.3600,0.4500,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,8,11,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3686,CTX192601143,8,12,"‘ V&.a) , CC Vi / $ wue","‘ V&.a) , CC Vi / $ wue",,,ces_Latn,0.7500,vie_Latn,0.9190,5216.00,8,23,0.3043,0,0,0,0,0,0,0.3375,0.2500,0.5556,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,8,13,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,8,14,Q.,Q.,,,,0.0,,0.0,0.0,0,2,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5168,CTX192601143,8,15,A korvn Oh J4A0n.. d /,A korvn Oh J4A0n.. d /,,,ces_Latn,0.6377,ces_Latn,0.6377,10432.00,6,22,0.1364,0,0,1,0,0,0,0.3667,0.2667,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4668,CTX192601143,8,16,"• 6 ""i ""loa,cla 3 7*4** %w*o 0fI46Ao","• 6 ""i ""loa,cla 3 7*4** %w*o 0fI46Ao",,,eng_Latn,0.1625,eng_Latn,0.1625,356.00,8,36,0.2500,1,1,2,0,1,0,0.3000,0.3636,0.3077,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5170,CTX192601143,8,17,"UBe ""soo JCuukarlop. nAonon.","UBe ""soo JCuukarlop. nAonon.",,,ces_Latn,0.7500,est_Latn,0.2602,4080.00,4,28,0.1071,3,1,0,0,0,0,0.3250,0.4400,0.6818,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,8,18,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4134,CTX192601143,8,19,/4% /egr) *3Ao &,/4% /egr) *3Ao &,,,ces_Latn,0.7500,hrv_Latn,0.2924,1696.00,4,16,0.3750,0,0,1,0,1,0,0.1375,0.2727,0.4000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4375,CTX192601143,8,20,. ( eou) AXiUk 2 /nQ oeed,. ( eou) AXiUk 2 /nQ oeed,,,ces_Latn,0.7500,azj_Latn,0.6324,828.00,7,25,0.1600,2,1,0,2,1,0,0.6786,0.5000,0.7857,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,8,21,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,8,22,"y /""Pee:7 (). -","y /""Pee:7 (). -",,,,0.0,,0.0,0.0,0,15,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,8,23,• co Aio Q .o w oa aku /V olu. • oreo,• co Aio Q .o w oa aku /V olu. • oreo,,,ces_Latn,0.7500,epo_Latn,0.8041,3376.00,12,37,0.1351,0,0,0,1,1,0,0.3417,0.5385,0.6190,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,8,24,j! .A | 0. 00 ( ľ.,j! .A | 0. 00 ( ľ.,,,,0.0,,0.0,0.0,0,18,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,8,25,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,8,26,tWU,tWU,,,,0.0,,0.0,0.0,0,3,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,8,27,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4888,CTX192601143,8,28,26/603 .4 do Aerk/*e.,26/603 .4 do Aerk/*e.,,,ces_Latn,0.7500,vie_Latn,0.2130,1128.00,4,21,0.2381,0,0,0,0,0,0,0.1000,0.3333,0.5714,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4183,CTX192601143,8,29,". : &u, Rca v ( ce5.,",". : &u, Rca v ( ce5.,",,,slk_Latn,0.8935,slk_Latn,0.8935,2896.00,7,21,0.3333,0,0,1,0,0,0,0.3286,0.2143,0.4286,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,8,30,"X , C /oa(wt A","X , C /oa(wt A",,,,0.0,,0.0,0.0,0,14,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,8,31,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4898,CTX192601143,8,32,MA <,MA <,,,pol_Latn,0.8259,pol_Latn,0.8259,850.00,2,4,0.2500,0,0,0,0,0,0,0.0000,0.3333,0.5000,True,False,False,False,True,False,False,False,False,False,False
+Clear,0.9046,CTX192601143,8,33,A. Alon A.,A. Alon A.,,,ces_Latn,0.7500,epo_Latn,0.6759,168.00,3,10,0.2000,0,0,0,0,0,0,0.0000,0.5000,0.3333,False,False,False,False,False,False,True,False,False,False,False
+Trash,0.2191,CTX192601143,8,34,L QeAIuw,L QeAIuw,,,ces_Latn,0.7500,lmo_Latn,1.0000,850.00,2,8,0.0000,1,0,0,1,0,0,0.6500,0.5714,0.5714,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.1578,CTX192601143,8,35,UV..,UV..,,,ces_Tibt,0.5000,bod_Tibt,0.4761,850.00,1,4,0.5000,0,0,0,0,0,0,0.0000,0.2500,1.0000,True,False,False,False,True,False,False,False,False,True,False
+Trash,0.1694,CTX192601143,8,36,(ODNu50,(ODNu50,,,ces_Latn,0.7500,dan_Latn,0.7318,850.00,1,7,0.1429,1,0,1,0,0,0,0.6000,0.4000,1.0000,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,8,37,7,7,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,8,38,&G,&G,,,,0.0,,0.0,0.0,0,2,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,8,39,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,8,40,"oreAu Avniny,","oreAu Avniny,",,,ces_Latn,0.7500,swe_Latn,0.9690,850.00,2,13,0.0769,1,0,0,1,1,0,0.1250,0.5833,0.6364,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.3709,CTX192601143,8,41,"1 M* ""( 3 ofwi-","1 M* ""( 3 ofwi-",,,ces_Arab,0.5000,arb_Arab,0.3629,7136.00,5,15,0.2667,0,0,0,0,0,0,0.5000,0.2222,0.6000,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,8,42,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.2343,CTX192601143,8,43,Q olvŮewt,Q olvŮewt,,,ces_Latn,0.7500,azj_Latn,0.2543,850.00,2,9,0.0000,1,0,0,0,0,0,0.6500,0.3750,0.6250,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4996,CTX192601143,8,44,"""/wodké Alt lu&nvy A0g4rd (* fVrn),T""","/wodké Alt lu&nvy A0g4rd (* fVrn),T""",,,ces_Latn,0.6354,ces_Latn,0.6354,2256.00,6,37,0.2162,1,0,1,0,0,0,0.2500,0.2000,0.4545,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5842,CTX192601143,8,45,yw «— 3 N(ow. AXNCopCa.. atow nfonwsvd (on,yw «— 3 N(ow. AXNCopCa.. atow nfonwsvd (on,,,ces_Latn,0.7500,cym_Latn,0.9755,2400.00,8,42,0.1667,1,0,0,1,0,0,0.2625,0.2647,0.7407,False,False,False,False,False,True,False,False,False,True,True
+Trash,0.5374,CTX192601143,8,46,"JcGyMN A 502 A QxpANG/m (% t A) 0-14 ,""& A","JcGyMN A 502 A QxpANG/m (% t A) 0-14 ,""& A",,,ces_Latn,0.7500,hun_Latn,0.5135,624.00,11,42,0.1905,2,0,0,0,0,0,0.3773,0.2308,0.4444,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,8,47,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,8,48,Y.,Y.,,,,0.0,,0.0,0.0,0,2,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,8,49,o,o,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3236,CTX192601143,8,50,fwo .,fwo .,,,ces_Latn,0.7500,ewe_Latn,0.5899,850.00,2,5,0.2000,0,0,0,0,0,0,0.5500,0.2500,0.6667,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,9,1,//4/26,//4/26,,,,0.0,,0.0,0.0,0,6,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,10,1,/0 r,/0 r,,,,0.0,,0.0,0.0,0,4,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,10,2,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.0273,CTX192601143,10,3,090 (- /MwNg,090 (- /MwNg,,,ces_Latn,0.7500,cym_Latn,0.5868,1928.00,3,12,0.2500,1,0,0,0,0,0,0.6333,0.0000,0.7500,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,10,4,ACCorcr ô 0030%,ACCorcr ô 0030%,,,,0.0,,0.0,0.0,0,15,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3003,CTX192601143,10,5,3 /A3.(7*A(Kot,3 /A3.(7*A(Kot,,,ces_Latn,0.7500,azj_Latn,0.2039,850.00,2,14,0.3571,0,0,1,0,0,0,0.4000,0.3000,0.2000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.3461,CTX192601143,10,6,AQ NP N ovOno/,AQ NP N ovOno/,,,ces_Latn,0.7500,lmo_Latn,0.5176,10432.00,4,14,0.0714,1,0,0,0,0,0,0.8750,0.3636,0.9000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.1935,CTX192601143,10,7,"J, i n t -","J, i n t -",,,ces_Latn,0.7500,swe_Latn,0.6420,604.00,5,10,0.2000,0,0,0,0,0,0,0.7400,0.1667,0.2500,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,10,8,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,10,9,[VO,[VO,,,,0.0,,0.0,0.0,0,3,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,10,10,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4956,CTX192601143,10,11,UJou CMirA’ 7vvol,UJou CMirA’ 7vvol,,,fra_Latn,0.5426,fra_Latn,0.5426,5568.00,3,17,0.0588,2,1,1,0,1,0,0.6000,0.4286,0.5385,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.2791,CTX192601143,10,12,"""(TSNJ 0 I ""","(TSNJ 0 I """,,,ces_Latn,0.7500,swe_Latn,0.8460,2976.00,4,12,0.2500,0,0,0,0,0,0,0.4500,0.1250,0.4000,True,False,False,False,True,False,False,False,False,True,False
+Trash,0.4418,CTX192601143,10,13,/MonANI Nue (C.AA/u /,/MonANI Nue (C.AA/u /,,,slk_Latn,0.1909,slk_Latn,0.1909,8640.00,4,21,0.2381,1,1,0,0,1,0,0.1500,0.4444,0.6154,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4740,CTX192601143,10,14,"o , ň I o íl h . j","o , ň I o íl h . j",,,slk_Latn,0.4201,slk_Latn,0.4201,776.00,9,18,0.1111,0,0,0,0,0,0,0.7111,0.4000,0.2500,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,10,15,C.,C.,,,,0.0,,0.0,0.0,0,2,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4980,CTX192601143,10,16,"ANBMA /V NX , ak 1 700 /""A*","ANBMA /V NX , ak 1 700 /""A*",,,ces_Latn,0.7500,bos_Latn,0.2811,536.00,8,27,0.1852,0,0,0,0,0,0,0.4125,0.2500,0.5455,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,10,17,"xn Jeoy. ko Cocoponanéa,rkv /A %4o /30/~","xn Jeoy. ko Cocoponanéa,rkv /A %4o /30/~",,,ces_Latn,0.7500,epo_Latn,0.1586,2720.00,7,40,0.1750,0,0,1,2,1,0,0.1071,0.3871,0.5833,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4629,CTX192601143,10,18,Aúibun AeAH HAn 2 CCocopadn(« — & -,Aúibun AeAH HAn 2 CCocopadn(« — & -,,,ces_Latn,0.7500,war_Latn,0.6693,8096.00,8,35,0.1429,3,1,0,2,1,0,0.2188,0.4074,0.4545,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,10,19,UWt,UWt,,,,0.0,,0.0,0.0,0,3,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4156,CTX192601143,10,20,"/Os* <k^'U dNnrollA.o /NE, ( Nes","/Os* <k^'U dNnrollA.o /NE, ( Nes",,,ces_Latn,0.7500,azj_Latn,0.2579,1928.00,6,32,0.2812,1,1,0,0,0,0,0.2333,0.2593,0.7222,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4813,CTX192601143,10,21,t A e *wX c0y,t A e *wX c0y,,,eng_Latn,0.9090,eng_Latn,0.9090,1128.00,5,13,0.0769,1,0,1,0,0,0,0.5400,0.3750,0.5714,False,False,False,False,True,False,False,False,False,False,False
+Trash,0.2692,CTX192601143,10,22,& Ma G .Ach,& Ma G .Ach,,,pol_Latn,0.9907,pol_Latn,0.9907,2800.00,4,11,0.1818,0,0,0,0,0,0,0.4250,0.2500,0.1667,False,False,False,False,True,False,False,False,False,False,False
+Trash,0.3512,CTX192601143,10,23,"/ 0 0""WT 0“ (*070 rvcíU)9^YC","/ 0 0""WT 0“ (*070 rvcíU)9^YC",,,ces_Latn,0.7500,ast_Latn,0.6976,856.00,6,28,0.2500,1,0,3,0,0,0,0.3917,0.1875,0.4444,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,10,24,"d k, /Mya j-n Alyu ANCCCy.","d k, /Mya j-n Alyu ANCCCy.",,,ces_Latn,0.7500,lmo_Latn,0.8260,7616.00,6,26,0.1538,1,1,0,0,1,0,0.2750,0.3333,0.4706,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4568,CTX192601143,10,25,"jroM A& A. , NvCaang A% oolXAh®","jroM A& A. , NvCaang A% oolXAh®",,,ces_Latn,0.7500,wol_Latn,0.7619,2048.00,7,31,0.1613,3,1,0,0,0,0,0.3000,0.3600,0.4000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4444,CTX192601143,10,26,eoic M M/o‘ M- (2AN MGAuX Rn,eoic M M/o‘ M- (2AN MGAuX Rn,,,ces_Hang,0.5000,kor_Hang,0.3338,1808.00,7,28,0.1429,1,0,1,1,1,0,0.2929,0.3333,0.6471,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,10,27,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,10,28,"' ' "" k4že /olonbka,""3 Ege 94%","' ' "" k4že /olonbka,""3 Ege 94%",,,ces_Latn,0.7500,hun_Latn,0.2013,1592.00,7,30,0.2333,0,0,1,0,0,0,0.0214,0.3000,0.5385,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.6487,CTX192601143,10,29,"nonč, mI 47 žn dn A' 1074 484 ""Nik 1726.","nonč, mI 47 žn dn A' 1074 484 ""Nik 1726.",,,ces_Latn,0.7500,lim_Latn,0.2857,131.00,10,40,0.1000,1,0,0,0,0,0,0.3050,0.2222,0.5714,False,False,False,False,False,True,False,False,False,False,True
+Non-text,0.0,CTX192601143,10,30,/N,/N,,,,0.0,,0.0,0.0,0,2,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3297,CTX192601143,10,31,wi~y Ulcak.l’,wi~y Ulcak.l’,,,eng_Latn,0.4766,eng_Latn,0.4766,850.00,2,13,0.2308,0,0,0,0,0,0,0.5000,0.3333,0.3333,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,10,32,ť G** 2 /—**8,ť G** 2 /—**8,,,,0.0,,0.0,0.0,0,13,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4850,CTX192601143,10,33,"eiMre Amg); (""AC/","eiMre Amg); (""AC/",,,deu_Latn,0.6234,deu_Latn,0.6234,4928.00,3,17,0.2941,1,0,0,0,0,0,0.0833,0.3333,0.4000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.3975,CTX192601143,10,34,"vof*d ""I m r*ác2,","vof*d ""I m r*ác2,",,,slk_Latn,0.1717,slk_Latn,0.1717,4928.00,4,17,0.2353,0,0,1,0,0,0,0.4500,0.2308,0.4444,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5389,CTX192601143,10,35,- AaNolewn Fywa. oLríuít,- AaNolewn Fywa. oLríuít,,,ces_Latn,0.7500,cym_Latn,0.9189,3376.00,4,24,0.0833,2,0,0,1,0,0,0.2250,0.4762,0.4737,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,10,36,"""J“""","""J“",,,,0.0,,0.0,0.0,0,4,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,10,37,"3*7 0432/0""”° —N MOFAVA °®N","3*7 0432/0""”° —N MOFAVA °®N",,,,0.0,,0.0,0.0,0,27,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3836,CTX192601143,10,38,"v(vrrll.3 *o,M&ki Akg2N • ""-2-3","v(vrrll.3 *o,M&ki Akg2N • ""-2-3",,,ces_Latn,0.7500,vie_Latn,0.3084,1368.00,5,31,0.2903,0,1,1,1,0,0,0.2800,0.1304,0.3571,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,10,39,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4989,CTX192601143,10,40,"( ""ul nmci NC gi AlN","( ""ul nmci NC gi AlN",,,ces_Latn,0.7500,ron_Latn,0.3120,32000.00,6,20,0.1000,1,0,0,0,0,0,0.2750,0.2667,0.3846,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.3218,CTX192601143,10,41,", an‘d0/.ocAWuon) z ,",", an‘d0/.ocAWuon) z ,",,,deu_Latn,0.6005,deu_Latn,0.6005,3376.00,4,21,0.2857,1,0,1,0,0,0,0.8500,0.2941,0.7273,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5118,CTX192601143,10,42,t f* /VC (YMW AV0 /WAOR ALOt,t f* /VC (YMW AV0 /WAOR ALOt,,,ces_Latn,0.7500,lim_Latn,0.9989,2048.00,7,28,0.1429,1,0,1,0,0,0,0.3214,0.2857,0.4706,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4811,CTX192601143,10,43,"AAmd Cvu, /WA. (u . ozuol,.","AAmd Cvu, /WA. (u . ozuol,.",,,ces_Latn,0.7500,nld_Latn,0.8066,5216.00,6,27,0.2593,1,1,0,0,0,0,0.5750,0.3636,0.6667,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,10,44,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,10,45,A/,A/,,,,0.0,,0.0,0.0,0,2,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,11,1,2742/2%,2742/2%,,,,0.0,,0.0,0.0,0,7,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,11,2,« Rudl Anlore Alúda (~ dkon.,« Rudl Anlore Alúda (~ dkon.,,,slk_Latn,0.7272,slk_Latn,0.7272,28288.00,6,28,0.1429,0,0,0,0,0,0,0.0000,0.3478,0.4737,False,False,False,False,True,False,False,False,False,False,False
+Empty,0.0,CTX192601143,11,3,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5064,CTX192601143,11,4,n.) % Xukao veRo /ekonileu,n.) % Xukao veRo /ekonileu,,,ces_Latn,0.7500,diq_Latn,0.3555,16128.00,5,26,0.1538,1,0,0,0,0,0,0.5400,0.4545,0.6667,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,11,5,d,d,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,11,6,š AM Nalon (dovk)/ GhowmncAlr A /n,š AM Nalon (dovk)/ GhowmncAlr A /n,,,ces_Latn,0.3305,ces_Latn,0.3305,3824.00,7,34,0.1176,1,0,0,0,0,0,0.3071,0.2500,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4588,CTX192601143,11,7,"% /i Neku 0e, A‘o{*i Av‘ /ehlu‘","% /i Neku 0e, A‘o{*i Av‘ /ehlu‘",,,ces_Latn,0.7500,lvs_Latn,0.1875,940.00,7,31,0.2903,0,0,1,0,1,0,0.1929,0.4167,0.5333,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,11,8,"U, ou A. oN 1..,0 a , . '","U, ou A. oN 1..,0 a , . '",,,,0.0,,0.0,0.0,0,25,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.1666,CTX192601143,11,9,MAOk.,MAOk.,,,ces_Latn,0.7500,ceb_Latn,0.9993,850.00,1,5,0.2000,1,0,0,0,0,0,0.4500,0.4000,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4782,CTX192601143,11,10,1.Alns. (Ahdr T,1.Alns. (Ahdr T,,,deu_Latn,0.4807,deu_Latn,0.4807,3376.00,3,15,0.2000,0,0,0,0,0,0,0.2833,0.1667,0.3333,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,11,11,Vutsp - 0i 3,Vutsp - 0i 3,,,,0.0,,0.0,0.0,0,12,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4731,CTX192601143,11,12,"ADew., AendcQ AA(Q","ADew., AendcQ AA(Q",,,ces_Latn,0.7500,lmo_Latn,0.4031,49664.00,3,18,0.1667,2,1,0,0,0,0,0.5500,0.3750,0.6154,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,11,13,/,/,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,11,14,"T, * • 3 ( d4Ny NV 07 "" 07° /s58/ ""3 (","T, * • 3 ( d4Ny NV 07 "" 07° /s58/ ""3 (",,,,0.0,,0.0,0.0,0,38,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,11,15,Neu,Neu,,,,0.0,,0.0,0.0,0,3,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,11,16,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4502,CTX192601143,11,17,"‘ ""A*o % ANog n swine( de c7hnori~- dN*4f okvi n* /18322;","‘ ""A*o % ANog n swine( de c7hnori~- dN*4f okvi n* /18322;",,,ces_Latn,0.7500,bos_Latn,0.7035,1928.00,12,57,0.1930,2,0,2,0,0,0,0.3208,0.2821,0.6071,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,11,18,ó,ó,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3234,CTX192601143,11,19,"X,eQ ACQ,7LeQ Qo","X,eQ ACQ,7LeQ Qo",,,ces_Latn,0.7500,azj_Latn,0.9999,1208.00,3,16,0.1250,2,0,1,0,0,0,0.8500,0.3077,0.7273,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4921,CTX192601143,11,20,"Ap4.,M3Gz8."" m folké","Ap4.,M3Gz8."" m folké",,,ces_Latn,0.6854,ces_Latn,0.6854,4928.00,3,20,0.2000,0,0,1,0,0,0,0.3333,0.2000,0.4545,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5277,CTX192601143,11,21,( oN~ /Adah‘ ~~C A Ga.pon deAorv A,( oN~ /Adah‘ ~~C A Ga.pon deAorv A,,,ces_Latn,0.7500,hun_Latn,0.3528,2624.00,8,34,0.2059,2,0,0,1,0,0,0.2125,0.3704,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4957,CTX192601143,11,22,"NMAc /‘30AA cOWMWieL Purul a 0. qAGUU., M","NMAc /‘30AA cOWMWieL Purul a 0. qAGUU., M",,,ces_Latn,0.7500,lmo_Latn,0.6373,2176.00,8,41,0.1220,3,1,1,0,0,1,0.3875,0.3871,0.5385,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,11,23,"mi (i A XGAn Q,","mi (i A XGAn Q,",,,ces_Latn,0.7500,uzn_Latn,0.5186,1984.00,5,15,0.1333,1,0,0,0,0,0,0.5400,0.3636,0.4444,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,11,24,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,11,25,c,c,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.6250,CTX192601143,11,26,% (OAI,% (OAI,,,ces_Latn,0.7500,lit_Latn,0.4181,850.00,2,6,0.3333,0,0,0,1,0,0,0.0000,0.6000,0.3333,True,False,False,False,False,True,False,False,False,False,True
+Empty,0.0,CTX192601143,11,27,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,11,28,ť,ť,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,11,29,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5434,CTX192601143,11,30,Mal/- NCoUrC o pnfd «,Mal/- NCoUrC o pnfd «,,,ces_Latn,0.7500,oci_Latn,0.7059,34048.00,5,21,0.1429,1,0,0,0,0,0,0.3600,0.2353,0.5714,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,11,31,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,11,32,4,4,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,11,33,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,11,34,Nalw . *ol Akkuy AidudAw. Mole Admo,Nalw . *ol Akkuy AidudAw. Mole Admo,,,ces_Latn,0.7500,ilo_Latn,0.3040,2720.00,7,35,0.0857,1,1,0,0,0,0,0.2000,0.4483,0.5769,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.2773,CTX192601143,11,35,70AM ANAo,70AM ANAo,,,ces_Latn,0.7500,plt_Latn,0.9444,850.00,2,9,0.0000,1,0,1,0,1,0,0.3000,0.6667,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,11,36,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,11,37,/,/,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,11,38,ACMert464. Jigya /eac.,ACMert464. Jigya /eac.,,,ces_Latn,0.7500,hun_Latn,0.2389,1592.00,3,22,0.1364,1,0,1,0,0,0,0.2000,0.4118,0.2857,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,11,39,v (,v (,,,,0.0,,0.0,0.0,0,3,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.2260,CTX192601143,11,40,"DocQ0., wiq‘ n","DocQ0., wiq‘ n",,,pol_Latn,0.3953,pol_Latn,0.3953,8640.00,3,14,0.2143,1,0,1,0,0,0,1.0000,0.1818,0.7500,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.2731,CTX192601143,11,41,wI / 2,wI / 2,,,deu_Latn,0.6076,deu_Latn,0.6076,135.00,3,6,0.1667,1,0,0,0,0,0,0.2333,0.3333,0.5000,False,False,False,False,True,False,False,False,False,False,False
+Trash,0.1815,CTX192601143,11,42,C/oAt .,C/oAt .,,,ces_Latn,0.7500,ron_Latn,0.6579,850.00,2,7,0.2857,1,0,0,0,0,0,0.1250,0.3333,0.2500,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.3293,CTX192601143,11,43,&oik * Mlu,&oik * Mlu,,,ces_Latn,0.7500,tur_Latn,0.9072,4352.00,3,10,0.2000,0,0,0,0,0,0,0.1333,0.3750,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,11,44,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4946,CTX192601143,11,45,"N UX.Ac 4 M0rnš,"" I osA & MtA","N UX.Ac 4 M0rnš,"" I osA & MtA",,,ces_Latn,0.7500,cat_Latn,0.4093,5216.00,8,29,0.1379,3,0,1,0,0,0,0.3625,0.3000,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,11,46,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,11,47,‘ V L C,‘ V L C,,,,0.0,,0.0,0.0,0,7,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4665,CTX192601143,11,48,"Aógy ( Aaj- /A), 70r/J? crgA AA rr. /Ano—— P0l4* (~*e","Aógy ( Aaj- /A), 70r/J? crgA AA rr. /Ano—— P0l4* (~*e",,,ces_Latn,0.7500,lmo_Latn,0.6733,1696.00,11,53,0.2830,1,1,2,0,1,0,0.1545,0.3077,0.2083,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,11,49,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,11,50,A. ~ £,A. ~ £,,,,0.0,,0.0,0.0,0,6,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.6236,CTX192601143,12,1,■ Lue Ne,■ Lue Ne,,,ces_Latn,0.7500,lua_Latn,0.9088,6720.00,3,8,0.1250,0,0,0,0,0,0,0.0000,0.5000,0.8000,False,False,False,False,False,True,False,False,False,True,True
+Empty,0.0,CTX192601143,12,2,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5068,CTX192601143,12,3,NiRac2 NLg A °Add 9,NiRac2 NLg A °Add 9,,,ces_Latn,0.7500,hun_Latn,0.2915,1808.00,5,19,0.0526,2,1,1,0,0,0,0.4300,0.3077,0.3333,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5453,CTX192601143,12,4,"oions "" pMAAAaM 33 /MT","oions "" pMAAAaM 33 /MT",,,ces_Latn,0.7500,nld_Latn,0.5367,828.00,5,22,0.0909,1,1,0,2,0,0,0.1200,0.4375,0.5714,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,12,5,Alyrý cvod nede % Agrgr oAOrt,Alyrý cvod nede % Agrgr oAOrt,,,slk_Latn,0.6658,slk_Latn,0.6658,16128.00,6,29,0.0345,1,0,0,1,0,0,0.0417,0.4167,0.4348,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.3105,CTX192601143,12,6,A./ Jo AOwA,A./ Jo AOwA,,,ces_Latn,0.7500,min_Latn,0.8028,41216.00,3,11,0.1818,1,0,0,0,1,0,0.2167,0.5556,0.4286,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,12,7,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4200,CTX192601143,12,8,"( 2C0AuN , 7 Aorz e ,(","( 2C0AuN , 7 Aorz e ,(",,,ces_Latn,0.7500,glg_Latn,0.9069,1032.00,7,22,0.1818,1,0,1,0,0,0,0.4357,0.3846,0.5556,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.4512,CTX192601143,12,9,I Alaolu ko Me~ H M ~ . — 1,I Alaolu ko Me~ H M ~ . — 1,,,ces_Latn,0.7500,min_Latn,0.2879,2976.00,10,27,0.1481,0,0,0,0,0,0,0.4750,0.4118,0.4615,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,12,10,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.1704,CTX192601143,12,11,) -U\U,) -U\U,,,ces_Latn,0.7500,vie_Latn,0.5507,404.00,2,6,0.5000,0,0,0,0,0,0,0.2000,0.4000,1.0000,True,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,12,12,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,12,13,1,1,,,,0.0,,0.0,0.0,0,1,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,12,14,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3176,CTX192601143,12,15,"eZ-""orA) A*RM 0*4","eZ-""orA) A*RM 0*4",,,ces_Latn,0.7500,hun_Latn,0.2712,2048.00,3,17,0.2941,1,0,1,0,0,0,0.4000,0.3077,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,12,16,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3296,CTX192601143,12,17,"CCuusmi *ocA. ALnGMk,A","CCuusmi *ocA. ALnGMk,A",,,pol_Latn,0.3867,pol_Latn,0.3867,7616.00,3,22,0.1364,3,1,0,1,0,0,0.6333,0.3500,0.4118,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,12,18,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,12,19,MLJ,MLJ,,,,0.0,,0.0,0.0,0,3,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Empty,0.0,CTX192601143,12,20,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.3531,CTX192601143,12,21,At . O/wvi,At . O/wvi,,,eng_Latn,0.9856,eng_Latn,0.9856,532480.00,3,10,0.2000,0,0,0,0,0,0,0.0667,0.3750,0.5000,False,False,False,False,True,False,False,False,False,False,False
+Empty,0.0,CTX192601143,12,22,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5303,CTX192601143,12,23,AN(? /core/ entrMvró,AN(? /core/ entrMvró,,,ces_Latn,0.7500,spa_Latn,0.6907,111616.00,3,20,0.2000,1,0,0,1,0,0,0.0833,0.2778,0.5000,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,12,24,II,II,,,,0.0,,0.0,0.0,0,2,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5499,CTX192601143,12,25,)oekl AAOCv2t A,)oekl AAOCv2t A,,,ces_Latn,0.7500,hun_Latn,0.3867,1648.00,3,15,0.0667,1,1,1,1,0,0,0.3167,0.5000,0.3636,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,12,26,", • l 0Deo) I , .",", • l 0Deo) I , .",,,,0.0,,0.0,0.0,0,17,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.8000,CTX192601143,12,27,o eyntce,o eyntce,,,ces_Latn,0.7880,ces_Latn,0.7880,850.00,2,8,0.0000,0,0,0,0,0,0,0.4250,0.5714,0.7143,False,False,False,False,False,False,True,False,False,True,False
+Non-text,0.0,CTX192601143,12,28,Rom,Rom,,,,0.0,,0.0,0.0,0,3,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.5813,CTX192601143,12,29,dlo n Noema • «,dlo n Noema • «,,,ces_Latn,0.7500,afr_Latn,0.9162,10432.00,5,15,0.1333,0,0,0,0,0,0,0.1700,0.3636,0.7778,False,False,False,False,False,True,False,False,False,True,True
+Empty,0.0,CTX192601143,12,30,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4472,CTX192601143,12,31,Me/ S/wl 7o0oe,Me/ S/wl 7o0oe,,,ces_Latn,0.7500,vie_Latn,0.2568,1592.00,3,14,0.1429,0,0,1,0,1,0,0.6833,0.4000,0.8750,False,False,False,False,True,False,False,False,False,True,False
+Non-text,0.0,CTX192601143,12,32,"/né0q 7 04 ( ore.‘ & ""00—U,","/né0q 7 04 ( ore.‘ & ""00—U,",,,,0.0,,0.0,0.0,0,27,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4919,CTX192601143,12,33,WAoz. AOGe / Ac /eAacz zryr,WAoz. AOGe / Ac /eAacz 2ryr,,,ces_Latn,0.7500,lim_Latn,0.9799,6304.00,6,27,0.1111,3,0,0,1,1,0,0.2250,0.4545,0.4737,False,False,False,False,True,False,False,False,False,True,False
+Trash,0.5499,CTX192601143,12,34,k A Aoni- 0H 4746 6,k A Aoni- 0H 4746 6,,,ces_Latn,0.7500,gle_Latn,0.3485,185.00,6,19,0.0526,0,0,1,0,1,0,0.3583,0.5000,0.2857,False,False,False,False,True,False,False,False,False,False,False
+Trash,0.3848,CTX192601143,12,35,/AGol.@ Jan 7 /‘e /de (*MN C.,/AGol.@ Jan 7 /‘e /de (*MN C.,,,ces_Latn,0.7500,vie_Latn,0.1634,4080.00,7,29,0.3103,1,0,0,0,0,0,0.2714,0.2273,0.5385,False,False,False,False,True,False,False,False,False,True,False
+Empty,0.0,CTX192601143,12,36,,,,,,0.0,,0.0,0.0,0,0,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,12,37,f V,f V,,,,0.0,,0.0,0.0,0,3,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Non-text,0.0,CTX192601143,12,38,‘/V (920 ( /dA,‘/V (920 ( /dA,,,,0.0,,0.0,0.0,0,14,0.0,0,0,0,0,0,0,0.0,0.0,0.0,False,False,False,False,False,False,False,False,False,False,False
+Trash,0.4312,CTX192601143,12,39,"CLe, - 260. , we j’ AnCs A","CLe, - 260. , we j’ AnCs A",,,ces_Latn,0.7500,cat_Latn,0.5745,804.00,8,26,0.1923,2,0,0,0,0,0,0.4000,0.2500,0.4545,False,False,False,False,True,False,False,False,False,True,False
