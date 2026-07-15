@@ -1,0 +1,525 @@
+# atrium-project — end-to-end pipeline integration smoke test (issue #18 follow-up)
+#
+# Runs ONE single-page Czech fixture (fixtures/e2e/ — byte-identical copies of
+# atrium-alto-postprocess data_samples/{ALTO,DOC_LINE_CATEG}/CTX000000003.*,
+# the calibration-loop synthetic samples) through the whole tool chain
+#
+#     pc -> alto -> translate -> nlp -> llm -> TEITOK
+#
+# with every repo checked out at the same ref (default: `test`, the ecosystem's
+# authoritative integration branch). Each job boundary is one cross-repo
+# interface; assertions (tools/e2e/e2e_assert.py) check formats and contracts,
+# never model quality. This catches cross-repo interface breakage that per-repo
+# CI cannot see — especially valuable given the @test-pinned reusable
+# architecture, where any repo's push to `test` can break a neighbour.
+#
+# Stage notes
+# -----------
+# * pc          classifies a PNG RENDERED from the fixture ALTO (tools/e2e/
+#               render_alto_page.py) — one source fixture, no committed binary.
+# * alto        runs split -> stats -> extract (--method alto-tools, CPU). The
+#               classify stage hard-requires CUDA (perplexity engine fails fast
+#               on CPU-only nodes), so alto -> nlp is bridged by the committed
+#               fixture DOC_LINE_CATEG CSV. The `categ-header` tripwire fails
+#               this job the moment alto's CSV_HEADER changes, forcing a fixture
+#               regeneration instead of silently testing a stale format. Once
+#               the [self-hosted, gpu] runner exists (rharasim), replace the
+#               bridge with a live `--start-from classify` run.
+# * translate   LINDAT CUBBITT cs->en on the split per-page ALTO. main.py prints
+#               [ERROR] and exits 0 on several failure paths, so the assertion
+#               step — not the exit code — is the gate.
+# * nlp         manifest -> UDPipe -> NameTag -> stats/TEITOK on the Czech
+#               original (czech-pdt model; Czech is the pipeline default).
+# * llm         OpenRouter keyword enrichment of the categ CSV. Gated on the
+#               OPENROUTER_API_KEY secret (mirrored into job env — the secrets
+#               context is invisible to env.* checks, same trap as the #18
+#               Codecov gate). Skips cleanly when the secret is absent.
+#               NOTE: the CSV is used instead of the TEITOK because the TEITOK
+#               line-level path in llm_client_shared.read_input_rows synthesizes
+#               quality_score=0.0, which should_process_line reclassifies to
+#               "Trash" — every line is skipped (tracked repo-side in
+#               ufal/atrium-llm-enrich#8 follow-ups).
+
+name: E2E Pipeline Smoke Test
+
+on:
+  schedule:
+    - cron: "0 4 * * *" # daily 04:00 UTC, offset from the per-repo 03:00 smokes
+  workflow_dispatch:
+    inputs:
+      pipeline-ref:
+        description: "Branch/ref to check out in every tool repo"
+        default: "test"
+        type: string
+      openrouter-model:
+        description: "OpenRouter model slug for the llm stage"
+        default: "openai/gpt-4o-mini"
+        type: string
+  push:
+    branches: [test, main]
+    paths:
+      - ".github/workflows/e2e-pipeline-smoke.yml"
+      - "fixtures/e2e/**"
+      - "tools/e2e/**"
+
+concurrency:
+  group: e2e-pipeline-smoke-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  PIPELINE_REF: ${{ inputs.pipeline-ref || 'test' }}
+  E2E_DOC: CTX000000003
+  PC_REVISION: v4.3 # matches the pc Dockerfile CMD pin + its scheduled-smoke reachability check
+
+jobs:
+  # ── Stage 1: page classification ─────────────────────────────────────────────
+  pc:
+    name: "1. page-classification"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout hub (fixtures + tools)
+        uses: actions/checkout@v7
+        with:
+          path: hub
+
+      - name: Checkout atrium-page-classification
+        uses: actions/checkout@v7
+        with:
+          repository: ufal/atrium-page-classification
+          ref: ${{ env.PIPELINE_REF }}
+          path: pc
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Cache HuggingFace models
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/huggingface
+          key: hf-e2e-pc-${{ env.PC_REVISION }}
+          restore-keys: hf-e2e-pc-
+
+      - name: Install dependencies (CPU torch)
+        run: |
+          pip install torch==2.7.1 torchvision==0.22.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install -r pc/setup/requirements.txt
+
+      - name: Render fixture page image from the ALTO
+        run: |
+          python3 hub/tools/e2e/render_alto_page.py \
+            "hub/fixtures/e2e/ALTO/${E2E_DOC}.alto.xml" \
+            --out "${GITHUB_WORKSPACE}/work/input/${E2E_DOC}-1.png"
+
+      - name: Classify the fixture page
+        working-directory: pc
+        run: python3 run.py -d "${GITHUB_WORKSPACE}/work/input" --hf -rev "${PC_REVISION}" --no-chunk --no-inner
+
+      - name: Assert pc interface
+        run: python3 hub/tools/e2e/e2e_assert.py pc --tables pc/result/tables
+
+      - name: Upload stage artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-stage-pc
+          path: pc/result/tables/
+
+  # ── Stage 2: ALTO post-processing ─────────────────────────────────────────────
+  alto:
+    name: "2. alto-postprocess"
+    # Data-independent of pc — `needs` encodes the declared pipeline order so a
+    # broken earlier stage fails the run fast and in sequence.
+    needs: pc
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout hub (fixtures + tools)
+        uses: actions/checkout@v7
+        with:
+          path: hub
+
+      - name: Checkout atrium-alto-postprocess
+        uses: actions/checkout@v7
+        with:
+          repository: ufal/atrium-alto-postprocess
+          ref: ${{ env.PIPELINE_REF }}
+          path: alto
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      # Targeted install: split/stats/extract need pandas+tqdm+lxml and the
+      # alto-tools CLI only. The full requirements.txt pulls the torch stack,
+      # which belongs to the (GPU-gated, skipped) classify stage.
+      - name: Install dependencies
+        run: |
+          pip install pandas tqdm lxml
+          pip install "git+https://github.com/cneud/alto-tools.git"
+
+      - name: Prepare workspace + e2e config
+        run: |
+          W="${GITHUB_WORKSPACE}/work"
+          mkdir -p "$W/ALTO" "$W/DOC_LINE_CATEG"
+          cp "hub/fixtures/e2e/ALTO/${E2E_DOC}.alto.xml" "$W/ALTO/"
+          cat > "$W/config_e2e_langid.txt" <<EOF
+          [PIPELINE]
+          METHOD = alto-tools
+          INPUT_DIR = $W/ALTO
+          PAGE_ALTO_DIR = $W/PAGE_ALTO
+          PARADATA_DIR = $W/paradata
+          SKIP_CLASSIFY = true
+          SKIP_AGGREGATE = true
+
+          [EXTRACT]
+          INPUT_CSV = $W/e2e_alto_stats.csv
+          OUTPUT_TXT = $W/PAGE_TXT
+          WORKERS_MAX = 2
+
+          [CLASSIFY]
+          OUTPUT_LINES_LOG = $W/DOC_LINE_CATEG
+
+          [AGGREGATE]
+          RAW_LINES_CSV = $W/DOC_LINE_CATEG
+          OUTPUT_DOC_DIR = $W/DOC_LINE_STATS
+          EOF
+
+      - name: Run alto pipeline (split -> stats -> extract)
+        working-directory: alto
+        run: python3 run_pipeline.py --config "${GITHUB_WORKSPACE}/work/config_e2e_langid.txt"
+
+      - name: Assert alto interface
+        run: |
+          python3 hub/tools/e2e/e2e_assert.py alto \
+            --doc "${E2E_DOC}" \
+            --page-alto work/PAGE_ALTO \
+            --stats-csv work/e2e_alto_stats.csv \
+            --page-txt work/PAGE_TXT
+
+      - name: Assert fixture categ header matches alto HEAD (GPU-bridge tripwire)
+        run: |
+          python3 hub/tools/e2e/e2e_assert.py categ-header \
+            --fixture "hub/fixtures/e2e/DOC_LINE_CATEG/${E2E_DOC}.csv" \
+            --langid alto/langID_classify.py
+
+      - name: Assert fixture parity with alto data_samples (drop-in drift check)
+        run: |
+          cmp "hub/fixtures/e2e/ALTO/${E2E_DOC}.alto.xml" \
+              "alto/data_samples/ALTO/${E2E_DOC}.alto.xml"
+          cmp "hub/fixtures/e2e/DOC_LINE_CATEG/${E2E_DOC}.csv" \
+              "alto/data_samples/DOC_LINE_CATEG/${E2E_DOC}.csv"
+          echo "[e2e][OK] hub fixtures byte-identical to alto data_samples at ${PIPELINE_REF} HEAD"
+
+      - name: Stage the categ bridge for nlp
+        run: cp "hub/fixtures/e2e/DOC_LINE_CATEG/${E2E_DOC}.csv" work/DOC_LINE_CATEG/
+
+      - name: Upload stage artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-stage-alto
+          path: |
+            work/ALTO/
+            work/PAGE_ALTO/
+            work/PAGE_TXT/
+            work/DOC_LINE_CATEG/
+            work/e2e_alto_stats.csv
+
+  # ── Stage 3: translation (LINDAT CUBBITT, cs -> en) ──────────────────────────
+  translate:
+    name: "3. translator"
+    needs: alto
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout hub (tools)
+        uses: actions/checkout@v7
+        with:
+          path: hub
+
+      - name: Checkout atrium-translator
+        uses: actions/checkout@v7
+        with:
+          repository: ufal/atrium-translator
+          ref: ${{ env.PIPELINE_REF }}
+          path: translator
+
+      - name: Download alto stage artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: e2e-stage-alto
+          path: work
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r translator/requirements.txt
+
+      # Repo defaults apply (config.txt): lindat backend + the data_samples
+      # vocabulary, i.e. the production Tag-and-Protect path.
+      - name: Translate the per-page ALTO (cs -> en)
+        working-directory: translator
+        run: |
+          python3 main.py \
+            "${GITHUB_WORKSPACE}/work/PAGE_ALTO/${E2E_DOC}/${E2E_DOC}-1.alto.xml" \
+            --alto --formats alto.xml \
+            --source_lang cs --target_lang en \
+            -o "${GITHUB_WORKSPACE}/work/translated"
+
+      - name: Assert translate interface
+        run: |
+          python3 hub/tools/e2e/e2e_assert.py translate \
+            --source "work/PAGE_ALTO/${E2E_DOC}/${E2E_DOC}-1.alto.xml" \
+            --out-dir work/translated \
+            --source-lang cs --target-lang en
+
+      - name: Upload stage artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-stage-translate
+          path: work/translated/
+
+  # ── Stage 4: NLP enrichment (UDPipe + NameTag -> TEITOK) ─────────────────────
+  nlp:
+    name: "4. nlp-enrich"
+    # Data comes from the alto artifact; `translate` is in needs to keep the
+    # declared pc -> alto -> translate -> nlp -> llm order failing in sequence.
+    needs: [alto, translate]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout hub (tools)
+        uses: actions/checkout@v7
+        with:
+          path: hub
+
+      - name: Checkout atrium-nlp-enrich
+        uses: actions/checkout@v7
+        with:
+          repository: ufal/atrium-nlp-enrich
+          ref: ${{ env.PIPELINE_REF }}
+          path: nlp
+
+      - name: Download alto stage artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: e2e-stage-alto
+          path: work
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      # Targeted install: the four core stages are stdlib + requests. The full
+      # requirements.txt pulls keybert/sentence-transformers (torch) for the
+      # keyword stage, which this smoke does not run (llm-enrich covers keywords).
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Write e2e config
+        run: |
+          W="${GITHUB_WORKSPACE}/work"
+          cat > "$W/config_e2e_api.txt" <<EOF
+          OUTPUT_DIR="$W/nlp_out"
+          INPUT_TABLES_DIR="$W/DOC_LINE_CATEG"
+          WORK_DIR="$W/TEMP"
+          LOG_FILE="$W/nlp_out/processing.log"
+          CONLLU_INPUT_DIR="$W/nlp_out/UDP"
+          TEMP_TXT_DIR="$W/TEMP/TXT_EXTRACT"
+          CHUNK_DIR="$W/TEMP/CHUNKS"
+          TSV_INPUT_DIR="$W/nlp_out/NE"
+          SUMMARY_OUTPUT_DIR="$W/nlp_out/UDP_NE"
+          TEITOK_OUTPUT_DIR="$W/nlp_out/TEITOK"
+          INPUT_ALTO_DIR="$W/ALTO"
+          PARADATA_DIR="$W/nlp_out/paradata"
+          UDPIPE_URL="https://lindat.mff.cuni.cz/services/udpipe/api/process"
+          NAMETAG_URL="https://lindat.mff.cuni.cz/services/nametag/api/recognize"
+          MODEL_UDPIPE="czech-pdt-ud-2.15-241121"
+          MODEL_NAMETAG="nametag3-multilingual-onto-260521"
+          TIMEOUT=60
+          MAX_RETRIES=5
+          BACKOFF_FACTOR=1.5
+          WORD_CHUNK_LIMIT=900
+          SAVE_CSV=true
+          SAVE_CONLLU_NE=true
+          SAVE_TEITOK=true
+          INPUT_PAGES_DIR=""
+          IMAGE_DPI=""
+          ALTO_DPI=""
+          INPUT_DOCS_DIR="$W/DOCS"
+          FLEXICONV_FORMATS=""
+          FAIL_ON_EMPTY=true
+          EOF
+
+      - name: Run nlp core stages (manifest -> udp -> nt -> stats/TEITOK)
+        working-directory: nlp
+        run: |
+          python3 run_pipeline.py \
+            --config "${GITHUB_WORKSPACE}/work/config_e2e_api.txt" \
+            --stages manifest udp nt stats
+
+      - name: Assert TEITOK interface
+        run: |
+          python3 hub/tools/e2e/e2e_assert.py teitok \
+            --doc "${E2E_DOC}" \
+            --teitok-dir work/nlp_out/TEITOK \
+            --lang cs
+
+      - name: Upload stage artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-stage-nlp
+          path: |
+            work/nlp_out/TEITOK/
+            work/nlp_out/UDP_NE/
+            work/nlp_out/manifest.tsv
+
+  # ── Stage 5: LLM keyword enrichment (OpenRouter, secret-gated) ───────────────
+  llm:
+    name: "5. llm-enrich"
+    needs: [alto, nlp]
+    runs-on: ubuntu-latest
+    env:
+      # Mirrored into job env so step `if:` checks can see it — the `secrets`
+      # context alone is invisible to `env.*` checks (#18 Codecov-gate lesson).
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      OPENROUTER_MODEL: ${{ inputs.openrouter-model || 'openai/gpt-4o-mini' }}
+    steps:
+      - name: Gate on OPENROUTER_API_KEY
+        id: gate
+        run: |
+          if [ -n "${OPENROUTER_API_KEY}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::llm stage skipped — OPENROUTER_API_KEY secret is not set."
+          fi
+
+      - name: Checkout hub (tools)
+        if: steps.gate.outputs.enabled == 'true'
+        uses: actions/checkout@v7
+        with:
+          path: hub
+
+      - name: Checkout atrium-llm-enrich
+        if: steps.gate.outputs.enabled == 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: ufal/atrium-llm-enrich
+          ref: ${{ env.PIPELINE_REF }}
+          path: llm
+
+      # Vocabulary source only — the TEATER thesaurus JSON lives in nlp-enrich's
+      # data_samples (llm-enrich intentionally ships no data_samples).
+      - name: Checkout atrium-nlp-enrich (TEATER vocabulary)
+        if: steps.gate.outputs.enabled == 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: ufal/atrium-nlp-enrich
+          ref: ${{ env.PIPELINE_REF }}
+          path: nlp
+
+      - name: Download alto stage artifact (categ CSV input)
+        if: steps.gate.outputs.enabled == 'true'
+        uses: actions/download-artifact@v7
+        with:
+          name: e2e-stage-alto
+          path: work
+
+      - name: Setup Python 3.11
+        if: steps.gate.outputs.enabled == 'true'
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies (torch-free remote lane)
+        if: steps.gate.outputs.enabled == 'true'
+        run: pip install -r llm/requirements.txt -r llm/requirements_remote.txt
+
+      - name: Stage TEATER vocabulary
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          mkdir -p llm/data_samples
+          cp nlp/data_samples/teater_nested_vocab.json llm/data_samples/
+
+      - name: Enrich the fixture lines (OpenRouter)
+        if: steps.gate.outputs.enabled == 'true'
+        working-directory: llm
+        run: |
+          python3 openrouter_client.py \
+            --input "${GITHUB_WORKSPACE}/work/DOC_LINE_CATEG/${E2E_DOC}.csv" \
+            --output-dir "${GITHUB_WORKSPACE}/work/llm_out" \
+            --model "${OPENROUTER_MODEL}" \
+            --provider-data-collection deny
+
+      - name: Assert keywords interface
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          python3 hub/tools/e2e/e2e_assert.py keywords \
+            --doc "${E2E_DOC}" \
+            --llm-dir work/llm_out
+
+      - name: Upload stage artifact
+        if: steps.gate.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-stage-llm
+          path: work/llm_out/
+
+  # ── Report ────────────────────────────────────────────────────────────────────
+  report:
+    name: "pipeline report"
+    needs: [pc, alto, translate, nlp, llm]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Write step summary
+        run: |
+          {
+            echo "## E2E Pipeline Smoke — ${E2E_DOC} @ ${PIPELINE_REF}"
+            echo ""
+            echo "| Stage | Repo | Result |"
+            echo "|---|---|---|"
+            echo "| 1. pc | atrium-page-classification | ${{ needs.pc.result }} |"
+            echo "| 2. alto | atrium-alto-postprocess | ${{ needs.alto.result }} |"
+            echo "| 3. translate | atrium-translator | ${{ needs.translate.result }} |"
+            echo "| 4. nlp | atrium-nlp-enrich | ${{ needs.nlp.result }} |"
+            echo "| 5. llm | atrium-llm-enrich | ${{ needs.llm.result }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail the run if any stage failed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
+
+      - name: Open issue on scheduled failure
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const stages = {
+              "pc": "${{ needs.pc.result }}",
+              "alto": "${{ needs.alto.result }}",
+              "translate": "${{ needs.translate.result }}",
+              "nlp": "${{ needs.nlp.result }}",
+              "llm": "${{ needs.llm.result }}",
+            };
+            const failed = Object.entries(stages).filter(([, r]) => r !== "success" && r !== "skipped").map(([s]) => s);
+            const title = `E2E pipeline smoke failed at: ${failed.join(", ")} (${new Date().toISOString().slice(0,10)})`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body: `The cross-repo e2e pipeline smoke test failed: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\nStage results: ${JSON.stringify(stages)}\n\nLikely a cross-repo interface change on \`test\`, a LINDAT/HuggingFace upstream change, or a stale e2e fixture (see fixtures/e2e/README.md).`,
+              labels: ["ci", "pipeline"],
+            });
