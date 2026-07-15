@@ -114,6 +114,9 @@ jobs:
             "hub/fixtures/e2e/ALTO/${E2E_DOC}.alto.xml" \
             --out "${GITHUB_WORKSPACE}/work/input/${E2E_DOC}-1.png"
 
+      - name: Clear committed result tables
+        run: rm -f pc/result/tables/*.csv
+
       - name: Classify the fixture page
         working-directory: pc
         run: python3 run.py -d "${GITHUB_WORKSPACE}/work/input" --hf -rev "${PC_REVISION}" --no-chunk --no-inner
