@@ -35,13 +35,17 @@ ALTO_NS = "{http://www.loc.gov/standards/alto/ns-v3#}"
 DEFAULT_FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 
-def render_page(alto_path: Path, out_path: Path, page_index: int, font_path: str) -> None:
+def render_page(
+    alto_path: Path, out_path: Path, page_index: int, font_path: str
+) -> None:
     tree = ET.parse(alto_path)
     pages = tree.getroot().findall(f".//{ALTO_NS}Page")
     if not pages:
         raise SystemExit(f"[e2e] No <Page> elements in {alto_path}")
     if page_index < 1 or page_index > len(pages):
-        raise SystemExit(f"[e2e] Page {page_index} out of range (1..{len(pages)}) in {alto_path}")
+        raise SystemExit(
+            f"[e2e] Page {page_index} out of range (1..{len(pages)}) in {alto_path}"
+        )
 
     page = pages[page_index - 1]
     width = int(float(page.get("WIDTH", "1654")))
@@ -66,19 +70,32 @@ def render_page(alto_path: Path, out_path: Path, page_index: int, font_path: str
         drawn += 1
 
     if drawn == 0:
-        raise SystemExit(f"[e2e] Page {page_index} of {alto_path} has no non-empty <String> elements")
+        raise SystemExit(
+            f"[e2e] Page {page_index} of {alto_path} has no non-empty <String> elements"
+        )
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     image.save(out_path, "PNG")
-    print(f"[e2e] Rendered page {page_index} of {alto_path.name} -> {out_path} ({width}x{height}, {drawn} strings)")
+    print(
+        f"[e2e] Rendered page {page_index} of {alto_path.name} -> {out_path} ({width}x{height}, {drawn} strings)"
+    )
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("alto", type=Path, help="Input ALTO XML file.")
     parser.add_argument("--out", type=Path, required=True, help="Output PNG path.")
-    parser.add_argument("--page", type=int, default=1, help="1-based page index to render (default: 1).")
-    parser.add_argument("--font", type=str, default=DEFAULT_FONT, help=f"TTF font path (default: {DEFAULT_FONT}).")
+    parser.add_argument(
+        "--page", type=int, default=1, help="1-based page index to render (default: 1)."
+    )
+    parser.add_argument(
+        "--font",
+        type=str,
+        default=DEFAULT_FONT,
+        help=f"TTF font path (default: {DEFAULT_FONT}).",
+    )
     args = parser.parse_args(argv)
 
     render_page(args.alto, args.out, args.page, args.font)

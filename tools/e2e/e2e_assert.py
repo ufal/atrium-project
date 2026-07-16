@@ -66,7 +66,9 @@ def check_pc(args) -> None:
     """One TOP-N result CSV exists, with FILE/PAGE/CLASS-1/SCORE-1 columns and a valid score."""
     tables = sorted(Path(args.tables).glob("*_TOP-*.csv"))
     if len(tables) != 1:
-        fail(f"expected exactly 1 TOP-N result CSV in {args.tables}, found {len(tables)}: {[t.name for t in tables]}")
+        fail(
+            f"expected exactly 1 TOP-N result CSV in {args.tables}, found {len(tables)}: {[t.name for t in tables]}"
+        )
     with open(tables[0], encoding="utf-8") as fh:
         rows = list(csv.DictReader(fh))
     if not rows:
@@ -74,7 +76,9 @@ def check_pc(args) -> None:
     required = {"FILE", "PAGE", "CLASS-1", "SCORE-1"}
     missing = required - set(rows[0].keys())
     if missing:
-        fail(f"{tables[0].name} is missing columns {sorted(missing)}; has {sorted(rows[0].keys())}")
+        fail(
+            f"{tables[0].name} is missing columns {sorted(missing)}; has {sorted(rows[0].keys())}"
+        )
     row = rows[0]
     if not row["CLASS-1"].strip():
         fail(f"{tables[0].name}: empty CLASS-1 prediction")
@@ -84,7 +88,9 @@ def check_pc(args) -> None:
         fail(f"{tables[0].name}: SCORE-1 {row['SCORE-1']!r} is not a float")
     if not 0.0 < score <= 1.0:
         fail(f"{tables[0].name}: SCORE-1 {score} outside (0, 1]")
-    ok(f"pc interface: {tables[0].name} -> {row['FILE']} p{row['PAGE']} = {row['CLASS-1']} ({score})")
+    ok(
+        f"pc interface: {tables[0].name} -> {row['FILE']} p{row['PAGE']} = {row['CLASS-1']} ({score})"
+    )
 
 
 # ── categ-header ───────────────────────────────────────────────────────────────
@@ -148,15 +154,21 @@ def check_alto(args) -> None:
 
     txt_files = sorted(Path(args.page_txt).rglob(f"{doc}-*.txt"))
     if len(txt_files) != 1:
-        fail(f"expected exactly 1 extracted text file for {doc} under {args.page_txt}, found {len(txt_files)}")
+        fail(
+            f"expected exactly 1 extracted text file for {doc} under {args.page_txt}, found {len(txt_files)}"
+        )
     extracted = txt_files[0].read_text(encoding="utf-8")
     # De-hyphenation may merge tokens across line breaks, so check containment
     # per source token against the whitespace-flattened text.
     flat = " ".join(extracted.split())
     missing = [tok for tok in page_strings if tok not in flat]
     if missing:
-        fail(f"{txt_files[0].name}: extracted text lost source tokens {missing[:5]} (of {len(missing)})")
-    ok(f"alto interface: 1 page split, stats row present, all {len(page_strings)} tokens preserved in extract")
+        fail(
+            f"{txt_files[0].name}: extracted text lost source tokens {missing[:5]} (of {len(missing)})"
+        )
+    ok(
+        f"alto interface: 1 page split, stats row present, all {len(page_strings)} tokens preserved in extract"
+    )
 
 
 # ── translate ──────────────────────────────────────────────────────────────────
@@ -177,7 +189,9 @@ def check_translate(args) -> None:
         n_src = len(list(src_tree.getroot().iter(f"{ALTO_NS}{tag}")))
         n_out = len(list(out_tree.getroot().iter(f"{ALTO_NS}{tag}")))
         if n_src != n_out:
-            fail(f"{translated.name}: <{tag}> count changed {n_src} -> {n_out} (in-place structure broken)")
+            fail(
+                f"{translated.name}: <{tag}> count changed {n_src} -> {n_out} (in-place structure broken)"
+            )
 
     src_text = " ".join(s for s in _alto_strings(src) if s)
     out_text = " ".join(s for s in _alto_strings(translated) if s)
@@ -188,13 +202,23 @@ def check_translate(args) -> None:
 
     logs = sorted(out_dir.glob(f"{base}_log.csv"))
     if len(logs) != 1:
-        fail(f"expected 1 translation log CSV {base}_log.csv in {out_dir}, found {len(logs)}")
+        fail(
+            f"expected 1 translation log CSV {base}_log.csv in {out_dir}, found {len(logs)}"
+        )
     with open(logs[0], encoding="utf-8") as fh:
         header = next(csv.reader(fh))
-    expected = ["file", "page_num", "line_num", f"text_{args.source_lang}", f"text_{args.target_lang}"]
+    expected = [
+        "file",
+        "page_num",
+        "line_num",
+        f"text_{args.source_lang}",
+        f"text_{args.target_lang}",
+    ]
     if header != expected:
         fail(f"{logs[0].name}: header {header} != {expected}")
-    ok(f"translate interface: {translated.name} structure preserved, text changed, log CSV schema OK")
+    ok(
+        f"translate interface: {translated.name} structure preserved, text changed, log CSV schema OK"
+    )
 
 
 # ── teitok ─────────────────────────────────────────────────────────────────────
@@ -213,14 +237,20 @@ def check_teitok(args) -> None:
     doc = args.doc
     matches = sorted(Path(args.teitok_dir).rglob(f"{doc}.teitok.xml"))
     if len(matches) != 1:
-        fail(f"expected exactly 1 {doc}.teitok.xml under {args.teitok_dir}, found {len(matches)}")
+        fail(
+            f"expected exactly 1 {doc}.teitok.xml under {args.teitok_dir}, found {len(matches)}"
+        )
     path = matches[0]
     root = _parse_xml(path).getroot()
     if _local(root.tag) != "TEI":
         fail(f"{path.name}: root element is {root.tag}, expected TEI")
-    lang = root.get("{http://www.w3.org/XML/1998/namespace}lang") or root.get("lang") or ""
+    lang = (
+        root.get("{http://www.w3.org/XML/1998/namespace}lang") or root.get("lang") or ""
+    )
     if args.lang and lang != args.lang:
-        fail(f"{path.name}: document language is {lang!r} (xml:lang/lang), expected {args.lang!r}")
+        fail(
+            f"{path.name}: document language is {lang!r} (xml:lang/lang), expected {args.lang!r}"
+        )
 
     apps: set = set()
     toks = 0
@@ -235,11 +265,19 @@ def check_teitok(args) -> None:
             named += 1
 
     if "udpipe" not in apps:
-        fail(f"{path.name}: no <application ident='udpipe'> in teiHeader (found {sorted(apps)})")
+        fail(
+            f"{path.name}: no <application ident='udpipe'> in teiHeader (found {sorted(apps)})"
+        )
     if toks == 0:
         fail(f"{path.name}: no <tok> elements — UDPipe enrichment missing")
-    note = f", {named} <name> entities" if named else ", no <name> entities (NameTag found none)"
-    ok(f"teitok interface: {path.name} well-formed TEI, lang={lang}, {toks} tokens{note}")
+    note = (
+        f", {named} <name> entities"
+        if named
+        else ", no <name> entities (NameTag found none)"
+    )
+    ok(
+        f"teitok interface: {path.name} well-formed TEI, lang={lang}, {toks} tokens{note}"
+    )
     if args.require_entities and not named:
         fail(f"{path.name}: --require-entities set but no <name> elements present")
 
@@ -256,7 +294,9 @@ def check_keywords(args) -> None:
         # is not forced; accept a recursive match as a fallback.
         matches = sorted(Path(args.llm_dir).rglob(f"{doc}_enriched.json"))
         if len(matches) != 1:
-            fail(f"expected {doc}_enriched.json under {args.llm_dir}, found {len(matches)}")
+            fail(
+                f"expected {doc}_enriched.json under {args.llm_dir}, found {len(matches)}"
+            )
         path = matches[0]
     records = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(records, list) or not records:
@@ -267,28 +307,42 @@ def check_keywords(args) -> None:
         if missing:
             fail(f"{path.name}: record {i} missing keys {sorted(missing)}")
         enrichment = rec["enrichment"]
-        for key in ("extracted_keywords_cs", "extracted_keywords_en", "teater_category"):
+        for key in (
+            "extracted_keywords_cs",
+            "extracted_keywords_en",
+            "teater_category",
+        ):
             if key not in enrichment:
                 fail(f"{path.name}: record {i} enrichment missing {key!r}")
         if not isinstance(enrichment["extracted_keywords_cs"], list):
             fail(f"{path.name}: record {i} extracted_keywords_cs is not a list")
-    ok(f"keywords interface: {path.name} has {len(records)} schema-valid enrichment records")
+    ok(
+        f"keywords interface: {path.name} has {len(records)} schema-valid enrichment records"
+    )
 
 
 # ── CLI ────────────────────────────────────────────────────────────────────────
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p = sub.add_parser("pc", help="page-classification result table")
     p.add_argument("--tables", required=True, help="pc result/tables directory")
     p.set_defaults(func=check_pc)
 
-    p = sub.add_parser("categ-header", help="fixture DOC_LINE_CATEG header vs alto HEAD CSV_HEADER")
+    p = sub.add_parser(
+        "categ-header", help="fixture DOC_LINE_CATEG header vs alto HEAD CSV_HEADER"
+    )
     p.add_argument("--fixture", required=True, help="fixture DOC_LINE_CATEG CSV")
-    p.add_argument("--langid", required=True, help="path to alto-postprocess langID_classify.py at HEAD")
+    p.add_argument(
+        "--langid",
+        required=True,
+        help="path to alto-postprocess langID_classify.py at HEAD",
+    )
     p.set_defaults(func=check_categ_header)
 
     p = sub.add_parser("alto", help="split + stats + extract outputs")
@@ -308,8 +362,16 @@ def main(argv=None) -> int:
     p = sub.add_parser("teitok", help="nlp TEITOK output")
     p.add_argument("--doc", required=True)
     p.add_argument("--teitok-dir", required=True, help="nlp TEITOK output directory")
-    p.add_argument("--lang", default="cs", help="expected document language (default cs; '' disables)")
-    p.add_argument("--require-entities", action="store_true", help="fail when no <name> elements are present")
+    p.add_argument(
+        "--lang",
+        default="cs",
+        help="expected document language (default cs; '' disables)",
+    )
+    p.add_argument(
+        "--require-entities",
+        action="store_true",
+        help="fail when no <name> elements are present",
+    )
     p.set_defaults(func=check_teitok)
 
     p = sub.add_parser("keywords", help="llm-enrich enriched JSON")
