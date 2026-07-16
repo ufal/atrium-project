@@ -30,7 +30,11 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ALTO_NS = "{http://www.loc.gov/standards/alto/ns-v3#}"
-TEI_NS = "{http://www.tei-c.org/ns/1.0}"
+
+
+def _local(tag: str) -> str:
+    """Local element name, with or without a namespace prefix."""
+    return tag.split("}")[-1] if "}" in tag else tag
 
 
 def fail(msg: str) -> None:
@@ -197,35 +201,45 @@ def check_translate(args) -> None:
 
 
 def check_teitok(args) -> None:
-    """TEITOK output is well-formed TEI with the expected language, tokens, and an NLP application header."""
+    """TEITOK output is well-formed TEI with the expected language, tokens, and an NLP application header.
+
+    Matching is namespace-agnostic on purpose: the live writer (nlp-enrich
+    api_util/teitok_alto.py) currently emits namespace-LESS TEI —
+    `<TEI xmlnsoff="http://www.tei-c.org/ns/1.0" lang="cs">` (note `xmlnsoff`
+    and plain `lang`, not `xml:lang`) — while the committed data_samples carry
+    the TEI namespace and `xml:lang`. This check accepts both, so it keeps
+    working when the repo-side cleanup lands either way.
+    """
     doc = args.doc
     matches = sorted(Path(args.teitok_dir).rglob(f"{doc}.teitok.xml"))
     if len(matches) != 1:
         fail(f"expected exactly 1 {doc}.teitok.xml under {args.teitok_dir}, found {len(matches)}")
     path = matches[0]
-    tree = ET.parse(path)
-    root = tree.getroot()
-
-    # Strip the namespace (everything before and including '}')
-    actual_tag = root.tag.split('}')[-1] if '}' in root.tag else root.tag
-
-    # Now compare the cleaned tag
-    assert actual_tag == 'TEI', f"root element is {root.tag}, expected TEI"
-
-    lang = root.get("{http://www.w3.org/XML/1998/namespace}lang", "")
+    root = _parse_xml(path).getroot()
+    if _local(root.tag) != "TEI":
+        fail(f"{path.name}: root element is {root.tag}, expected TEI")
+    lang = root.get("{http://www.w3.org/XML/1998/namespace}lang") or root.get("lang") or ""
     if args.lang and lang != args.lang:
-        fail(f"{path.name}: xml:lang={lang!r}, expected {args.lang!r}")
+        fail(f"{path.name}: document language is {lang!r} (xml:lang/lang), expected {args.lang!r}")
 
-    apps = {a.get("ident", "") for a in root.iter(f"{TEI_NS}application")}
+    apps: set = set()
+    toks = 0
+    named = 0
+    for el in root.iter():
+        name = _local(el.tag)
+        if name == "application":
+            apps.add(el.get("ident", ""))
+        elif name == "tok":
+            toks += 1
+        elif name == "name":
+            named += 1
+
     if "udpipe" not in apps:
         fail(f"{path.name}: no <application ident='udpipe'> in teiHeader (found {sorted(apps)})")
-
-    toks = list(root.iter(f"{TEI_NS}tok"))
-    if not toks:
+    if toks == 0:
         fail(f"{path.name}: no <tok> elements — UDPipe enrichment missing")
-    named = list(root.iter(f"{TEI_NS}name"))
-    note = f", {len(named)} <name> entities" if named else ", no <name> entities (NameTag found none)"
-    ok(f"teitok interface: {path.name} well-formed TEI, xml:lang={lang}, {len(toks)} tokens{note}")
+    note = f", {named} <name> entities" if named else ", no <name> entities (NameTag found none)"
+    ok(f"teitok interface: {path.name} well-formed TEI, lang={lang}, {toks} tokens{note}")
     if args.require_entities and not named:
         fail(f"{path.name}: --require-entities set but no <name> elements present")
 
@@ -278,7 +292,7 @@ def main(argv=None) -> int:
     p.set_defaults(func=check_categ_header)
 
     p = sub.add_parser("alto", help="split + stats + extract outputs")
-    p.add_argument("--doc", required=True, help="document id (e.g. E2E000000001)")
+    p.add_argument("--doc", required=True, help="document id (e.g. CTX000000003)")
     p.add_argument("--page-alto", required=True, help="PAGE_ALTO output directory")
     p.add_argument("--stats-csv", required=True, help="alto stats CSV path")
     p.add_argument("--page-txt", required=True, help="PAGE_TXT output directory")
@@ -294,7 +308,7 @@ def main(argv=None) -> int:
     p = sub.add_parser("teitok", help="nlp TEITOK output")
     p.add_argument("--doc", required=True)
     p.add_argument("--teitok-dir", required=True, help="nlp TEITOK output directory")
-    p.add_argument("--lang", default="cs", help="expected TEI xml:lang (default cs; '' disables)")
+    p.add_argument("--lang", default="cs", help="expected document language (default cs; '' disables)")
     p.add_argument("--require-entities", action="store_true", help="fail when no <name> elements are present")
     p.set_defaults(func=check_teitok)
 
