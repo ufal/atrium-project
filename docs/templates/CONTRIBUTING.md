@@ -177,7 +177,7 @@ copied verbatim into each tool repository.
 
 * **Do not fork their logic locally:** Edit the canonical copy in the hub, then re-sync to the tools. 
 * **CI Drift-Check:** The workflow (`paradata-drift.reusable.yml`) will fail the build if a repository's copy diverges from the canonical source.
-* **Configuration:** `para_config.txt` is strictly the *only* per-repo dependency (located typically at root, though `page-classification` secures it in `setup/para_config.txt`).
+* **Configuration:** `para_config.txt` is strictly the *only* per-repo dependency (located typically at root, though `page-classification` and `alto-postprocess` secure it in `setup/para_config.txt` — their `security.yml` callers pass `para-config-path: setup/para_config.txt` and their `ParadataLogger` call sites pass `config_dir=<repo>/setup`).
 * **Migrations & Versioning:** See `docs/paradata-schema.md` for our schema versioning policies.
 ---
 

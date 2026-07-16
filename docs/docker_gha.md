@@ -46,7 +46,8 @@ Trivy container image scanning, and SBOM generation.
 ### Localized Repository Workflows
 
 * **`atrium-alto-postprocess`:** CodeQL, Docker Build & Publish, pre-commit, Automated Releases, Scheduled Smoke
-Tests, Paradata Drift, and Security & Supply-chain scanning. ✅ Reference implementation — fully on the current
+Tests, Paradata Drift, and Security & Supply-chain scanning (`para-config-path: setup/para_config.txt` — configs
+moved into `setup/`). ✅ Reference implementation — fully on the current
 action-version floor with correct triggers throughout.
 * **`atrium-nlp-enrich`:** CodeQL, multi-target Docker builds (`base`, `api`, `llm`), GPU Inference Tests, an
 advisory (non-blocking) pre-commit run, Releases, Scheduled Smoke Tests, Security scans, Paradata Drift, and a
