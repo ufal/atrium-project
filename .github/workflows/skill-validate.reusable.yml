@@ -1,0 +1,117 @@
+# atrium-project — reusable Agent-Skill branch validation (issue #31, strategy §12.3)
+#
+# Called by each service repo's `agent-skill` branch. Guards the skill-branch
+# contract mechanically — every check generalizes a defect actually found in
+# the wild on the page-classification exemplar branch:
+#
+#   1. SKILL.md frontmatter parses; `name`/`description` constraints hold
+#      (name = lowercase/hyphens, ≤64 chars, matches the repo name).
+#   2. Every repo-relative path referenced in the skill docs exists on the
+#      branch (catches `serve.sh`-vs-`server.sh` naming drift and references
+#      to trimmed directories like `frontend-lindat/`).
+#   3. The zero-dependency client compiles and answers `--help` in a bare
+#      python:3.11-slim container — proves the zero-dependency claim.
+#
+# The optional endpoint-diff against in-process `app.openapi()` (§12.3 step 4)
+# stays in the per-repo contract tests, where the service dependencies exist.
+
+name: ATRIUM Skill Branch Validation
+
+on:
+  workflow_call:
+    inputs:
+      client-script:
+        description: "Repo-relative path of the zero-dependency client, e.g. scripts/atrium_classify.py"
+        required: true
+        type: string
+      skill-docs:
+        description: "Space-separated doc files whose path references must exist"
+        required: false
+        type: string
+        default: "SKILL.md README.md service/README.md"
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: "1 — SKILL.md frontmatter"
+        shell: python {0}
+        run: |
+          import os, re, sys
+
+          text = open("SKILL.md", encoding="utf-8").read()
+          match = re.match(r"^---\n(.*?)\n---\n", text, re.DOTALL)
+          if not match:
+              sys.exit("SKILL.md has no YAML frontmatter block")
+          fields = {}
+          key = None
+          for line in match.group(1).splitlines():
+              if re.match(r"^[A-Za-z_-]+:", line):
+                  key, _, value = line.partition(":")
+                  fields[key.strip()] = value.strip()
+              elif key and line.startswith(" "):
+                  fields[key] += " " + line.strip()
+
+          name = fields.get("name", "")
+          description = fields.get("description", "")
+          repo = os.environ["GITHUB_REPOSITORY"].split("/", 1)[1]
+          errors = []
+          if not name:
+              errors.append("frontmatter lacks `name`")
+          if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", name):
+              errors.append(f"`name: {name}` violates lowercase/hyphen/64-char constraint")
+          if name != repo:
+              errors.append(f"`name: {name}` must equal the repo name `{repo}` (strategy Appendix E)")
+          if len(description) < 60:
+              errors.append("`description` too short to route on (< 60 chars) — say what + when")
+          if errors:
+              sys.exit("SKILL.md frontmatter: " + "; ".join(errors))
+          print(f"OK: name={name}, description {len(description)} chars")
+
+      - name: "2 — referenced paths exist"
+        shell: python {0}
+        run: |
+          import os, re, sys
+
+          docs = [d for d in "${{ inputs.skill-docs }}".split() if os.path.exists(d)]
+          path_re = re.compile(r"[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)+/?")
+          candidates = set()
+          for doc in docs:
+              text = open(doc, encoding="utf-8").read()
+              for source in (
+                  re.findall(r"`([^`\n]+)`", text),            # backticked mentions
+                  re.findall(r"\]\(([^)\s]+)\)", text),        # markdown link targets
+              ):
+                  for raw in source:
+                      raw = raw.strip().strip("'\"").split("#", 1)[0]
+                      if not raw or raw.startswith(("http://", "https://", "mailto:", "/")):
+                          continue
+                      for token in re.findall(path_re, raw):
+                          candidates.add((doc, token.rstrip("/")))
+
+          missing = []
+          for doc, path in sorted(candidates):
+              # Relative markdown links resolve against the containing doc.
+              doc_relative = os.path.normpath(os.path.join(os.path.dirname(doc), path))
+              if os.path.exists(doc_relative):
+                  continue
+              first_segment = path.split("/", 1)[0]
+              # Only enforce paths rooted in a directory that exists on the
+              # branch — placeholders like data/out.xml stay advisory.
+              if os.path.isdir(first_segment) and not os.path.exists(path):
+                  missing.append(f"{doc}: `{path}`")
+          if missing:
+              sys.exit("Referenced paths missing from the branch:\n  " + "\n  ".join(missing))
+          print(f"OK: {len(candidates)} referenced paths checked across {len(docs)} docs")
+
+      - name: "3 — zero-dependency client proves itself in bare python:3.11-slim"
+        run: |
+          docker run --rm -v "$PWD":/skill -w /skill python:3.11-slim \
+            sh -c "python -m py_compile '${{ inputs.client-script }}' \
+                   && python '${{ inputs.client-script }}' --help > /dev/null \
+                   && echo 'OK: client compiles and answers --help with stdlib only'"
