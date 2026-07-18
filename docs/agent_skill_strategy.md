@@ -320,7 +320,7 @@ default branch is `vit`.
 
 - [ ] Fix (a): all references say `scripts/server.sh` (SKILL.md Workflows and the client's
       error message currently say `serve.sh`).
-- [ ] Fix (b): remove the `atrium_paradata.py` provenance claim from SKILL.md — or wire the
+- [X] Fix (b): remove the `atrium_paradata.py` provenance claim from SKILL.md — or wire the
       module in `service/` on the branch; default: remove the claim (§4.7).
 - [ ] Fix (c): drop the `frontend-lindat/` references from `service/README.md` (or restore the
       directory).
@@ -342,15 +342,15 @@ default branch is `vit`.
 **Current state:** richest API (enrich/enrich_text/rescale + async jobs, `/info` + `/health`
 already conforming), two frontends, excellent `service/README.md`. No skill layer.
 
-- [ ] Create `agent-skill` branch from the default branch head; flatten/trim per §5.
-- [ ] Write `SKILL.md` per §7 (`name: atrium-nlp-enrich`; domain reference = stage plan,
+- [X] Create `agent-skill` branch from the default branch head; flatten/trim per §5.
+- [X] Write `SKILL.md` per §7 (`name: atrium-nlp-enrich`; domain reference = stage plan,
       keyword methods, limits).
-- [ ] Write `scripts/atrium_enrich.py` per §6: covers `/enrich` (file), `/enrich_text` (JSON
+- [X] Write `scripts/atrium_enrich.py` per §6: covers `/enrich` (file), `/enrich_text` (JSON
       lines), `--jobs` async mode (submit → poll → result, 429-aware messaging), `--info`;
       flags: `--kw-method keybert|yake|legacy|none`, `--num-keywords N`, `--zip` (workspace
       download).
 - [ ] Write `scripts/server.sh` per Appendix C (compose `api` profile).
-- [ ] Add `small_data_samples/` (a few small text-line files + a small TEITOK page + LICENSE).
+- [X] Add `small_data_samples/` (a few small text-line files + a small TEITOK page + LICENSE).
 - [ ] Branch `README.md` per §8.
 - [ ] Frontends (`frontend/`, `frontend-lindat/`): API footer per §9.
 - [ ] Extend `/info` with the `endpoints` list (§4.1 — the one missing required field).
@@ -371,7 +371,7 @@ against a locally composed server using only SKILL.md instructions.
       with `service`, `endpoints`, `limits` (currently keys the id as `"status"`).
 - [ ] Create `agent-skill` branch per §5 (drop `frontend-lindat/` from the branch or keep it —
       but docs must match, defect (c) rule).
-- [ ] `SKILL.md` per §7 (domain reference = five quality categories + `line_fields`).
+- [X] `SKILL.md` per §7 (domain reference = five quality categories + `line_fields`).
 - [ ] `scripts/atrium_postprocess.py` per §6: `--task-type auto|alto|text`, table/csv/json of
       per-line `lang`/`quality_score`/`category`.
 - [ ] `scripts/server.sh`, `small_data_samples/` (1 small ALTO XML + 1 TXT), branch README.
@@ -395,9 +395,9 @@ against a locally composed server using only SKILL.md instructions.
   - [ ] `400`→`422` for non-XML uploads (§4.4); `MAX_UPLOAD_MB` with `MAX_UPLOAD_BYTES`
         fallback (§4.5); extend `/info` with `service`, `endpoints`, `limits` (currently
         `"name"`).
-- [ ] Create `agent-skill` branch per §5; `SKILL.md` per §7 (domain reference = ALTO vs
+- [X] Create `agent-skill` branch per §5; `SKILL.md` per §7 (domain reference = ALTO vs
       metadata-XML modes, language matrix, backend selection).
-- [ ] `scripts/atrium_translate.py` per §6: `--source-lang` (default `auto`), `--target-lang`
+- [X] `scripts/atrium_translate.py` per §6: `--source-lang` (default `auto`), `--target-lang`
       (default `en`), `--alto/--no-alto`, output translated XML to stdout or `-o FILE`.
 - [ ] `scripts/server.sh`, `small_data_samples/` (tiny ALTO + tiny metadata XML), branch README.
 
@@ -413,7 +413,7 @@ depends on it.
 `llm_client_shared.py`; reusable input parsers in `api_util/` (`teitok_read.py`,
 `xml_to_md.py`, …); vocab via `vocab_manager.py`; Docker images are batch-only (no ports).
 
-- [ ] Build `service/api.py` mirroring nlp-enrich's layout:
+- [X] Build `service/api.py` mirroring nlp-enrich's layout:
   - `GET /info` — `service`, `version` (from `para_config.txt`), `endpoints`, available
     backends, vocabulary info (TEATER/AMCR), `limits`.
   - `GET /health` — shallow ok; `?deep=true` probes the selected backend (Ollama reachability /
@@ -425,7 +425,7 @@ depends on it.
   - Response rows: `{keyword_cs, keyword_en, category, confidence}` per line/document.
   - Dispatch to the existing clients via `llm_client_shared.py`; **keep torch out of the
     remote-only path** (the repo's established constraint).
-- [ ] `service/requirements.txt`, `service/README.md` (Appendix D), minimal `service/frontend/`
+- [X] `service/requirements.txt`, `service/README.md` (Appendix D), minimal `service/frontend/`
       with API footer (§9).
 - [ ] Docker: `api` stage/profile, port 8000, python:3.11-slim non-root — match siblings. Env:
       `OPENROUTER_API_KEY`, `OLLAMA_HOST`, `HF_TOKEN`, `MAX_UPLOAD_MB`, `ALLOWED_ORIGINS`.
