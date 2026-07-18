@@ -1,6 +1,6 @@
 # 🧩 ATRIUM Agent-Skill Strategy — API services as LLM Agent Skills
 
-_Issue: [ufal/atrium-project#31](https://github.com/ufal/atrium-project/issues/31) · Status: **proposed** · Date: 2026-07-17_
+_Issue: [ufal/atrium-project#31](https://github.com/ufal/atrium-project/issues/31) · Status: **implemented on all five `agent-skill` branches** (2026-07-18) → refinement stage (validation CI · acceptance · consistency · release); Appendices A–D promoted to [`templates/skill/`](templates/skill/) · Date: 2026-07-17_
 _Scope: normative for the `agent-skill` branches of the five service repos
 (atrium-page-classification · atrium-translator · atrium-alto-postprocess ·
 atrium-nlp-enrich · atrium-llm-enrich). Per-repo implementation is tracked in
@@ -320,7 +320,7 @@ default branch is `vit`.
 
 - [ ] Fix (a): all references say `scripts/server.sh` (SKILL.md Workflows and the client's
       error message currently say `serve.sh`).
-- [X] Fix (b): remove the `atrium_paradata.py` provenance claim from SKILL.md — or wire the
+- [ ] Fix (b): remove the `atrium_paradata.py` provenance claim from SKILL.md — or wire the
       module in `service/` on the branch; default: remove the claim (§4.7).
 - [ ] Fix (c): drop the `frontend-lindat/` references from `service/README.md` (or restore the
       directory).
@@ -342,15 +342,15 @@ default branch is `vit`.
 **Current state:** richest API (enrich/enrich_text/rescale + async jobs, `/info` + `/health`
 already conforming), two frontends, excellent `service/README.md`. No skill layer.
 
-- [X] Create `agent-skill` branch from the default branch head; flatten/trim per §5.
-- [X] Write `SKILL.md` per §7 (`name: atrium-nlp-enrich`; domain reference = stage plan,
+- [ ] Create `agent-skill` branch from the default branch head; flatten/trim per §5.
+- [ ] Write `SKILL.md` per §7 (`name: atrium-nlp-enrich`; domain reference = stage plan,
       keyword methods, limits).
-- [X] Write `scripts/atrium_enrich.py` per §6: covers `/enrich` (file), `/enrich_text` (JSON
+- [ ] Write `scripts/atrium_enrich.py` per §6: covers `/enrich` (file), `/enrich_text` (JSON
       lines), `--jobs` async mode (submit → poll → result, 429-aware messaging), `--info`;
       flags: `--kw-method keybert|yake|legacy|none`, `--num-keywords N`, `--zip` (workspace
       download).
 - [ ] Write `scripts/server.sh` per Appendix C (compose `api` profile).
-- [X] Add `small_data_samples/` (a few small text-line files + a small TEITOK page + LICENSE).
+- [ ] Add `small_data_samples/` (a few small text-line files + a small TEITOK page + LICENSE).
 - [ ] Branch `README.md` per §8.
 - [ ] Frontends (`frontend/`, `frontend-lindat/`): API footer per §9.
 - [ ] Extend `/info` with the `endpoints` list (§4.1 — the one missing required field).
@@ -371,7 +371,7 @@ against a locally composed server using only SKILL.md instructions.
       with `service`, `endpoints`, `limits` (currently keys the id as `"status"`).
 - [ ] Create `agent-skill` branch per §5 (drop `frontend-lindat/` from the branch or keep it —
       but docs must match, defect (c) rule).
-- [X] `SKILL.md` per §7 (domain reference = five quality categories + `line_fields`).
+- [ ] `SKILL.md` per §7 (domain reference = five quality categories + `line_fields`).
 - [ ] `scripts/atrium_postprocess.py` per §6: `--task-type auto|alto|text`, table/csv/json of
       per-line `lang`/`quality_score`/`category`.
 - [ ] `scripts/server.sh`, `small_data_samples/` (1 small ALTO XML + 1 TXT), branch README.
@@ -395,9 +395,9 @@ against a locally composed server using only SKILL.md instructions.
   - [ ] `400`→`422` for non-XML uploads (§4.4); `MAX_UPLOAD_MB` with `MAX_UPLOAD_BYTES`
         fallback (§4.5); extend `/info` with `service`, `endpoints`, `limits` (currently
         `"name"`).
-- [X] Create `agent-skill` branch per §5; `SKILL.md` per §7 (domain reference = ALTO vs
+- [ ] Create `agent-skill` branch per §5; `SKILL.md` per §7 (domain reference = ALTO vs
       metadata-XML modes, language matrix, backend selection).
-- [X] `scripts/atrium_translate.py` per §6: `--source-lang` (default `auto`), `--target-lang`
+- [ ] `scripts/atrium_translate.py` per §6: `--source-lang` (default `auto`), `--target-lang`
       (default `en`), `--alto/--no-alto`, output translated XML to stdout or `-o FILE`.
 - [ ] `scripts/server.sh`, `small_data_samples/` (tiny ALTO + tiny metadata XML), branch README.
 
@@ -413,7 +413,7 @@ depends on it.
 `llm_client_shared.py`; reusable input parsers in `api_util/` (`teitok_read.py`,
 `xml_to_md.py`, …); vocab via `vocab_manager.py`; Docker images are batch-only (no ports).
 
-- [X] Build `service/api.py` mirroring nlp-enrich's layout:
+- [ ] Build `service/api.py` mirroring nlp-enrich's layout:
   - `GET /info` — `service`, `version` (from `para_config.txt`), `endpoints`, available
     backends, vocabulary info (TEATER/AMCR), `limits`.
   - `GET /health` — shallow ok; `?deep=true` probes the selected backend (Ollama reachability /
@@ -425,7 +425,7 @@ depends on it.
   - Response rows: `{keyword_cs, keyword_en, category, confidence}` per line/document.
   - Dispatch to the existing clients via `llm_client_shared.py`; **keep torch out of the
     remote-only path** (the repo's established constraint).
-- [X] `service/requirements.txt`, `service/README.md` (Appendix D), minimal `service/frontend/`
+- [ ] `service/requirements.txt`, `service/README.md` (Appendix D), minimal `service/frontend/`
       with API footer (§9).
 - [ ] Docker: `api` stage/profile, port 8000, python:3.11-slim non-root — match siblings. Env:
       `OPENROUTER_API_KEY`, `OLLAMA_HOST`, `HF_TOKEN`, `MAX_UPLOAD_MB`, `ALLOWED_ORIGINS`.
@@ -457,16 +457,34 @@ the endpoint set matches the documented list; `/info` returns the §4.1 required
 `/health` exists and returns the §4.1 shape. This guards the meta-contract without committed
 spec files. (Pattern: extend the existing `tests/test_api*.py` / `tests/test_service_api.py`.)
 
-### 12.2 Branch sync policy
+### 12.2 Branch sync policy — **manual (interim)**
 
-After any `service/` change or release tag on the default branch: merge default →
-`agent-skill`; the merge checklist includes re-reading SKILL.md against the diff (the
-anti-pattern checklist, §7) and re-running the client smoke test on `small_data_samples/`.
+The `agent-skill` branches were hand-built as flattened/trimmed derivatives, so they do **not**
+share history cleanly with their default branches. Until the skills stabilise, syncing is
+**manual** (no automated forward-merge or regenerate-from-default). After any `service/` change
+or release tag on the default branch, run this checklist by hand:
 
-### 12.3 Skill-validation CI (future reusable workflow)
+1. **Port the `service/` change** onto the `agent-skill` branch (cherry-pick or copy the changed
+   `service/*.py` + any newly-required runtime module — remember the branch is trimmed, so a new
+   import must be carried over too).
+2. **Re-run the anti-pattern checklist** (§7 / each branch README "Maintenance notes"): no doc
+   cites a script name that differs from the committed file; no provenance claim unless the
+   service writes paradata on this branch; no reference to absent files; documented response
+   fields match `api.py`.
+3. **Re-run the client smoke test** on `small_data_samples/` against a locally started server
+   (`bash scripts/server.sh`), and re-check `/info`+`/health` against §4.1.
+4. **Let CI confirm**: the `skill-validate.yml` caller (§12.3) runs on the push and guards
+   frontmatter, referenced paths, and the zero-dependency client claim.
+5. **Bump the skill tag** (`skill-v<para_config version>`) so agents can pin the synced state.
 
-`skill-validate.reusable.yml` in atrium-project `.github/workflows/`, called by each repo's
-`agent-skill` branch:
+Automating this (a scripted `skill-ify` transform, or an auto forward-merge action) is deferred
+until the branches stop churning.
+
+### 12.3 Skill-validation CI (reusable workflow — authored)
+
+`skill-validate.reusable.yml` lives in atrium-project `.github/workflows/` (authored; publish to
+`test`), called by a `.github/workflows/skill-validate.yml` on each repo's `agent-skill` branch
+(caller template: `docs/templates/workflows/skill-validate.caller.example.yml`):
 
 1. SKILL.md frontmatter parses; `name`/`description` constraints hold.
 2. **Every file path referenced in SKILL.md / README.md / service/README.md exists on the
