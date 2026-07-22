@@ -2,7 +2,7 @@
 
 _Installable [Agent Skills](https://agentskills.io) wrapping each ATRIUM service's API, per issue
 [#31](https://github.com/ufal/atrium-project/issues/31). Normative standard:
-[`agentskillstrategy.md`](agentskillstrategy.md) · templates: [`templates/skill/`](templates/skill/)._
+[`agent_skill_strategy.md`](agent_skill_strategy.md) · templates: [`templates/skill/`](templates/skill/)._
 
 Each skill lives on its repo's **`agent-skill` branch** as a flattened, trimmed derivative: a
 `SKILL.md` contract + a zero-dependency stdlib client the agent runs + an idempotent
@@ -55,7 +55,7 @@ Start the server with `bash <skill-name>/scripts/server.sh`, then run
 `python3 <skill-name>/scripts/atrium_<verb>.py [FILES...]`.
 ```
 
-## Contract & conventions (from [`agentskillstrategy.md`](agentskillstrategy.md))
+## Contract & conventions (from [`agent_skill_strategy.md`](agent_skill_strategy.md))
 
 - **Client**: Python 3 stdlib only; `--base-url` / `ATRIUM_<XX>_URL`; `--format table|csv|json`
   (except translator, which returns an XML attachment via `-o`); 3× retry on 502/503/504; exit

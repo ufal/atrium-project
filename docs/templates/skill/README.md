@@ -10,7 +10,7 @@ translator / llm-enrich skill layers). Copy, then replace every `<placeholder>`.
 | [`SKILL.template.md`](SKILL.template.md) | A | the `SKILL.md` skeleton (frontmatter + required section order) |
 | [`atrium_client.skeleton.py`](atrium_client.skeleton.py) | B | runnable zero-dependency client skeleton (§6 contract) |
 | [`server.template.sh`](server.template.sh) | C | idempotent `scripts/server.sh` launcher |
-| [`service-README.template.md`](service-README.template.md) | D | `service/README.md` outline |
+| [`serviceREADME.template.md`](serviceREADME.template.md) | D | `service/README.md` outline |
 
 CI guard for the finished branch:
 [`skill-validate.reusable.yml`](../../../.github/workflows/skill-validate.reusable.yml)
