@@ -1,0 +1,48 @@
+# atrium-project — reusable API meta-contract check (issue #32, strategy §4 / §12.3)
+#
+# Called by each service repo. Installs the repo's test dependencies and runs the
+# hermetic API contract test (tests/test_api_contract.py), which asserts the §4.1
+# /info envelope, /health, the advertised endpoint set, and OpenAPI 3.x validity
+# against the in-process app. The test is importorskip-guarded, so a repo whose
+# service needs the heavy model stack skips cleanly here and runs the same test for
+# real in its full (model-enabled) suite — the torch-free services (alto, nlp,
+# llm-enrich) run it here directly.
+#
+# The byte-parity of the shared service/atrium_service.py helper is enforced
+# separately by para-drift.reusable.yml.
+
+name: ATRIUM API Meta-Contract
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: "Python version to run the contract test on"
+        required: false
+        type: string
+        default: "3.11"
+
+jobs:
+  api-contract:
+    name: Verify API meta-contract (strategy §4)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout caller tool repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
+
+      - name: Run API meta-contract test
+        run: pytest -q -rs tests/test_api_contract.py
+name: api-contract.reusable.yml
+on:
+
+jobs:

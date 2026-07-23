@@ -64,12 +64,52 @@ config) → "All checks passed!" in all five tool repos** (llm-enrich's three Ju
 | P2t | **Test gaps closed (engine, annotation, img2jpeg, bakeoff)** | ✅ | —    | ✅  | ✅         | ✅  | —   |
 | M1  | **nlp↔llm LLM-engine governance (decision)**                 | —  | —    | ⏸️  | —          | ⏸️  | ⏸️  |
 | DOC | Canonical tracker / digests reflect reality                  | —  | —    | —   | —          | —   | 🔧  |
+| A1  | **API `/info` envelope: service/endpoints/limits (§4.1, #32)**| 🔧 | 🔧   | 🔧  | 🔧         | 🔧  | 🔧  |
+| A2  | **API `/health` shallow+deep everywhere (§4.1, #32)**        | 🔧 | 🔧   | ✅  | 🔧         | 🔧  | 🔧  |
+| A3  | **Error-code harmonization to §4.4 (4xx not 500/400, #32)**   | ✅ | 🔧   | ✅  | 🔧         | 🔧  | —   |
+| A4  | **API contract test + `api-contract.reusable.yml` (#32)**     | 🔧 | 🔧   | 🔧  | 🔧         | 🔧  | 🔧  |
+| A5  | **llm-enrich FastAPI service built (§4.2, #32)**             | —  | —    | —   | —          | 🔧  | —   |
 
 Legend: ✅ closed/verified · ⏳ open · ⏸️ deferred (maintainer decision) · 🔴 open
 (decision needed) · 🔧 fix prepared, pending review/merge · n/a not applicable · — out of
 scope for that repo.
 
 ## 🧩 5. Workstreams
+
+### 🔌 A — API meta-contract / OpenAPI conformance (NEW — issue #32)
+**Problem.** The services diverged from the normative §4 contract of
+`agent_skill_strategy.md`. Only nlp-enrich reported `service`+`limits` and had `/health`;
+`/info` never listed `endpoints`; translator keyed the id as `name`, alto as `status`;
+translator returned **400** (not 422) for non-XML and alto returned **500** for missing upload
+metadata; upload limits / CORS defaults were inconsistent; and **llm-enrich had no HTTP
+service at all**. Verified against the `test` HEADs.
+
+**Fix — prepared as patches (all five `test` HEADs + hub).**
+* **Shared helper `service/atrium_service.py`** — hub canonical
+  `docs/templates/shared/atrium_service.py`, copied byte-identical into every service and now
+  covered by `para-drift.reusable.yml`. Provides `read_tool_version`, `build_info` (the §4.1
+  envelope, `endpoints` derived from `app.routes`), `attach_health` (shallow + `?deep=true`),
+  `resolve_max_upload_mb` (with a deprecated `MAX_UPLOAD_BYTES` fallback), `add_cors`. Retires
+  the four copy-pasted `_read_tool_version()`.
+* **Per service:** `/info` now always carries `service`/`version`/`endpoints`/`limits`;
+  `/health` added everywhere (nlp already had it); error codes harmonized to §4.4 (translator
+  400→422; alto 500→422/415 + a new 413 upload guard and an `except HTTPException: raise` so
+  intentional 4xx are never re-wrapped as 500); `ALLOWED_ORIGINS` default `*` everywhere (alto
+  was localhost-only); `MAX_UPLOAD_MB` canonicalized.
+* **llm-enrich service built (§4.2):** new `service/` with `/info`, `/health`,
+  `POST /extract_keywords`, `POST /extract_keywords_text`, wrapping the **torch-free**
+  `llm_client_shared` engine (OpenRouter/Ollama) — a misconfigured backend is reported
+  (`ready:false` / 503), not fatal. Adds a Dockerfile `api` stage + compose `api` profile on
+  :8000.
+* **Enforcement:** hermetic `tests/test_api_contract.py` in every repo (asserts the /info
+  envelope, /health, the advertised endpoint set, and OpenAPI 3.x validity against in-process
+  `app.openapi()`), a new hub `api-contract.reusable.yml` + per-repo caller, and the
+  `service/atrium_service.py` parity step added to `para-drift.reusable.yml`.
+* **Scope (this round):** meta-contract only, per §4 — response bodies are **not** yet typed
+  with Pydantic models; the runtime `/openapi.json` is validated but not enriched with
+  per-endpoint response schemas (a candidate follow-up). Locations:
+  `{pc,alto,nlp,translator,llm}/service/*.py` + `tests/test_api_contract.py`; hub
+  `docs/templates/shared/atrium_service.py` + `.github/workflows/api-contract.reusable.yml`.
 
 ### 🏷️ F — Release & version hygiene — **CLOSED**
 `_read_tool_version()` reads `para_config.txt [tool] version` in every service API; `para_config`

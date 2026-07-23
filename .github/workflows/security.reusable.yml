@@ -30,7 +30,7 @@ on:
       para-config-path:
         required: false
         type: string
-        default: "para_config.txt"   # page-classification passes setup/para_config.txt
+        default: "para_config.txt"   # repos with a setup/ layout (page-classification, alto-postprocess) pass setup/para_config.txt
 
 jobs:
   # --- 1. Version consistency (cheap, no image needed) -------------------------

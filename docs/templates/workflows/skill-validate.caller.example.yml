@@ -1,0 +1,23 @@
+# Caller example — Agent-Skill branch validation (atrium-project#31, strategy §12.3).
+# Place as .github/workflows/skill-validate.yml ON THE `agent-skill` BRANCH of a
+# service repo and set `client-script` to that repo's client (Appendix E table):
+#   atrium-page-classification → scripts/atrium_classify.py
+#   atrium-translator          → scripts/atrium_translate.py
+#   atrium-alto-postprocess    → scripts/atrium_postprocess.py
+#   atrium-nlp-enrich          → scripts/atrium_enrich.py
+#   atrium-llm-enrich          → scripts/atrium_keywords.py
+
+name: Skill Branch Validation
+
+on:
+  push:
+    branches: [agent-skill]
+  pull_request:
+    branches: [agent-skill]
+
+jobs:
+  skill-validate:
+    uses: ufal/atrium-project/.github/workflows/skill-validate.reusable.yml@test
+    with:
+      client-script: scripts/atrium_classify.py
+      # skill-docs: "SKILL.md README.md service/README.md"   # (default)
