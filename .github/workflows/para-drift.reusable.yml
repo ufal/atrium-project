@@ -7,7 +7,7 @@ jobs:
     name: Verify Canonical Paradata Integration
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout caller tool repositorya
+      - name: Checkout caller tool repository
         uses: actions/checkout@v7
         with:
           path: tool-repo

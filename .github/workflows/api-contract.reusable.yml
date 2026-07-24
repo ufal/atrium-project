@@ -41,15 +41,4 @@ jobs:
           if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
 
       - name: Run API meta-contract test
-        run: |
-          set +e
-          pytest -q -rs tests/test_api_contract.py
-          code=$?
-          # Exit 5 = "no tests collected": the contract test importorskips its heavy
-          # service deps and skips the whole module in this light job (it runs for real
-          # in the model-enabled suite). Treat that as a pass; fail on anything else.
-          if [ "$code" = "5" ]; then
-            echo "::notice::api-contract test skipped (service deps absent in light job) — OK"
-            exit 0
-          fi
-          exit "$code"
+        run: pytest -q -rs tests/test_api_contract.py
