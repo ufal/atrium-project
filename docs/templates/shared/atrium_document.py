@@ -12,7 +12,7 @@ returns it with **only its own block** updated. Nothing else is touched.
     doc.json ──► [tool A] ──► doc.json ──► [tool B] ──► doc.json ──► …
                   writes A's block only     writes B's block only
 
-Contract (see docs/document-schema.md):
+Contract (see docs/document_schema.md):
   1. Optional baseline in, updated record out.
   2. A tool writes its own block(s) only; every other block is passed through untouched.
   3. No baseline given → the tool emits just its own part (standalone-safe).

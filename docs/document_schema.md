@@ -1,7 +1,7 @@
 # 📄 ATRIUM Document Schema & Accretion Policy
 
 This document defines the per-document aggregate record produced by `atrium_document.py` — the
-**paradata pair**. Where [`paradata-schema.md`](paradata-schema.md) covers *how a run behaved*,
+**paradata pair**. Where [`paradata-schema.md`](paradata_schema.md) covers *how a run behaved*,
 this covers *what we know about one document*: text, pages, entities and enrichment, gathered
 across the pipeline into one FAIR, versioned JSON for search and catalogue export.
 
