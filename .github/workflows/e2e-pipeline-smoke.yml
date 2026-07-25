@@ -207,7 +207,7 @@ jobs:
         run: |
           python3 hub/tools/e2e/e2e_assert.py categ-header \
             --fixture "hub/fixtures/e2e/DOC_LINE_CATEG/${E2E_DOC}.csv" \
-            --langid alto/langID_classify.py
+            --langid alto/classify_TEXT.py
 
       - name: Assert fixture parity with alto data_samples (drop-in drift check)
         run: |
