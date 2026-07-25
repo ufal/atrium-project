@@ -1,0 +1,287 @@
+{
+  "schema_version": "1.0",
+  "record_type": "atrium-document",
+  "doc_id": "CTX000000001",
+  "source": {
+    "filename": "CTX000000001.alto.xml",
+    "media_type": "application/alto+xml",
+    "page_count": 2,
+    "language": [
+      "cs"
+    ],
+    "origin": "ABBYY-ALTO",
+    "sha256": "3b1f000000000000000000000000000000000000000000000000000000000000"
+  },
+  "derived_from": {
+    "alto_categ": "DOC_LINE_CATEG/CTX000000001.csv",
+    "translated_xml": "TRANSLATED/CTX000000001.alto.xml",
+    "teitok": "TEITOK/CTX000000001.teitok.xml",
+    "enriched": "KW_PER_DOC_LLM/CTX000000001_enriched.json"
+  },
+  "regenerable": {
+    "markdown": {
+      "from": "TEITOK/CTX000000001.teitok.xml",
+      "converter": "xml_to_md@0.3.0",
+      "detail": "full"
+    }
+  },
+  "provenance": {
+    "license": "CC BY-NC-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+    "license_detail": {
+      "effective_license": "CC BY-NC-SA 4.0",
+      "effective_license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+      "is_non_commercial": true,
+      "is_share_alike": true,
+      "determined_by": [
+        "nametag3",
+        "udpipe2"
+      ],
+      "components": [
+        {
+          "name": "vit-historical-page",
+          "license": "MIT",
+          "license_url": "https://opensource.org/license/mit/",
+          "rank": 1
+        },
+        {
+          "name": "fasttext",
+          "license": "CC BY-NC 4.0",
+          "license_url": "https://creativecommons.org/licenses/by-nc/4.0/",
+          "rank": 5
+        },
+        {
+          "name": "qwen2.5_0.5b",
+          "license": "Apache-2.0",
+          "license_url": "https://www.apache.org/licenses/LICENSE-2.0",
+          "rank": 1
+        },
+        {
+          "name": "nametag3",
+          "license": "CC BY-NC-SA 4.0",
+          "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+          "rank": 6
+        },
+        {
+          "name": "udpipe2",
+          "license": "CC BY-NC-SA 4.0",
+          "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+          "rank": 6
+        }
+      ],
+      "unknown_licenses": [],
+      "notes": "Effective output license is CC BY-NC-SA 4.0, the most restrictive among 5 component(s) used. Outputs are NON-COMMERCIAL: downstream commercial use is not permitted while this component is in the pipeline. SHARE-ALIKE applies: derivatives must be licensed under the same terms."
+    },
+    "contributors": [
+      {
+        "program": "page-classification",
+        "run_id": "260725-071648",
+        "paradata_ref": "",
+        "blocks": "page_categories,pages",
+        "at": "2026-07-25T03:54:14.024573+00:00"
+      },
+      {
+        "program": "alto-postprocess",
+        "run_id": "260725-072210",
+        "paradata_ref": "",
+        "blocks": "pages,content,lines,derived_from",
+        "at": "2026-07-25T03:54:14.025752+00:00"
+      },
+      {
+        "program": "translator",
+        "run_id": "260725-073005",
+        "paradata_ref": "",
+        "blocks": "translations,derived_from",
+        "at": "2026-07-25T03:54:14.026805+00:00"
+      },
+      {
+        "program": "nlp-enrich",
+        "run_id": "260725-074512",
+        "paradata_ref": "",
+        "blocks": "entities,lines,pages,derived_from",
+        "at": "2026-07-25T03:54:14.027772+00:00"
+      },
+      {
+        "program": "llm-enrich",
+        "run_id": "260725-101112",
+        "paradata_ref": "paradata/260725-101112_llm-enrich.json",
+        "blocks": "enrichment,entities,derived_from,regenerable",
+        "at": "2026-07-25T03:54:14.028896+00:00"
+      }
+    ]
+  },
+  "assembled": {
+    "blocks": {
+      "page_categories": {
+        "program": "page-classification",
+        "run_id": "260725-071648",
+        "paradata_ref": "",
+        "updated_at": "2026-07-25T03:54:14.024131+00:00"
+      },
+      "pages": {
+        "program": "nlp-enrich",
+        "run_id": "260725-074512",
+        "paradata_ref": "",
+        "updated_at": "2026-07-25T03:54:14.027513+00:00"
+      },
+      "content": {
+        "program": "alto-postprocess",
+        "run_id": "260725-072210",
+        "paradata_ref": "",
+        "updated_at": "2026-07-25T03:54:14.025487+00:00"
+      },
+      "lines": {
+        "program": "nlp-enrich",
+        "run_id": "260725-074512",
+        "paradata_ref": "",
+        "updated_at": "2026-07-25T03:54:14.027486+00:00"
+      },
+      "derived_from": {
+        "program": "llm-enrich",
+        "run_id": "260725-101112",
+        "paradata_ref": "paradata/260725-101112_llm-enrich.json",
+        "updated_at": "2026-07-25T03:54:14.028571+00:00"
+      },
+      "translations": {
+        "program": "translator",
+        "run_id": "260725-073005",
+        "paradata_ref": "",
+        "updated_at": "2026-07-25T03:54:14.026539+00:00"
+      },
+      "entities": {
+        "program": "llm-enrich",
+        "run_id": "260725-101112",
+        "paradata_ref": "paradata/260725-101112_llm-enrich.json",
+        "updated_at": "2026-07-25T03:54:14.028565+00:00"
+      },
+      "enrichment": {
+        "program": "llm-enrich",
+        "run_id": "260725-101112",
+        "paradata_ref": "paradata/260725-101112_llm-enrich.json",
+        "updated_at": "2026-07-25T03:54:14.028514+00:00"
+      },
+      "regenerable": {
+        "program": "llm-enrich",
+        "run_id": "260725-101112",
+        "paradata_ref": "paradata/260725-101112_llm-enrich.json",
+        "updated_at": "2026-07-25T03:54:14.028577+00:00"
+      }
+    },
+    "had_baseline": true,
+    "note": "Blocks reflect CONTRIBUTED steps only; a block is absent until its tool has run."
+  },
+  "page_categories": {
+    "1": "Text",
+    "2": "Plate"
+  },
+  "pages": [
+    {
+      "page": "1",
+      "category": "Text",
+      "category_confidence": 0.97,
+      "quality_score": 0.98,
+      "quality_band": "Clear",
+      "needs_ocr": false,
+      "canvas": {
+        "width": 612,
+        "height": 792,
+        "unit": "pt"
+      },
+      "teitok_surface": "CTX000000001.surface1"
+    },
+    {
+      "page": "2",
+      "category": "Plate",
+      "category_confidence": 0.91,
+      "quality_score": 0.61,
+      "quality_band": "Noisy",
+      "needs_ocr": false,
+      "canvas": {
+        "width": 612,
+        "height": 792,
+        "unit": "pt"
+      },
+      "teitok_surface": "CTX000000001.surface2"
+    }
+  ],
+  "content": {
+    "text": "Výzkum odhalil základy gotického kostela ze 14. století.",
+    "reading_order": "ltr-columns"
+  },
+  "lines": [
+    {
+      "page": "1",
+      "line": 14,
+      "text": "Výzkum odhalil základy gotického kostela ze 14. století.",
+      "categ": "Text",
+      "lang": "cs",
+      "quality_score": 0.98,
+      "lemma": "výzkum",
+      "upos": "NOUN",
+      "teitok_ref": "CTX000000001.s3",
+      "bbox": [
+        120,
+        400,
+        600,
+        432
+      ]
+    }
+  ],
+  "entities": [
+    {
+      "surface": "gotického kostela",
+      "lemma": "gotický kostel",
+      "type_onto": "FAC",
+      "type_cnec": "gc",
+      "type_teitok": "LOC",
+      "page": "1",
+      "line": 14,
+      "char_span": [
+        21,
+        37
+      ],
+      "bbox": [
+        340,
+        400,
+        470,
+        432
+      ],
+      "teitok_ref": "CTX000000001.name5",
+      "pid": {
+        "wikidata": null,
+        "geonames": null,
+        "aat": null,
+        "amcr": null
+      }
+    }
+  ],
+  "translations": {
+    "source_lang": "cs",
+    "target_lang": "en",
+    "backend": "lindat"
+  },
+  "enrichment": {
+    "items": [
+      {
+        "locator": "gotického kostela ze 14. století",
+        "page": "1",
+        "extracted_keywords_cs": [
+          "základy",
+          "gotický kostel"
+        ],
+        "extracted_keywords_en": [
+          "foundations",
+          "gothic church"
+        ],
+        "teater_category": "kostel",
+        "confidence_score": 0.95,
+        "citation": "[Source: CTX000000001, Page 1]"
+      }
+    ],
+    "summary": "Rescue excavation report; medieval church foundations.",
+    "topics": [
+      "church",
+      "medieval"
+    ]
+  }
+}
