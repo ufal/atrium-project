@@ -30,3 +30,9 @@ jobs:
 
       - name: Verify service/atrium_service.py parity (issue #32, strategy §4)
         run: diff -u tool-repo/service/atrium_service.py hub-repo/docs/templates/shared/atrium_service.py
+
+      - name: Verify atrium_document.py parity
+        run: diff -u tool-repo/atrium_document.py hub-repo/docs/templates/shared/atrium_document.py
+
+      - name: Verify atrium_document.schema.json parity
+        run: diff -u tool-repo/atrium_document.schema.json hub-repo/docs/templates/shared/atrium_document.schema.json
