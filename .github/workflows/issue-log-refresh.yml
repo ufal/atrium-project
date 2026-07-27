@@ -1,0 +1,40 @@
+name: Refresh Issue Logs
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  refresh-logs:
+    runs-on: ubuntu-latest
+    steps:
+      # Utilize the established action version floor for the project[cite: 1, 2]
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install gh2md
+        run: pip install gh2md
+
+      - name: Generate Markdown Logs
+        env:
+          # Keep the read-access token scoped only to this repository's action environment
+          GH_TOKEN: ${{ secrets.GH2MD_READ_ACCESS }}
+        run: |
+          mkdir -p agent_dev_logs/issues/
+          # Replace with your specific gh2md command arguments
+          gh2md ufal/atrium-project > agent_dev_logs/issues/latest_export.md
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "docs: refresh issue logs via gh2md"
+          title: "docs: Automated Issue Log Refresh"
+          branch: "docs/issue-log-update"
+          body: "Automated PR to update `agent_dev_logs/issues/` markdown snapshots based on the latest release."
