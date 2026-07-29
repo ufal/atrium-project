@@ -11,9 +11,19 @@
 #      to trimmed directories like `frontend-lindat/`).
 #   3. The zero-dependency client compiles and answers `--help` in a bare
 #      python:3.11-slim container — proves the zero-dependency claim.
+#   4. The endpoints the skill docs advertise are the endpoints the service
+#      actually serves (§12.3 step 4), in two passes:
+#        4a — static, zero-dependency: documented paths vs the `@app.<verb>`
+#             decorators in `service/*.py`. Always runs, never skips.
+#        4b — live: `/info` §4.1 envelope, `/health` shape, and the documented
+#             paths vs in-process `app.openapi()`. Needs the service deps, so
+#             it import-skips on the model-heavy repos exactly as
+#             `api-contract.reusable.yml` does — 4a is what keeps this check
+#             honest there.
 #
-# The optional endpoint-diff against in-process `app.openapi()` (§12.3 step 4)
-# stays in the per-repo contract tests, where the service dependencies exist.
+# Why both: the skill branches carry no `tests/`, so unlike the default
+# branches there is no contract test to fall back on. 4a is the floor that
+# runs everywhere; 4b is the real thing where the deps install.
 
 name: ATRIUM Skill Branch Validation
 
@@ -29,6 +39,26 @@ on:
         required: false
         type: string
         default: "SKILL.md README.md service/README.md"
+      app-import:
+        description: "Dotted module path exposing the FastAPI `app`, e.g. service.api (alto: service.text_api)"
+        required: false
+        type: string
+        default: "service.api"
+      primary-endpoints:
+        description: "Space-separated §4.2 primary endpoints that must be served and advertised, e.g. '/enrich /enrich_text'"
+        required: false
+        type: string
+        default: ""
+      service-requirements:
+        description: "Requirements file installed before the live contract check"
+        required: false
+        type: string
+        default: "service/requirements.txt"
+      python-version:
+        description: "Python version for the contract check"
+        required: false
+        type: string
+        default: "3.11"
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -115,3 +145,200 @@ jobs:
             sh -c "python -m py_compile '${{ inputs.client-script }}' \
                    && python '${{ inputs.client-script }}' --help > /dev/null \
                    && echo 'OK: client compiles and answers --help with stdlib only'"
+
+      - name: "4 — shared endpoint extractor"
+        run: |
+          cat > "$RUNNER_TEMP/skill_contract.py" <<'PY'
+          """Endpoint extraction shared by skill-validate steps 4a and 4b.
+
+          Both passes must agree on what counts as a documented endpoint, so the
+          parsing lives in one place rather than being repeated per step.
+          """
+          import re
+
+          # FastAPI serves these itself — documentation entry points, not API routes,
+          # so they never appear in app.openapi()["paths"].
+          BUILTIN = {"/openapi.json", "/docs", "/redoc", "/docs/oauth2-redirect"}
+
+          # An endpoint claim is `GET /x` / `POST /x` — a verb plus a path. A bare
+          # backticked `/x` is deliberately NOT treated as one: the branch READMEs
+          # use that form for the Claude Code slash-command name (`/atrium-llm-enrich`)
+          # and for static mounts (`/frontend`), neither of which is an API route.
+          _VERB = re.compile(r"\b(?:GET|POST|PUT|DELETE|PATCH)\s+(/[A-Za-z0-9_{}/.-]*)")
+          _ROUTE = re.compile(
+              r"@app\.(?:get|post|put|delete|patch|head|options)\(\s*[\"']([^\"']+)[\"']"
+          )
+          # Static mounts serve paths too, so they count as served.
+          _MOUNT = re.compile(r"app\.mount\(\s*[\"']([^\"']+)[\"']")
+
+
+          def normalize(path):
+              """Drop any query string and collapse path params, so /jobs/{job_id}
+              and /jobs/{id} compare equal."""
+              path = path.split("?", 1)[0].rstrip("/") or "/"
+              return re.sub(r"\{[^}]*\}", "{}", path)
+
+
+          def _scan(paths, pattern, drop_builtin):
+              found = set()
+              for path in paths:
+                  try:
+                      text = open(path, encoding="utf-8").read()
+                  except OSError:
+                      continue
+                  for raw in pattern.findall(text):
+                      route = normalize(raw)
+                      if drop_builtin and route in BUILTIN:
+                          continue
+                      found.add(route)
+              return found
+
+
+          def documented(doc_files):
+              """API paths the skill docs advertise, as `GET /x` / `POST /x`."""
+              return _scan(doc_files, _VERB, True)
+
+
+          def served(source_files):
+              """API paths the service declares — route decorators plus static mounts."""
+              return _scan(source_files, _ROUTE, False) | _scan(source_files, _MOUNT, False)
+          PY
+          echo "OK: extractor written to $RUNNER_TEMP/skill_contract.py"
+
+      - name: "4a — documented endpoints exist in the service source (zero-dependency)"
+        shell: python {0}
+        env:
+          SKILL_DOCS: ${{ inputs.skill-docs }}
+          PRIMARY_ENDPOINTS: ${{ inputs.primary-endpoints }}
+        run: |
+          import glob, os, sys
+
+          sys.path.insert(0, os.environ["RUNNER_TEMP"])
+          import skill_contract
+
+          docs = [d for d in os.environ["SKILL_DOCS"].split() if os.path.exists(d)]
+          sources = sorted(glob.glob("service/*.py"))
+          if not sources:
+              sys.exit("no service/*.py found — the skill branch must carry the FastAPI app (strategy §5)")
+
+          documented = skill_contract.documented(docs)
+          served = skill_contract.served(sources)
+
+          errors = []
+          phantom = sorted(documented - served)
+          if phantom:
+              errors.append(
+                  "skill docs advertise endpoints the service does not serve: "
+                  + ", ".join(phantom)
+              )
+          for endpoint in os.environ["PRIMARY_ENDPOINTS"].split():
+              if skill_contract.normalize(endpoint) not in served:
+                  errors.append(f"primary endpoint {endpoint} is not served by service/*.py")
+          if errors:
+              sys.exit("Endpoint contract (§4.2 / §12.3): " + "; ".join(errors))
+
+          undocumented = sorted(served - documented)
+          if undocumented:
+              print(f"::notice::served but not mentioned in the skill docs: {', '.join(undocumented)}")
+          print(f"OK: {len(documented)} documented endpoints, all served; {len(served)} routes in {len(sources)} files")
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install service dependencies (best effort — 4b import-skips if unavailable)
+        run: |
+          python -m pip install --upgrade pip
+          pip install fastapi httpx openapi-spec-validator || true
+          if [ -f "${{ inputs.service-requirements }}" ]; then
+            pip install -r "${{ inputs.service-requirements }}" || \
+              echo "::notice::service requirements did not install cleanly — step 4b will import-skip"
+          fi
+
+      - name: "4b — live /info + /health + OpenAPI contract (strategy §4.1, §12.3)"
+        shell: python {0}
+        env:
+          APP_IMPORT: ${{ inputs.app-import }}
+          SKILL_DOCS: ${{ inputs.skill-docs }}
+          PRIMARY_ENDPOINTS: ${{ inputs.primary-endpoints }}
+        run: |
+          import os, sys
+
+          sys.path.insert(0, os.environ["RUNNER_TEMP"])
+          sys.path.insert(0, os.getcwd())
+          import skill_contract
+
+          module_name = os.environ["APP_IMPORT"]
+          repo = os.environ["GITHUB_REPOSITORY"].split("/", 1)[1]
+          primary = os.environ["PRIMARY_ENDPOINTS"].split()
+
+          try:
+              from fastapi.testclient import TestClient
+              app = __import__(module_name, fromlist=["app"]).app
+          except Exception as exc:
+              # Model-heavy services cannot install here; 4a already checked the
+              # documented-vs-served diff statically. Warn loudly so a skip is never
+              # mistaken for a pass.
+              print(f"::warning::step 4b skipped — cannot import {module_name}.app ({exc.__class__.__name__}: {exc})")
+              sys.exit(0)
+
+          client = TestClient(app)
+          errors = []
+
+          # §4.1 — /info envelope
+          response = client.get("/info")
+          if response.status_code != 200:
+              errors.append(f"/info returned {response.status_code}, expected 200")
+          else:
+              info = response.json()
+              if info.get("service") != repo:
+                  errors.append(f"/info service={info.get('service')!r}, expected the repo id {repo!r}")
+              if not info.get("version"):
+                  errors.append("/info version is empty (must come from para_config.txt, §4.6)")
+              elif info["version"] != app.version:
+                  errors.append(f"/info version {info['version']!r} != app.version {app.version!r}")
+              advertised = info.get("endpoints")
+              if not isinstance(advertised, list) or not advertised:
+                  errors.append("/info endpoints missing or empty")
+              else:
+                  real = {r.path for r in app.routes if getattr(r, "methods", None)}
+                  unreal = sorted(set(advertised) - real)
+                  if unreal:
+                      errors.append(f"/info advertises non-existent routes: {', '.join(unreal)}")
+                  for endpoint in primary:
+                      if endpoint not in advertised:
+                          errors.append(f"primary endpoint {endpoint} missing from /info endpoints")
+              limits = info.get("limits")
+              if not isinstance(limits, dict) or "max_upload_mb" not in limits:
+                  errors.append("/info limits.max_upload_mb missing (§4.1)")
+
+          # §4.1 — /health shallow
+          response = client.get("/health")
+          if response.status_code != 200:
+              errors.append(f"/health returned {response.status_code}, expected 200")
+          elif response.json().get("status") not in {"ok", "degraded"}:
+              errors.append(f"/health status={response.json().get('status')!r}, expected ok|degraded")
+
+          # §12.3 step 4 — documented endpoints against the real spec
+          spec_paths = {skill_contract.normalize(p) for p in app.openapi()["paths"]}
+          docs = [d for d in os.environ["SKILL_DOCS"].split() if os.path.exists(d)]
+          phantom = sorted(skill_contract.documented(docs) - spec_paths)
+          if phantom:
+              errors.append(f"documented but absent from OpenAPI paths: {', '.join(phantom)}")
+          for endpoint in primary:
+              if skill_contract.normalize(endpoint) not in spec_paths:
+                  errors.append(f"primary endpoint {endpoint} missing from OpenAPI paths")
+
+          # §2.2 — the runtime spec must be valid OpenAPI
+          try:
+              import openapi_spec_validator
+              openapi_spec_validator.validate(app.openapi())
+          except ImportError:
+              print("::notice::openapi-spec-validator unavailable — spec validity not checked")
+          except Exception as exc:
+              errors.append(f"OpenAPI document is not spec-valid: {exc}")
+
+          if errors:
+              sys.exit("API meta-contract violations:\n  - " + "\n  - ".join(errors))
+          print(f"OK: /info envelope, /health, and {len(spec_paths)} OpenAPI paths conform to §4.1")

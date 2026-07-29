@@ -90,8 +90,10 @@ at `/openapi.json` (with Swagger UI at `/docs`). Policy:
 The `agent-skill` branch is a **flattened, trimmed derivative** of the default branch: source
 modules hoisted to the repo root, development-only material removed (tests, lint configs,
 supplementary data/analysis), and the skill layer added (`SKILL.md`, `scripts/`, samples).
-It is kept current by **merging the default branch forward** after service changes
-([§12.2](#122-branch-sync-policy)); skill-only fixes happen directly on the branch.
+It is kept current by **porting default-branch `service/` changes forward by hand** — for three
+of the five repos the branches share no history, so there is nothing to merge
+([§12.2](#122-branch-sync-policy--manual-landing-scripted-diagnosis)); skill-only fixes happen
+directly on the branch.
 
 Precedent: the existing
 [`agent-skill` branch of atrium-page-classification](https://github.com/ufal/atrium-page-classification/tree/agent-skill)
@@ -197,22 +199,33 @@ scripts/
   atrium_<verb>.py            # zero-dependency client (§6, Appendix B)
   server.sh                   # idempotent server launcher (Appendix C) — named server.sh
 service/                      # the FastAPI app, unchanged from default branch
-  api.py · requirements.txt · README.md · frontend*/
-<source modules hoisted to repo root>   # only what service/ imports at runtime
+  api.py · atrium_service.py · requirements.txt · README.md · frontend*/
+<source modules hoisted to repo root>   # the service's full transitive import closure
+  atrium_paradata.py · atrium_document.py · atrium_document.schema.json · …
 small_data_samples/           # tiny licensed inputs for smoke tests (+ LICENSE)
 setup/para_config.txt         # version source (§4.6) + setup scripts the launcher needs
 Dockerfile · docker-compose*.yml        # compose `api` profile, port 8000
 CITATION.cff · LICENSE · .gitignore · .dockerignore
 ```
 
-Removed relative to the default branch: `tests/`, lint/CI configs (`ruff.toml`, `pytest.ini`,
-`.pre-commit-config.yaml`, coverage), `supplementary/`/analysis material, dev-only frontends —
-anything a *running* skill doesn't need.
+Removed relative to the default branch: `tests/` (including stray `test_*.py` outside it),
+lint/CI configs (`ruff.toml`, `pytest.ini`, `.pre-commit-config.yaml`, coverage),
+`supplementary/`/analysis material, dev-only frontends, and every `.github/workflows/` file
+except the `skill-validate.yml` caller — anything a *running* skill doesn't need.
 
-**Rule (CI-checked, [§12.3](#123-skill-validation-ci-future-reusable-workflow)): every file path
-referenced by `SKILL.md`, `README.md`, or `service/README.md` must exist on the branch.**
+**Rule: the hoisted set is the service's _transitive_ import closure, not just what
+`service/*.py` names directly.** A one-level reading is what left `atrium_document.py` off all
+five branches in the 2026-07-29 re-drift: translator's `service/api.py` never imports it, but
+the `main.py` it calls does. `tools/skill_drift_check.py` computes the closure — imports guarded
+by `try: … except ImportError:` are optional and do not count (that is how `para_licenses.py`
+stays legitimately trimmed).
+
+**Rule (CI-checked, [§12.3](#123-skill-validation-ci-reusable-workflow--authored)): every file path
+referenced by `SKILL.md`, `README.md`, or `service/README.md` must exist on the branch, and every
+endpoint they advertise as `GET /x` / `POST /x` must be one the service actually serves.**
 (Generalized from exemplar defects (a) `serve.sh` vs committed `server.sh`, and (c)
-`frontend-lindat/` documented but absent.)
+`frontend-lindat/` documented but absent. The endpoint half caught llm-enrich's and translator's
+branch READMEs claiming a frontend "mounted at `/frontend`" that neither `service/api.py` mounts.)
 
 ## 🔌 6. Zero-dependency client contract
 
@@ -468,16 +481,31 @@ the endpoint set matches the documented list; `/info` returns the §4.1 required
 `/health` exists and returns the §4.1 shape. This guards the meta-contract without committed
 spec files. (Pattern: extend the existing `tests/test_api*.py` / `tests/test_service_api.py`.)
 
-### 12.2 Branch sync policy — **manual (interim)**
+### 12.2 Branch sync policy — **manual landing, scripted diagnosis**
 
 The `agent-skill` branches were hand-built as flattened/trimmed derivatives, so they do **not**
-share history cleanly with their default branches. Until the skills stabilise, syncing is
-**manual** (no automated forward-merge or regenerate-from-default). After any `service/` change
-or release tag on the default branch, run this checklist by hand:
+share history cleanly with their default branches — for alto-postprocess, nlp-enrich and
+page-classification there is **no merge base at all**, so `git merge` is not available and
+"how stale is this branch?" cannot be answered from `git log`. Landing therefore stays
+**manual**. Diagnosing no longer is; two hub tools do that part:
+
+- **`tools/skill_drift_check.py`** — the standing tripwire. Compares `agent-skill` against the
+  default branch by content: differing common files (minus an expected-divergence allowlist),
+  file-mode drift, the transitive runtime closure the branch is missing, `para_config.txt`
+  version lag, and byte-parity of the para-drift-guarded shared files. Exit 1 on drift, so it
+  can gate a release. Run it *before* deciding anything.
+- **`tools/skill_ify.py`** — derives what the branch tree *should* be (trimmed default branch +
+  the skill overlay) and prints the add/update/delete plan, or materializes the tree with
+  `apply --into DIR` to diff by hand. Advisory by design: it never commits, never pushes, and
+  never proposes deleting a skill-authored file — retiring one (alto's forked
+  `text_util_langID.py`, say) is a human decision.
+
+After any `service/` change or release tag on the default branch, run this checklist by hand:
 
 1. **Port the `service/` change** onto the `agent-skill` branch (cherry-pick or copy the changed
    `service/*.py` + any newly-required runtime module — remember the branch is trimmed, so a new
-   import must be carried over too).
+   import must be carried over too, transitively: run `skill_drift_check.py` rather than reading
+   the import lines by eye).
 2. **Re-run the anti-pattern checklist** (§7 / each branch README "Maintenance notes"): no doc
    cites a script name that differs from the committed file; no provenance claim unless the
    service writes paradata on this branch; no reference to absent files; documented response
@@ -485,11 +513,13 @@ or release tag on the default branch, run this checklist by hand:
 3. **Re-run the client smoke test** on `small_data_samples/` against a locally started server
    (`bash scripts/server.sh`), and re-check `/info`+`/health` against §4.1.
 4. **Let CI confirm**: the `skill-validate.yml` caller (§12.3) runs on the push and guards
-   frontmatter, referenced paths, and the zero-dependency client claim.
+   frontmatter, referenced paths, the zero-dependency client claim, and the endpoint/`/info`
+   contract.
 5. **Bump the skill tag** (`skill-v<para_config version>`) so agents can pin the synced state.
+6. **Re-run `skill_drift_check.py`** — it must exit 0 before the sync counts as done.
 
-Automating this (a scripted `skill-ify` transform, or an auto forward-merge action) is deferred
-until the branches stop churning.
+Fully automating the *landing* (an auto forward-merge action) stays deferred: with three
+branches sharing no history there is nothing to merge, and the trim decisions need a human.
 
 ### 12.3 Skill-validation CI (reusable workflow — authored)
 
@@ -502,11 +532,25 @@ until the branches stop churning.
    branch** — would have caught exemplar defects (a) and (c).
 3. The client script compiles (`python -m py_compile`) and runs `--help` in a bare
    `python:3.11-slim` container — proves the zero-dependency claim.
-4. Optional: boot the app in-process, diff the documented endpoint list against
-   `app.openapi()` — catches the defect (d) class.
+4. **The endpoint contract** — implemented, in two passes, because the skill branches carry no
+   `tests/` and so have no contract test to fall back on:
+   - **4a (static, zero-dependency, never skips)**: every endpoint the docs advertise as
+     `GET /x` / `POST /x` is declared by a route decorator or mount in `service/*.py`, and every
+     §4.2 primary endpoint is present. A bare backticked `` `/x` `` is deliberately *not* read as
+     an endpoint claim — the branch READMEs use that form for the Claude Code slash-command name
+     (`/atrium-llm-enrich`) and for static mounts.
+   - **4b (live)**: boots the app in-process and asserts the §4.1 `/info` envelope
+     (`service` == repo id, `version` == `app.version`, advertised endpoints are real routes,
+     `limits.max_upload_mb`), the `/health` shape, the documented endpoints against
+     `app.openapi()["paths"]`, and OpenAPI spec validity. Import-skips on the model-heavy repos
+     exactly as `api-contract.reusable.yml` does, emitting a CI **warning** so a skip is never
+     mistaken for a pass — 4a is what keeps the check honest there.
 
-Caller example lands in `docs/templates/workflows/skill-validate.caller.example.yml` when the
-workflow does (rollout step 6).
+   Callers pass `app-import` and `primary-endpoints`; use the same values as that repo's
+   default-branch `tests/test_api_contract.py`, so both branches assert one contract.
+
+Caller example: `docs/templates/workflows/skill-validate.caller.example.yml` (carries the
+per-repo parameter table).
 
 ## 🪃 13. Sub-issue creation & tracking
 
