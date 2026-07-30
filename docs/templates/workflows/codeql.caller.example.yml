@@ -1,24 +1,38 @@
-name: Docker Build & Publish
+# EXAMPLE caller for ufal/atrium-project/.github/workflows/codeql.reusable.yml
+#
+# Copy to <tool-repo>/.github/workflows/codeql.yml and set the branch list.
+# Replaced the standalone ~44-line template on 2026-07-30 (#18, T3) — five
+# near-identical copies had drifted apart on nothing but the weekly cron.
+#
+# Results land in the repo's Security > Code scanning tab. Pure-Python repos need
+# no inputs: the reusable defaults to `language: python` with `build-mode: none`.
+
+name: CodeQL
 
 on:
   push:
-    branches: [test, master]
-    tags: ['v*']
+    branches: [test, master]     # use THIS repo's real branches
   pull_request:
-    branches: [test, master]
-  release:
-    types: [published]
+    branches: [test, master]     # keep identical to push, or PRs skip the check
+  schedule:
+    # Weekly, to catch advisories published since the last push. The schedule
+    # lives here, not in the reusable — `on:` can only be declared by the caller.
+    # Stagger across repos rather than all firing in the same minute.
+    - cron: "30 5 * * 1"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  analyze:
     permissions:
+      # REQUIRED. A reusable workflow's permissions are capped by this block, so
+      # omitting security-events makes GitHub reject the whole file at parse time
+      # ("requesting 'security-events: write', but is only allowed
+      # 'security-events: none'") — a startup_failure, not a step failure (#18).
+      security-events: write
+      actions: read
       contents: read
-      packages: write
-    uses: ufal/atrium-project/.github/workflows/docker-tool.reusable.yml@v1
-    secrets: inherit
-    with:
-      image-name: ufal/atrium-page-classification
-      apt-packages: build-essential g++ libgl1 libglib2.0-0 poppler-utils
-      pre-install-torch: torch==2.7.1 torchvision==0.22.1
-      requirements: setup/requirements.txt setup/requirements-test.txt
-      hf-model-cache: true
+    uses: ufal/atrium-project/.github/workflows/codeql.reusable.yml@v1
+    # Optional: with: { language: python }  (that is already the default)
