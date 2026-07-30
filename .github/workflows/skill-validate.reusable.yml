@@ -247,7 +247,7 @@ jobs:
           print(f"OK: {len(documented)} documented endpoints, all served; {len(served)} routes in {len(sources)} files")
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ inputs.python-version }}
 
