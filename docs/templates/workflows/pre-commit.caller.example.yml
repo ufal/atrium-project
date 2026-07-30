@@ -1,29 +1,35 @@
-# ATRIUM — pre-commit in CI (TEMPLATE)
+# EXAMPLE caller for ufal/atrium-project/.github/workflows/pre-commit.reusable.yml
 #
-# Runs the repo's .pre-commit-config.yaml in CI so the hooks (ruff, shellcheck,
-# whitespace/large-file guards...) are actually enforced, not just available
-# locally. Closes the parity gap: pre-commit config is present in alto + page,
-# MISSING in nlp + translator (see plan_repo_review.md, thread B).
+# Copy to <tool-repo>/.github/workflows/pre-commit.yml and set the branch list.
+# Replaced the standalone template on 2026-07-30 (#18, T3).
 #
-# Pair this with .pre-commit-config.example.yaml (copy to .pre-commit-config.yaml).
-# Drop in as .github/workflows/pre-commit.yml.
+# BLOCKING across the ecosystem — a failing hook fails the check. The repo's own
+# .pre-commit-config.yaml and ruff.toml still decide WHAT runs; the reusable only
+# standardises how it is invoked (and adds the hook-environment cache, which only
+# two of the five previously had).
+#
+# Prerequisite: the repo must have a .pre-commit-config.yaml at its root. See
+# docs/templates/.pre-commit-config.example.yaml.
 
 name: pre-commit
 
 on:
-  pull_request:
-    branches: [test, master]
   push:
-    branches: [test, master]
+    branches: [test, master]     # use THIS repo's real branches
+  pull_request:
+    branches: [test, master]     # keep identical to push, or PRs skip the check
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   pre-commit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.11"
-          cache: "pip"
-      - run: pip install pre-commit
-      - run: pre-commit run --all-files --show-diff-on-failure
+    uses: ufal/atrium-project/.github/workflows/pre-commit.reusable.yml@v1
+    # Optional:
+    #   with:
+    #     python-version: "3.12"
+    #     extra-args: "--all-files"   # drop --show-diff-on-failure

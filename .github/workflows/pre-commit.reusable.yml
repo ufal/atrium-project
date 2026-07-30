@@ -1,0 +1,72 @@
+# ATRIUM — reusable pre-commit run (issue #18, T3)
+#
+# Replaces five near-identical pre-commit.yml files (212 lines). The only real
+# difference between them was whether the pre-commit environment cache was
+# present — 2 of 5 had it, the two that were converted from advisory to blocking
+# on 2026-07-30. The cache is strictly better, so it applies to everyone here.
+#
+# BLOCKING in all five repos. That was settled on 2026-07-30: llm-enrich's only
+# finding was a ruff B008 on FastAPI's `arg: T = Body(...)` idiom — a false
+# positive, fixed by adding fastapi.* to bugbear's extend-immutable-calls rather
+# than by restructuring endpoints. nlp-enrich was already clean.
+#
+# Each repo's own .pre-commit-config.yaml and ruff.toml still drive what runs;
+# this workflow only standardises HOW it is invoked.
+#
+# `pip install pre-commit` rather than pre-commit/action@v3.0.1: the action was
+# the only patch-pinned third-party dependency in the ecosystem, and it does not
+# do anything the two lines below do not.
+
+name: ATRIUM pre-commit Template
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: "Python used to run the hooks. Hook-internal envs are pinned by .pre-commit-config.yaml."
+        required: false
+        type: string
+        default: "3.11"
+      extra-args:
+        description: >-
+          Extra flags for `pre-commit run`. Default runs every hook over the whole
+          tree and prints the diff on failure, so a formatting hook shows exactly
+          what it would change.
+        required: false
+        type: string
+        default: "--all-files --show-diff-on-failure"
+
+permissions:
+  contents: read   # least privilege: only ever reads the tree
+
+jobs:
+  pre-commit:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python ${{ inputs.python-version }}
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Cache pre-commit environments
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Run pre-commit
+        env:
+          EXTRA_ARGS: ${{ inputs.extra-args }}
+        run: |
+          # shellcheck disable=SC2086 — EXTRA_ARGS is a flag list, splitting is intended
+          pre-commit run $EXTRA_ARGS

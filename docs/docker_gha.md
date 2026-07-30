@@ -35,9 +35,21 @@ The output includes foundational templates designed to be dropped into or called
 linting, testing with coverage, and multi-target Docker builds.
 * **ATRIUM Security Template:** A reusable workflow (`security.reusable.yml`) that handles version consistency checks,
 Trivy container image scanning, and SBOM generation.
-* **Paradata Drift Check:** A reusable workflow (`paradata-drift.reusable.yml`) verifying canonical shared-file parity.
-* **CodeQL / Dependabot / GPU Inference / Pre-commit / Scheduled Smoke / Secret Scanning:** Caller examples in
-`docs/templates/workflows/`, mirrored (localized) in the tool repos.
+* **Paradata Drift Check:** A reusable workflow (`para-drift.reusable.yml`) verifying canonical shared-file
+parity. Reads the canonical files via a `hub-ref` input (default `v1`) rather than a hardcoded branch.
+* **API Meta-Contract:** A reusable workflow (`api-contract.reusable.yml`) running the §4.1 service contract test.
+* **CodeQL:** A reusable workflow (`codeql.reusable.yml`) — Python, `build-mode: none`. The caller supplies
+the schedule (`on:` can only be declared by the caller) and **must** grant `security-events: write`.
+* **pre-commit:** A reusable workflow (`pre-commit.reusable.yml`) — blocking, with the hook-environment
+cache. The repo's own `.pre-commit-config.yaml` and `ruff.toml` still decide what runs.
+* **Skill Branch Validation:** A reusable workflow (`skill-validate.reusable.yml`) for `agent-skill` branches.
+* **Dependabot / GPU Inference / Scheduled Smoke:** Caller examples in `docs/templates/workflows/`,
+localized per repo — these stay standalone because they are genuinely repo-specific.
+
+> The CodeQL and pre-commit reusables replaced ten near-identical local workflows (431 lines) on
+> 2026-07-30 (#18, T3). Their only real differences were an arbitrary weekly cron and whether the
+> pre-commit cache was present. Deferred until the pins were on `@v1`, because collapsing them while
+> callers still pointed at a mutable branch would have raised coupling from 20 refs to 30.
 
 > 📌 **Ref-pin convention (updated 2026-07-30, issue #18): two channels.**
 >
