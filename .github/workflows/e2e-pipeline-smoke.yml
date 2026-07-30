@@ -10,8 +10,8 @@
 # authoritative integration branch). Each job boundary is one cross-repo
 # interface; assertions (tools/e2e/e2e_assert.py) check formats and contracts,
 # never model quality. This catches cross-repo interface breakage that per-repo
-# CI cannot see — especially valuable given the @test-pinned reusable
-# architecture, where any repo's push to `test` can break a neighbour.
+# CI cannot see — especially valuable given the centrally-pinned reusable
+# architecture, where one hub change reaches every repo at once.
 #
 # Stage notes
 # -----------

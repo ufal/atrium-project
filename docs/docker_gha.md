@@ -24,7 +24,7 @@ runs in CI in every repo.
 GitHub Container Registry (GHCR) trigger automatically on version tags (`v*`) and published releases.
 * **Version Syncing:** The `CITATION.cff` files are synced with internal `para_config` versions across the board
 (verified in-sync in all five repos as of this revision).
-* **Paradata Drift Guard:** Every repo calls `paradata-drift.reusable.yml@test` to diff its local
+* **Paradata Drift Guard:** Every repo calls `para-drift.reusable.yml@v1` to diff its local
 `atrium_paradata.py` / `para_licenses.py` against the hub canonicals (parity currently clean everywhere).
 
 ### Reusable Templates (`atrium-project`)
@@ -39,9 +39,28 @@ Trivy container image scanning, and SBOM generation.
 * **CodeQL / Dependabot / GPU Inference / Pre-commit / Scheduled Smoke / Secret Scanning:** Caller examples in
 `docs/templates/workflows/`, mirrored (localized) in the tool repos.
 
-> 📌 **Ref-pin convention:** all callers pin reusable workflows to **`@test`** — the ecosystem's authoritative
-> integration branch. The last off-convention caller (`nlp-enrich/docker.yml` on `@main`) was corrected in the
-> July 2026 bug-fix round (§2).
+> 📌 **Ref-pin convention (updated 2026-07-30, issue #18): two channels.**
+>
+> | Channel | Who uses it | Mutability |
+> |---|---|---|
+> | **`@v1`** | every caller in every tool repo | moving **major tag**; only a maintainer moves it |
+> | **`@test`** | pre-release validation of a hub change, before `v1` is moved | branch — moves on every merge |
+>
+> Callers previously pinned `@test` directly, so **every merge to the hub's integration branch changed
+> what all five repos executed, immediately**. Once `test` became the default branch that meant landing
+> straight on production. The Wave B permission change is the concrete demonstration: one hub-side edit
+> put `docker.yml` into `startup_failure` in all five repos at once.
+>
+> `@v1` keeps the "one edit updates all" property the architecture exists for — you still ship a hub fix
+> centrally, by moving the tag — while removing the per-merge mutability. Exact tags (`v0.1.0`, …) stay
+> as the audit record of what `v1` pointed at over time.
+>
+> **Moving `v1`:** land the hub change on `main`, validate it via a caller temporarily pinned `@test`,
+> then `git tag -f v1 <sha> && git push -f origin v1`. Callers need no edit.
+>
+> ⚠️ `para-drift.reusable.yml` also reads the canonical `docs/templates/shared/*` files via its
+> **`hub-ref`** input (default `v1`). Keep it in step with the ref the workflow is called at — a caller
+> on `@test` should pass `hub-ref: test`, or it compares against the wrong generation of templates.
 
 ### Localized Repository Workflows
 
@@ -152,8 +171,8 @@ remains to be added once the runner exists.
 smoke tests for early-warning pipeline degradation detection (page-classification's HF `v4.3` revision check is
 the existing prototype).
 * **End-to-End Pipeline Smoke:** a minimal cross-repo fixture (single-page ALTO → postprocess → translate → enrich
-→ TEITOK) run in CI — tracked as the issue #18 follow-up proposal; especially valuable given the `@test`-pinned
-reusable architecture.
+→ TEITOK) run in CI — landed and green; especially valuable given the centrally-pinned reusable
+architecture, where one hub change reaches every repo.
 
 ---
 
@@ -164,8 +183,8 @@ match the Node-24 baseline (`FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`); see §2 for t
 
 | Workflow            | What it does                                 | Deployment state                                                             | Lives as        |
 |---------------------|----------------------------------------------|------------------------------------------------------------------------------|-----------------|
-| **Docker Tool**     | Test + coverage + multi-target GHCR publish. | ✅ All 5 repos (thin callers → `docker-tool.reusable.yml@test`).              | Reusable Bundle |
-| **Security**        | Version-check + Trivy CVE scan + SBOM.       | ✅ All 5 repos (→ `security.reusable.yml@test`).                              | Reusable Bundle |
+| **Docker Tool**     | Test + coverage + multi-target GHCR publish. | ✅ All 5 repos (thin callers → `docker-tool.reusable.yml@v1`).                | Reusable Bundle |
+| **Security**        | Version-check + Trivy CVE scan + SBOM.       | ✅ All 5 repos (→ `security.reusable.yml@v1`).                                | Reusable Bundle |
 | **Paradata Drift**  | Canonical shared-file parity diff vs hub.    | ✅ All 5 repos.                                                               | Reusable Bundle |
 | **CodeQL**          | Static security/quality analysis for Python. | ✅ All 5 repos (highest value: `nlp-enrich` subprocess/FastAPI surface).      | Standalone      |
 | **Scheduled Smoke** | Runs `pytest -m slow` on a cron.             | ✅ All 5 repos — but slow lanes in `nlp`/`llm` are empty (see §3.B).          | Standalone      |

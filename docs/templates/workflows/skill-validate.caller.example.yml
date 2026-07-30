@@ -17,7 +17,7 @@ on:
 
 jobs:
   skill-validate:
-    uses: ufal/atrium-project/.github/workflows/skill-validate.reusable.yml@test
+    uses: ufal/atrium-project/.github/workflows/skill-validate.reusable.yml@v1
     with:
       client-script: scripts/atrium_classify.py
       # skill-docs: "SKILL.md README.md service/README.md"   # (default)

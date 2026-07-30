@@ -35,7 +35,7 @@ jobs:
       contents: read
       packages: read           # image-scan pulls the GHCR image
       security-events: write   # SARIF upload to the Security tab
-    uses: ufal/atrium-project/.github/workflows/security.reusable.yml@test
+    uses: ufal/atrium-project/.github/workflows/security.reusable.yml@v1
     # No `secrets:` block — this reusable consumes no secrets at all. It used to
     # carry `secrets: inherit`, which handed it every secret in the repo for
     # nothing (#18).

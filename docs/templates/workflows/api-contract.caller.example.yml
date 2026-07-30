@@ -32,5 +32,5 @@ permissions:
 
 jobs:
   api-contract:
-    uses: ufal/atrium-project/.github/workflows/api-contract.reusable.yml@test
+    uses: ufal/atrium-project/.github/workflows/api-contract.reusable.yml@v1
     # Optional: with: { python-version: "3.12" }  (default "3.11")

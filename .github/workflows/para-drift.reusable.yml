@@ -1,6 +1,24 @@
 name: Paradata Drift Check
 on:
   workflow_call:
+    inputs:
+      hub-ref:
+        description: >-
+          Ref to read the canonical docs/templates/shared/* files from. Keep this
+          in step with the ref THIS workflow is called at, or the check compares
+          against the wrong generation of templates.
+
+          Was hardcoded to `test` (#18). That left the pinning half-done: with
+          callers on the immutable `@v1`, the workflow LOGIC came from the tag
+          while the FILES it enforces still came from a mutable branch — so any
+          push to `test` still changed what every pinned caller enforced, which
+          defeats the pin for the one reusable whose whole job is comparing files.
+
+          Callers on the `@test` pre-release channel should pass `hub-ref: test`
+          to stay self-consistent.
+        required: false
+        type: string
+        default: v1
 
 permissions:
   contents: read   # least privilege: these jobs only ever read the tree
@@ -20,7 +38,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: ufal/atrium-project
-          ref: test
+          ref: ${{ inputs.hub-ref }}
           path: hub-repo
 
       - name: Verify atrium_paradata.py parity
