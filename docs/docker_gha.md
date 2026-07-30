@@ -111,11 +111,15 @@ target semantics (`base` stays excluded — no ENTRYPOINT, not a publishable ima
 
 ### A. Security & Secret Management (Pending Expert Review)
 
-* **Secret Scanning (`secret-scan.yml`):** The implementation of native secret scanning (e.g., Gitleaks) to prevent
-HuggingFace tokens or internal credentials from leaking into the history is **currently paused**.
+* **Secret Scanning (`secret-scan.yml`): dropped 2026-07-30 (issue #18).** The gitleaks caller template
+was never adopted by any repo after being added on 2026-06-21, so it has been removed rather than left
+as indefinitely "paused" scaffolding. GitHub-native secret scanning with push protection covers
+HuggingFace tokens and internal credentials without needing the ARUB/ARUP policy sign-off or the
+org-owned `GITLEAKS_LICENSE` that `gitleaks-action` requires for organisation repositories.
 
-> ⚠️ **Action Required:** The specific scope and handling of secret checks is up for question. We require consultation
-> from security/infrastructure experts to establish the official policy for secret rotation and historical sweep
+> ⚠️ **If reopening:** the original blocker was policy, not tooling — the scope of secret rotation and
+> a historical-history sweep still need security/infrastructure sign-off before adopting a scanner that
+> acts on findings. Verify `gitleaks-action` versioning first; v2 reaches EOL in Sep 2026.
 > permissions before this workflow is activated, particularly for `atrium-page-classification`.
 >
 > **ARUP/ARUB Institutional Contacts for Policy Review:**

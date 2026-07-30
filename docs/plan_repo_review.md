@@ -233,8 +233,11 @@ fast lanes green, ruff clean):
   or explicitly fork nlp↔llm; only then consider extending para-drift.
 * **Phase 3 — ratchet & orchestrate:** raise `fail_under` toward measured baselines; build the
   §8 compose scaffold (issue #18); optional DRY `release-guard.reusable.yml`.
-* **Phase 4 — blocked (documented):** gitleaks secret-scan (needs ARUB/ARUP policy sign-off +
-  `GITLEAKS_LICENSE`); template exists (`secret-scan.caller.example.yml`), adopted by none.
+* **Phase 4 — dropped (2026-07-30, issue #18):** gitleaks secret-scan is no longer tracked as
+  pending work. The `secret-scan.caller.example.yml` template sat unadopted by every repo from
+  2026-06-21 onward and has been removed; GitHub-native secret scanning with push protection
+  covers the case without the ARUB/ARUP policy sign-off and org-owned `GITLEAKS_LICENSE` that
+  gitleaks-action requires. Reopen only if a concrete gap is identified.
 
 ## 🔁 8. Cross-service orchestration (Issue #18) — **still to build**
 `atrium-project/compose/docker-compose.pipeline.yml` (chaining the published GHCR images
