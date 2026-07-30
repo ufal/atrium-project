@@ -31,9 +31,12 @@
 # * nlp         manifest -> UDPipe -> NameTag -> stats/TEITOK on the Czech
 #               original (czech-pdt model; Czech is the pipeline default).
 # * llm         OpenRouter keyword enrichment of the categ CSV. Gated on the
-#               OPENROUTER_API_KEY secret (mirrored into job env — the secrets
-#               context is invisible to env.* checks, same trap as the #18
-#               Codecov gate). Skips cleanly when the secret is absent.
+#               OPENROUTER_KEY secret, mapped onto the OPENROUTER_API_KEY env var
+#               that openrouter_client.py actually reads (mirrored into job env —
+#               the secrets context is invisible to env.* checks, same trap as the
+#               #18 Codecov gate). Skips cleanly on PR/push/dispatch when the
+#               secret is absent, but FAILS on `schedule`: a dark stage in the
+#               nightly run must be visible, not silently green.
 #               NOTE: the CSV is used instead of the TEITOK because the TEITOK
 #               line-level path in llm_client_shared.read_input_rows synthesizes
 #               quality_score=0.0, which should_process_line reclassifies to
@@ -77,6 +80,7 @@ jobs:
   pc:
     name: "1. page-classification"
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
       - name: Checkout hub (fixtures + tools)
         uses: actions/checkout@v7
@@ -137,6 +141,7 @@ jobs:
     # broken earlier stage fails the run fast and in sequence.
     needs: pc
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
       - name: Checkout hub (fixtures + tools)
         uses: actions/checkout@v7
@@ -236,6 +241,7 @@ jobs:
     name: "3. translator"
     needs: alto
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
       - name: Checkout hub (tools)
         uses: actions/checkout@v7
@@ -295,6 +301,7 @@ jobs:
     # declared pc -> alto -> translate -> nlp -> llm order failing in sequence.
     needs: [alto, translate]
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
       - name: Checkout hub (tools)
         uses: actions/checkout@v7
@@ -389,21 +396,41 @@ jobs:
     name: "5. llm-enrich"
     needs: [alto, nlp]
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     env:
       # Mirrored into job env so step `if:` checks can see it — the `secrets`
       # context alone is invisible to `env.*` checks (#18 Codecov-gate lesson).
-      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      #
+      # NOTE the deliberate name change across the `:`. The repo SECRET is
+      # `OPENROUTER_KEY` (that is what was provisioned on 2026-07-23); the ENV VAR
+      # must stay `OPENROUTER_API_KEY` because that is what openrouter_client.py
+      # reads (openrouter_client.py:219). This workflow previously read
+      # `secrets.OPENROUTER_API_KEY`, a secret that was never created, so the gate
+      # below always resolved to false and this stage silently skipped every night
+      # while the run reported success (#18, 2026-07-29 audit).
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_KEY }}
       OPENROUTER_MODEL: ${{ inputs.openrouter-model || 'openai/gpt-4o-mini' }}
     steps:
-      - name: Gate on OPENROUTER_API_KEY
+      - name: Gate on OPENROUTER_KEY
         id: gate
         run: |
           if [ -n "${OPENROUTER_API_KEY}" ]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::llm stage skipped — OPENROUTER_API_KEY secret is not set."
+            echo "::notice::llm stage skipped — OPENROUTER_KEY secret is not set."
           fi
+
+      # A skipped stage is acceptable on PR/push/dispatch (contributors and forks
+      # have no secret), but the whole point of the nightly run is end-to-end
+      # coverage. Letting it skip there is what kept stage 5 dark and green for
+      # weeks — so on `schedule` a missing secret is a hard failure, not a notice.
+      - name: Require the secret on scheduled runs
+        if: steps.gate.outputs.enabled != 'true' && github.event_name == 'schedule'
+        run: |
+          echo "::error::OPENROUTER_KEY is not set in ufal/atrium-project — the nightly E2E cannot exercise stage 5 (llm-enrich)."
+          echo "::error::Add the OPENROUTER_KEY repository secret, or move this workflow off the schedule trigger."
+          exit 1
 
       - name: Checkout hub (tools)
         if: steps.gate.outputs.enabled == 'true'
@@ -483,6 +510,7 @@ jobs:
     needs: [pc, alto, translate, nlp, llm]
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     permissions:
       contents: read
       issues: write

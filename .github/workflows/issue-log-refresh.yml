@@ -1,3 +1,19 @@
+# atrium-project — regenerate the agent_dev_logs/issues/ markdown snapshots.
+#
+# Replaces the local update_issues.sh that carried a personal token inline
+# (#18, 2026-07-27). Opens a PR containing only the generated files.
+#
+# Three defects fixed in the 2026-07-29 audit pass — each of them would have
+# failed this workflow on its first real run:
+#   1. No `permissions:` block. peter-evans/create-pull-request needs
+#      contents:write + pull-requests:write; the default token could not push
+#      the branch or open the PR.
+#   2. The token was exported as GH_TOKEN. gh2md reads GITHUB_ACCESS_TOKEN
+#      (gh2md.py:20) and nothing else, so it saw no credentials at all.
+#   3. `gh2md ufal/atrium-project > out.md` — gh2md takes `output_path` as a
+#      POSITIONAL argument (`gh2md repo output_path`), so the redirect form
+#      exits with "the following arguments are required: output_path".
+
 name: Refresh Issue Logs
 
 on:
@@ -5,11 +21,19 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: write        # create-pull-request pushes the docs/issue-log-update branch
+  pull-requests: write   # ...and opens the PR from it
+
+concurrency:
+  group: issue-log-refresh
+  cancel-in-progress: false
+
 jobs:
   refresh-logs:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      # Utilize the established action version floor for the project[cite: 1, 2]
       - name: Checkout repository
         uses: actions/checkout@v7
 
@@ -23,12 +47,19 @@ jobs:
 
       - name: Generate Markdown Logs
         env:
-          # Keep the read-access token scoped only to this repository's action environment
-          GH_TOKEN: ${{ secrets.GH2MD_READ_ACCESS }}
+          # gh2md resolves credentials from GITHUB_ACCESS_TOKEN only. Keep the
+          # read-access token scoped to this repository's action environment.
+          GITHUB_ACCESS_TOKEN: ${{ secrets.GH2MD_READ_ACCESS }}
         run: |
-          mkdir -p agent_dev_logs/issues/
-          # Replace with your specific gh2md command arguments
-          gh2md ufal/atrium-project > agent_dev_logs/issues/latest_export.md
+          mkdir -p agent_dev_logs/issues
+          # --multiple-files writes one file per issue, named
+          #   {created:%Y-%m-%d}.{number}.{issue|pr}.{state}.md
+          # which is exactly the existing agent_dev_logs/issues/ convention
+          # (e.g. 2026-05-27.18.issue.open.md).
+          #
+          # NOT --idempotent-paths: that switches the naming to issues/{number}.md
+          # and would rewrite every committed filename.
+          gh2md ufal/atrium-project agent_dev_logs/issues --multiple-files --no-prs
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
@@ -37,4 +68,10 @@ jobs:
           commit-message: "docs: refresh issue logs via gh2md"
           title: "docs: Automated Issue Log Refresh"
           branch: "docs/issue-log-update"
-          body: "Automated PR to update `agent_dev_logs/issues/` markdown snapshots based on the latest release."
+          add-paths: agent_dev_logs/issues
+          body: |
+            Automated refresh of the `agent_dev_logs/issues/` markdown snapshots via `gh2md`.
+
+            Note: an issue that changed state since the last run lands under a new
+            filename (`…issue.open.md` -> `…issue.closed.md`); the stale file needs
+            deleting by hand, since gh2md's slug naming encodes the state.

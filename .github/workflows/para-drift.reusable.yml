@@ -2,10 +2,14 @@ name: Paradata Drift Check
 on:
   workflow_call:
 
+permissions:
+  contents: read   # least privilege: these jobs only ever read the tree
+
 jobs:
   drift-check:
     name: Verify Canonical Paradata Integration
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout caller tool repository
         uses: actions/checkout@v7

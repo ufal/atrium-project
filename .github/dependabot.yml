@@ -1,0 +1,28 @@
+# atrium-project — Dependabot
+#
+# This repo hosts the reusable workflows every tool repo calls
+# (docker-tool / security / api-contract / para-drift / skill-validate), so its
+# action pins are the ecosystem's pins. Until this file existed, all five tool
+# repos auto-updated their actions while the hub's own reusables never did —
+# which is exactly how docker-tool.reusable.yml ended up on checkout@v7 while
+# security.reusable.yml sat on @v5 and api-contract.reusable.yml on
+# setup-python@v5 (issue #18, 2026-07-29 audit).
+#
+# github-actions only: this repo ships no Python package manifest — tools/e2e/
+# installs each tool repo's own requirements at runtime inside
+# e2e-pipeline-smoke.yml, and those are covered by the tool repos' Dependabot.
+#
+# Grouped into a single PR and targeted at `test`, matching the convention in
+# atrium-translator / atrium-alto-postprocess / atrium-page-classification.
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "test"
+    groups:
+      actions:
+        patterns:
+          - "*"

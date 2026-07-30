@@ -22,10 +22,14 @@ on:
         type: string
         default: "3.11"
 
+permissions:
+  contents: read   # least privilege: these jobs only ever read the tree
+
 jobs:
   api-contract:
     name: Verify API meta-contract (strategy §4)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout caller tool repository
         uses: actions/checkout@v7
