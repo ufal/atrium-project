@@ -1,4 +1,57 @@
-name: codeql.reusable.yml
+# ATRIUM — reusable CodeQL analysis (issue #18, T3)
+#
+# Replaces five near-identical codeql.yml files (219 lines) whose only real
+# difference was the weekly cron — three arbitrary values that differed by
+# accident of when each file was written, not by intent. The schedule now lives
+# in the CALLER (that is where `on:` must be declared anyway), so this workflow
+# needs no inputs at all.
+#
+# Pure-Python across the ecosystem, so `build-mode: none` everywhere — there is
+# no compilation step to observe.
+#
+# PERMISSIONS: the caller MUST grant `security-events: write`, or GitHub rejects
+# the caller's file at parse time with "requesting 'security-events: write', but
+# is only allowed 'security-events: none'" — a startup_failure, not a step
+# failure, so no local YAML check will catch it. A reusable workflow's job
+# permissions are capped by the calling job's grant. This is exactly how the
+# Wave B Trivy/SARIF change took down docker.yml in all five repos at once.
+
+name: ATRIUM CodeQL Template
+
 on:
+  workflow_call:
+    inputs:
+      language:
+        description: "CodeQL language to analyse. Every ATRIUM tool repo is Python."
+        required: false
+        type: string
+        default: python
+      python-version:
+        description: "Unused by build-mode:none; reserved so callers need not change shape if a build mode is ever added."
+        required: false
+        type: string
+        default: "3.11"
 
 jobs:
+  analyze:
+    name: Analyze (${{ inputs.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      security-events: write   # capped by the caller — see header
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ inputs.language }}
+          build-mode: none   # Python is interpreted — no build step to trace
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ inputs.language }}"
