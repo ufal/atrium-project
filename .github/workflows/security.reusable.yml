@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Check CITATION.cff <-> para_config <-> tag
         env:
           CITATION_PATH: ${{ inputs.citation-path }}
@@ -94,7 +94,7 @@ jobs:
       packages: read
       security-events: write   # required to upload SARIF to the Security tab
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Trivy scan (image -> SARIF)
         # SECURITY: aquasecurity/trivy-action tags <= 0.34.2 were compromised in the
@@ -143,7 +143,7 @@ jobs:
           # reusable workflow's token).
           upload-release-assets: false
       - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sbom
           path: sbom.spdx.json
