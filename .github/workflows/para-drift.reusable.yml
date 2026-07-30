@@ -40,3 +40,10 @@ jobs:
 
       - name: Verify atrium_document.schema.json parity
         run: diff -u tool-repo/atrium_document.schema.json hub-repo/docs/templates/shared/atrium_document.schema.json
+
+      - name: Verify check_version.py parity (issue #18)
+        # The release gate and security.reusable.yml's version-check both run this
+        # vendored script. It replaced ~360 lines of copy-pasted inline python that
+        # had already drifted between call sites; this step is what stops it
+        # drifting again. Edit the hub copy, never a vendored one.
+        run: diff -u tool-repo/check_version.py hub-repo/docs/templates/shared/check_version.py

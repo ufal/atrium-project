@@ -1,0 +1,36 @@
+# EXAMPLE caller for ufal/atrium-project/.github/workflows/api-contract.reusable.yml
+#
+# Copy to <tool-repo>/.github/workflows/api-contract.yml. No inputs are required.
+#
+# The reusable installs the caller's root requirements-test.txt and runs
+# tests/test_api_contract.py, which asserts the strategy §4.1 /info envelope,
+# /health, the advertised endpoint set, and OpenAPI 3.x validity against the
+# in-process app. The test is importorskip-guarded, so a repo whose service needs
+# the heavy model stack skips cleanly here.
+#
+# IMPORTANT — the reusable hardcodes the ROOT path `requirements-test.txt`, and its
+# `[ -f ]` guard means a missing file installs nothing SILENTLY and then fails two
+# steps later as "pytest: command not found" (exit 127). If this repo keeps its real
+# lists under setup/, add a one-line forwarding stub at the root:
+#     -r setup/requirements-test.txt
+# See atrium-alto-postprocess/requirements-test.txt for the documented pattern.
+
+name: API Meta-Contract
+
+on:
+  push:
+    branches: [test, master]     # use THIS repo's real branches
+  pull_request:
+    branches: [test, master]     # keep identical to push, or PRs skip the check
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  api-contract:
+    uses: ufal/atrium-project/.github/workflows/api-contract.reusable.yml@test
+    # Optional: with: { python-version: "3.12" }  (default "3.11")

@@ -1,0 +1,47 @@
+# EXAMPLE caller for ufal/atrium-project/.github/workflows/security.reusable.yml
+#
+# Copy to <tool-repo>/.github/workflows/security.yml and adjust the two paths.
+# One of the three active reusables that had no caller example until 2026-07-30 (#18).
+#
+# What the reusable does, and when:
+#   version-check  — EVERY push/PR. Runs the caller's vendored check_version.py to
+#                    assert CITATION.cff == para_config.txt [tool] version (and ==
+#                    the tag, on a v* tag push).
+#   image-scan     — schedule / workflow_dispatch ONLY. A periodic Trivy re-scan of
+#                    the published image, for CVEs disclosed since it was built.
+#                    Deliberately NOT on tag/release: publishing happens in a
+#                    different workflow, so scanning :latest there raced the push.
+#                    The post-publish scan lives in docker-tool.reusable.yml and
+#                    addresses the image by digest.
+
+name: Security & Supply-chain
+
+on:
+  push:
+    branches: [test, master]     # use THIS repo's real branches
+  pull_request:
+    branches: [test, master]     # keep identical to push, or PRs skip the check
+  schedule:
+    - cron: "0 5 * * 1"          # weekly re-scan; stagger across repos
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  security:
+    permissions:
+      contents: read
+      packages: read           # image-scan pulls the GHCR image
+      security-events: write   # SARIF upload to the Security tab
+    uses: ufal/atrium-project/.github/workflows/security.reusable.yml@test
+    # No `secrets:` block — this reusable consumes no secrets at all. It used to
+    # carry `secrets: inherit`, which handed it every secret in the repo for
+    # nothing (#18).
+    with:
+      image-ref: ghcr.io/ufal/atrium-<tool>:latest
+      citation-path: CITATION.cff
+      # Repos with a setup/ layout (alto-postprocess, page-classification) pass
+      # setup/para_config.txt here.
+      para-config-path: para_config.txt

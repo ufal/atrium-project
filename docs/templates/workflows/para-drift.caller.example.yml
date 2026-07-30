@@ -1,0 +1,34 @@
+# EXAMPLE caller for ufal/atrium-project/.github/workflows/para-drift.reusable.yml
+#
+# Copy to <tool-repo>/.github/workflows/para-drift.yml. No inputs are required.
+#
+# The reusable checks out this repo AND the hub, then `diff -u`s every canonical
+# shared file against docs/templates/shared/. It is what keeps the ecosystem's
+# copies genuinely identical rather than nominally shared:
+#
+#     atrium_paradata.py            para_licenses.py
+#     tests/test_para_licenses.py   service/atrium_service.py
+#     atrium_document.py            atrium_document.schema.json
+#     check_version.py              (added 2026-07-30, #18)
+#
+# A failure here means someone edited a vendored copy. Fix it by editing the HUB
+# copy and re-vendoring — never the other way round.
+
+name: Paradata Canonical Drift
+
+on:
+  push:
+    branches: [test, master]     # use THIS repo's real branches
+  pull_request:
+    branches: [test, master]     # keep identical to push, or PRs skip the check
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check-drift:
+    uses: ufal/atrium-project/.github/workflows/para-drift.reusable.yml@test

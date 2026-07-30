@@ -18,14 +18,41 @@ on:
         required: false
         type: string
         default: "requirements.txt requirements-test.txt"
+      torch-index-url:
+        description: >-
+          Wheel index for the pre-install-torch step. Defaults to the CPU index,
+          which was hardcoded before and made a CUDA build impossible to request
+          from a caller (#18).
+        required: false
+        type: string
+        default: "https://download.pytorch.org/whl/cpu"
       hf-model-cache:
         required: false
         type: boolean
         default: false
+      hf-cache-key:
+        description: >-
+          Model revision the HF cache is keyed on, e.g. "v4.3". Set this to the
+          same pin the tool passes to `-rev` / bakes into its Dockerfile CMD, so
+          the cache invalidates when the MODEL changes and not when source does.
+          Only meaningful with hf-model-cache: true.
+        required: false
+        type: string
+        default: ""
       build-targets:
         required: false
         type: string
         default: '["base"]'
+    secrets:
+      # Declared explicitly so callers can drop `secrets: inherit`, which handed
+      # this workflow EVERY secret in the calling repo — HF_TOKEN, OPENROUTER_KEY,
+      # GH2MD_READ_ACCESS — while it only ever needs this one (#18, 2026-07-29
+      # audit). GITHUB_TOKEN is provided automatically to reusable workflows and
+      # must NOT be declared here; GitHub rejects `secrets.GITHUB_TOKEN` as a
+      # workflow_call secret name.
+      CODECOV_TOKEN:
+        description: "Codecov upload token. Omit to skip the upload step."
+        required: false
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -44,7 +71,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Setup Python 3.11
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: "pip"
@@ -54,20 +81,41 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.cache/huggingface
-          key: hf-models-${{ hashFiles('**/*.py') }}
+          # Keyed on the caller's MODEL revision, not source code. The old key was
+          # hashFiles('**/*.py'), which changed on every Python edit and therefore
+          # missed the cache almost every run — the opposite of the intent (#18).
+          # Same pattern as e2e-pipeline-smoke.yml's `hf-e2e-pc-${PC_REVISION}`.
+          key: hf-models-${{ inputs.hf-cache-key != '' && inputs.hf-cache-key || 'default' }}
           restore-keys: hf-models-
 
+      # The three steps below take their values through `env:` rather than
+      # interpolating ${{ inputs.* }} straight into the shell. Inputs are
+      # caller-controlled so this was not exploitable, but expression-into-`run:`
+      # is the pattern actionlint and CodeQL flag, and quoting "$VAR" also stops a
+      # value with spaces or globs from being re-split by the shell (#18).
       - name: Install APT packages
         if: inputs.apt-packages != ''
-        run: sudo apt-get update && sudo apt-get install -y ${{ inputs.apt-packages }}
+        env:
+          APT_PACKAGES: ${{ inputs.apt-packages }}
+        run: |
+          sudo apt-get update
+          # shellcheck disable=SC2086 — word splitting is intended: a package list
+          sudo apt-get install -y $APT_PACKAGES
 
       - name: Pre-install PyTorch
         if: inputs.pre-install-torch != ''
-        run: pip install ${{ inputs.pre-install-torch }} --index-url https://download.pytorch.org/whl/cpu
+        env:
+          TORCH_SPEC: ${{ inputs.pre-install-torch }}
+          TORCH_INDEX_URL: ${{ inputs.torch-index-url }}
+        run: |
+          # shellcheck disable=SC2086 — TORCH_SPEC may name several packages
+          pip install $TORCH_SPEC --index-url "$TORCH_INDEX_URL"
 
       - name: Install dependencies
+        env:
+          REQUIREMENTS: ${{ inputs.requirements }}
         run: |
-          for req in ${{ inputs.requirements }}; do
+          for req in $REQUIREMENTS; do
             if [ -f "$req" ]; then pip install -r "$req"; fi
           done
           pip install pytest pytest-cov ruff
@@ -142,6 +190,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      security-events: write   # SARIF upload for the post-publish scan below
     strategy:
       matrix:
         target: ${{ fromJSON(inputs.build-targets) }}
@@ -170,6 +219,7 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -183,3 +233,42 @@ jobs:
             ATRIUM_RUNNER_IMAGE=ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}:${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # SBOM + provenance as buildkit attestations pushed alongside the image.
+          # This is the alternative security.reusable.yml's own closing comment
+          # recommended, and it replaces the anchore/sbom-action job that raced the
+          # publish and pinned a floating `@v0` major (#18). Attestations are
+          # attached in the registry, so `docker buildx imagetools inspect` and
+          # `cosign`/`syft` can read them without a workflow artifact.
+          sbom: true
+          provenance: true
+
+      # ── Post-publish vulnerability scan ─────────────────────────────────────
+      # Scans the image THIS step just pushed, addressed by immutable digest.
+      #
+      # Why here and not in security.reusable.yml: that workflow scanned
+      # `<image>:latest` on the same tag-push event that publishes it, from a
+      # separate workflow with no ordering guarantee — so it raced, and on a first
+      # release or a slow push it scanned the PREVIOUS image or failed to pull
+      # (#18, 2026-07-29 audit). Scanning by digest inside the publishing job
+      # removes the race by construction. security.reusable.yml keeps the weekly
+      # `:latest` re-scan, which is about newly-disclosed CVEs, not this build.
+      - name: Trivy scan the published digest
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}@${{ steps.build.outputs.digest }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          # Report-only for now, matching the weekly scan. Flip to "1" to block a
+          # release on CRITICAL once the current findings are triaged — that is a
+          # policy call, not a mechanical one, so it is left to the maintainers.
+          exit-code: "0"
+
+      - name: Upload SARIF to code scanning
+        # Distinct category per matrix target, otherwise multi-target repos
+        # (nlp-enrich: base/api/llm) overwrite each other's findings.
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-publish-${{ matrix.target }}
