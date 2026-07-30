@@ -95,7 +95,7 @@ jobs:
           path: pc
 
       - name: Setup Python 3.11
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: "pip"
@@ -156,7 +156,7 @@ jobs:
           path: alto
 
       - name: Setup Python 3.11
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: "pip"
@@ -256,13 +256,13 @@ jobs:
           path: translator
 
       - name: Download alto stage artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: e2e-stage-alto
           path: work
 
       - name: Setup Python 3.11
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: "pip"
@@ -316,13 +316,13 @@ jobs:
           path: nlp
 
       - name: Download alto stage artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: e2e-stage-alto
           path: work
 
       - name: Setup Python 3.11
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: "pip"
@@ -458,14 +458,14 @@ jobs:
 
       - name: Download alto stage artifact (categ CSV input)
         if: steps.gate.outputs.enabled == 'true'
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: e2e-stage-alto
           path: work
 
       - name: Setup Python 3.11
         if: steps.gate.outputs.enabled == 'true'
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: "pip"
