@@ -1,0 +1,25 @@
+# Ruff configuration for the ATRIUM hub itself (issue #18).
+#
+# The hub publishes docs/templates/ruff.toml as the canonical config that every
+# tool repo copies -- and until 2026-07-31 applied none of it to its own eleven
+# Python files, including check_version.py, the script that gates releases in
+# all five tool repos.
+#
+# This EXTENDS the template rather than copying it, so the config the hub tests
+# itself against is literally the config it hands to everyone else. A copy would
+# drift, and drift in the shared templates is exactly what #18 spent weeks
+# removing.
+
+extend = "docs/templates/ruff.toml"
+
+# Hub-only exclusions. The tool repos have no equivalent of these paths, which
+# is why they live here and not in the shared template.
+extend-exclude = [
+    "agent_dev_logs/",   # issue exports and digests, not source
+    ".ruff_cache/",
+]
+
+[lint.per-file-ignores]
+# Skeletons and templates are deliberately incomplete -- they are copied and
+# filled in, not executed from here.
+"docs/templates/skill/*.skeleton.py" = ["F401", "F841"]

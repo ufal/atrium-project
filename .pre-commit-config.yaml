@@ -1,0 +1,36 @@
+# pre-commit configuration for the ATRIUM hub itself (issue #18).
+#
+# Derived from docs/templates/.pre-commit-config.example.yaml -- the file this
+# repo publishes for every tool repo to copy. Until 2026-07-31 the hub shipped
+# that template and applied none of it to its own eleven Python files.
+#
+# The ruff hook reads ./ruff.toml, which `extend`s docs/templates/ruff.toml, so
+# the hub lints itself with the same rules it hands out.
+#
+# Install once per clone:  pip install pre-commit && pre-commit install
+# Refresh hook revs:       pre-commit autoupdate
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        # The caller-example templates are valid YAML; workflow_lint.py parses
+        # them too, so a break here is caught twice.
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.0
+    hooks:
+      - id: ruff   # lint only; the hub is not auto-formatted, so no ruff-format
+
+  # docs/templates/skill/server.template.sh is the hub's only shell file, but a
+  # broken template propagates to every repo that copies it.
+  - repo: https://github.com/koalaman/shellcheck-precommit
+    rev: v0.10.0
+    hooks:
+      - id: shellcheck
+        args: ["-e", "SC1091"]   # don't follow sourced files that aren't present

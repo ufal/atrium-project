@@ -1,0 +1,36 @@
+# ATRIUM hub — pre-commit/ruff on the hub's own Python (issue #18).
+#
+# The hub ships docs/templates/ruff.toml and
+# docs/templates/.pre-commit-config.example.yaml for every tool repo to adopt,
+# and applied neither to itself until 2026-07-31. Enabling it surfaced exactly
+# one finding (an unused import), so the gap was cheap to close -- it had simply
+# never been looked at.
+#
+# BLOCKING, matching the policy in all five tool repos. Rules come from
+# ./ruff.toml, which `extend`s the shared template, so the hub is held to the
+# same standard it publishes.
+#
+# `uses: ./...` rather than `@v1`: a local path resolves against the ref being
+# pushed, so this checks the commit under test rather than the last released
+# tag. See codeql.yml for the same reasoning.
+
+name: pre-commit
+
+on:
+  push:
+    branches: [main, test]
+  pull_request:
+    branches: [main, test]
+  schedule:
+    # Staggered away from CodeQL (5:15) and workflow-lint (5:45).
+    - cron: "30 5 * * 1"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pre-commit:
+    permissions:
+      contents: read   # least privilege: the hooks only read the tree
+    uses: ./.github/workflows/pre-commit.reusable.yml

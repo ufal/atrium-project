@@ -90,7 +90,15 @@ jobs:
         # the tag is "v0.36.0". Use >= v0.35.0 (protected by GitHub immutable releases)
         # and ideally pin to that release's commit SHA. Latest tag is verified at
         # https://github.com/aquasecurity/trivy-action/releases
-        uses: aquasecurity/trivy-action@v0.36.0
+        #
+        # NOW SHA-PINNED (#18, 2026-07-31) — the "ideally" above is done. v0.36.0 is
+        # an ANNOTATED tag, so this is the dereferenced commit
+        # (`git ls-remote 'refs/tags/v0.36.0^{}'`), not the tag object; pinning the
+        # tag-object SHA silently does not work.
+        #
+        # This file was the one place the 2026-07-31 pinning pass missed, which is
+        # why workflow-lint.yml now checks it on every push rather than by hand.
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
           image-ref: ${{ inputs.image-ref }}
           format: sarif

@@ -1,0 +1,42 @@
+# ATRIUM hub — CodeQL on the hub's own Python (issue #18).
+#
+# The hub publishes codeql.reusable.yml for all five tool repos and, until
+# 2026-07-31, never ran it on itself. Its eleven Python files include
+# check_version.py (the release gate for every tool repo) and the canonical
+# atrium_paradata.py / para_licenses.py that para-drift forces byte-identical
+# into all of them -- so a defect here propagates ecosystem-wide.
+#
+# `uses: ./...` rather than `@v1` ON PURPOSE. A local path resolves against the
+# ref being pushed, so this validates the commit under test rather than the last
+# released tag. Pinning a repo's self-check to its own published tag would mean
+# a broken reusable could never be caught before release.
+
+name: CodeQL
+
+on:
+  push:
+    branches: [main, test]
+  pull_request:
+    branches: [main, test]
+  schedule:
+    # Weekly, for advisories published since the last push. Staggered away from
+    # pre-commit (5:30) and workflow-lint (5:45).
+    - cron: "15 5 * * 1"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    permissions:
+      # REQUIRED. A reusable workflow's job permissions are capped by this
+      # block, so omitting security-events makes GitHub reject this file at
+      # parse time ("requesting 'security-events: write', but is only allowed
+      # 'security-events: none'") — a startup_failure, not a step failure, so no
+      # local YAML check catches it. That is what took down docker.yml in all
+      # five tool repos simultaneously (#18, Wave B).
+      security-events: write
+      actions: read
+      contents: read
+    uses: ./.github/workflows/codeql.reusable.yml

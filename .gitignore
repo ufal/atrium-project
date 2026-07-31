@@ -1,0 +1,25 @@
+# The hub had no .gitignore until 2026-07-31 and did not need one: it carried
+# no test or lint tooling that ran here, so nothing generated artifacts. Adding
+# pytest, ruff and pre-commit (issue #18, T7) is what produces the caches below,
+# so the ignore rules land with the tooling that creates them.
+
+# Python bytecode — pytest imports docs/templates/shared/check_version.py and
+# tests/, both of which leave __pycache__ behind.
+__pycache__/
+*.py[cod]
+
+# Tool caches. ruff.toml and .pre-commit-config.yaml drive these.
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+
+# pre-commit's own hook environments, if a contributor runs it locally.
+.pre-commit-cache/
+
+# Local virtualenvs
+.venv/
+venv/
+
+# Editor/OS noise
+.DS_Store
+*.swp
