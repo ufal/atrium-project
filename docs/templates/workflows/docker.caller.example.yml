@@ -1,24 +1,55 @@
+# EXAMPLE caller for ufal/atrium-project/.github/workflows/docker-tool.reusable.yml
+#
+# Copy to <tool-repo>/.github/workflows/docker.yml, set the branch list to THIS
+# repo's real branches, and adjust the `with:` inputs. The values below are
+# atrium-page-classification's; every input except `image-name` is optional.
+#
+# Builds, tests, scans and publishes to GHCR. On a tag push it additionally runs
+# the Trivy digest scan and uploads SARIF to code scanning.
+
 name: Docker Build & Publish
 
 on:
   push:
-    branches: [test, master]
+    branches: [vit, test, clip, master]   # use THIS repo's real branches
     tags: ['v*']
   pull_request:
-    branches: [test, master]
+    branches: [vit, test, clip, master]   # keep identical to push, or PRs skip the check
   release:
     types: [published]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Tag pushes are EXEMPT from cancellation: a release build must never be
+  # cancelled by a later push, or the tag publishes a partial image set.
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
   build:
     permissions:
       contents: read
       packages: write
+      # REQUIRED, and easy to miss. The reusable's `build-and-push` job requests
+      # security-events: write so it can upload the Trivy SARIF. A reusable
+      # workflow's job permissions are CAPPED by this block, so omitting the
+      # scope here makes GitHub reject the whole file at parse time
+      # ("requesting 'security-events: write', but is only allowed
+      # 'security-events: none'") — a startup_failure, not a step failure, so no
+      # local YAML check will catch it. This exact omission took down docker.yml
+      # in all five tool repos simultaneously (#18, Wave B).
+      security-events: write
     uses: ufal/atrium-project/.github/workflows/docker-tool.reusable.yml@v1
-    secrets: inherit
+    # Explicit, NOT `secrets: inherit`. The reusable declares exactly one secret
+    # and it is optional — `inherit` would hand it every secret in the repo for
+    # no benefit (#18, Wave C). Omit this block entirely to skip the Codecov
+    # upload step.
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     with:
       image-name: ufal/atrium-page-classification
       apt-packages: build-essential g++ libgl1 libglib2.0-0 poppler-utils
       pre-install-torch: torch==2.7.1 torchvision==0.22.1
       requirements: setup/requirements.txt setup/requirements-test.txt
       hf-model-cache: true
+      # hf-cache-key: v4.3              # bump to invalidate the HF model cache
+      # build-targets: '["base"]'       # Dockerfile stages to publish; default ["base"]
