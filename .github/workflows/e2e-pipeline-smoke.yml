@@ -30,10 +30,10 @@ jobs:
       # 1. Page Classification (pc) -> Initialize JSON
       - name: Stage 1 - Page Classification
         run: >
-          docker run --rm -v ${{ github.workspace }}:/workspace 
-          ghcr.io/ufal/atrium-page-classification:latest 
-          -f /workspace/fixtures/e2e/ALTO/CTX000000001.alto.xml 
-          -m timm/regnety_160.swag_ft_in1k --hf 
+          docker run --rm -v ${{ github.workspace }}:/workspace
+          ghcr.io/ufal/atrium-page-classification:latest
+          -f /workspace/fixtures/e2e/ALTO/CTX000000001.alto.xml
+          -m timm/regnety_160.swag_ft_in1k --hf
           --document-json-out /workspace/e2e_out/1_pc.json
 
       # 2. ALTO Postprocess (alto) -> Merge Blocks
