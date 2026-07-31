@@ -136,3 +136,29 @@ python atrium_document.py set-block --doc-id "$DOC" --program alto-postprocess \
 `docs/templates/shared/` and are copied byte-identical into the tool repos, enforced by
 `para-drift.reusable.yml` — the same guarantee already covering `atrium_paradata.py` and
 `para_licenses.py`.
+
+## Changelog — 2026-07-31 hardening pass
+
+Prompted by the issue #13 alignment audit, which found that rule 2 ("own block only") was not
+actually enforced and that three tools relied on it anyway:
+
+- **`set_block()` now warns (raises under `strict=True`) on any block listed in
+  `BLOCK_FIELD_OWNERS`.** Those blocks (`pages`, `lines`, `entities`) are field-split by design;
+  a wholesale `set_block()` on one erases every co-contributor's fields. Use `merge_block()`.
+- **`DocumentRecord.get_block(name, default=None)`** — read-only, deep-copied access to any
+  block, so a tool that needs to look at (not just write) a block no longer has to reach into
+  the private `_data` attribute.
+- **`ParadataLogger.run_id`** (in `atrium_paradata.py`) — the public counterpart to `_run_id`,
+  matching `get_license_block()`. Several tools were already calling `logger.run_id` on the
+  assumption it existed; it did not, until now.
+- **`canonical_doc_id(path)`** — one doc_id derivation for every tool to call, replacing four
+  independent ones (`Path.stem`, `name.split(".")[0]`, a bespoke TEITOK/CoNLL-U stripper, a CSV
+  column) that silently forked the same document into different records on multi-dot filenames.
+- **`finalize()` writes atomically** (write to `.tmp`, then `os.replace`), so a crash mid-write
+  can no longer leave a corrupt record for the next tool's `load_document()` to trip over.
+- **Schema:** `lines[]` now documents `lemma`/`upos`/`feats` — `BLOCK_FIELD_OWNERS` already
+  granted nlp-enrich these fields, but the schema didn't describe them (`additionalProperties:
+  true` meant validation never caught the gap).
+
+No `SCHEMA_VERSION` bump: all additive, and rule 6 (unknown fields pass through) already covers
+tools not yet updated to call `merge_block()` or `canonical_doc_id()`.
