@@ -38,6 +38,21 @@ RETRY_ATTEMPTS = 3
 RETRY_WAIT_S = 10
 TIMEOUT_S = 300  # tune per service, see module docstring
 
+KNOWN_PIPELINE_SUFFIXES = [
+    ".document.json", ".categories.json", ".teitok.xml", ".alto.xml",
+    ".udpipe.conllu", ".conllu", ".xml", ".json", ".md", ".csv", ".txt",
+]
+
+
+def canonical_doc_id(path: Path) -> str:
+    """Mirror the hub's ID derivation to ensure client parity."""
+    name = path.name
+    lower = name.lower()
+    for suffix in KNOWN_PIPELINE_SUFFIXES:
+        if lower.endswith(suffix):
+            return name[:-len(suffix)]
+    return name.split(".")[0]
+
 
 def build_multipart(fields: dict, file_field: str, file_path: Path) -> tuple[bytes, str]:
     """Encode form fields and one file as multipart/form-data using only the stdlib."""
@@ -106,7 +121,7 @@ def process_file(base_url: str, path: Path, **params) -> dict:
     return http_json(f"{base_url}/<primary_endpoint>", data=body, content_type=content_type)
 
 
-def result_rows(path: Path, result: dict) -> list[tuple]:
+def result_rows(doc_id: str, path: Path, result: dict) -> list[tuple]:
     """Flatten the API response into (<col>, ...) rows for table/csv output."""
     raise NotImplementedError("<flatten the service's response shape>")
 
@@ -143,10 +158,13 @@ def main() -> None:
         if not path.is_file():
             print(f"File not found: {path}", file=sys.stderr)
             sys.exit(1)
+
+        doc_id = canonical_doc_id(path)
         result = process_file(base_url, path)  # <pass service flags>
+
         if result:
-            raw_results[path.name] = result
-            rows.extend(result_rows(path, result))
+            raw_results[doc_id] = result
+            rows.extend(result_rows(doc_id, path, result))
 
     if not rows:
         print("No results produced.", file=sys.stderr)
