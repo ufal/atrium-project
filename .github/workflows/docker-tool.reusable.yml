@@ -170,7 +170,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
       - name: Smoke Build
-        uses: docker/build-push-action@v7
+        # SHA-pinned (#18): build actions execute arbitrary build logic and, in the
+        # publishing job below, hold registry push credentials.
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a  # v7
         with:
           context: .
           # Every ATRIUM Dockerfile names its first stage `AS base`, so the
@@ -220,7 +222,8 @@ jobs:
 
       - name: Build and push
         id: build
-        uses: docker/build-push-action@v7
+        # SHA-pinned (#18) — this invocation pushes to GHCR with packages:write.
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a  # v7
         with:
           context: .
           target: ${{ matrix.target }}
@@ -253,16 +256,20 @@ jobs:
       # removes the race by construction. security.reusable.yml keeps the weekly
       # `:latest` re-scan, which is about newly-disclosed CVEs, not this build.
       - name: Trivy scan the published digest
-        uses: aquasecurity/trivy-action@v0.36.0
+        # SHA-pinned (#18) — this is the action whose tags were force-pushed to
+        # malware in 2026-03 (GHSA-69fq-xp46-6x23); see security.reusable.yml for
+        # the full note. Dereferenced commit of the annotated tag v0.36.0.
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
           image-ref: ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}@${{ steps.build.outputs.digest }}
           format: sarif
           output: trivy-results.sarif
           severity: CRITICAL,HIGH
           ignore-unfixed: true
-          # Report-only for now, matching the weekly scan. Flip to "1" to block a
-          # release on CRITICAL once the current findings are triaged — that is a
-          # policy call, not a mechanical one, so it is left to the maintainers.
+          # Stays report-only ON PURPOSE. This step's job is to get the full
+          # CRITICAL+HIGH picture into code scanning on every build; the blocking
+          # decision is a separate, narrower step below. Keeping them apart means a
+          # blocked release still records its findings.
           exit-code: "0"
 
       - name: Upload SARIF to code scanning
@@ -272,3 +279,30 @@ jobs:
         with:
           sarif_file: trivy-results.sarif
           category: trivy-publish-${{ matrix.target }}
+
+      # The release gate (#18, 2026-07-31) — the policy call that was deferred
+      # while there had never been a real digest scan to triage. There have now
+      # been two (translator v0.10.1, page-classification v1.7.1-beta).
+      #
+      # Deliberately AFTER the SARIF upload: if this step fails, the findings are
+      # already in code scanning, so the failure is diagnosable from the Security
+      # tab rather than only from this log.
+      #
+      # Three narrowings, each removing a way this could obstruct rather than protect:
+      #   tags only    — day-to-day pushes and PRs are untouched; this stops a
+      #                  RELEASE, which is the only thing worth stopping.
+      #   CRITICAL     — HIGH stays report-only; blocking on it is too noisy to hold.
+      #   fixable only — `ignore-unfixed` keeps an unpatchable CVE from wedging
+      #                  releases indefinitely, since there would be no action to take.
+      #
+      # To revert to report-only, set exit-code to "0". Trivy's DB is cached by the
+      # step above, so this second scan costs a few seconds.
+      - name: Fail the release on fixable CRITICAL vulnerabilities
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
+        with:
+          image-ref: ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}@${{ steps.build.outputs.digest }}
+          format: table   # human-readable in the log, so the failure explains itself
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"

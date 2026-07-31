@@ -62,7 +62,11 @@ jobs:
           gh2md ufal/atrium-project agent_dev_logs/issues --multiple-files --no-prs
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v8
+        # SHA-pinned: this action runs with contents:write + pull-requests:write
+        # (see the permissions block above), so a force-pushed tag would run
+        # attacker code holding both. Dependabot keeps the SHA and the version
+        # comment current (#18).
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1  # v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "docs: refresh issue logs via gh2md"
