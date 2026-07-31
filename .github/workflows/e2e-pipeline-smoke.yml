@@ -32,40 +32,41 @@ jobs:
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
           ghcr.io/ufal/atrium-page-classification:latest
-          --input /workspace/fixtures/e2e/ALTO/CTX000000001.alto.xml
-          --output /workspace/e2e_out/1_pc.json
+          -f /workspace/fixtures/e2e/ALTO/CTX000000001.alto.xml
+          --document-json-out /workspace/e2e_out/1_pc.json
 
       # 2. ALTO Postprocess (alto) -> Merge Blocks
       - name: Stage 2 - ALTO Postprocess
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
           ghcr.io/ufal/atrium-alto-postprocess:latest
-          --input /workspace/e2e_out/1_pc.json
-          --output /workspace/e2e_out/2_alto.json
+          -f /workspace/fixtures/e2e/ALTO/CTX000000001.alto.xml
+          --document-json /workspace/e2e_out/1_pc.json
+          --document-json-out /workspace/e2e_out/2_alto.json
 
       # 3. Translator -> Write Translation Schema
       - name: Stage 3 - Translator
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
           ghcr.io/ufal/atrium-translator:latest
-          --input /workspace/e2e_out/2_alto.json
-          --output /workspace/e2e_out/3_translate.json
+          --document-json /workspace/e2e_out/2_alto.json
+          --document-json-out /workspace/e2e_out/3_translate.json
 
       # 4. NLP Enrich -> Append CoNLL-U Entities
       - name: Stage 4 - NLP Enrich
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
           ghcr.io/ufal/atrium-nlp-enrich:latest
-          --input /workspace/e2e_out/3_translate.json
-          --output /workspace/e2e_out/4_nlp.json
+          --document-json /workspace/e2e_out/3_translate.json
+          --document-json-out /workspace/e2e_out/4_nlp.json
 
       # 5. LLM Enrich -> Markdown Generation
       - name: Stage 5 - LLM Enrich
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
           ghcr.io/ufal/atrium-llm-enrich:latest
-          --input /workspace/e2e_out/4_nlp.json
-          --output /workspace/e2e_out/5_llm.json
+          --document-json /workspace/e2e_out/4_nlp.json
+          --document-json-out /workspace/e2e_out/5_llm.json
 
       # Final Validation -> Enforce API Contract
       - name: Assert Final Document Contract
