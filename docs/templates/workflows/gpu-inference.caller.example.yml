@@ -36,7 +36,7 @@ jobs:
           # cu126 matches the standard Dockerfile TORCH_INDEX_URL for GPU builds
           pip install torch==2.7.1 torchvision==0.22.1 \
               --index-url https://download.pytorch.org/whl/cu126
-              
+
           for req in ${{ env.REQUIREMENTS }}; do
             if [ -f "$req" ]; then pip install -r "$req"; fi
           done

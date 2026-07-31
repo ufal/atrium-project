@@ -4,7 +4,7 @@ This document defines the schema versioning policy for the `atrium_paradata.py` 
 
 ## Schema `2.0` Context
 - **Contract:** Establishes fixed `provenance`, `license`, `timing`, `config`, and `statistics` blocks along with `record_type` for multi-stage pipelines.
-- **Old Log Validity:** Pre-`2.0` (or unversioned `1.0` logs) remain completely valid. Tools load historical logs using the transparent migrator built into `atrium_paradata.py` (`load_paradata()` automatically upconverts them). 
+- **Old Log Validity:** Pre-`2.0` (or unversioned `1.0` logs) remain completely valid. Tools load historical logs using the transparent migrator built into `atrium_paradata.py` (`load_paradata()` automatically upconverts them).
 
 ## Versioning Rules
 1. **Additive Updates:** Adding an optional field or component requires **no bump**. Existing parsers will ignore the unknown keys seamlessly.

@@ -1,4 +1,4 @@
-## ARUP/ARUB contacts for result updates: 
+## ARUP/ARUB contacts for result updates:
 - krivankova@arup.cas.cz
 - krofta@arup.cas.cz
 - lecbychova@arub.cz

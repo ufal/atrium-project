@@ -348,7 +348,7 @@ abbreviations, no modern syntactic standardisation. Standard NER frequently miss
 
 ### Inference Backends
 
-**`transformers` + BitsAndBytes 4-bit** — single-GPU up to ~31B parameters.  
+**`transformers` + BitsAndBytes 4-bit** — single-GPU up to ~31B parameters.
 **`vllm` + xgrammar multi-GPU** — tensor-parallel-size 8, Automatic Prefix Caching; ≥70B parameters.
 
 Default model: **`qwen-3.6-27b-it`** (Qwen 2.5 27B Instruct). Extended registry:
