@@ -219,7 +219,37 @@ def check_duplicate_names(docs: dict[Path, dict], findings: Findings) -> None:
             seen[key] = path
 
 
-def check_template_inputs(path: Path, doc: dict, root: Path, findings: Findings) -> int:
+def resolve_callee(uses: str, root: Path, hub_root: Path) -> Path | None:
+    """Filesystem path of the reusable a job calls, or None if not resolvable.
+
+    Two call forms exist in this ecosystem and both must resolve, or the
+    permission and input checks quietly pass by asserting nothing:
+
+      * `ufal/atrium-project/.github/workflows/X.yml@ref` -- resolved from
+        HUB_ROOT. When linting a tool repo, the callee lives in a different
+        repository; without a hub checkout to resolve against, both checks
+        no-op. That is why running this against atrium-translator reported
+        "0 caller/callee permission pairs" -- not a clean bill of health, just
+        an unasked question. The caller/callee permission check is the one that
+        catches the Wave B startup_failure class, so it is precisely the check
+        worth having outside the hub.
+
+      * `./.github/workflows/X.yml` -- a same-repo call, resolved from ROOT.
+        The hub's own codeql.yml and pre-commit.yml use this form so that a
+        self-check validates the ref being pushed rather than the last released
+        tag.
+    """
+    cross_repo = re.match(r"ufal/atrium-project/(\.github/workflows/[^@]+)@", uses)
+    if cross_repo:
+        candidate = hub_root / cross_repo.group(1)
+    elif uses.startswith("./"):
+        candidate = root / uses[2:]
+    else:
+        return None   # third-party or unrecognised; not ours to check
+    return candidate if candidate.exists() else None
+
+
+def check_template_inputs(path: Path, doc: dict, root: Path, hub_root: Path, findings: Findings) -> int:
     """Check 6 -- a template only passes inputs its reusable declares.
 
     This is the check that catches a clobbered callee directly: after
@@ -233,13 +263,8 @@ def check_template_inputs(path: Path, doc: dict, root: Path, findings: Findings)
     for job_name, job in (doc.get("jobs") or {}).items():
         if not isinstance(job, dict) or "uses" not in job:
             continue
-        ref = re.match(
-            r"ufal/atrium-project/(\.github/workflows/[^@]+)@", str(job["uses"])
-        )
-        if not ref:
-            continue
-        callee_path = root / ref.group(1)
-        if not callee_path.exists():
+        callee_path = resolve_callee(str(job["uses"]), root, hub_root)
+        if callee_path is None:
             continue
         callee = yaml.safe_load(callee_path.read_text(encoding="utf-8")) or {}
         # `on:` parses as the boolean True in YAML 1.1, hence the fallback.
@@ -257,7 +282,7 @@ def check_template_inputs(path: Path, doc: dict, root: Path, findings: Findings)
     return checked
 
 
-def check_template_permissions(path: Path, doc: dict, root: Path, findings: Findings) -> int:
+def check_template_permissions(path: Path, doc: dict, root: Path, hub_root: Path, findings: Findings) -> int:
     """Check 4 -- a template's permission grant covers what its reusable requests.
 
     GitHub caps a reusable workflow's job permissions at the calling job's
@@ -274,14 +299,9 @@ def check_template_permissions(path: Path, doc: dict, root: Path, findings: Find
     for job_name, job in (doc.get("jobs") or {}).items():
         if not isinstance(job, dict) or "uses" not in job:
             continue
-        ref = re.match(
-            r"ufal/atrium-project/(\.github/workflows/[^@]+)@", str(job["uses"])
-        )
-        if not ref:
+        callee_path = resolve_callee(str(job["uses"]), root, hub_root)
+        if callee_path is None:
             continue
-        callee_path = root / ref.group(1)
-        if not callee_path.exists():
-            continue  # pinned to a tag we cannot read from the working tree
         callee = yaml.safe_load(callee_path.read_text(encoding="utf-8")) or {}
 
         # No explicit block anywhere in the caller -> repo default applies.
@@ -310,7 +330,14 @@ def check_template_permissions(path: Path, doc: dict, root: Path, findings: Find
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repo-root", default=".", help="hub checkout root")
+    parser.add_argument("--repo-root", default=".", help="repository to lint")
+    parser.add_argument(
+        "--hub-root", default=None,
+        help="checkout of ufal/atrium-project used to resolve `ufal/atrium-project/...@ref` "
+             "callees. Defaults to --repo-root, which is correct when linting the hub itself. "
+             "Pass a separate checkout when linting a TOOL repo, or the caller/callee "
+             "permission and input checks silently no-op.",
+    )
     parser.add_argument(
         "--offline", action="store_true",
         help="skip only the network check that a pinned SHA matches its version comment",
@@ -318,6 +345,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     root = Path(args.repo_root).resolve()
+    hub_root = Path(args.hub_root).resolve() if args.hub_root else root
     findings = Findings()
     paths = workflow_files(root)
     if not paths:
@@ -334,8 +362,8 @@ def main(argv: list[str] | None = None) -> int:
         docs[rel] = doc
         pins += check_pins(rel, path.read_text(encoding="utf-8"), findings, args.offline)
         check_secrets_inherit(rel, doc, findings)
-        perms += check_template_permissions(rel, doc, root, findings)
-        inputs += check_template_inputs(rel, doc, root, findings)
+        perms += check_template_permissions(rel, doc, root, hub_root, findings)
+        inputs += check_template_inputs(rel, doc, root, hub_root, findings)
     check_duplicate_names(docs, findings)
 
     for note in findings.notes:
@@ -354,8 +382,9 @@ def main(argv: list[str] | None = None) -> int:
     for error in findings.errors:
         print(f"::error::{error}")
     print(
-        f"\n{len(findings.errors)} problem(s) in the hub's workflows or templates. "
-        f"These files are the source of truth for every caller in the ecosystem.",
+        f"\n{len(findings.errors)} problem(s) in {root}. "
+        f"In the hub these files are the source of truth for every caller in the "
+        f"ecosystem; in a tool repo they are what actually runs.",
         file=sys.stderr,
     )
     return 1

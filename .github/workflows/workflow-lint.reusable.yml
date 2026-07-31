@@ -1,0 +1,90 @@
+# ATRIUM — reusable workflow/caller policy lint (issue #18, T7).
+#
+# Runs tools/ci/workflow_lint.py from THIS repository against the CALLER's tree.
+# The script is not vendored into the tool repos on purpose: a copy in six
+# places needs a para-drift parity step to stop it drifting, and adding such a
+# step for a file the repos do not have yet fails para-drift in all five on
+# their next push. Hosting it once and calling it is the same "common ground in
+# the hub, thin caller per repo" split the rest of #18 uses.
+#
+# Two checkouts, mirroring para-drift.reusable.yml: the caller's tree is what
+# gets linted, and the hub checkout is what `ufal/atrium-project/...@ref`
+# callees resolve against. Without that second checkout the caller/callee
+# permission and input checks have nothing to compare to and silently pass --
+# running the script against atrium-translator without it reported
+# "0 caller/callee permission pairs", which reads as clean but is really an
+# unasked question. With it, each tool repo gets 12 real permission assertions.
+#
+# That is the check that catches the Wave B failure mode: a reusable's job
+# permissions are capped by the calling job's grant, and asking for more is a
+# parse-time startup_failure, invisible to any local YAML validation. It took
+# down docker.yml in all five tool repos at once.
+
+name: ATRIUM Workflow Lint Template
+
+on:
+  workflow_call:
+    inputs:
+      hub-ref:
+        description: >-
+          Ref to read the hub's linter and reusables from. Keep this in step
+          with the ref THIS workflow is called at, or callee permissions are
+          checked against the wrong generation of reusables — the same trap
+          para-drift.reusable.yml documents. Callers on the `@test` pre-release
+          channel should pass `hub-ref: test`.
+        required: false
+        type: string
+        default: v1
+      offline:
+        description: >-
+          Skip only the network half of the pin check (confirming a pinned SHA
+          really is the release its `# vX` comment claims). The structural
+          checks never need network. Useful if GitHub rate-limits ls-remote.
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read   # least privilege: this only ever reads trees
+
+jobs:
+  workflow-lint:
+    name: Verify Workflow and Caller Policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v7
+        with:
+          path: tool-repo
+
+      - name: Checkout ATRIUM hub repository
+        uses: actions/checkout@v7
+        with:
+          repository: ufal/atrium-project
+          ref: ${{ inputs.hub-ref }}
+          path: hub-repo
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      # Six checks, each matching a defect #18 actually hit: every workflow and
+      # caller template parses; write-scoped actions are SHA-pinned with a
+      # version comment whose tag really resolves to that SHA; caller and callee
+      # permissions agree; no structural `secrets: inherit`; no two workflows in
+      # a directory share a `name:`; no caller passes an input its reusable does
+      # not declare. The last two detect a file overwritten with a copy of
+      # another file, which every other check passes happily.
+      - name: Check workflows and callers
+        env:
+          OFFLINE: ${{ inputs.offline && '--offline' || '' }}
+        run: |
+          # shellcheck disable=SC2086 — OFFLINE is a single optional flag
+          python hub-repo/tools/ci/workflow_lint.py \
+            --repo-root tool-repo \
+            --hub-root hub-repo $OFFLINE

@@ -1,0 +1,75 @@
+# ATRIUM hub — the hub checking itself (issue #18, T7).
+#
+# WHY THIS EXISTS. This repository is the source of truth for 42 caller jobs
+# across six repos, and for the canonical modules para-drift.reusable.yml forces
+# byte-identical into all five tool repos. Until 2026-07-31 it had no caller
+# workflows at all — only `workflow_call` reusables plus the E2E and issue-log
+# jobs — so nothing in CI parsed, linted or policy-checked any of it.
+#
+# The cost was not theoretical: two files were silently overwritten with copies
+# of other files, a SHA-pinning pass missed one of eleven occurrences, and
+# test_para_licenses.py sat here with 36 passing tests that no workflow invoked.
+#
+# Both jobs read only, need no secrets, and finish in well under a minute.
+
+name: Hub Self-Check
+
+on:
+  push:
+    branches: [main, test]
+  pull_request:
+    branches: [main, test]
+  # Weekly, because the pin check resolves real tags: an action's tag can be
+  # force-pushed while nothing in this repo changes. Staggered clear of CodeQL
+  # (5:15) and pre-commit (5:30).
+  schedule:
+    - cron: "45 5 * * 1"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Calls the reusable by LOCAL path rather than @v1 so the self-check validates
+  # the ref being pushed. A repo whose self-check is pinned to its own released
+  # tag can never catch a broken reusable before that tag moves.
+  workflow-lint:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/workflow-lint.reusable.yml
+
+  shared-tests:
+    name: Test canonical shared modules
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # tests/ holds the 16 check_version.py tests — the release gate for all
+      # five tool repos, which had no tests anywhere in the ecosystem until #18.
+      #
+      # docs/templates/shared/ is run separately and from inside the directory,
+      # because test_para_licenses.py imports its module as a plain
+      # `from para_licenses import ...` and relies on pytest putting the test
+      # file's own directory on sys.path — the same way it resolves once
+      # vendored into a tool repo, where pytest.ini sets `pythonpath = .`.
+      #
+      # Those 36 tests had been in this repo the whole time, passing, and
+      # invoked by nothing.
+      - name: Run release-gate tests
+        run: python -m pytest tests/ -v
+
+      - name: Run canonical shared-module tests
+        working-directory: docs/templates/shared
+        run: python -m pytest . -v
