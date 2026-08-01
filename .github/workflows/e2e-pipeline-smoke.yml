@@ -157,7 +157,7 @@ jobs:
           W="${{ github.workspace }}/work"
           cat > "$W/config_e2e_alto.txt" <<EOF
           [PIPELINE]
-          METHOD = python
+          METHOD = alto-tools
           INPUT_DIR = /workspace/work/ALTO
           PAGE_ALTO_DIR = /workspace/work/PAGE_ALTO
           PARADATA_DIR = /workspace/work/paradata
