@@ -19,13 +19,18 @@
 # * pc          classifies a PNG RENDERED from the fixture ALTO (tools/e2e/
 #               render_alto_page.py) — the image-classification model needs a real
 #               raster image, not ALTO XML.
-# * alto        runs split -> stats -> extract (--method alto-tools, CPU) via a
-#               scoped config file (extract/classify/aggregate read LANGID_CONFIG,
-#               not CLI flags). classify hard-requires CUDA (fails fast on CPU-only
-#               runners), so it and aggregate are skipped; nlp is bridged by the
-#               committed fixture DOC_LINE_CATEG CSV instead of alto's own classify
-#               output. Once a [self-hosted, gpu] runner exists, replace the bridge
-#               with a live --start-from classify run.
+# * alto        runs split -> stats -> extract (--method layoutreader, the tool's own
+#               default) via a scoped config file (extract/classify/aggregate read
+#               LANGID_CONFIG, not CLI flags). --method alto-tools would need the
+#               external `alto-tools` CLI, which setup/requirements.txt never installs
+#               into the published image (only ever added as an extra step in the
+#               pre-rewrite, checkout-based version of this workflow) — layoutreader's
+#               deps (torch, transformers) are already in the image, being the
+#               documented default. classify hard-requires CUDA (fails fast on
+#               CPU-only runners), so it and aggregate are skipped; nlp is bridged by
+#               the committed fixture DOC_LINE_CATEG CSV instead of alto's own
+#               classify output. Once a [self-hosted, gpu] runner exists, replace the
+#               bridge with a live --start-from classify run.
 # * translate   LINDAT CUBBITT cs->en on alto's real per-page ALTO split output.
 #               main.py prints [ERROR] and exits 0 on several failure paths (missing
 #               input_path in particular), so the final assertion — not the exit
@@ -155,7 +160,7 @@ jobs:
           W="${{ github.workspace }}/work"
           cat > "$W/config_e2e_alto.txt" <<EOF
           [PIPELINE]
-          METHOD = alto-tools
+          METHOD = layoutreader
           INPUT_DIR = /workspace/work/ALTO
           PAGE_ALTO_DIR = /workspace/work/PAGE_ALTO
           PARADATA_DIR = /workspace/work/paradata
@@ -164,7 +169,7 @@ jobs:
 
           [EXTRACT]
           INPUT_CSV = /workspace/work/e2e_alto_stats.csv
-          OUTPUT_TXT = /workspace/work/PAGE_TXT
+          OUTPUT_TXT_LR = /workspace/work/PAGE_TXT
           EOF
 
       - name: Write nlp-enrich e2e config
