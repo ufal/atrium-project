@@ -19,10 +19,10 @@
 # * pc          classifies a PNG RENDERED from the fixture ALTO (tools/e2e/
 #               render_alto_page.py) — the image-classification model needs a real
 #               raster image, not ALTO XML.
-# * alto        runs split -> stats -> extract (--method python, CPU) via a
+# * alto        runs split -> stats -> extract (--method alto-tools, CPU) via a
 #               scoped config file (extract/classify/aggregate read LANGID_CONFIG,
-#               not CLI flags). We use the 'python' extraction method here to bypass
-#               the need for the external `alto-tools` binary in the container.
+#               not CLI flags). The missing `alto-tools` dependency is patched dynamically
+#               via the container's entrypoint to ensure successful extraction.
 #               classify hard-requires CUDA (fails fast on CPU-only runners), so it
 #               and aggregate are skipped; nlp is bridged by the committed fixture
 #               DOC_LINE_CATEG CSV instead of alto's own classify output. Once a
@@ -215,13 +215,14 @@ jobs:
           --document-json-out /workspace/work/doc_json/1_pc.json
 
       # 2. ALTO Postprocess (alto) -> split -> stats -> extract; merge pages/content/lines
+      # We override the entrypoint to a shell so we can pip install alto-tools dynamically
+      # before invoking the pipeline orchestrator.
       - name: Stage 2 - ALTO Postprocess
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
+          --entrypoint /bin/sh
           ghcr.io/ufal/atrium-alto-postprocess:latest
-          --config /workspace/work/config_e2e_alto.txt
-          --document-json /workspace/work/doc_json/1_pc.json
-          --document-json-out /workspace/work/doc_json/2_alto.json
+          -c "pip install https://github.com/cneud/alto-tools/archive/refs/heads/master.zip && python run_pipeline.py --config /workspace/work/config_e2e_alto.txt --document-json /workspace/work/doc_json/1_pc.json --document-json-out /workspace/work/doc_json/2_alto.json"
 
       # 3. Translator -> translate alto's real per-page ALTO split output
       - name: Stage 3 - Translator
