@@ -216,13 +216,13 @@ jobs:
 
       # 2. ALTO Postprocess (alto) -> split -> stats -> extract; merge pages/content/lines
       # We override the entrypoint to a shell so we can pip install alto-tools dynamically
-      # before invoking the pipeline orchestrator.
+      # before invoking the pipeline orchestrator. We must also add ~/.local/bin to PATH.
       - name: Stage 2 - ALTO Postprocess
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
           --entrypoint /bin/sh
           ghcr.io/ufal/atrium-alto-postprocess:latest
-          -c "pip install https://github.com/cneud/alto-tools/archive/refs/heads/master.zip && python run_pipeline.py --config /workspace/work/config_e2e_alto.txt --document-json /workspace/work/doc_json/1_pc.json --document-json-out /workspace/work/doc_json/2_alto.json"
+          -c "pip install https://github.com/cneud/alto-tools/archive/refs/heads/master.zip && export PATH=\"\$PATH:/home/atrium/.local/bin\" && python run_pipeline.py --config /workspace/work/config_e2e_alto.txt --document-json /workspace/work/doc_json/1_pc.json --document-json-out /workspace/work/doc_json/2_alto.json"
 
       # 3. Translator -> translate alto's real per-page ALTO split output
       - name: Stage 3 - Translator
