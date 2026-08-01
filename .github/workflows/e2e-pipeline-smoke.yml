@@ -216,7 +216,7 @@ jobs:
 
       # 2. ALTO Postprocess (alto) -> split -> stats -> extract; merge pages/content/lines
       # We override the entrypoint to a shell so we can pip install alto-tools dynamically
-      # before invoking the pipeline orchestrator. We must also add ~/.local/bin to PATH.
+      # before invoking the pipeline orchestrator. We explicitly add ~/.local/bin to PATH.
       - name: Stage 2 - ALTO Postprocess
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
@@ -235,20 +235,26 @@ jobs:
           --document-json /workspace/work/doc_json/2_alto.json
           --document-json-out /workspace/work/doc_json/3_translate.json
 
+      # 4. NLP Enrich Pre-step: Download latest script to runner to bypass missing git
+      - name: Fetch latest NLP Enrich source
+        run: |
+          wget -q https://github.com/ufal/atrium-nlp-enrich/archive/refs/heads/main.zip -O ${{ github.workspace }}/work/nlp-latest.zip
+          unzip -q ${{ github.workspace }}/work/nlp-latest.zip -d ${{ github.workspace }}/work/
+          chmod -R a+rwX ${{ github.workspace }}/work/atrium-nlp-enrich-main
+
       # 4. NLP Enrich -> manifest/UDPipe/NameTag on the DOC_LINE_CATEG bridge; append entities
-      # Temporarily overriding the entrypoint to clone the main branch so we can use the
-      # newly added --document-json CLI flags before a tagged release is cut.
+      # We set the working directory to the downloaded source to execute the updated script.
       - name: Stage 4 - NLP Enrich
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
-          --entrypoint /bin/sh
+          -w /workspace/work/atrium-nlp-enrich-main
+          --entrypoint python
           ghcr.io/ufal/atrium-nlp-enrich:latest
-          -c "git clone https://github.com/ufal/atrium-nlp-enrich.git /tmp/nlp-latest &&
-          cd /tmp/nlp-latest &&
-          python run_pipeline.py --config /workspace/work/config_e2e_nlp.txt
+          run_pipeline.py
+          --config /workspace/work/config_e2e_nlp.txt
           --stages manifest udp nt stats
           --document-json /workspace/work/doc_json/3_translate.json
-          --document-json-out /workspace/work/doc_json/4_nlp.json"
+          --document-json-out /workspace/work/doc_json/4_nlp.json
 
       # 5. LLM Enrich -> OpenRouter keyword enrichment of the DOC_LINE_CATEG bridge
       #    ENTRYPOINT on the -remote image is bare "python"; openrouter_client.py
