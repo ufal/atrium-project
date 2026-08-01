@@ -236,14 +236,19 @@ jobs:
           --document-json-out /workspace/work/doc_json/3_translate.json
 
       # 4. NLP Enrich -> manifest/UDPipe/NameTag on the DOC_LINE_CATEG bridge; append entities
+      # Temporarily overriding the entrypoint to clone the main branch so we can use the
+      # newly added --document-json CLI flags before a tagged release is cut.
       - name: Stage 4 - NLP Enrich
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
+          --entrypoint /bin/sh
           ghcr.io/ufal/atrium-nlp-enrich:latest
-          --config /workspace/work/config_e2e_nlp.txt
+          -c "git clone https://github.com/ufal/atrium-nlp-enrich.git /tmp/nlp-latest &&
+          cd /tmp/nlp-latest &&
+          python run_pipeline.py --config /workspace/work/config_e2e_nlp.txt
           --stages manifest udp nt stats
           --document-json /workspace/work/doc_json/3_translate.json
-          --document-json-out /workspace/work/doc_json/4_nlp.json
+          --document-json-out /workspace/work/doc_json/4_nlp.json"
 
       # 5. LLM Enrich -> OpenRouter keyword enrichment of the DOC_LINE_CATEG bridge
       #    ENTRYPOINT on the -remote image is bare "python"; openrouter_client.py
