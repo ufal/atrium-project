@@ -15,13 +15,15 @@ the same ref (default `test`), so any repo's push that breaks a neighbour surfac
 
 ## 📄 Contents & provenance
 
-Both files are **byte-identical drop-in copies** from `atrium-alto-postprocess` at `test` HEAD —
-the same distribution model as the canonical shared files (`atrium_paradata.py` et al.):
+Both ALTO/DOC_LINE_CATEG files are **byte-identical drop-in copies** from `atrium-alto-postprocess`
+at `test` HEAD — the same distribution model as the canonical shared files (`atrium_paradata.py`
+et al.); the vocabulary file is the equivalent copy from `atrium-nlp-enrich`:
 
-| File                              | Copied from (in `ufal/atrium-alto-postprocess`) | Role                                                                                                                                              |
-|-----------------------------------|-------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ALTO/CTX000000003.alto.xml`      | `data_samples/ALTO/CTX000000003.alto.xml`       | 🇨🇿 Source of truth: the single-page synthetic calibration sample (1 page, 2 lines: *„Náčrt sondy."* + *„1998"*), ALTO v3, `LANG="cs"`.          |
-| `DOC_LINE_CATEG/CTX000000003.csv` | `data_samples/DOC_LINE_CATEG/CTX000000003.csv`  | 🌉 The **GPU bridge**: the real `classify`-stage output for that page in alto HEAD's `CSV_HEADER` format (37 columns; 1× `Clear`, 1× `Non-text`). |
+| File                              | Copied from                                                            | Role                                                                                                                                              |
+|-----------------------------------|------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ALTO/CTX000000003.alto.xml`      | `atrium-alto-postprocess/data_samples/ALTO/CTX000000003.alto.xml`      | 🇨🇿 Source of truth: the single-page synthetic calibration sample (1 page, 2 lines: *„Náčrt sondy."* + *„1998"*), ALTO v3, `LANG="cs"`.          |
+| `DOC_LINE_CATEG/CTX000000003.csv` | `atrium-alto-postprocess/data_samples/DOC_LINE_CATEG/CTX000000003.csv` | 🌉 The **GPU bridge**: the real `classify`-stage output for that page in alto HEAD's `CSV_HEADER` format (37 columns; 1× `Clear`, 1× `Non-text`). |
+| `VOCAB/teater_nested_vocab.json`  | `atrium-nlp-enrich/data_samples/teater_nested_vocab.json`              | 🏷️ TEATER/AMCR thesaurus the llm stage needs for keyword categorisation — llm-enrich intentionally ships no `data_samples` of its own.           |
 
 There is **no committed page image** — the pc stage renders one from the ALTO at runtime
 (`tools/e2e/render_alto_page.py`), keeping the whole smoke anchored to one fixture.

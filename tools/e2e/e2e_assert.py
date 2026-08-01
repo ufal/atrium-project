@@ -11,22 +11,27 @@ def assert_document_contract(json_path):
     assert "pages" in doc, "❌ 'pages' block missing: Contributions were erased (check merge_blocks)"
     assert "lines" in doc, "❌ 'lines' block missing: Contributions were erased (check merge_blocks)"
 
-    # 2. NLP Enrich: CoNLL-U Entity Structure
+    # 2. NLP Enrich: Entity Structure
+    # `entities` is its own top-level array block (owner: nlp-enrich; see
+    # atrium_document.schema.json) with "page"/"line" reference fields — it is never
+    # nested under `lines[].entities`, so check it there.
     entities_found = False
-    for line in doc.get("lines", []):
-        for entity in line.get("entities", []):
-            entities_found = True
+    for entity in doc.get("entities", []):
+        entities_found = True
 
-            # Prevent the hardcoded char_span=None bug from collapsing entities
-            assert "char_span" in entity, f"❌ Entity missing 'char_span' key: {entity}"
-            assert entity["char_span"] is not None, "❌ 'char_span' is None (collapsed co-located entities)"
-            assert isinstance(entity["char_span"], (list, tuple)) and len(entity["char_span"]) == 2, \
-                f"❌ 'char_span' must be a coordinate pair, got {entity['char_span']}"
+        # Prevent the hardcoded char_span=None bug from collapsing entities
+        assert "char_span" in entity, f"❌ Entity missing 'char_span' key: {entity}"
+        assert entity["char_span"] is not None, "❌ 'char_span' is None (collapsed co-located entities)"
+        assert isinstance(entity["char_span"], (list, tuple)) and len(entity["char_span"]) == 2, \
+            f"❌ 'char_span' must be a coordinate pair, got {entity['char_span']}"
 
-            # Prevent the nonexistent span["type"] key regression
-            assert "type" in entity, f"❌ Entity missing 'type' key (type mismatch): {entity}"
+        # Prevent the tagset-detection regression (entity typed under neither tagset):
+        # the schema carries type_onto/type_cnec/type_teitok, no single "type" field —
+        # exactly one of type_onto/type_cnec should be populated per entity.
+        assert entity.get("type_onto") or entity.get("type_cnec"), \
+            f"❌ Entity has neither 'type_onto' nor 'type_cnec' set (type mismatch): {entity}"
 
-    assert entities_found, "❌ No entities found in document lines. run_document_hook() may be failing silently."
+    assert entities_found, "❌ No entities found in document.entities. run_document_hook() may be failing silently."
 
     # 3. Translator: Schema enforcement
     if "translations" in doc:
