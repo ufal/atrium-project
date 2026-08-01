@@ -136,6 +136,13 @@ jobs:
           cp "fixtures/e2e/ALTO/${E2E_DOC}.alto.xml" "$W/ALTO/"
           cp "fixtures/e2e/DOC_LINE_CATEG/${E2E_DOC}.csv" "$W/DOC_LINE_CATEG/"
           cp "fixtures/e2e/VOCAB/teater_nested_vocab.json" "$W/"
+          # Every image runs as its own non-root baked-in user (e.g. "atrium", uid
+          # 10001) that has no relation to the runner's uid that just created these
+          # directories — without this, every stage's own write fails with EACCES
+          # the same way Stage 1's document-json-out just did. World-writable is
+          # fine here: this is a throwaway CI workspace with only fixture data in
+          # it, not secrets.
+          chmod -R a+rwX "$W"
 
       - name: Render fixture page image from the ALTO
         run: |
