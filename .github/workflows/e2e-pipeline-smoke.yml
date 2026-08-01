@@ -235,12 +235,15 @@ jobs:
           --document-json /workspace/work/doc_json/2_alto.json
           --document-json-out /workspace/work/doc_json/3_translate.json
 
-      # 4. NLP Enrich Pre-step: Download latest script to runner to bypass missing git
+      # 4. NLP Enrich Pre-step: Clone latest source to runner to bypass missing git
       - name: Fetch latest NLP Enrich source
-        run: |
-          wget -q https://github.com/ufal/atrium-nlp-enrich/archive/refs/heads/main.zip -O ${{ github.workspace }}/work/nlp-latest.zip
-          unzip -q ${{ github.workspace }}/work/nlp-latest.zip -d ${{ github.workspace }}/work/
-          chmod -R a+rwX ${{ github.workspace }}/work/atrium-nlp-enrich-main
+        uses: actions/checkout@v4
+        with:
+          repository: ufal/atrium-nlp-enrich
+          path: work/atrium-nlp-enrich-main
+
+      - name: Set permissions for NLP Enrich source
+        run: chmod -R a+rwX ${{ github.workspace }}/work/atrium-nlp-enrich-main
 
       # 4. NLP Enrich -> manifest/UDPipe/NameTag on the DOC_LINE_CATEG bridge; append entities
       # We set the working directory to the downloaded source to execute the updated script.
