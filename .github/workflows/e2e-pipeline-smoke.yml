@@ -104,8 +104,6 @@ jobs:
           cache: 'pip'
           cache-dependency-path: tools/e2e/requirements.txt
 
-      # Only render_alto_page.py has a real dependency (Pillow) — e2e_assert.py is
-      # stdlib-only (json, sys).
       - name: Install e2e tooling dependencies
         run: pip install -r tools/e2e/requirements.txt
 
@@ -119,10 +117,6 @@ jobs:
             echo "::notice::llm stage (Stage 5) skipped — OPENROUTER_KEY secret is not set."
           fi
 
-      # A skipped stage is acceptable on PR/push/dispatch (contributors and forks
-      # have no secret), but letting it skip on the nightly run is what keeps a
-      # stage dark-but-green for weeks (#18) — a missing secret is a hard failure
-      # there instead.
       - name: Require the secret on scheduled runs
         if: steps.gate.outputs.enabled != 'true' && github.event_name == 'schedule'
         run: |
@@ -138,12 +132,6 @@ jobs:
           cp "fixtures/e2e/ALTO/${E2E_DOC}.alto.xml" "$W/ALTO/"
           cp "fixtures/e2e/DOC_LINE_CATEG/${E2E_DOC}.csv" "$W/DOC_LINE_CATEG/"
           cp "fixtures/e2e/VOCAB/teater_nested_vocab.json" "$W/"
-          # Every image runs as its own non-root baked-in user (e.g. "atrium", uid
-          # 10001) that has no relation to the runner's uid that just created these
-          # directories — without this, every stage's own write fails with EACCES
-          # the same way Stage 1's document-json-out just did. World-writable is
-          # fine here: this is a throwaway CI workspace with only fixture data in
-          # it, not secrets.
           chmod -R a+rwX "$W"
 
       - name: Render fixture page image from the ALTO
@@ -214,21 +202,43 @@ jobs:
           -m timm/regnety_160.swag_ft_in1k --hf
           --document-json-out /workspace/work/doc_json/1_pc.json
 
+      # 2. ALTO Postprocess Pre-step: Clone latest source to runner to bypass stale image
+      - name: Fetch latest ALTO Postprocess source
+        uses: actions/checkout@v4
+        with:
+          repository: ufal/atrium-alto-postprocess
+          path: work/atrium-alto-postprocess-main
+
+      - name: Set permissions for ALTO Postprocess source
+        run: chmod -R a+rwX ${{ github.workspace }}/work/atrium-alto-postprocess-main
+
       # 2. ALTO Postprocess (alto) -> split -> stats -> extract; merge pages/content/lines
-      # We override the entrypoint to a shell so we can pip install alto-tools dynamically
-      # before invoking the pipeline orchestrator. We explicitly add ~/.local/bin to PATH.
       - name: Stage 2 - ALTO Postprocess
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
+          -w /workspace/work/atrium-alto-postprocess-main
           --entrypoint /bin/sh
           ghcr.io/ufal/atrium-alto-postprocess:latest
           -c "pip install https://github.com/cneud/alto-tools/archive/refs/heads/master.zip && export PATH=\"\$PATH:/home/atrium/.local/bin\" && python run_pipeline.py --config /workspace/work/config_e2e_alto.txt --document-json /workspace/work/doc_json/1_pc.json --document-json-out /workspace/work/doc_json/2_alto.json"
+
+      # 3. Translator Pre-step: Clone latest source to runner to bypass stale image
+      - name: Fetch latest Translator source
+        uses: actions/checkout@v4
+        with:
+          repository: ufal/atrium-translator
+          path: work/atrium-translator-main
+
+      - name: Set permissions for Translator source
+        run: chmod -R a+rwX ${{ github.workspace }}/work/atrium-translator-main
 
       # 3. Translator -> translate alto's real per-page ALTO split output
       - name: Stage 3 - Translator
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
+          -w /workspace/work/atrium-translator-main
+          --entrypoint python
           ghcr.io/ufal/atrium-translator:latest
+          main.py
           /workspace/work/PAGE_ALTO/${E2E_DOC}/${E2E_DOC}-1.alto.xml
           --alto --formats alto.xml --source_lang cs --target_lang en
           -o /workspace/work/translated
@@ -246,7 +256,6 @@ jobs:
         run: chmod -R a+rwX ${{ github.workspace }}/work/atrium-nlp-enrich-main
 
       # 4. NLP Enrich -> manifest/UDPipe/NameTag on the DOC_LINE_CATEG bridge; append entities
-      # We set the working directory to the downloaded source to execute the updated script.
       - name: Stage 4 - NLP Enrich
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
@@ -272,7 +281,6 @@ jobs:
         run: chmod -R a+rwX ${{ github.workspace }}/work/atrium-llm-enrich-main
 
       # 5. LLM Enrich -> OpenRouter keyword enrichment of the DOC_LINE_CATEG bridge
-      # We set the working directory to the downloaded source to execute the updated script.
       - name: Stage 5 - LLM Enrich
         if: steps.gate.outputs.enabled == 'true'
         run: >
