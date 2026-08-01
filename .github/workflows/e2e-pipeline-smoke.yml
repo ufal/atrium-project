@@ -204,7 +204,7 @@ jobs:
 
       # 2. ALTO Postprocess Pre-step: Clone latest source to runner to bypass stale image
       - name: Fetch latest ALTO Postprocess source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ufal/atrium-alto-postprocess
           path: work/atrium-alto-postprocess-main
@@ -223,7 +223,7 @@ jobs:
 
       # 3. Translator Pre-step: Clone latest source to runner to bypass stale image
       - name: Fetch latest Translator source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ufal/atrium-translator
           path: work/atrium-translator-main
