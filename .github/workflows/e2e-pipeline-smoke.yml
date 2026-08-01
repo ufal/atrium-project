@@ -99,6 +99,13 @@ jobs:
         uses: actions/setup-python@v7
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: tools/e2e/requirements.txt
+
+      # Only render_alto_page.py has a real dependency (Pillow) — e2e_assert.py is
+      # stdlib-only (json, sys).
+      - name: Install e2e tooling dependencies
+        run: pip install -r tools/e2e/requirements.txt
 
       - name: Gate on OPENROUTER_KEY
         id: gate
