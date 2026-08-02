@@ -3,6 +3,10 @@ name: Reusable E2E Pipeline Smoke (JSON Matrix)
 on:
   workflow_call:
     # No inputs or secrets required for this matrix test
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 */3 * *' # Runs at 02:00 on every 3rd day-of-month
 
 jobs:
   prepare-matrix:
