@@ -44,4 +44,4 @@ jobs:
 
       - name: Run Pytest Smoke Suite
         run: |
-          pytest tests/ --maxfail=1 --disable-warnings -m "smoke"
+          pytest tests/ --maxfail=1 --disable-warnings
