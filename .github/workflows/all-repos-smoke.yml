@@ -40,7 +40,14 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements-test.txt
+          # Install base requirements if the file exists
+          if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi
+
+          if [ -f "setup/requirements.txt" ]; then pip install -r setup/requirements.txt; fi
+          if [ -f "setup/requirements-test.txt" ]; then pip install -r setup/requirements-test.txt; fi
+
+          # Install test-specific requirements
+          if [ -f "requirements-test.txt" ]; then pip install -r requirements-test.txt; fi
 
       - name: Run Pytest Smoke Suite
         run: |
