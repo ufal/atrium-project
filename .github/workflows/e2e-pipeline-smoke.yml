@@ -1,78 +1,18 @@
-# atrium-project — end-to-end pipeline integration smoke test (issue #18 follow-up,
-# issue atrium-llm-enrich#13 document-json threading)
-#
-# Runs ONE single-page Czech fixture (fixtures/e2e/ — byte-identical copies of
-# atrium-alto-postprocess data_samples/{ALTO,DOC_LINE_CATEG}/CTX000000003.* and
-# atrium-nlp-enrich data_samples/teater_nested_vocab.json) through the whole tool
-# chain as PUBLISHED DOCKER IMAGES (not per-repo checkouts):
-#
-#     pc -> alto -> translate -> nlp -> llm
-#
-# threading an atrium_document JSON (docs/templates/shared/atrium_document.py) through
-# every stage via --document-json/--document-json-out, alongside the real file inputs
-# each tool's CLI still requires — the document-json baseline alone is not a substitute
-# for those, see the stage notes below. Assertions (tools/e2e/e2e_assert.py) check the
-# FINAL accreted document's contract, never model quality.
-#
-# Stage notes
-# -----------
-# * pc          classifies a PNG RENDERED from the fixture ALTO (tools/e2e/
-#               render_alto_page.py) — the image-classification model needs a real
-#               raster image, not ALTO XML.
-# * alto        runs split -> stats -> extract (--method alto-tools, CPU) via a
-#               scoped config file (extract/classify/aggregate read LANGID_CONFIG,
-#               not CLI flags). The missing `alto-tools` dependency is patched dynamically
-#               via the container's entrypoint to ensure successful extraction.
-#               classify hard-requires CUDA (fails fast on CPU-only runners), so it
-#               and aggregate are skipped; nlp is bridged by the committed fixture
-#               DOC_LINE_CATEG CSV instead of alto's own classify output. Once a
-#               [self-hosted, gpu] runner exists, replace the bridge with a live
-#               --start-from classify run.
-# * translate   LINDAT CUBBITT cs->en on alto's real per-page ALTO split output.
-#               main.py prints [ERROR] and exits 0 on several failure paths (missing
-#               input_path in particular), so the final assertion — not the exit
-#               code — is the real gate.
-# * nlp         manifest -> UDPipe -> NameTag -> stats on the DOC_LINE_CATEG bridge
-#               (czech-pdt model; Czech is the pipeline default), via its own scoped
-#               config file (same LANGID_CONFIG-style requirement as alto).
-# * llm         OpenRouter keyword enrichment of the same DOC_LINE_CATEG bridge, on
-#               the -remote image target (CPU-only OpenRouter path; -llm is the
-#               local/HF-hosted GPU path and the wrong choice on ubuntu-latest).
-#               Gated on the OPENROUTER_KEY secret, mapped onto the
-#               OPENROUTER_API_KEY env var openrouter_client.py actually reads.
-#               Skips cleanly on PR/push/dispatch when the secret is absent, but
-#               FAILS on `schedule`: a dark stage in the nightly run must be
-#               visible, not silently green (#18 lesson).
-#
-# Known caveat: docker-tool.reusable.yml only enables the `:latest` tag on a
-# `refs/tags/v*` build (see docker.reusable.yml `enable=startsWith(github.ref,
-# 'refs/tags/v')`), so this smoke only exercises each tool repo's latest TAGGED
-# release, not every main-branch push — a repo needs a fresh release cut after a
-# fix lands here before this workflow will actually observe it.
-
-name: E2E Pipeline Smoke Test
+# Reusable: atrium-project — end-to-end pipeline integration smoke test
+name: Reusable E2E Pipeline Smoke Test
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - ".github/workflows/e2e-pipeline-smoke.yml"
-      - "fixtures/e2e/**"
-      - "tools/e2e/**"
-  pull_request:
-    branches: [ main ]
-    paths:
-      - ".github/workflows/e2e-pipeline-smoke.yml"
-      - "fixtures/e2e/**"
-      - "tools/e2e/**"
-  workflow_dispatch:
+  workflow_call:
     inputs:
       openrouter-model:
         description: "OpenRouter model slug for the llm stage"
         default: "openai/gpt-4o-mini"
         type: string
-  schedule:
-    - cron: '0 2 * * *' # Nightly run to catch cross-repo drift
+        required: false
+    secrets:
+      OPENROUTER_KEY:
+        description: "OpenRouter API Key for the LLM enrichment stage"
+        required: false
 
 concurrency:
   group: e2e-pipeline-smoke-${{ github.ref }}
@@ -86,9 +26,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     permissions:
-      packages: read  # Required to dynamically pull the latest ghcr.io images
+      packages: read
       contents: read
-      issues: write   # Only used to open an issue on a failed scheduled run
+      issues: write
     env:
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_KEY }}
       OPENROUTER_MODEL: ${{ inputs.openrouter-model || 'openai/gpt-4o-mini' }}
@@ -96,6 +36,8 @@ jobs:
     steps:
       - name: Checkout ATRIUM Hub Repository
         uses: actions/checkout@v4
+        with:
+          repository: ufal/atrium-project # Explicitly checkout the hub repo to get the fixtures
 
       - name: Set up Python for Assertions
         uses: actions/setup-python@v5
@@ -120,7 +62,7 @@ jobs:
       - name: Require the secret on scheduled runs
         if: steps.gate.outputs.enabled != 'true' && github.event_name == 'schedule'
         run: |
-          echo "::error::OPENROUTER_KEY is not set in ufal/atrium-project — the nightly E2E cannot exercise Stage 5 (llm-enrich)."
+          echo "::error::OPENROUTER_KEY is not set — the nightly E2E cannot exercise Stage 5 (llm-enrich)."
           echo "::error::Add the OPENROUTER_KEY repository secret, or move this workflow off the schedule trigger."
           exit 1
 
@@ -193,7 +135,6 @@ jobs:
           W="${{ github.workspace }}/work"
           echo 'VOCAB_PATH="/workspace/work/teater_nested_vocab.json"' > "$W/llm_config.txt"
 
-      # 1. Page Classification (pc) -> Initialize JSON
       - name: Stage 1 - Page Classification
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
@@ -202,9 +143,8 @@ jobs:
           -m timm/regnety_160.swag_ft_in1k --hf
           --document-json-out /workspace/work/doc_json/1_pc.json
 
-      # 2. ALTO Postprocess Pre-step: Clone latest source to runner to bypass stale image
       - name: Fetch latest ALTO Postprocess source
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           repository: ufal/atrium-alto-postprocess
           path: work/atrium-alto-postprocess-main
@@ -212,7 +152,6 @@ jobs:
       - name: Set permissions for ALTO Postprocess source
         run: chmod -R a+rwX ${{ github.workspace }}/work/atrium-alto-postprocess-main
 
-      # 2. ALTO Postprocess (alto) -> split -> stats -> extract; merge pages/content/lines
       - name: Stage 2 - ALTO Postprocess
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
@@ -221,9 +160,8 @@ jobs:
           ghcr.io/ufal/atrium-alto-postprocess:latest
           -c "pip install https://github.com/cneud/alto-tools/archive/refs/heads/master.zip && export PATH=\"\$PATH:/home/atrium/.local/bin\" && python run_pipeline.py --config /workspace/work/config_e2e_alto.txt --document-json /workspace/work/doc_json/1_pc.json --document-json-out /workspace/work/doc_json/2_alto.json"
 
-      # 3. Translator Pre-step: Clone latest source to runner to bypass stale image
       - name: Fetch latest Translator source
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           repository: ufal/atrium-translator
           path: work/atrium-translator-main
@@ -231,7 +169,6 @@ jobs:
       - name: Set permissions for Translator source
         run: chmod -R a+rwX ${{ github.workspace }}/work/atrium-translator-main
 
-      # 3. Translator -> translate alto's real per-page ALTO split output
       - name: Stage 3 - Translator
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
@@ -245,7 +182,6 @@ jobs:
           --document-json /workspace/work/doc_json/2_alto.json
           --document-json-out /workspace/work/doc_json/3_translate.json
 
-      # 4. NLP Enrich Pre-step: Clone latest source to runner to bypass stale image
       - name: Fetch latest NLP Enrich source
         uses: actions/checkout@v4
         with:
@@ -255,7 +191,6 @@ jobs:
       - name: Set permissions for NLP Enrich source
         run: chmod -R a+rwX ${{ github.workspace }}/work/atrium-nlp-enrich-main
 
-      # 4. NLP Enrich -> manifest/UDPipe/NameTag on the DOC_LINE_CATEG bridge; append entities
       - name: Stage 4 - NLP Enrich
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
@@ -268,7 +203,6 @@ jobs:
           --document-json /workspace/work/doc_json/3_translate.json
           --document-json-out /workspace/work/doc_json/4_nlp.json
 
-      # 5. LLM Enrich Pre-step: Clone latest source to runner to bypass stale image
       - name: Fetch latest LLM Enrich source
         if: steps.gate.outputs.enabled == 'true'
         uses: actions/checkout@v4
@@ -280,7 +214,6 @@ jobs:
         if: steps.gate.outputs.enabled == 'true'
         run: chmod -R a+rwX ${{ github.workspace }}/work/atrium-llm-enrich-main
 
-      # 5. LLM Enrich -> OpenRouter keyword enrichment of the DOC_LINE_CATEG bridge
       - name: Stage 5 - LLM Enrich
         if: steps.gate.outputs.enabled == 'true'
         run: >
@@ -298,7 +231,6 @@ jobs:
           --document-json /workspace/work/doc_json/4_nlp.json
           --document-json-out /workspace/work/doc_json/5_llm.json
 
-      # Final Validation -> Enforce the document contract on the last stage that ran
       - name: Assert Final Document Contract
         run: |
           FINAL="work/doc_json/5_llm.json"
@@ -306,7 +238,6 @@ jobs:
           echo "Asserting against: $FINAL"
           python tools/e2e/e2e_assert.py "$FINAL"
 
-      # Artifact the final JSON (and every intermediate stage) for debugging if the assertion fails
       - name: Upload Pipeline Artifacts
         if: failure()
         uses: actions/upload-artifact@v4
@@ -320,7 +251,7 @@ jobs:
         with:
           script: |
             const title = `E2E pipeline smoke failed (${new Date().toISOString().slice(0,10)})`;
-            const body = `The cross-repo e2e pipeline smoke test failed: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\nLikely a cross-repo interface change on \`main\`, a LINDAT/HuggingFace/OpenRouter upstream change, a stale \`:latest\` tag (see the workflow header caveat), or a stale e2e fixture (see fixtures/e2e/README.md).`;
+            const body = `The cross-repo e2e pipeline smoke test failed: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\nLikely a cross-repo interface change on \`main\`, a LINDAT/HuggingFace/OpenRouter upstream change, a stale \`:latest\` tag, or a stale e2e fixture.`;
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,

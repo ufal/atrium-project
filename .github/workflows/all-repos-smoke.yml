@@ -1,0 +1,43 @@
+name: Reusable E2E Pipeline Smoke (JSON Matrix)
+
+on:
+  workflow_call:
+    # No inputs or secrets required for this matrix test
+
+jobs:
+  prepare-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Set Tool Matrix
+        id: set-matrix
+        run: |
+          echo 'matrix={"repo":["translator", "alto-postprocess", "nlp-enrich", "page-classification"]}' >> $GITHUB_OUTPUT
+
+  run-e2e-smoke:
+    needs: prepare-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.prepare-matrix.outputs.matrix) }}
+
+    steps:
+      - name: Checkout target repository
+        uses: actions/checkout@v4
+        with:
+          repository: ufal/atrium-${{ matrix.repo }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-test.txt
+
+      - name: Run Pytest Smoke Suite
+        run: |
+          pytest tests/ --maxfail=1 --disable-warnings -m "smoke"
