@@ -18,7 +18,7 @@ Each tool takes the previous version of the JSON — if it is given one — and 
 
 ```
 doc.json ──► [alto] ──► doc.json ──► [nlp] ──► doc.json ──► [llm] ──► doc.json
-              pages/lines           entities            enrichment
+pages/lines           entities            enrichment
 ```
 
 This keeps every tool independently runnable, makes updates granular (re-run one tool → one
@@ -26,8 +26,10 @@ block changes), and needs no shared volume or orchestrator.
 
 ## Schema `1.0` Context
 - **Contract:** fixed `source`, `derived_from`, `regenerable`, `provenance` and `assembled`
-  blocks, plus the content blocks (`pages`, `content`, `lines`, `entities`, `translations`,
-  `enrichment`, `page_categories`) each owned by exactly one tool.
+  blocks, plus the content blocks (`pages`, `content`, `lines`, `tables`, `entities`,
+  `translations`, `enrichment`, `page_categories`, `forms`) each written by exactly one tool
+  per document — for the positional blocks, *which* tool is fixed by `source.origin`
+  (see **Originators**, below).
 - **First published version.** There is nothing to migrate yet; `load_document()` already
   carries the guard and `migrate_document()` the branch point, so the mechanism exists before
   it is needed.
@@ -77,13 +79,43 @@ One owner per block. Blocks that several tools contribute to are split **by fiel
 (`BLOCK_FIELD_OWNERS`), so no field is ever co-mutated — use `merge_block()` for those and
 `set_block()` for blocks you own outright.
 
-| Tool | Owns |
-|---|---|
-| page-classification | `page_categories` · `pages[]` *category, category_confidence* |
-| alto-postprocess | `pages[]` *quality_score, quality_band, needs_ocr, ocr, canvas* · `content` · `lines[]` *categ, quality_score, lang, text* |
-| translator | `translations` · `entities[]` *translation_en* |
-| nlp-enrich | `entities[]` · `lines[]` *lemma, upos, feats, teitok_ref, bbox* · `pages[]` *teitok_surface* · `derived_from.teitok` |
-| llm-enrich | `enrichment` · `entities[]` *pid* · `regenerable.markdown` |
+### Originators (Issue #18 §1a)
+
+Four blocks — `pages`, `content`, `lines`, `tables` — describe a document's **positional
+plane**, and there are two ways to acquire one: OCR/ALTO, or direct extraction from a
+digital-born PDF/DOCX. These are mutually exclusive per document, so those blocks have a
+**tuple** of possible originators in `BLOCK_OWNERS` and the choice is fixed per record by
+`source.origin`:
+
+| `source.origin` prefix           | Originator         |
+|----------------------------------|--------------------|
+| `digital-born…` · `docx`         | `digital-convert`  |
+| `ABBYY-ALTO` · `ocr:…` · `vlm:…` | `alto-postprocess` |
+
+`_assert_origin_consistent()` enforces it on both `set_block()` and `merge_block()`. An
+origin the table has not been taught causes the check to abstain, not to fail.
+
+> ⚠️ **`BLOCK_OWNERS` authorises writes; it is not the read-time contract.** To find out who
+> wrote a block in a *given* record, read `assembled.blocks[<block>].program` — and for a
+> field-split block, `provenance.contributors[]`, since the stamp names only the most recent
+> writer. Code that hardcodes `alto-postprocess` as the source of `lines[]` was reading the
+> wrong contract even before digital-born documents existed.
+
+| Tool                | Owns                                                                                                                                                                                                       |
+|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| page-classification | `page_categories` · `pages[]` *category, category_confidence*                                                                                                                                              |
+| alto-postprocess    | `pages[]` *quality_score, quality_band, needs_ocr, ocr, canvas* · `content` · `lines[]` *categ, quality_score, lang, text* · `tables` — **originator, OCR/ALTO documents only**                            |
+| digital-convert     | `pages[]` *page_index, canvas, quality_score, quality_band, needs_ocr* · `content` · `lines[]` *text, bbox, group_id, lang, quality_score, categ* · `tables` — **originator, digital-born documents only** |
+| translator          | `translations` · `entities[]` *translation_en*                                                                                                                                                             |
+| nlp-enrich          | `entities[]` · `lines[]` *lemma, upos, feats, teitok_ref, bbox* · `pages[]` *teitok_surface* · `derived_from.teitok`                                                                                       |
+| llm-enrich          | `enrichment` · `forms` · `entities[]` *pid* · `regenerable.markdown`                                                                                                                                       |
+
+`quality_score` is one axis — **text trustworthiness, 0–1** — with two derivations. On the
+OCR path it is an engine-confidence proxy; on the digital-born path it is a decode-sanity
+score (Issue #10's vowel/consonant ratio and dictionary hit-rate over the embedded text
+layer). Which derivation produced a given value is answerable from `source.origin`, so the
+field is not split. Consumers that filter on it (`json_to_md --min-quality`) are filtering
+the same thing either way: *do not show this line to the model*.
 
 ## Usage
 
@@ -117,18 +149,30 @@ python atrium_document.py set-block --doc-id "$DOC" --program alto-postprocess \
 ```
 
 ## Versioning Rules
+
 1. **Additive Updates:** adding an optional field or a new block requires **no bump** — rule 6
-   means existing tools pass unknown keys through untouched.
+means existing tools pass unknown keys through untouched.
 2. **Breaking Changes:** renaming/removing a field, or changing block ownership, bumps
-   `SCHEMA_VERSION` to the next major (e.g. `2.0`).
+`SCHEMA_VERSION` to the next major (e.g. `2.0`).
+* **Not breaking, and therefore no bump:** adding an authorised *originator* to a block's
+candidate set, where the choice is fixed per document by `source.origin` and no existing
+tool loses a capability. No field is renamed or removed, every existing record stays
+valid under the new module, and every existing tool keeps writing exactly what it wrote
+before. This is the Issue #18 §1a case, and it is called out explicitly because a literal
+reading of "changing block ownership" would have forced an unnecessary `2.0` migration
+across five repos. The distinction that matters: **widening write authorisation is
+additive; re-attributing an already-written block would not be.**
+
+
 3. **Migration Mechanics:** a bump mandates a sequential `_migrate_X_to_Y()` and a branch in
-   `migrate_document()`, exactly as in `atrium_paradata.py`.
+`migrate_document()`, exactly as in `atrium_paradata.py`.
 
 ## Consumers to Update on Bumps
-- `merge_document_records()` and the `_cli()` shim in `atrium_document.py`
-- `atrium_document.schema.json` (kept in step with the module — one is the contract, one the validator)
-- Every tool's block writer, and any search/presentation layer indexing the record
-- This document and the ownership table above
+
+* `merge_document_records()` and the `_cli()` shim in `atrium_document.py`
+* `atrium_document.schema.json` (kept in step with the module — one is the contract, one the validator)
+* Every tool's block writer, and any search/presentation layer indexing the record
+* This document and the ownership table above
 
 ## Distribution
 
@@ -142,23 +186,50 @@ python atrium_document.py set-block --doc-id "$DOC" --program alto-postprocess \
 Prompted by the issue #13 alignment audit, which found that rule 2 ("own block only") was not
 actually enforced and that three tools relied on it anyway:
 
-- **`set_block()` now warns (raises under `strict=True`) on any block listed in
-  `BLOCK_FIELD_OWNERS`.** Those blocks (`pages`, `lines`, `entities`) are field-split by design;
-  a wholesale `set_block()` on one erases every co-contributor's fields. Use `merge_block()`.
-- **`DocumentRecord.get_block(name, default=None)`** — read-only, deep-copied access to any
-  block, so a tool that needs to look at (not just write) a block no longer has to reach into
-  the private `_data` attribute.
-- **`ParadataLogger.run_id`** (in `atrium_paradata.py`) — the public counterpart to `_run_id`,
-  matching `get_license_block()`. Several tools were already calling `logger.run_id` on the
-  assumption it existed; it did not, until now.
-- **`canonical_doc_id(path)`** — one doc_id derivation for every tool to call, replacing four
-  independent ones (`Path.stem`, `name.split(".")[0]`, a bespoke TEITOK/CoNLL-U stripper, a CSV
-  column) that silently forked the same document into different records on multi-dot filenames.
-- **`finalize()` writes atomically** (write to `.tmp`, then `os.replace`), so a crash mid-write
-  can no longer leave a corrupt record for the next tool's `load_document()` to trip over.
-- **Schema:** `lines[]` now documents `lemma`/`upos`/`feats` — `BLOCK_FIELD_OWNERS` already
-  granted nlp-enrich these fields, but the schema didn't describe them (`additionalProperties:
-  true` meant validation never caught the gap).
+* **`set_block()` now warns (raises under `strict=True`) on any block listed in
+`BLOCK_FIELD_OWNERS`.** Those blocks (`pages`, `lines`, `entities`) are field-split by design;
+a wholesale `set_block()` on one erases every co-contributor's fields. Use `merge_block()`.
+* **`DocumentRecord.get_block(name, default=None)`** — read-only, deep-copied access to any
+block, so a tool that needs to look at (not just write) a block no longer has to reach into
+the private `_data` attribute.
+* **`ParadataLogger.run_id`** (in `atrium_paradata.py`) — the public counterpart to `_run_id`,
+matching `get_license_block()`. Several tools were already calling `logger.run_id` on the
+assumption it existed; it did not, until now.
+* **`canonical_doc_id(path)`** — one doc_id derivation for every tool to call, replacing four
+independent ones (`Path.stem`, `name.split(".")[0]`, a bespoke TEITOK/CoNLL-U stripper, a CSV
+column) that silently forked the same document into different records on multi-dot filenames.
+* **`finalize()` writes atomically** (write to `.tmp`, then `os.replace`), so a crash mid-write
+can no longer leave a corrupt record for the next tool's `load_document()` to trip over.
+* **Schema:** `lines[]` now documents `lemma`/`upos`/`feats` — `BLOCK_FIELD_OWNERS` already
+granted nlp-enrich these fields, but the schema didn't describe them (`additionalProperties: true` meant validation never caught the gap).
 
 No `SCHEMA_VERSION` bump: all additive, and rule 6 (unknown fields pass through) already covers
 tools not yet updated to call `merge_block()` or `canonical_doc_id()`.
+
+## Changelog — 2026-08-03 (Issue #18 §1a)
+
+* **`BLOCK_OWNERS` values may now be a tuple** — `pages`/`content`/`lines`/`tables` list
+`("alto-postprocess", "digital-convert")`. Single-owner blocks are unchanged, including
+their error message.
+* **`ORIGIN_ORIGINATORS` + `_assert_origin_consistent()**` — the per-document originator is
+selected by `source.origin` and checked on both write paths. `merge_block()` now runs the
+check too; it previously bypassed `_assert_owner()` entirely, which is why `pages` and
+`lines` were never ownership-checked at all.
+* **`digital-convert` field grants** on `pages` and `lines`. The earlier draft granted the
+digital converter only `["group_id"]` on `lines`, which `merge_block()` honours *silently*:
+`text` and `bbox` were filtered out with no warning, and the result still validated because
+`lines[]` requires only `page`+`line`. Fixed, and pinned by
+`tests/test_document_originators.py`.
+* **`llm-enrich-digital` renamed to `digital-convert`.** Every other identity in these tables
+is a role (`alto-postprocess`, `page-classification`), not a repo; `llm-enrich-digital`
+encoded the accident that the converter lives in `atrium-llm-enrich`, and it lands
+permanently in `provenance.contributors[].program` in catalogue exports. It is also a
+`ParadataLogger` identity needing a `para_config.txt` component→licence mapping, so it is a
+two-schema commitment.
+* **No `SCHEMA_VERSION` bump** — see the amendment to versioning rule 2 above.
+
+> 📌 These edits are to the **hub canonical** files. `para-drift.reusable.yml` `diff -u`s
+> `atrium_document.py` and `atrium_document.schema.json` against every tool repo, so the
+> change is not landed until all five vendored copies are updated and `v1` is moved. Use
+> `scripts/revendor_shared.sh`, and remember the check reads the hub side at `hub-ref`
+> (default `v1`), not at the branch you merged to.
