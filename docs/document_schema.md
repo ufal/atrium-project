@@ -69,9 +69,17 @@ derived and disposable. Both belong in `regenerable` as a recipe:
 }
 ```
 
-Visual overlay still works without stored images: bounding boxes stay in ALTO/TEITOK coordinate
-space and `pages[].teitok_surface` is a **logical** `<surface>` id, so the presentation layer
-re-renders on demand.
+Visual overlay still works without stored images: every `bbox` is in one declared coordinate
+space — **origin top-left, y increasing downwards, in the unit named by that page's
+`pages[].canvas.unit`** — and `pages[].teitok_surface` is a **logical** `<surface>` id, so
+the presentation layer re-renders on demand.
+
+That convention is normative and format-independent. It is what ALTO already uses, so the
+OCR path is unchanged, but it is **not** PDF user space, which puts the origin bottom-left:
+a digital-born PDF adapter must convert before writing (with pdfplumber, use `top`/`bottom`,
+never `y0`/`y1`). This used to read "bounding boxes stay in ALTO/TEITOK coordinate space",
+which a digital-born record does not have — leaving the y-axis direction and the unit
+undefined for exactly the writer whose whole selling point is exact coordinates.
 
 ## Block ownership
 
@@ -92,8 +100,23 @@ digital-born PDF/DOCX. These are mutually exclusive per document, so those block
 | `digital-born…` · `docx`         | `digital-convert`  |
 | `ABBYY-ALTO` · `ocr:…` · `vlm:…` | `alto-postprocess` |
 
-`_assert_origin_consistent()` enforces it on both `set_block()` and `merge_block()`. An
-origin the table has not been taught causes the check to abstain, not to fail.
+`_assert_origin_consistent()` enforces it on both `set_block()` and `merge_block()`. Matching
+is case-insensitive; `resolve_originator(origin)` is the public form. An origin the table has
+not been taught causes the check to **abstain**, not to fail — with a `NOTE` on stderr, so a
+document that §1a has stopped applying to is visible rather than silent.
+
+Calling `set_source()` before the first block write is the natural order but is **not
+required**: a block written earlier is re-checked as soon as an origin arrives, and again in
+`to_dict()`.
+
+**One documented exception — the digital→OCR hand-off.** A record whose own `pages[]` sets
+`needs_ocr: true` authorises `alto-postprocess` to re-originate its positional plane, even
+though `source.origin` is a `digital-born-*` value. That is what the `needs_ocr` grant to
+`digital-convert` exists for (Issue #10: an embedded text layer that decodes to corrupt
+diacritics), and it keeps `source.origin` truthful — it records how the **original input** was
+acquired, which really was a digital-born PDF. Who wrote the plane is `assembled.blocks[…]
+.program`, as always, and `pages[].ocr` (never granted to `digital-convert`) records that an
+engine ran, so "was this OCR'd" stays answerable.
 
 > ⚠️ **`BLOCK_OWNERS` authorises writes; it is not the read-time contract.** To find out who
 > wrote a block in a *given* record, read `assembled.blocks[<block>].program` — and for a
@@ -104,8 +127,8 @@ origin the table has not been taught causes the check to abstain, not to fail.
 | Tool                | Owns                                                                                                                                                                                                       |
 |---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | page-classification | `page_categories` · `pages[]` *category, category_confidence*                                                                                                                                              |
-| alto-postprocess    | `pages[]` *quality_score, quality_band, needs_ocr, ocr, canvas* · `content` · `lines[]` *categ, quality_score, lang, text* · `tables` — **originator, OCR/ALTO documents only**                            |
-| digital-convert     | `pages[]` *page_index, canvas, quality_score, quality_band, needs_ocr* · `content` · `lines[]` *text, bbox, group_id, lang, quality_score, categ* · `tables` — **originator, digital-born documents only** |
+| alto-postprocess    | `pages[]` *page_index, quality_score, quality_band, needs_ocr, needs_ocr_reason, ocr, canvas* · `content` · `lines[]` *categ, quality_score, lang, text* · `tables[]` — **originator, OCR/ALTO documents only** |
+| digital-convert     | `pages[]` *page_index, canvas, quality_score, quality_band, needs_ocr, needs_ocr_reason* · `content` · `lines[]` *text, bbox, group_id, style, lang, quality_score, categ* · `tables[]` — **originator, digital-born documents only** |
 | translator          | `translations` · `entities[]` *translation_en*                                                                                                                                                             |
 | nlp-enrich          | `entities[]` · `lines[]` *lemma, upos, feats, teitok_ref, bbox* · `pages[]` *teitok_surface* · `derived_from.teitok`                                                                                       |
 | llm-enrich          | `enrichment` · `forms` · `entities[]` *pid* · `regenerable.markdown`                                                                                                                                       |
@@ -126,7 +149,7 @@ from atrium_document import DocumentRecord
 
 with DocumentRecord.open(doc_id, "llm-enrich",
                          baseline=args.document_json,      # may be None — rule 3
-                         run_id=logger._run_id,
+                         run_id=logger.run_id,
                          paradata_ref=paradata_path) as doc:
     doc.set_block("enrichment", {"items": items})
     doc.add_derived_from("enriched", f"{doc_id}_enriched.json")
@@ -151,21 +174,20 @@ python atrium_document.py set-block --doc-id "$DOC" --program alto-postprocess \
 ## Versioning Rules
 
 1. **Additive Updates:** adding an optional field or a new block requires **no bump** — rule 6
-means existing tools pass unknown keys through untouched.
+   means existing tools pass unknown keys through untouched.
 2. **Breaking Changes:** renaming/removing a field, or changing block ownership, bumps
-`SCHEMA_VERSION` to the next major (e.g. `2.0`).
-* **Not breaking, and therefore no bump:** adding an authorised *originator* to a block's
-candidate set, where the choice is fixed per document by `source.origin` and no existing
-tool loses a capability. No field is renamed or removed, every existing record stays
-valid under the new module, and every existing tool keeps writing exactly what it wrote
-before. This is the Issue #18 §1a case, and it is called out explicitly because a literal
-reading of "changing block ownership" would have forced an unnecessary `2.0` migration
-across five repos. The distinction that matters: **widening write authorisation is
-additive; re-attributing an already-written block would not be.**
+   `SCHEMA_VERSION` to the next major (e.g. `2.0`).
 
-
+   * **Not breaking, and therefore no bump:** adding an authorised *originator* to a block's
+     candidate set, where the choice is fixed per document by `source.origin` and no existing
+     tool loses a capability. No field is renamed or removed, every existing record stays
+     valid under the new module, and every existing tool keeps writing exactly what it wrote
+     before. This is the Issue #18 §1a case, and it is called out explicitly because a
+     literal reading of "changing block ownership" would have forced an unnecessary `2.0`
+     migration across five repos. The distinction that matters: **widening write
+     authorisation is additive; re-attributing an already-written block would not be.**
 3. **Migration Mechanics:** a bump mandates a sequential `_migrate_X_to_Y()` and a branch in
-`migrate_document()`, exactly as in `atrium_paradata.py`.
+   `migrate_document()`, exactly as in `atrium_paradata.py`.
 
 ## Consumers to Update on Bumps
 
@@ -211,7 +233,7 @@ tools not yet updated to call `merge_block()` or `canonical_doc_id()`.
 * **`BLOCK_OWNERS` values may now be a tuple** — `pages`/`content`/`lines`/`tables` list
 `("alto-postprocess", "digital-convert")`. Single-owner blocks are unchanged, including
 their error message.
-* **`ORIGIN_ORIGINATORS` + `_assert_origin_consistent()**` — the per-document originator is
+* **`ORIGIN_ORIGINATORS` + `_assert_origin_consistent()`** — the per-document originator is
 selected by `source.origin` and checked on both write paths. `merge_block()` now runs the
 check too; it previously bypassed `_assert_owner()` entirely, which is why `pages` and
 `lines` were never ownership-checked at all.
@@ -233,3 +255,114 @@ two-schema commitment.
 > change is not landed until all five vendored copies are updated and `v1` is moved. Use
 > `scripts/revendor_shared.sh`, and remember the check reads the hub side at `hub-ref`
 > (default `v1`), not at the branch you merged to.
+
+## Changelog — Issue #18 review pass (originator hardening)
+
+A review of the §1a implementation against the repo found the contract correct in design and
+escapable in practice. Everything here is **additive — no `SCHEMA_VERSION` bump**: no field
+is renamed or removed, and every previously-valid record stays valid.
+
+**Write-order.** `_assert_origin_consistent()` reads `source.origin`, so a run that wrote its
+positional blocks *before* `set_source()` escaped the check permanently — and because
+`set_source()` is first-writer-wins, the wrong origin was then frozen in. §1a's enforcement
+therefore depended on a call order documented only in the issue plan. The abstain is now
+**deferred**: such blocks are remembered and re-checked the moment an origin arrives, and
+again in `to_dict()`. Callers no longer need the ordering discipline.
+
+**Fan-in.** `merge_document_records()` was a third write path outside the contract. `source`
+carries no `assembled.blocks` stamp, so both sides of its `updated_at` comparison were `""`,
+`"" >= ""` was true, and every input file overwrote the previous — last-path-wins, silently
+dropping the first record's `sha256` and able to swap the §1a origin out from under an
+already-written plane. `derived_from` and `regenerable` are append-only maps and were
+likewise replaced wholesale, losing the losing branch's entries. Now: `source` is
+first-writer-wins per sub-key with a contradiction between inputs *refused*; those two maps
+merge key-wise; ties keep the first record read (`>` not `>=`); and the merged plane is
+checked against the merged origin.
+
+**Origin spellings.** Matching was case-sensitive and had no bare `pdf` even though it
+blessed bare `docx`, so `DOCX`, `abbyy-alto`, `Digital-Born-PDF` and `pdf` all matched
+nothing — and since a non-match *abstains*, each of those silently switched §1a off for that
+document. Matching is now casefolded, `pdf` is listed, and an unrecognised origin emits a
+`NOTE` (never fatal — rule 6's spirit) so abstaining is visible. `resolve_originator()` is
+public, so routing code and the write-time check cannot disagree.
+
+**The digital→OCR hand-off.** `digital-convert` is granted `pages[].needs_ocr` so it can say
+"this page's text layer does not decode — re-acquire it by OCR", but the origin frozen at
+`digital-born-*` then refused every `pages`/`lines` write `alto-postprocess` attempted, making
+§3's per-page routing unreachable while §1a insisted "no document is ever both". A record
+whose own `pages[]` sets `needs_ocr: true` now authorises `alto-postprocess` to re-originate
+it. This stays truthful: `source.origin` describes how the **original input** was acquired,
+the block stamp names who wrote the plane, and `pages[].ocr` — never granted to
+`digital-convert` — records that an engine ran.
+
+**`merge_block()` field discipline.**
+* `allowed = own_fields or …` treated an explicit `own_fields=[]` as "not supplied" and
+  handed back the program's full grant, writing more than the caller asked for. Now
+  `is not None`, which is what the `allowed is None` sentinel two lines down always implied.
+* `own_fields` **conferred writership**: `merge_block()` never called `_assert_owner()` and
+  the origin check abstains for non-candidates, so any undeclared program could write any
+  block and be stamped as its author. It now narrows a declared grant rather than creating
+  one.
+* Dropped fields are **tracked**. The filtering stays silent by default (a co-contributor
+  passing context fields it does not own is normal, and tightening it ecosystem-wide needs a
+  call-site pass), but `dropped_fields()`, `assert_fields_survived()` and
+  `warn_dropped_fields=True` make the loss inspectable. `assert_fields_survived()` is the
+  round-trip check the §1b write-up asks for, in the module that owns the contract, since the
+  JSON Schema cannot catch it — `lines[]` requires only `page`+`line`, so a row stripped of
+  its `text` is a *valid* row.
+
+**Row keys.** `_record_key()` hashed `json.dumps(value)`, so rows forked on Python **type**:
+the schema types `page` as a string but nothing coerces it, and an originator passing `"1"`
+beside a contributor passing `1` built **two** rows for one physical line — one with the
+text, one with the morphology, neither complete, and the record still validated. Scalars now
+normalise to text; container-valued keys (`entities[].char_span`) keep their JSON shape.
+
+**`tables` was unreachable.** It had two declared originators but no `BLOCK_KEY_FIELDS` entry
+and no `BLOCK_FIELD_OWNERS` entry, so `merge_block()` raised `no key fields known`, and with
+`key_fields` supplied it emptied every row down to its key — the §1b silent drop again, on a
+block the Definition of Done requires the converter to originate. Both entries added. The
+`set_block()` field-split warning now names only genuine **co-contributors**, since
+alternative *originators* are mutually exclusive per document and can never have fields on
+one record to erase — so `set_block("tables", …)` is correct and quiet, while `pages`,
+`lines` and `entities` warn exactly as before.
+
+**Schema locator.** Plan §2's Layer D makes validation the output gate, but nothing could
+*find* the schema: the hub keeps it under `docs/templates/shared/` and tool repos at their
+root, and the only locator anywhere was a relative walk inside one test. `schema_path()`,
+`load_schema()` and `validate_document()` resolve it next to whichever copy of the module was
+vendored — which para-drift guarantees travel together. `validate_document()` raises when
+`jsonschema` is absent rather than passing, because a gate that quietly no-ops is
+indistinguishable from a passing one.
+
+**Schema, additive fields and corrected descriptions.**
+* `$defs/bbox` — the coordinate convention is now stated (see *Reference discipline*). It
+  said "the coordinate space of the ALTO/TEITOK page", which the second declared writer's
+  documents do not have.
+* `pages[].needs_ocr_reason` — new, granted to both originators. `needs_ocr` means opposite
+  things on the two paths and the renderer emits it as a cue, so with no field to carry the
+  distinction every digital-born page rendered "no extractable text layer": false by
+  definition for a document that has one.
+* `pages[].page_index` — granted to `alto-postprocess` too, and documented as *the* ordering
+  key. It is the only thing that orders a document whose `page` labels are roman numerals,
+  which is at least as common in scanned volumes as in digital-born ones.
+* `tables[].cells[].group_id` — new, and **the** join key. `tables[].group_id` was a single
+  scalar for a whole table, so "cell text lives once in `lines[]` and is linked back via
+  `group_id`" was unimplementable: nothing said which lines carry which cell, and positional
+  inference fails the moment `rowspan`/`colspan` or a multi-line cell exists.
+  `tables[].group_id` is now documented as the namespace prefix, and `cells[].lines` (an
+  array of `$defs/line_ref`) covers a cell spanning several groups.
+* `lines[].style` — new, `{bold, italic, heading_level}`, `digital-convert` only. Closes plan
+  §1's last open mapping row as its own recommended option (c): semantic style only, no
+  typeface or point size, because a downstream reader can act on "this was a heading" and
+  cannot act on "this was Helvetica 12pt".
+* `lines[].categ` — documents that `"Garbage"` and `"Inverted"` are load-bearing spellings
+  (`json_to_md`'s `DROP_CATEGORIES`), so a synonym silently disables the filter rather than
+  failing validation.
+* `lines[].group_id` — says "table **cell**", not "table row", to match the join above, and
+  its CONSUMER CONTRACT now names code that exists. It previously cited
+  `rows_to_layout_markdown()`, which had no group tracking at all.
+* `forms[].entity_key` — new, `$defs/entity_ref`, the natural key. `entity_ref` is an array
+  index into `entities[]`, and a fan-in merge resolves blocks independently, so it can end up
+  addressing whatever happens to sit at that position; it is marked deprecated with the
+  reason.
+* `pages[].canvas` — documents that `unit` must be written whenever any bbox is present.
