@@ -36,12 +36,33 @@ from pathlib import Path
 
 import pytest
 
-_HUB_ROOT = Path(__file__).resolve().parents[1]
-_SHARED = _HUB_ROOT / "docs" / "templates" / "shared"
+
+def _shared_dir() -> Path:
+    """Locate docs/templates/shared/ by walking up, not by counting `parents[N]`.
+
+    `parents[1]` is correct from tests/ and silently wrong from anywhere else — dropped into
+    tools/e2e/ it resolves to `<hub>/tools/docs/templates/shared`, which does not exist, and
+    the module-level import below then fails at COLLECTION time. That is a worse failure than
+    it sounds: `Hub Self-Check` collects `tests/` and `docs/templates/shared/` and nothing
+    else, so a copy living outside those two directories does not run at all — the error
+    stays invisible and the coverage is silently absent. Walking up removes both halves of
+    that trap: the file works wherever it is put, and where it is put still decides whether
+    CI runs it.
+    """
+    for candidate in Path(__file__).resolve().parents:
+        shared = candidate / "docs" / "templates" / "shared"
+        if (shared / "atrium_document.py").is_file():
+            return shared
+    raise RuntimeError(
+        "docs/templates/shared/atrium_document.py not found above "
+        f"{Path(__file__).resolve()} — is this file outside the hub checkout?"
+    )
+
 
 # The canonical module is not an installed package and not importable from the repo root, so
 # the directory holding it goes on sys.path — the same resolution the `shared-tests` job gets
 # for free by running pytest from inside that directory. See tests/test_fixture_schema.py.
+_SHARED = _shared_dir()
 if str(_SHARED) not in sys.path:
     sys.path.insert(0, str(_SHARED))
 

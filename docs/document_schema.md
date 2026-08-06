@@ -38,11 +38,18 @@ block changes), and needs no shared volume or orchestrator.
 
 1. **Baseline in, record out.** Tools take an optional `--document-json` and write
    `--document-json-out` (default `<doc_id>.document.json`); services accept and return an
-   optional `document_json` part.
+   optional `document_json` part. **`doc_id` travels WITH the baseline**: the originator derives
+   it once with `canonical_doc_id()`, and every stage after it inherits that value —
+   `DocumentRecord` keeps the baseline's `doc_id` and reports (never refuses) a caller that
+   passed a different one. A stage's input is usually *not* the original document — the
+   translator reads `PAGE_ALTO/<doc>/<doc>-1.alto.xml` — so a stage that keys its record off its
+   own filename re-keys the document and orphans everything already in the record.
 2. **Own block only.** A tool writes its own block(s); every other block is deep-copied through
    **unchanged**. This invariant is what makes the pair safe to pass around.
 3. **No baseline → own part only** (plus `doc_id`/`schema_version`, and `source` if it is the
    first writer). Standalone runs keep working; `assembled.had_baseline` records which case it was.
+   This is also the only case in which a non-originating tool's own `canonical_doc_id()` decides
+   the key: with no baseline there is no document context to inherit.
 4. **Per-block provenance.** Every write stamps `assembled.blocks[<block>]` with the writing
    tool's `program`, its paradata `run_id`, and a `paradata_ref`. Granularity comes from here.
    For a field-split block the stamp names the **most recent** writer, so the full picture lives
@@ -124,14 +131,14 @@ engine ran, so "was this OCR'd" stays answerable.
 > writer. Code that hardcodes `alto-postprocess` as the source of `lines[]` was reading the
 > wrong contract even before digital-born documents existed.
 
-| Tool                | Owns                                                                                                                                                                                                       |
-|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| page-classification | `page_categories` · `pages[]` *category, category_confidence*                                                                                                                                              |
-| alto-postprocess    | `pages[]` *page_index, quality_score, quality_band, needs_ocr, needs_ocr_reason, ocr, canvas* · `content` · `lines[]` *categ, quality_score, lang, text* · `tables[]` — **originator, OCR/ALTO documents only** |
+| Tool                | Owns                                                                                                                                                                                                                                  |
+|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| page-classification | `page_categories` · `pages[]` *category, category_confidence*                                                                                                                                                                         |
+| alto-postprocess    | `pages[]` *page_index, quality_score, quality_band, needs_ocr, needs_ocr_reason, ocr, canvas* · `content` · `lines[]` *categ, quality_score, lang, text* · `tables[]` — **originator, OCR/ALTO documents only**                       |
 | digital-convert     | `pages[]` *page_index, canvas, quality_score, quality_band, needs_ocr, needs_ocr_reason* · `content` · `lines[]` *text, bbox, group_id, style, lang, quality_score, categ* · `tables[]` — **originator, digital-born documents only** |
-| translator          | `translations` · `entities[]` *translation_en*                                                                                                                                                             |
-| nlp-enrich          | `entities[]` · `lines[]` *lemma, upos, feats, teitok_ref, bbox* · `pages[]` *teitok_surface* · `derived_from.teitok`                                                                                       |
-| llm-enrich          | `enrichment` · `forms` · `entities[]` *pid* · `regenerable.markdown`                                                                                                                                       |
+| translator          | `translations` · `entities[]` *translation_en*                                                                                                                                                                                        |
+| nlp-enrich          | `entities[]` · `lines[]` *lemma, upos, feats, teitok_ref, bbox* · `pages[]` *teitok_surface* · `derived_from.teitok`                                                                                                                  |
+| llm-enrich          | `enrichment` · `forms` · `entities[]` *pid* · `regenerable.markdown`                                                                                                                                                                  |
 
 `quality_score` is one axis — **text trustworthiness, 0–1** — with two derivations. On the
 OCR path it is an engine-confidence proxy; on the digital-born path it is a decode-sanity
@@ -366,3 +373,55 @@ indistinguishable from a passing one.
   addressing whatever happens to sit at that position; it is marked deprecated with the
   reason.
 * `pages[].canvas` — documents that `unit` must be written whenever any bbox is present.
+
+## Changelog — 2026-08-06 (Issue #10: the doc_id fork the E2E caught)
+
+`DocumentRecord` now **inherits `doc_id` from the baseline** instead of overwriting it with the
+caller's value. Additive, no `SCHEMA_VERSION` bump: no field changes, and a run whose derivation
+already agreed with its baseline behaves exactly as before.
+
+**What happened.** `e2e-pipeline-smoke.yml`'s `assert_doc_id_stable()` — added days earlier for
+D1/D2, and never yet triggered — failed on run
+[31076188660](https://github.com/ufal/atrium-project/actions/runs/31076188660):
+
+```
+"work/doc_json/1_pc.json":       "CTX000000003"
+"work/doc_json/2_alto.json":     "CTX000000003"
+"work/doc_json/3_translate.json": "CTX000000003-1"   ← the fork
+"work/doc_json/4_nlp.json":      "CTX000000003"
+"work/doc_json/5_llm.json":      "CTX000000003"
+```
+
+**Why it is not a derivation bug.** The translator called `canonical_doc_id()`, exactly as D3
+asks, on exactly the file it was given: `PAGE_ALTO/CTX000000003/CTX000000003-1.alto.xml`, a page
+`page_split.py` had written. `CTX000000003-1` is the right answer *about that file*. The
+translator is simply the one stage whose input is never the original document, and D1/D2 had
+framed the finding as "hand-rolled derivations disagree with `canonical_doc_id()`" — true, but
+one instance of the larger fault: **a doc_id derived from a stage's input is a guess about a
+document the stage was never shown.**
+
+Stripping a trailing `-<n>` would not close it. `sbn.2019-1` is a legal document name, so no
+filename rule can tell a page label from a document's own last segment. The baseline does not
+have to guess: the originator wrote the answer into it.
+
+**The rule.** The originator derives `doc_id` once; every stage after it inherits. Concretely:
+
+* `DocumentRecord.__init__` compares the caller's `doc_id` against the baseline's and keeps the
+  **baseline's**, since every block already in the deep copy was written under that key. The
+  divergence is reported through `_note()` — visible, never fatal, not even under `strict=True`:
+  the record that comes out is the correct one, and raising would stall a pipeline over an id
+  the constructor has just repaired. (`merge_document_records()` still *raises* on differing
+  doc_ids: there two independent records disagree, which means two documents, not two names.)
+* `DocumentRecord.derived_doc_id` keeps the caller's value, because a tool legitimately names its
+  **own per-file outputs** after the file it read — `<file>_log.csv` collapsed onto the document
+  would have page 2 of a batch truncate page 1's log. Only the record is re-keyed.
+* `finalize()`'s default path follows `doc_id`, so a record's filename and the id inside it
+  cannot disagree.
+* `atrium-translator/main.py` applies the same rule to the two values computed *outside* the
+  record — the CSV log's `file` column and the paradata `vocabulary_protected_terms` key — so
+  the log, the paradata and the record name one document between them.
+
+**Where the gate now points.** `assert_doc_id_stable()`'s failure message described the old rule
+("derive it with `canonical_doc_id()` from the SAME original filename"), which is unactionable
+for a stage that is never handed the original. It now names the inheritance rule and the reason a
+correct derivation is still the wrong answer.
