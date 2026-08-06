@@ -185,9 +185,7 @@ def test_every_schema_violation_is_reported_not_just_the_first(tmp_path, record)
     run 31075185518 would have cost: nlp-enrich's released v0.18.2 wrote
     `entities[].type_cnec: null` against a `{"type": "string"}` schema.
     """
-    record["entities"] = [
-        {"page": "1", "line": 0, "char_span": [0, 4], "surface": "Praha", "type_cnec": None}
-    ]
+    record["entities"] = [{"page": "1", "line": 0, "char_span": [0, 4], "surface": "Praha", "type_cnec": None}]
     record["pages"] = [{"page": "1", "quality_score": "not-a-number"}]
     final = _write(tmp_path, "5_llm.json", record)
     with pytest.raises(SystemExit) as exc:

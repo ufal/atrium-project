@@ -25,7 +25,9 @@ Three issue #10 findings shaped what runs below:
     re-key the record and make the next stage inherit nothing. A per-repo test
     can only prove one repo derives the id consistently with itself;
     `--stages` asserts one identical `doc_id` across all five, which is the half
-    no single repo can check.
+    no single repo can check. It earned its keep on 2026-08-06 (run 31076188660)
+    by catching a fork nobody had predicted, from a stage whose derivation was
+    right: see `assert_doc_id_stable()`.
 
 Usage:
     python tools/e2e/e2e_assert.py work/doc_json/5_llm.json \\
@@ -132,6 +134,16 @@ def assert_doc_id_stable(stage_paths, final_doc, final_path):
     stage looked for a baseline nobody wrote, fell back to rule 3 and emitted an
     orphan under a wrong id. Every block still validated; the record was simply
     the wrong record. Nothing in a single repo's test suite can see that.
+
+    THE FIRST REAL CATCH (run 31076188660) was a third variant, and the one that
+    settled what the rule has to be. The translator derived `CTX000000003-1` while
+    the other four stages said `CTX000000003` — and its derivation was *correct*:
+    `canonical_doc_id()` had been handed `PAGE_ALTO/CTX000000003/CTX000000003-1.alto.xml`,
+    the page alto-postprocess split out, and answered accurately for that file.
+    Deriving harder cannot fix that (`sbn.2019-1` is a legal document name, so no
+    filename rule tells a page label from a document's own last segment); only
+    inheriting can, so `DocumentRecord` now keeps the baseline's `doc_id` and the
+    caller's guess is used for nothing but the caller's own output filenames.
     """
     if not stage_paths:
         print("⚠️  doc_id chain: no --stages given, skipping the cross-stage check")
@@ -150,8 +162,13 @@ def assert_doc_id_stable(stage_paths, final_doc, final_path):
     distinct = sorted(set(seen.values()))
     assert len(distinct) == 1, (
         f"❌ doc_id forked across the pipeline: {json.dumps(seen, indent=2)}\n"
-        f"   Every stage must derive it with canonical_doc_id() from the SAME original "
-        f"filename; a stage with its own derivation re-keys the record and orphans it."
+        f"   The ORIGINATOR derives it once with canonical_doc_id(); every stage after it "
+        f"INHERITS that value from the baseline it was handed, and re-derives nothing. A "
+        f"stage that keys the record off its own input filename forks it — and it will, "
+        f"because a stage's input is usually not the original document (the translator reads "
+        f"PAGE_ALTO/<doc>/<doc>-1.alto.xml, for which canonical_doc_id() correctly answers "
+        f"<doc>-1). DocumentRecord enforces the inheritance; a fork reaching here means a "
+        f"stage wrote its record without one, or wrote it under a baseline it was not given."
     )
     assert final_doc.get("doc_id") == distinct[0], (
         f"❌ final record {final_path} carries doc_id {final_doc.get('doc_id')!r}, "
