@@ -429,9 +429,7 @@ def check_job_hygiene(path: Path, doc: dict, findings: Findings) -> int:
             "each other; every other triggerable workflow here sets one.",
         )
 
-    has_job_perms = any(
-        isinstance(j, dict) and j.get("permissions") is not None for j in jobs.values()
-    )
+    has_job_perms = any(isinstance(j, dict) and j.get("permissions") is not None for j in jobs.values())
     if doc.get("permissions") is None and not has_job_perms:
         findings.error(
             path,
@@ -466,8 +464,7 @@ def check_required_inputs(path: Path, doc: dict, root: Path, hub_root: Path, fin
             if name not in passed:
                 findings.error(
                     path,
-                    f"job '{job_name}' omits required input '{name}' of "
-                    f"{callee_path.name}.",
+                    f"job '{job_name}' omits required input '{name}' of {callee_path.name}.",
                 )
     return checked
 

@@ -35,6 +35,7 @@ import workflow_lint as wl  # noqa: E402
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
+
 def write_workflow(root: Path, name: str, body: str) -> Path:
     d = root / ".github" / "workflows"
     d.mkdir(parents=True, exist_ok=True)
@@ -82,13 +83,16 @@ def test_clean_caller_passes(tmp_path):
 
 # ── the crash that motivated this file ───────────────────────────────────────
 
+
 @pytest.mark.parametrize("shorthand", ["read-all", "write-all"])
 def test_permissions_shorthand_does_not_crash(tmp_path, shorthand):
     """`permissions: <string>` is legal YAML for GitHub and must not raise.
 
     Regression test for `TypeError: 'str' object is not a mapping`.
     """
-    write_workflow(tmp_path, "x.yml", CLEAN_CALLER.replace("permissions:\n  contents: read", f"permissions: {shorthand}"))
+    write_workflow(
+        tmp_path, "x.yml", CLEAN_CALLER.replace("permissions:\n  contents: read", f"permissions: {shorthand}")
+    )
     rc, out = run_lint(tmp_path)  # must not raise
     assert rc == 0, out
 
@@ -99,7 +103,10 @@ def test_read_all_does_not_satisfy_a_write_scope(tmp_path):
     Silently treating it as sufficient for `packages: write` would reintroduce the
     startup_failure class the permission check exists to prevent.
     """
-    write_workflow(tmp_path, "x.yml", """\
+    write_workflow(
+        tmp_path,
+        "x.yml",
+        """\
 name: X
 on: push
 concurrency:
@@ -110,14 +117,18 @@ jobs:
     uses: ufal/atrium-project/.github/workflows/docker-tool.reusable.yml@v1
     with:
       image-name: ufal/example
-""")
+""",
+    )
     rc, out = run_lint(tmp_path)
     assert rc == 1
     assert "packages" in out
 
 
 def test_write_all_satisfies_every_scope(tmp_path):
-    write_workflow(tmp_path, "x.yml", """\
+    write_workflow(
+        tmp_path,
+        "x.yml",
+        """\
 name: X
 on: push
 concurrency:
@@ -128,12 +139,14 @@ jobs:
     uses: ufal/atrium-project/.github/workflows/docker-tool.reusable.yml@v1
     with:
       image-name: ufal/example
-""")
+""",
+    )
     rc, out = run_lint(tmp_path)
     assert rc == 0, out
 
 
 # ── W5's new rules, one broken fixture each ──────────────────────────────────
+
 
 def test_caller_example_without_uses_is_rejected(tmp_path):
     """W1's clobber signature: a `*.caller.example.yml` that calls nothing.
@@ -165,7 +178,10 @@ def test_non_v1_hub_ref_is_rejected(tmp_path, ref):
 
 
 def test_missing_timeout_minutes_is_rejected(tmp_path):
-    write_workflow(tmp_path, "x.yml", """\
+    write_workflow(
+        tmp_path,
+        "x.yml",
+        """\
 name: X
 on: push
 concurrency:
@@ -177,14 +193,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo hi
-""")
+""",
+    )
     rc, out = run_lint(tmp_path)
     assert rc == 1
     assert "timeout-minutes" in out
 
 
 def test_missing_concurrency_is_rejected(tmp_path):
-    write_workflow(tmp_path, "x.yml", """\
+    write_workflow(
+        tmp_path,
+        "x.yml",
+        """\
 name: X
 on: push
 permissions:
@@ -195,7 +215,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - run: echo hi
-""")
+""",
+    )
     rc, out = run_lint(tmp_path)
     assert rc == 1
     assert "concurrency" in out
@@ -204,7 +225,10 @@ jobs:
 def test_reusable_workflow_is_exempt_from_concurrency(tmp_path):
     """A callee must NOT set a concurrency group: the caller owns it, and one here
     would collapse five repos' builds into a single queue."""
-    write_workflow(tmp_path, "r.reusable.yml", """\
+    write_workflow(
+        tmp_path,
+        "r.reusable.yml",
+        """\
 name: R
 on:
   workflow_call:
@@ -216,13 +240,17 @@ jobs:
     timeout-minutes: 5
     steps:
       - run: echo hi
-""")
+""",
+    )
     rc, out = run_lint(tmp_path)
     assert rc == 0, out
 
 
 def test_missing_permissions_is_rejected(tmp_path):
-    write_workflow(tmp_path, "x.yml", """\
+    write_workflow(
+        tmp_path,
+        "x.yml",
+        """\
 name: X
 on: push
 concurrency:
@@ -233,7 +261,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - run: echo hi
-""")
+""",
+    )
     rc, out = run_lint(tmp_path)
     assert rc == 1
     assert "permissions" in out
@@ -241,7 +270,10 @@ jobs:
 
 def test_missing_required_input_is_rejected(tmp_path):
     """`skill-validate.reusable.yml` declares `client-script: required: true`."""
-    write_workflow(tmp_path, "x.yml", """\
+    write_workflow(
+        tmp_path,
+        "x.yml",
+        """\
 name: X
 on: push
 concurrency:
@@ -251,7 +283,8 @@ permissions:
 jobs:
   skill:
     uses: ufal/atrium-project/.github/workflows/skill-validate.reusable.yml@v1
-""")
+""",
+    )
     rc, out = run_lint(tmp_path)
     assert rc == 1
     assert "client-script" in out
@@ -259,13 +292,17 @@ jobs:
 
 # ── the property that makes the output trustworthy ───────────────────────────
 
+
 def test_one_break_does_not_mask_others(tmp_path):
     """Findings accumulate: three independent defects are all reported at once.
 
     If the linter returned at the first error, a maintainer would fix one defect,
     re-run, find another, and learn to distrust a clean run after a fix.
     """
-    write_workflow(tmp_path, "x.yml", """\
+    write_workflow(
+        tmp_path,
+        "x.yml",
+        """\
 name: X
 on: push
 jobs:
@@ -273,7 +310,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo hi
-""")
+""",
+    )
     write_template(tmp_path, "bad.caller.example.yml", "version: 2\nupdates: []\n")
     rc, out = run_lint(tmp_path)
     assert rc == 1
