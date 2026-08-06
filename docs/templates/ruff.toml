@@ -1,6 +1,17 @@
 # Base Ruff configuration for ATRIUM tools
 line-length = 120
 
+# Apply exclude/extend-exclude even to paths passed EXPLICITLY on the command line.
+#
+# Without this the [format] exclude below is inert in the one place it has to work:
+# pre-commit invokes `ruff-format <changed files>`, i.e. explicit paths, and ruff's
+# exclusions otherwise apply only while walking directories. That is precisely how a
+# vendored canonical file gets re-wrapped on commit -- the exclusion is configured,
+# looks correct, and silently does nothing. Verified empirically: with the exclude but
+# without this flag, `ruff format --check` on the seven shared files still reported
+# "6 files would be reformatted"; with it, all seven are skipped. (issue #10)
+force-exclude = true
+
 extend-exclude = [
     "data_samples/",
     "result/",
@@ -34,10 +45,59 @@ ignore = ["E501"] # Defer strict line-length checks initially
 # and this one is nearest to docs/templates/shared/; and every tool repo copies this
 # template, so they inherit the same explicit classification instead of relying on
 # root-detection that happens to agree today. (issue #10, D9)
+#
+# ⚠️ Adopting this in a repo whose own ruff.toml is NOT a verbatim copy of this template
+# is optional, and was deliberately NOT done in alto-postprocess, nlp-enrich, translator
+# or llm-enrich. In a tool repo the shared modules sit at the repo root and are already
+# detected as first-party, so declaring them changes nothing for the files this exists to
+# protect -- but it DOES reclassify same-named modules that live elsewhere. In
+# alto-postprocess, `service/atrium_service.py` is imported as a bare `atrium_service`
+# from `service/text_api.py` alongside `text_inference` and `utils`; promoting only the
+# first to first-party split it into a separate isort group, and ruff's fix moved it away
+# from the comment block that explains it. Add this only where it is needed.
 known-first-party = [
     "atrium_document",
     "atrium_paradata",
     "atrium_service",
     "para_licenses",
     "check_version",
+]
+
+[format]
+# THE VENDORED CANONICAL FILES ARE NOT THIS REPO'S TO FORMAT.
+#
+# `para-drift.reusable.yml` requires these eight files to be BYTE-IDENTICAL across the
+# hub and all five tool repos. But every tool repo runs `ruff-format` as a pre-commit
+# hook while the hub deliberately does not ("lint only; the hub is not auto-formatted"),
+# and `line-length` is not uniform across the ecosystem -- it is 120 here, in
+# page-classification, alto-postprocess and translator, but 100 in nlp-enrich and
+# llm-enrich. `ruff format` reflows to whatever the LOCAL line-length says, so a shared
+# file's byte content became a function of *which repo committed it last*.
+#
+# That is not hypothetical. `tests/test_document_originators.py` was vendored
+# byte-identically on 2026-08-05; committing it re-formatted it in the three 120-repos
+# and not in the two 100-repos, splitting one canonical file into two variants that
+# differ only in line wrapping, and turning `Paradata Canonical Drift` red in
+# page-classification, alto-postprocess and translator (pc run at fe14d24, 2026-08-06 --
+# green on every commit before it). The two forms are each a FIXED POINT of their own
+# config, so re-vendoring alone would not have held: the next commit in a repo with a
+# different line-length would split them again.
+#
+# Excluding them from FORMATTING (not from linting -- `ruff check` still applies, and
+# they are expected to stay clean) makes the invariant structural: the hub's copy is the
+# only formatting authority, exactly as para-drift already assumes. Both layouts are
+# listed so one block is correct everywhere -- the hub keeps these files under
+# docs/templates/shared/, tool repos at the paths shown. A path that does not exist in a
+# given repo is simply inert.
+#
+# If you add a file to the para-drift enforced set, add it here too. (issue #10)
+exclude = [
+    "atrium_document.py",
+    "atrium_paradata.py",
+    "para_licenses.py",
+    "check_version.py",
+    "service/atrium_service.py",
+    "tests/test_para_licenses.py",
+    "tests/test_document_originators.py",
+    "docs/templates/shared/*.py",
 ]

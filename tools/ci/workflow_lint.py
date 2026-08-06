@@ -52,9 +52,7 @@ WRITE_SCOPED = {
 PERMISSION_ORDER = {"none": 0, "read": 1, "write": 2}
 
 # `uses: owner/repo@ref` with an optional trailing `# vX.Y` version comment.
-USES_RE = re.compile(
-    r"uses:\s*(?P<action>[\w.-]+/[\w./-]+)@(?P<ref>\S+)(?P<rest>[^\n]*)"
-)
+USES_RE = re.compile(r"uses:\s*(?P<action>[\w.-]+/[\w./-]+)@(?P<ref>\S+)(?P<rest>[^\n]*)")
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 VERSION_COMMENT_RE = re.compile(r"#\s*(?P<version>v?[\d][\w.-]*)")
 
@@ -112,9 +110,11 @@ def resolve_tag(action: str, tag: str) -> str | None:
     """
     try:
         out = subprocess.run(
-            ["git", "ls-remote", f"https://github.com/{action}",
-             f"refs/tags/{tag}^{{}}", f"refs/tags/{tag}"],
-            capture_output=True, text=True, timeout=60, check=False,
+            ["git", "ls-remote", f"https://github.com/{action}", f"refs/tags/{tag}^{{}}", f"refs/tags/{tag}"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
         ).stdout
     except (subprocess.SubprocessError, OSError):
         return None
@@ -159,8 +159,7 @@ def check_pins(path: Path, text: str, findings: Findings, offline: bool) -> int:
         actual = resolve_tag(action, version["version"])
         if actual is None:
             findings.note(
-                f"{path}: could not resolve {action}@{version['version']} "
-                f"(network?); pin format was still checked."
+                f"{path}: could not resolve {action}@{version['version']} (network?); pin format was still checked."
             )
         elif actual != ref:
             findings.error(
@@ -250,7 +249,7 @@ def resolve_callee(uses: str, root: Path, hub_root: Path) -> Path | None:
     elif uses.startswith("./"):
         candidate = root / uses[2:]
     else:
-        return None   # third-party or unrecognised; not ours to check
+        return None  # third-party or unrecognised; not ours to check
     return candidate if candidate.exists() else None
 
 
@@ -337,14 +336,16 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", default=".", help="repository to lint")
     parser.add_argument(
-        "--hub-root", default=None,
+        "--hub-root",
+        default=None,
         help="checkout of ufal/atrium-project used to resolve `ufal/atrium-project/...@ref` "
-             "callees. Defaults to --repo-root, which is correct when linting the hub itself. "
-             "Pass a separate checkout when linting a TOOL repo, or the caller/callee "
-             "permission and input checks silently no-op.",
+        "callees. Defaults to --repo-root, which is correct when linting the hub itself. "
+        "Pass a separate checkout when linting a TOOL repo, or the caller/callee "
+        "permission and input checks silently no-op.",
     )
     parser.add_argument(
-        "--offline", action="store_true",
+        "--offline",
+        action="store_true",
         help="skip only the network check that a pinned SHA matches its version comment",
     )
     args = parser.parse_args(argv)

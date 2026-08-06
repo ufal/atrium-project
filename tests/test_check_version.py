@@ -56,16 +56,11 @@ def repo(tmp_path):
     def _make(citation="1.7.1-beta", para="v1.7.1-beta"):
         cff = tmp_path / "CITATION.cff"
         cff.write_text(
-            "cff-version: 1.2.0\n"
-            'title: "ATRIUM test fixture"\n'
-            f'version: "{citation}"\n'
-            'date-released: "2026-07-31"\n',
+            f'cff-version: 1.2.0\ntitle: "ATRIUM test fixture"\nversion: "{citation}"\ndate-released: "2026-07-31"\n',
             encoding="utf-8",
         )
         cfg = tmp_path / "para_config.txt"
-        cfg.write_text(
-            f"[tool]\nprogram = fixture\nversion = {para}\n", encoding="utf-8"
-        )
+        cfg.write_text(f"[tool]\nprogram = fixture\nversion = {para}\n", encoding="utf-8")
         return str(cff), str(cfg)
 
     return _make
@@ -80,6 +75,7 @@ def run(citation, para, tag="", require_tag=False):
 
 
 # --- the gate must PASS when everything agrees -------------------------------
+
 
 def test_matching_tag_passes(repo):
     cff, cfg = repo()
@@ -100,6 +96,7 @@ def test_tag_optional_without_require_flag(repo):
 
 
 # --- the gate must BLOCK: these are the reason it exists ---------------------
+
 
 def test_stale_tag_blocks(repo):
     """Tagging v1.7.0-beta when the tree says 1.7.1-beta must not publish."""
@@ -136,6 +133,7 @@ def test_mismatch_blocks_even_without_a_tag(repo):
 
 # --- malformed and missing inputs must fail closed, never crash --------------
 
+
 def test_missing_citation_file_blocks(tmp_path, repo):
     _, cfg = repo()
     assert run(str(tmp_path / "nope.cff"), cfg, tag="v1.7.1-beta", require_tag=True) == 1
@@ -156,6 +154,7 @@ def test_para_config_without_tool_section_blocks(tmp_path, repo):
 
 
 # --- parsing details that have bitten before ---------------------------------
+
 
 def test_nested_cff_version_is_ignored(tmp_path, repo):
     """CFF nests `version:` under references/preferred-citation for CITED works.
@@ -207,6 +206,7 @@ def test_collect_errors_reports_every_disagreement_at_once(repo):
 # So these two tests deliberately make the files DISAGREE, which is the only
 # situation where each comparison is observable on its own, and assert on the
 # specific error rather than just the exit code.
+
 
 def test_tag_vs_citation_comparison_is_load_bearing(repo):
     """Tag agrees with para_config but not CITATION.cff -> its own error."""

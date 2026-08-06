@@ -50,7 +50,7 @@ from atrium_document import validate_document  # noqa: E402  (needs the path abo
 
 
 def _load(json_path):
-    with open(json_path, 'r', encoding='utf-8') as f:
+    with open(json_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -138,11 +138,14 @@ def assert_document_contract(json_path, llm_stage_ran="auto", stage_paths=()):
         # Prevent the hardcoded char_span=None bug from collapsing entities
         assert "char_span" in entity, f"❌ Entity missing 'char_span' key: {entity}"
         assert entity["char_span"] is not None, "❌ 'char_span' is None (collapsed co-located entities)"
-        assert isinstance(entity["char_span"], (list, tuple)) and len(entity["char_span"]) == 2, \
+        assert isinstance(entity["char_span"], (list, tuple)) and len(entity["char_span"]) == 2, (
             f"❌ 'char_span' must be a coordinate pair, got {entity['char_span']}"
+        )
 
         # Prevent the nonexistent span["type"] key regression
-        assert "type_onto" in entity or "type_cnec" in entity or "type_teitok" in entity, f"❌ Entity missing type keys: {entity}"
+        assert "type_onto" in entity or "type_cnec" in entity or "type_teitok" in entity, (
+            f"❌ Entity missing type keys: {entity}"
+        )
 
     assert entities_found, "❌ No entities found in document. run_document_hook() may be failing silently."
 
@@ -163,11 +166,13 @@ def assert_document_contract(json_path, llm_stage_ran="auto", stage_paths=()):
     #    `assembled.blocks` is the record's own account of which tool wrote what,
     #    so it distinguishes "llm-enrich contributed" from "the key happened to be
     #    there", which a bare `in doc` cannot.
-    stamped = ((doc.get("assembled") or {}).get("blocks") or {})
+    stamped = (doc.get("assembled") or {}).get("blocks") or {}
     if llm_stage_ran == "auto":
         llm_stage_ran = "enrichment" in stamped
-        print(f"ℹ️  --llm-stage-ran not given; inferring stage 5 {'ran' if llm_stage_ran else 'was skipped'} "
-              f"from assembled.blocks. CI always passes the gate's value explicitly.")
+        print(
+            f"ℹ️  --llm-stage-ran not given; inferring stage 5 {'ran' if llm_stage_ran else 'was skipped'} "
+            f"from assembled.blocks. CI always passes the gate's value explicitly."
+        )
     if llm_stage_ran:
         assert "enrichment" in doc, "❌ 'enrichment' block missing from llm-enrich stage"
         assert "enrichment" in stamped, (
@@ -175,8 +180,10 @@ def assert_document_contract(json_path, llm_stage_ran="auto", stage_paths=()):
             "through DocumentRecord.set_block(), so it carries no program/paradata stamp"
         )
     else:
-        print("ℹ️  stage 5 (llm-enrich) did not run — 'enrichment' block not required. "
-              "This is the OPENROUTER_KEY-absent path e2e-pipeline-smoke.yml allows.")
+        print(
+            "ℹ️  stage 5 (llm-enrich) did not run — 'enrichment' block not required. "
+            "This is the OPENROUTER_KEY-absent path e2e-pipeline-smoke.yml allows."
+        )
 
     print(f"✅ e2e_assert.py: Document contract verified successfully for {json_path}")
 
@@ -197,15 +204,20 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("record", help="the FINAL document JSON to assert against")
     parser.add_argument(
-        "--llm-stage-ran", type=_tri_state, default="auto",
+        "--llm-stage-ran",
+        type=_tri_state,
+        default="auto",
         help="pass e2e-pipeline-smoke.yml's gate output here. false = the "
-             "'enrichment' block is not required (G5); auto = infer from "
-             "assembled.blocks, for a manual run against a downloaded artifact.",
+        "'enrichment' block is not required (G5); auto = infer from "
+        "assembled.blocks, for a manual run against a downloaded artifact.",
     )
     parser.add_argument(
-        "--stages", nargs="*", default=[], metavar="RECORD",
+        "--stages",
+        nargs="*",
+        default=[],
+        metavar="RECORD",
         help="every per-stage record in pipeline order. doc_id must be identical "
-             "across all of them and equal to the final record's.",
+        "across all of them and equal to the final record's.",
     )
     args = parser.parse_args(argv)
 

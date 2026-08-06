@@ -107,11 +107,7 @@ def derive(repo: Path, test_ref: str, skill_ref: str) -> dict:
     one of those is a human decision (§12.2), so the transform proposes deleting only what
     the §5 trim list names.
     """
-    derived = {
-        path: sha
-        for path, sha in tree(repo, test_ref).items()
-        if not is_trimmed(path) and not is_overlay(path)
-    }
+    derived = {path: sha for path, sha in tree(repo, test_ref).items() if not is_trimmed(path) and not is_overlay(path)}
     for path, sha in tree(repo, skill_ref).items():
         if is_trimmed(path):
             continue
@@ -157,9 +153,7 @@ def cmd_apply(repo: Path, test_ref: str, skill_ref: str, into: Path) -> int:
     skill_paths = set(tree(repo, skill_ref))
     for path, _ in sorted(derived.items()):
         source_ref = skill_ref if is_overlay(path) and path in skill_paths else test_ref
-        blob = subprocess.run(
-            ["git", "-C", str(repo), "show", f"{source_ref}:{path}"], capture_output=True
-        )
+        blob = subprocess.run(["git", "-C", str(repo), "show", f"{source_ref}:{path}"], capture_output=True)
         if blob.returncode != 0:
             print(f"[skill-ify][WARN] could not read {source_ref}:{path}", file=sys.stderr)
             continue

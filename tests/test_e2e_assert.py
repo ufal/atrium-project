@@ -39,7 +39,7 @@ _FIXTURE = _HUB_ROOT / "fixtures" / "atrium_document.example.json"
 jsonschema = pytest.importorskip(
     "jsonschema",
     reason="e2e_assert.py's first assertion is validate_document(); without jsonschema it "
-           "raises RuntimeError by design and there is nothing to test here",
+    "raises RuntimeError by design and there is nothing to test here",
 )
 
 
@@ -129,7 +129,8 @@ def test_forked_doc_id_across_stages_fails(tmp_path, record):
     """
     final = _write(tmp_path, "5_llm.json", record)
     stages = _stage_chain(
-        tmp_path, record,
+        tmp_path,
+        record,
         ["CTX000000001", "CTX000000001", "CTX000000001", "CTX000000001", "CTX000000001.teitok"],
     )
     with pytest.raises(AssertionError, match="doc_id forked"):
@@ -150,7 +151,9 @@ def test_missing_stage_record_fails_by_name(tmp_path, record):
     final = _write(tmp_path, "5_llm.json", record)
     with pytest.raises(AssertionError, match="4_nlp.json is missing"):
         e2e_assert.assert_document_contract(
-            final, llm_stage_ran=True, stage_paths=[final, str(tmp_path / "4_nlp.json")],
+            final,
+            llm_stage_ran=True,
+            stage_paths=[final, str(tmp_path / "4_nlp.json")],
         )
 
 
@@ -161,7 +164,7 @@ def test_schema_invalid_record_fails_on_the_schema_first(tmp_path, record):
     schema violation, otherwise the block assertions are reporting on a record that was
     never valid in the first place.
     """
-    record["doc_id"] = 42          # schema says string
+    record["doc_id"] = 42  # schema says string
     del record["pages"]
     final = _write(tmp_path, "5_llm.json", record)
     with pytest.raises(jsonschema.exceptions.ValidationError):

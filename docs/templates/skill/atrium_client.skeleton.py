@@ -39,8 +39,17 @@ RETRY_WAIT_S = 10
 TIMEOUT_S = 300  # tune per service, see module docstring
 
 KNOWN_PIPELINE_SUFFIXES = [
-    ".document.json", ".categories.json", ".teitok.xml", ".alto.xml",
-    ".udpipe.conllu", ".conllu", ".xml", ".json", ".md", ".csv", ".txt",
+    ".document.json",
+    ".categories.json",
+    ".teitok.xml",
+    ".alto.xml",
+    ".udpipe.conllu",
+    ".conllu",
+    ".xml",
+    ".json",
+    ".md",
+    ".csv",
+    ".txt",
 ]
 
 
@@ -50,7 +59,7 @@ def canonical_doc_id(path: Path) -> str:
     lower = name.lower()
     for suffix in KNOWN_PIPELINE_SUFFIXES:
         if lower.endswith(suffix):
-            return name[:-len(suffix)]
+            return name[: -len(suffix)]
     return name.split(".")[0]
 
 

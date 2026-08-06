@@ -53,7 +53,7 @@ def test_example_fixture_validates_against_the_canonical_schema():
     record = json.loads(_FIXTURE.read_text(encoding="utf-8"))
     try:
         _validate_document()(record)
-    except RuntimeError as exc:   # jsonschema absent -> the gate cannot run
+    except RuntimeError as exc:  # jsonschema absent -> the gate cannot run
         pytest.skip(f"jsonschema not installed: {exc}")
 
 

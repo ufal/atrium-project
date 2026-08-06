@@ -109,10 +109,7 @@ def _catches_import_error(handler: ast.ExceptHandler) -> bool:
     if handler.type is None:
         return True
     caught = handler.type.elts if isinstance(handler.type, ast.Tuple) else [handler.type]
-    return any(
-        isinstance(node, ast.Name) and node.id in {"ImportError", "ModuleNotFoundError"}
-        for node in caught
-    )
+    return any(isinstance(node, ast.Name) and node.id in {"ImportError", "ModuleNotFoundError"} for node in caught)
 
 
 def _imports_of(repo: Path, ref: str, path: str) -> set:
@@ -210,14 +207,11 @@ def check_repo(repo: Path, test_ref: str, skill_ref: str, quiet: bool) -> list:
 
     # --- runtime closure -----------------------------------------------------------------
     missing_now = sorted(
-        name
-        for name in runtime_closure(repo, skill_ref, skill_files)
-        if f"{name}.py" not in skill_files
+        name for name in runtime_closure(repo, skill_ref, skill_files) if f"{name}.py" not in skill_files
     )
     if missing_now:
         findings.append(
-            "skill branch service/ needs modules it does not carry (service will not start): "
-            + ", ".join(missing_now)
+            "skill branch service/ needs modules it does not carry (service will not start): " + ", ".join(missing_now)
         )
 
     port_closure = runtime_closure(repo, test_ref, test_files)
@@ -226,17 +220,14 @@ def check_repo(repo: Path, test_ref: str, skill_ref: str, quiet: bool) -> list:
     )
     if missing_after_port:
         findings.append(
-            "a port of the default-branch service/ would additionally need: "
-            + ", ".join(missing_after_port)
+            "a port of the default-branch service/ would additionally need: " + ", ".join(missing_after_port)
         )
 
     # --- version -------------------------------------------------------------------------
     test_version = version_of(repo, test_ref, test_files)
     skill_version = version_of(repo, skill_ref, skill_files)
     if test_version != skill_version:
-        findings.append(
-            f"version lag (§4.6, surfaced by /info): skill {skill_version} vs {test_ref} {test_version}"
-        )
+        findings.append(f"version lag (§4.6, surfaced by /info): skill {skill_version} vs {test_ref} {test_version}")
 
     # --- shared files --------------------------------------------------------------------
     # Present on both: must be byte-identical, since para-drift guards them on the default
@@ -265,7 +256,10 @@ def main() -> int:
         help="directory holding the tool repo clones (default: the hub's parent)",
     )
     parser.add_argument(
-        "--repo", action="append", dest="repos", metavar="NAME",
+        "--repo",
+        action="append",
+        dest="repos",
+        metavar="NAME",
         help="check only this repo (repeatable; default: all five service repos)",
     )
     parser.add_argument("--test-ref", default="origin/test", help="default-branch ref (default: origin/test)")
