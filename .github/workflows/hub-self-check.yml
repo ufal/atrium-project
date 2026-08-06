@@ -67,8 +67,15 @@ jobs:
       # jsonschema that call raises its own fail-loud RuntimeError. Installing
       # pytest alone would turn the newly promoted Layer D coverage into a red
       # job — or, worse, into a job that only exercises the degraded branch.
-      - name: Install pytest and jsonschema
-        run: pip install pytest jsonschema
+      #
+      # PyYAML is equally non-optional, and for a sharper reason: `tests/` now holds
+      # test_workflow_lint.py, which imports tools/ci/workflow_lint.py, which imports
+      # yaml at MODULE level. A missing import there is a pytest COLLECTION error, and
+      # a collection error aborts the ENTIRE session — so the 143 tests that had
+      # nothing to do with it never ran either. Landed red on 2026-08-06 (run
+      # 31115978804) for exactly this.
+      - name: Install pytest, jsonschema and PyYAML
+        run: pip install pytest jsonschema PyYAML
 
       # tests/ holds the 16 check_version.py tests — the release gate for all
       # five tool repos, which had no tests anywhere in the ecosystem until #18.
