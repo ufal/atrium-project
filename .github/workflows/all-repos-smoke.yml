@@ -1,54 +1,91 @@
-name: Reusable E2E Pipeline Smoke (JSON Matrix)
+# atrium-project — cross-repo fast-lane matrix.
+#
+# Runs each tool repo's own `-m "not slow"` suite against its default branch, so a
+# hub-side change (a moved `v1`, an edited canonical template) is caught against all
+# five repos at once rather than one repo at a time.
+#
+# ⚠️ This is NOT the JSON pipeline end-to-end test. That is `e2e-pipeline-smoke.yml`,
+# which threads a real `atrium_document` record through all five published container
+# images and asserts the accretion contract. This file only runs unit suites.
+#
+# Issue #10, G10 — everything below was wrong before this rewrite:
+#   * It was called "Reusable E2E Pipeline Smoke (JSON Matrix)" and shared the real
+#     E2E's cron, but threaded no document JSON at all. A reader comparing the two
+#     names would reasonably conclude the JSON path had redundant coverage. It did not.
+#   * `llm-enrich` was missing from the matrix — the one repo whose engine had no
+#     direct tests until 2026-07-22, and the owner of `enrichment`/`forms`.
+#   * No `-m "not slow"`, so it tried to run model/GPU/network tests that no runner
+#     here can serve. Every repo's own `docker.yml` filters them; this did not.
+#   * `--maxfail=1` stopped at the first failure, so one broken repo hid the state of
+#     the rest — the opposite of what a cross-repo matrix is for.
+#   * No `timeout-minutes`, no `concurrency`, no `permissions` (the three policy
+#     blocks `workflow_lint.py` enforces everywhere else), and it sat two major
+#     versions behind the action floor (checkout@v5 / setup-python@v6 vs @v7).
+#   * `workflow_call` was declared with no inputs and no caller anywhere.
+
+name: Cross-Repo Fast-Lane Matrix
 
 on:
-  workflow_call:
-    # No inputs or secrets required for this matrix test
+  workflow_dispatch:
   push:
     branches: [ main ]
   schedule:
-    - cron: '0 2 */3 * *' # Runs at 02:00 on every 3rd day-of-month
+    - cron: '0 2 */3 * *' # 02:00 on every 3rd day-of-month
+
+permissions:
+  contents: read
+
+concurrency:
+  group: all-repos-smoke-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  prepare-matrix:
+  fast-lane:
+    name: ${{ matrix.repo }} fast lane
     runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-      - name: Set Tool Matrix
-        id: set-matrix
-        run: |
-          echo 'matrix={"repo":["translator", "alto-postprocess", "nlp-enrich", "page-classification"]}' >> $GITHUB_OUTPUT
-
-  run-e2e-smoke:
-    needs: prepare-matrix
-    runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
+      # Never fail-fast: the point is a full picture of all five repos in one run.
       fail-fast: false
-      matrix: ${{ fromJson(needs.prepare-matrix.outputs.matrix) }}
+      matrix:
+        repo:
+          - page-classification
+          - alto-postprocess
+          - translator
+          - nlp-enrich
+          - llm-enrich
 
     steps:
-      - name: Checkout target repository
-        uses: actions/checkout@v5
+      - name: Checkout ufal/atrium-${{ matrix.repo }}
+        uses: actions/checkout@v7
         with:
           repository: ufal/atrium-${{ matrix.repo }}
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install dependencies
+      - name: Install test dependencies
         run: |
-          # Install base requirements if the file exists
-          if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi
+          python -m pip install --upgrade pip
+          # Repos differ in layout: page-classification and alto-postprocess keep
+          # their manifests under setup/, the other three at the root. Install
+          # whichever exist. Runtime requirements come first because several test
+          # modules import the real package they exercise.
+          for f in requirements.txt setup/requirements.txt \
+                   service/requirements.txt \
+                   requirements-test.txt setup/requirements-test.txt; do
+            if [ -f "$f" ]; then
+              echo "::group::pip install -r $f"
+              pip install -r "$f"
+              echo "::endgroup::"
+            fi
+          done
 
-          if [ -f "setup/requirements.txt" ]; then pip install -r setup/requirements.txt; fi
-          if [ -f "setup/requirements-test.txt" ]; then pip install -r setup/requirements-test.txt; fi
-
-          # Install test-specific requirements
-          if [ -f "requirements-test.txt" ]; then pip install -r requirements-test.txt; fi
-
-      - name: Run Pytest Smoke Suite
-        run: |
-          pytest tests/ --maxfail=1 --disable-warnings
+      - name: Run fast lane
+        # `-m "not slow"` is the ecosystem-wide contract for "no model, no GPU, no
+        # network" (every repo's pytest.ini declares the marker). No --maxfail: a
+        # cross-repo matrix should report every repo's real state in one pass.
+        run: pytest -m "not slow" --disable-warnings

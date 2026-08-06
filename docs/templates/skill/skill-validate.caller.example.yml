@@ -23,7 +23,13 @@ on:
 
 jobs:
   skill-validate:
-    uses: ufal/atrium-project/.github/workflows/skill-validate.reusable.yml@test
+    # `@v1`, not `@test`: `test` is the pre-release channel, so a repo that copied this
+    # template silently tracked unreleased hub changes. Every live caller in the ecosystem
+    # (35 across the default branches, 5 on the agent-skill branches) moved to `@v1` in the
+    # 2026-07-31 pin migration; this template was missed because `workflow_lint.py`'s glob
+    # covered `.github/workflows/*.yml` and `docs/templates/workflows/*.yml` but not this
+    # directory. The glob now includes it (issue #10, G7).
+    uses: ufal/atrium-project/.github/workflows/skill-validate.reusable.yml@v1
     with:
       client-script: scripts/atrium_classify.py
       app-import: service.api

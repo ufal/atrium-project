@@ -20,6 +20,17 @@ on:
   workflow_dispatch:
   release:
     types: [published]
+  # Issue #10, G9: this workflow had NEVER run — 0 recorded runs since it was
+  # created 2026-07-28. Its two triggers could not fire it: `workflow_dispatch`
+  # was never invoked, and the hub is the standards/CI repo, so it does not cut
+  # its own GitHub releases — `release: published` is structurally unreachable
+  # here. The three defects fixed in the 07-29 audit above therefore stayed
+  # unexercised, and the issue exports kept being produced by the local
+  # `update_issues.sh` and the personal token this workflow exists to retire.
+  # A weekly schedule gives it a real trigger; Monday 06:00 UTC lands before the
+  # week's first working session.
+  schedule:
+    - cron: '0 6 * * 1'
 
 permissions:
   contents: write        # create-pull-request pushes the docs/issue-log-update branch

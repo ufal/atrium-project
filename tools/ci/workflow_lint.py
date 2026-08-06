@@ -85,6 +85,11 @@ def workflow_files(root: Path) -> list[Path]:
     """
     paths = sorted((root / ".github" / "workflows").glob("*.yml"))
     paths += sorted((root / "docs" / "templates" / "workflows").glob("*.yml"))
+    # docs/templates/skill/ publishes a caller template too, and being outside the
+    # glob is exactly how it kept an `@test` pin through the 2026-07-31 migration
+    # that moved all 40 live callers to `@v1` (issue #10, G7). A published template
+    # is adopted by copy, so an unlinted one is a defect waiting to be inherited.
+    paths += sorted((root / "docs" / "templates" / "skill").glob("*.yml"))
     return paths
 
 

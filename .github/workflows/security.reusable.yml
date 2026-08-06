@@ -37,6 +37,12 @@ jobs:
   version-check:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Least privilege, matching `image-scan` below (issue #10, G8). A reusable
+    # workflow's jobs inherit the CALLER's default token scope when they declare
+    # nothing, so an unscoped job silently runs at whatever the consuming repo
+    # happens to grant. This job only reads the tree to compare version strings.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7

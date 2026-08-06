@@ -236,12 +236,29 @@ jobs:
           --document-json /workspace/work/doc_json/4_nlp.json
           --document-json-out /workspace/work/doc_json/5_llm.json
 
+      # The stage records are passed in explicitly, not globbed, so this step
+      # states which stages were expected to write one: a stage whose document
+      # hook failed silently (nlp's degrades to a stderr warning and exit 0) then
+      # fails HERE by name instead of vanishing from a glob (#10, D1/D2/J4).
       - name: Assert Final Document Contract
+        env:
+          # Threading the gate's own output is the G5 fix: e2e_assert.py used to
+          # assert the 'enrichment' block unconditionally, on the exact path this
+          # workflow makes optional when OPENROUTER_KEY is absent.
+          LLM_STAGE_RAN: ${{ steps.gate.outputs.enabled }}
         run: |
           FINAL="work/doc_json/5_llm.json"
           [ -f "$FINAL" ] || FINAL="work/doc_json/4_nlp.json"
+          STAGES="work/doc_json/1_pc.json work/doc_json/2_alto.json"
+          STAGES="$STAGES work/doc_json/3_translate.json work/doc_json/4_nlp.json"
+          if [ "$LLM_STAGE_RAN" = "true" ]; then
+            STAGES="$STAGES work/doc_json/5_llm.json"
+          fi
           echo "Asserting against: $FINAL"
-          python tools/e2e/e2e_assert.py "$FINAL"
+          # shellcheck disable=SC2086 — STAGES is a deliberate list of paths
+          python tools/e2e/e2e_assert.py "$FINAL" \
+            --llm-stage-ran "$LLM_STAGE_RAN" \
+            --stages $STAGES
 
       - name: Upload Pipeline Artifacts
         if: failure()

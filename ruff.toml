@@ -19,6 +19,12 @@ extend-exclude = [
     ".ruff_cache/",
 ]
 
+# NOTE: the isort `known-first-party` declaration for the canonical shared modules
+# lives in the EXTENDED base (docs/templates/ruff.toml), not here. Ruff resolves the
+# NEAREST config to each file, so a setting here would never reach
+# docs/templates/shared/*.py -- docs/templates/ruff.toml is closer to them than this
+# file is. See the comment there (issue #10, D9).
+
 [lint.per-file-ignores]
 # Skeletons and templates are deliberately incomplete -- they are copied and
 # filled in, not executed from here.

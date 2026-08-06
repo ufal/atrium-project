@@ -37,6 +37,14 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/workflow-lint.reusable.yml
+    with:
+      # Issue #10, G6: the local path above only picks the ref for the reusable's
+      # LOGIC. The reusable then clones the hub a second time at `hub-ref` and runs
+      # `python hub-repo/tools/ci/workflow_lint.py` from THAT clone — so with the
+      # default (`v1`) a PR editing the linter was checked by whatever `v1` already
+      # pointed at, never by its own edited code. github.sha is the ref under test,
+      # which is the only value that closes the loop.
+      hub-ref: ${{ github.sha }}
 
   shared-tests:
     name: Test canonical shared modules
@@ -53,8 +61,14 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install pytest
-        run: pip install pytest
+      # jsonschema is NOT optional here despite being an optional import in
+      # atrium_document.py: test_document_originators.py ends by calling
+      # validate_document() on a fully-built record (issue #10, D9), and without
+      # jsonschema that call raises its own fail-loud RuntimeError. Installing
+      # pytest alone would turn the newly promoted Layer D coverage into a red
+      # job — or, worse, into a job that only exercises the degraded branch.
+      - name: Install pytest and jsonschema
+        run: pip install pytest jsonschema
 
       # tests/ holds the 16 check_version.py tests — the release gate for all
       # five tool repos, which had no tests anywhere in the ecosystem until #18.
@@ -67,6 +81,11 @@ jobs:
       #
       # Those 36 tests had been in this repo the whole time, passing, and
       # invoked by nothing.
+      #
+      # Since issue #10 (D9) that directory also holds
+      # test_document_originators.py, so this step is now what stops a
+      # regression in _assert_origin_consistent() passing Hub Self-Check and
+      # propagating to five repos on the next `v1` move — the hole G6 named.
       - name: Run release-gate tests
         run: python -m pytest tests/ -v
 

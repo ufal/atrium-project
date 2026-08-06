@@ -50,6 +50,16 @@ jobs:
       - name: Verify test_para_licenses.py parity
         run: diff -u tool-repo/tests/test_para_licenses.py hub-repo/docs/templates/shared/test_para_licenses.py
 
+      - name: Verify tests/test_document_originators.py parity (issue #10, D9)
+        # The §1a origin contract's only substantive test. It lived in ONE repo
+        # (llm-enrich) while docs/document_schema.md and atrium_document.py both
+        # cited it as what "pins" the contract — so the hub could not run the test
+        # guarding the standard it authors, and the other four repos had no origin
+        # coverage at all. Promoted to the canonical set and enforced here, exactly
+        # like test_para_licenses.py above. Edit the hub copy, never a vendored one;
+        # scripts/revendor_shared.sh does the copy.
+        run: diff -u tool-repo/tests/test_document_originators.py hub-repo/docs/templates/shared/test_document_originators.py
+
       - name: Verify service/atrium_service.py parity (issue #32, strategy §4)
         run: diff -u tool-repo/service/atrium_service.py hub-repo/docs/templates/shared/atrium_service.py
 

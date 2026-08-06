@@ -61,6 +61,13 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # Least privilege (issue #10, G8). A reusable workflow's job inherits the
+    # CALLER's default token scope when it declares none, so this job — which
+    # executes the consuming repo's whole test suite, i.e. arbitrary code — ran
+    # at whatever each of the five repos happened to grant. It only needs to read
+    # the tree; the Codecov upload authenticates with its own token, not GITHUB_TOKEN.
+    permissions:
+      contents: read
     env:
       # Written to job env so the Codecov step's `if:` can see it — the
       # `secrets` context alone is invisible to `env.*` checks, which made the
@@ -161,6 +168,11 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # Least privilege (issue #10, G8). This job builds the image but never pushes
+    # it — publication happens in `build-and-push`, which scopes `packages: write`
+    # for itself. Building from a PR needs nothing beyond the tree.
+    permissions:
+      contents: read
     strategy:
       matrix:
         target: ${{ fromJSON(inputs.build-targets) }}

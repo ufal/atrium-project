@@ -94,6 +94,39 @@ default-branch callers.
 > **`hub-ref`** input (default `v1`). Keep it in step with the ref the workflow is called at — a caller
 > on `@test` should pass `hub-ref: test`, or it compares against the wrong generation of templates.
 
+#### Re-vendoring the canonical files: move `v1` **last**, and only once
+
+Because `para-drift` reads the canonical files at `hub-ref` (default `v1`), moving `v1` does not just
+change which workflow *logic* runs — it changes **what every tool repo is required to contain**, in all
+five repos, at the instant the tag moves. Editing a canonical template and moving `v1` before the
+vendored copies are updated makes `para-drift` fail everywhere; doing it while the copies are being
+updated makes it fail *non-deterministically*, which is worse, because the failure is not attributable
+to the repo it appears in.
+
+That is not hypothetical. On 2026-08-03/04 the *same commit SHA* failed `para-drift`'s
+`atrium_document.py` parity step on `test` and passed on the default branch minutes later, in two
+repos independently — alto-postprocess `ea6f0b3` (fail 13:23:36Z, pass 13:29:22Z) and translator
+`5ea50da` (fail 13:23:06Z, pass 13:30:11Z) — because `v1` was repointed to `ba7a264` at 13:24:58Z,
+between each pair. The callers were correct; the tag moved under them. Whoever saw the red build first
+had no way to tell it from genuine drift.
+
+**The procedure (issue #10, G4):**
+
+1. Edit the canonical file(s) under `docs/templates/shared/` on the hub, and land that on `main`.
+2. Re-vendor into all five tool repos in one pass — `scripts/revendor_shared.sh` exists for exactly
+   this, and verifies each copy with a `diff` afterwards.
+3. Land the vendored copies in all five repos.
+4. **Only then** cut the immutable `v1.x.y` tag and move `v1` to it.
+
+Steps 1–3 are the *atomic window*: while it is open, `v1` still points at the previous generation, so
+every repo's `para-drift` keeps comparing old-canonical against old-vendored and stays green. Nothing
+is enforced against a file that does not exist yet. Never move `v1` mid-window "so CI picks it up" —
+that is precisely what produces the phantom failures above.
+
+If a hub change genuinely needs validating against real callers before the tag moves, pin **one**
+caller to `@test` temporarily (and pass `hub-ref: test` so its parity check stays self-consistent),
+rather than moving `v1` to test it on all five at once.
+
 ### Localized Repository Workflows
 
 * **`atrium-alto-postprocess`:** CodeQL, Docker Build & Publish, pre-commit, Automated Releases, Scheduled

@@ -1,1 +1,6 @@
 pillow>=12.3.0
+# e2e_assert.py calls the canonical validate_document() on the final record — the
+# ecosystem's only schema check against real pipeline output (issue #10, D4). Without
+# jsonschema that call raises RuntimeError, and the assert step is written to fail
+# loudly on it rather than pass with the gate silently disabled.
+jsonschema>=4.26.0
