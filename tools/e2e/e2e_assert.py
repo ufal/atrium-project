@@ -46,7 +46,7 @@ _SHARED_DIR = Path(__file__).resolve().parents[2] / "docs" / "templates" / "shar
 if str(_SHARED_DIR) not in sys.path:
     sys.path.insert(0, str(_SHARED_DIR))
 
-from atrium_document import validate_document  # noqa: E402  (needs the path above)
+from atrium_document import BLOCK_OWNERS, validate_document  # noqa: E402  (needs the path above)
 
 
 def _load(json_path):
@@ -73,7 +73,55 @@ def assert_schema_valid(doc, json_path):
             f"❌ cannot validate {json_path}: {exc}\n"
             f"   jsonschema is declared in tools/e2e/requirements.txt — install step broken?"
         ) from exc
+    except Exception:
+        # Report EVERY violation, not just the first.
+        #
+        # `jsonschema.validate()` raises on the best-match error and stops. That is the
+        # wrong economics here: the stages run as PUBLISHED IMAGES, and `:latest` moves
+        # only on a release tag (docker-tool.reusable.yml: `enable=startsWith(github.ref,
+        # 'refs/tags/v')`). So every violation this gate reports costs a release of the
+        # owning repo to clear, and one-error-at-a-time turns a single bad record into a
+        # serialised chain of release cycles. Listing all of them means one release round
+        # per repo instead of one per field.
+        #
+        # First observed 2026-08-06 (hub run 31075185518): nlp-enrich's released v0.18.2
+        # wrote `entities[].type_cnec: null` against a `{"type": "string"}` schema. The
+        # fix was already on `test` — but `:latest` still pointed at the pre-fix release,
+        # so the gate could not go green from source alone.
+        import jsonschema  # already imported by validate_document; local to keep the happy path clean
+
+        from atrium_document import load_schema
+
+        errors = sorted(
+            jsonschema.Draft202012Validator(load_schema()).iter_errors(doc),
+            key=lambda e: list(e.absolute_path),
+        )
+        lines = [f"❌ schema: {json_path} does not validate against atrium_document.schema.json"]
+        for err in errors:
+            where = "/".join(str(p) for p in err.absolute_path) or "<root>"
+            owner = _block_owner(err.absolute_path)
+            lines.append(f"   • {where}: {err.message}" + (f"   [owned by {owner}]" if owner else ""))
+        lines.append(f"   {len(errors)} violation(s). Each is fixed in the OWNING repo, then released —")
+        lines.append("   `:latest` only moves on a version tag, so a fix on `test` cannot green this run.")
+        raise SystemExit("\n".join(lines)) from None
     print(f"✅ schema: {json_path} validates against atrium_document.schema.json")
+
+
+def _block_owner(path):
+    """Which tool owns the block a validation error sits in, so the report names the repo to fix.
+
+    `path` is a jsonschema `absolute_path` deque like ``["entities", 0, "type_cnec"]``; only
+    its first element identifies the block. Returns "" for structural keys and unknown blocks
+    rather than guessing — BLOCK_OWNERS authorises writes, and for a field-split block the
+    read-time answer is `assembled.blocks[<block>].program` (see docs/document_schema.md).
+    """
+    parts = list(path)
+    if not parts:
+        return ""
+    owners = BLOCK_OWNERS.get(str(parts[0]))
+    if not owners:
+        return ""
+    return owners if isinstance(owners, str) else " or ".join(owners)
 
 
 def assert_doc_id_stable(stage_paths, final_doc, final_path):

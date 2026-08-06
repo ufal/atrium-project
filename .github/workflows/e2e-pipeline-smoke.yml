@@ -9,14 +9,52 @@ on:
         default: "openai/gpt-4o-mini"
         type: string
         required: false
+      image-tag:
+        description: >-
+          GHCR tag every stage runs. `latest` is the RELEASED image set;
+          `test` tracks each repo's test branch. See the note below.
+        default: "latest"
+        type: string
+        required: false
     secrets:
       OPENROUTER_KEY:
         description: "OpenRouter API Key for the LLM enrichment stage"
+        required: false
+  workflow_dispatch:
+    inputs:
+      image-tag:
+        description: "GHCR tag to run (latest = released, test = current test branches)"
+        default: "latest"
+        type: string
         required: false
   push:
     branches: [ main ]
   schedule:
     - cron: '0 2 */3 * *' # Runs at 02:00 on every 3rd day-of-month
+
+# ⚠️ WHAT THIS RUN IS ACTUALLY TESTING (issue #10)
+#
+# The stages below are PUBLISHED CONTAINER IMAGES, and `docker-tool.reusable.yml` moves
+# `:latest` only on a version-tag push:
+#     type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+# A branch push publishes `sha-*` (and, since issue #10, `:test`) but never `:latest`.
+#
+# So with `image-tag: latest` this workflow validates THE LAST RELEASE of each tool, while
+# being triggered by hub pushes and a cron. A defect it finds cannot be cleared by fixing
+# the source: the owning repo has to cut a release before this can go green. That is not a
+# flaw in the gate — it is the gate correctly reporting what is deployed — but it must be
+# read that way, or a red run looks like "the pipeline is broken" when it means "the
+# released images are older than the fix".
+#
+# Demonstrated 2026-08-06 (run 31075185518): the schema gate rejected
+# `entities[].type_cnec: null` from nlp-enrich. The fix was already on `test`; `:latest`
+# still pointed at the pre-fix v0.18.2, so no source change could have greened the run.
+#
+# Pass `image-tag: test` (workflow_dispatch) to validate what is about to be released
+# instead. Flipping the DEFAULT to `test` is deliberately not done here: `:test` starts
+# being published only once each repo has pushed a branch commit under the issue #10
+# docker-tool change, so the tag does not exist for every repo yet. Flip it once
+# `docker pull ghcr.io/ufal/atrium-<tool>:test` succeeds for all five.
 
 concurrency:
   group: e2e-pipeline-smoke-${{ github.ref }}
@@ -143,7 +181,7 @@ jobs:
       - name: Stage 1 - Page Classification
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
-          ghcr.io/ufal/atrium-page-classification:latest
+          ghcr.io/ufal/atrium-page-classification:${{ inputs.image-tag || 'latest' }}
           -f /workspace/work/input/${E2E_DOC}-1.png
           -m timm/regnety_160.swag_ft_in1k --hf
           --document-json-out /workspace/work/doc_json/1_pc.json
@@ -162,7 +200,7 @@ jobs:
           docker run --rm -v ${{ github.workspace }}:/workspace
           -w /workspace/work/atrium-alto-postprocess-main
           --entrypoint /bin/sh
-          ghcr.io/ufal/atrium-alto-postprocess:latest
+          ghcr.io/ufal/atrium-alto-postprocess:${{ inputs.image-tag || 'latest' }}
           -c "pip install https://github.com/cneud/alto-tools/archive/refs/heads/master.zip && export PATH=\"\$PATH:/home/atrium/.local/bin\" && python run_pipeline.py --config /workspace/work/config_e2e_alto.txt --document-json /workspace/work/doc_json/1_pc.json --document-json-out /workspace/work/doc_json/2_alto.json"
 
       - name: Fetch latest Translator source
@@ -179,7 +217,7 @@ jobs:
           docker run --rm -v ${{ github.workspace }}:/workspace
           -w /workspace/work/atrium-translator-main
           --entrypoint python
-          ghcr.io/ufal/atrium-translator:latest
+          ghcr.io/ufal/atrium-translator:${{ inputs.image-tag || 'latest' }}
           main.py
           /workspace/work/PAGE_ALTO/${E2E_DOC}/${E2E_DOC}-1.alto.xml
           --alto --formats alto.xml --source_lang cs --target_lang en
@@ -201,7 +239,7 @@ jobs:
           docker run --rm -v ${{ github.workspace }}:/workspace
           -w /workspace/work/atrium-nlp-enrich-main
           --entrypoint python
-          ghcr.io/ufal/atrium-nlp-enrich:latest
+          ghcr.io/ufal/atrium-nlp-enrich:${{ inputs.image-tag || 'latest' }}
           run_pipeline.py
           --config /workspace/work/config_e2e_nlp.txt
           --stages manifest udp nt stats
@@ -226,7 +264,7 @@ jobs:
           -v ${{ github.workspace }}:/workspace
           -w /workspace/work/atrium-llm-enrich-main
           --entrypoint python
-          ghcr.io/ufal/atrium-llm-enrich-remote:latest
+          ghcr.io/ufal/atrium-llm-enrich-remote:${{ inputs.image-tag || 'latest' }}
           openrouter_client.py
           --input /workspace/work/DOC_LINE_CATEG/${E2E_DOC}.csv
           --output-dir /workspace/work/llm_out

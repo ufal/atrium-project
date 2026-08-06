@@ -160,15 +160,46 @@ def test_missing_stage_record_fails_by_name(tmp_path, record):
 def test_schema_invalid_record_fails_on_the_schema_first(tmp_path, record):
     """D4: validation is assertion zero — before any block check, so the diagnosis is honest.
 
-    The record here is BOTH schema-invalid and missing `pages`; the error must be the
+    The record here is BOTH schema-invalid and missing `pages`; the failure must name the
     schema violation, otherwise the block assertions are reporting on a record that was
     never valid in the first place.
     """
     record["doc_id"] = 42  # schema says string
     del record["pages"]
     final = _write(tmp_path, "5_llm.json", record)
-    with pytest.raises(jsonschema.exceptions.ValidationError):
+    with pytest.raises(SystemExit) as exc:
         e2e_assert.assert_document_contract(final, llm_stage_ran=True, stage_paths=[])
+    message = str(exc.value)
+    assert "does not validate" in message
+    assert "doc_id" in message
+    # ...and NOT the missing-block error, which is the whole point of ordering.
+    assert "pages" not in message.split("violation(s)")[0].replace("doc_id", "")
+
+
+def test_every_schema_violation_is_reported_not_just_the_first(tmp_path, record):
+    """All violations in one run, each attributed to the repo that must fix it.
+
+    The stages run as PUBLISHED IMAGES and `:latest` moves only on a release tag, so each
+    violation costs a release of the owning repo to clear. Reporting one at a time turns a
+    single bad record into a serialised chain of release cycles — which is exactly what hub
+    run 31075185518 would have cost: nlp-enrich's released v0.18.2 wrote
+    `entities[].type_cnec: null` against a `{"type": "string"}` schema.
+    """
+    record["entities"] = [
+        {"page": "1", "line": 0, "char_span": [0, 4], "surface": "Praha", "type_cnec": None}
+    ]
+    record["pages"] = [{"page": "1", "quality_score": "not-a-number"}]
+    final = _write(tmp_path, "5_llm.json", record)
+    with pytest.raises(SystemExit) as exc:
+        e2e_assert.assert_document_contract(final, llm_stage_ran=True, stage_paths=[])
+    message = str(exc.value)
+
+    assert "entities/0/type_cnec" in message
+    assert "pages/0/quality_score" in message
+    assert "2 violation(s)" in message
+    # Each line names the repo that owns the block, so the report is directly actionable.
+    assert "[owned by nlp-enrich]" in message
+    assert "[owned by alto-postprocess or digital-convert]" in message
 
 
 def test_cli_accepts_the_workflow_invocation(tmp_path, record):
