@@ -187,9 +187,49 @@ jobs:
           W="${{ github.workspace }}/work"
           echo 'VOCAB_PATH="/workspace/work/teater_nested_vocab.json"' > "$W/llm_config.txt"
 
+      # ── HuggingFace model cache (2026-08-06) ────────────────────────────────
+      # Stage 1 pulled `timm/regnety_160.swag_ft_in1k` from the Hub on EVERY run,
+      # anonymously and with no cache, and started failing on it:
+      #
+      #   429 Client Error: Too Many Requests for
+      #   https://huggingface.co/timm/regnety_160.swag_ft_in1k/resolve/main/config.json
+      #   -> OSError: We couldn't connect to 'https://huggingface.co' ... and couldn't
+      #      find them in the cached files.
+      #
+      # (run 31116677390). Anonymous Hub requests share a low rate limit, and this
+      # workflow runs on push plus a 3-daily cron in a repo that also runs other
+      # model-pulling jobs — so the limit is reachable through ordinary use, not
+      # abuse. It surfaces as an OSError deep inside transformers, which reads like a
+      # broken image rather than a throttle; that misdirection is half the cost.
+      #
+      # Two independent mitigations, because either alone can still fail:
+      #   * the cache means a WARM run makes no Hub request at all;
+      #   * HF_TOKEN (optional) raises the limit when the cache misses — a new model,
+      #     or the 7-day eviction of an unused GitHub cache entry.
+      #
+      # The pc image declares HF_HOME=/cache/huggingface and runs as uid 10001, so the
+      # host directory is mounted there and made writable before the container starts.
+      - name: Cache HuggingFace models (Stage 1)
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/hf-cache
+          key: e2e-hf-${{ inputs.image-tag || 'latest' }}-regnety160
+          restore-keys: e2e-hf-
+
+      - name: Prepare the HF cache mount
+        run: |
+          mkdir -p "${{ github.workspace }}/hf-cache"
+          chmod -R a+rwX "${{ github.workspace }}/hf-cache"
+
       - name: Stage 1 - Page Classification
+        env:
+          # Optional. Absent -> anonymous, which is what hit the 429; present -> a much
+          # higher limit. Add an HF_TOKEN repository secret to harden this further.
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
+          -v ${{ github.workspace }}/hf-cache:/cache/huggingface
+          -e HF_TOKEN
           ghcr.io/ufal/atrium-page-classification:${{ inputs.image-tag || 'latest' }}
           -f /workspace/work/input/${E2E_DOC}-1.png
           -m timm/regnety_160.swag_ft_in1k --hf
