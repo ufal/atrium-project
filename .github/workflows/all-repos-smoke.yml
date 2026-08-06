@@ -30,7 +30,13 @@ on:
   push:
     branches: [ main ]
   schedule:
-    - cron: '0 2 */3 * *' # 02:00 on every 3rd day-of-month
+    # 04:00, NOT 02:00: e2e-pipeline-smoke.yml already holds '0 2 */3 * *', and this
+    # workflow's own header lists that collision as one of the defects it fixed —
+    # it had been reintroduced. Both jobs are heavy (the E2E pulls five images over
+    # ~40 min; this matrix runs five pip installs + suites over ~20 min), so
+    # colliding them contends for runners and interleaves two unrelated failure
+    # reports in the same digest window.
+    - cron: '0 4 */3 * *' # 04:00 on every 3rd day-of-month, 2h after the E2E
 
 permissions:
   contents: read

@@ -37,7 +37,16 @@ on:
 # The stages below are PUBLISHED CONTAINER IMAGES, and `docker-tool.reusable.yml` moves
 # `:latest` only on a version-tag push:
 #     type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
-# A branch push publishes `sha-*` (and, since issue #10, `:test`) but never `:latest`.
+# A branch push publishes `sha-*` and `:test`, but never `:latest`.
+#
+# NOTE (corrected 2026-08-06): issue #10 added the `:test` TAG RULE, but until the
+# `build-and-push` job gate was widened in the same round, that rule could never fire —
+# the job ran only on `refs/tags/v*` or a `release` event, and `type=raw,value=test` is
+# enabled only when `github.ref == 'refs/heads/test'`. The two conditions are mutually
+# exclusive, so a branch push published NOTHING AT ALL, not even `sha-*` (that tag rule
+# lives in the same job). Six green `test` pushes in llm-enrich on 2026-08-06 produced no
+# image. The gate now includes `push` to `refs/heads/test`, which is what makes both this
+# line and the `sha-<short>` claim below true.
 #
 # So with `image-tag: latest` this workflow validates THE LAST RELEASE of each tool, while
 # being triggered by hub pushes and a cron. A defect it finds cannot be cleared by fixing

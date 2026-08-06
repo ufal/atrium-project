@@ -48,7 +48,11 @@ _SHARED_DIR = Path(__file__).resolve().parents[2] / "docs" / "templates" / "shar
 if str(_SHARED_DIR) not in sys.path:
     sys.path.insert(0, str(_SHARED_DIR))
 
-from atrium_document import BLOCK_OWNERS, validate_document  # noqa: E402  (needs the path above)
+from atrium_document import (  # noqa: E402  (needs the path above)
+    BLOCK_OWNERS,
+    resolve_originator,
+    validate_document,
+)
 
 
 def _load(json_path):
@@ -177,13 +181,144 @@ def assert_doc_id_stable(stage_paths, final_doc, final_path):
     print(f"✅ doc_id: {distinct[0]!r} unchanged across {len(seen)} stage record(s)")
 
 
-def assert_document_contract(json_path, llm_stage_ran="auto", stage_paths=()):
+def _assert_enrichment(doc, llm_stage_ran):
+    """The llm-enrich block check, shared by both branches (G5).
+
+    `assembled.blocks` is the record's own account of which tool wrote what, so it
+    distinguishes "llm-enrich contributed" from "the key happened to be there",
+    which a bare `in doc` cannot.
+    """
+    stamped = (doc.get("assembled") or {}).get("blocks") or {}
+    if llm_stage_ran == "auto":
+        llm_stage_ran = "enrichment" in stamped
+        print(
+            f"ℹ️  --llm-stage-ran not given; inferring the llm stage {'ran' if llm_stage_ran else 'was skipped'} "
+            f"from assembled.blocks. CI always passes the gate's value explicitly."
+        )
+    if llm_stage_ran:
+        assert "enrichment" in doc, "❌ 'enrichment' block missing from llm-enrich stage"
+        assert "enrichment" in stamped, (
+            "❌ 'enrichment' present but not recorded in assembled.blocks: it was not written "
+            "through DocumentRecord.set_block(), so it carries no program/paradata stamp"
+        )
+    else:
+        print(
+            "ℹ️  the llm-enrich stage did not run — 'enrichment' block not required. "
+            "This is the OPENROUTER_KEY-absent path the smoke workflows allow."
+        )
+
+
+def assert_digital_contract(doc, json_path):
+    """The born-digital branch: `digital-convert -> llm-enrich`.
+
+    W10. This is NOT a shorter version of the scanned contract — it is a different
+    one, and the difference is the point. A born-digital record can never carry
+    `page_categories` (no page image exists to classify), `translations` or
+    `entities` (translator and nlp-enrich both need alto-postprocess's PAGE_ALTO /
+    DOC_LINE_CATEG output, which never exists on this branch). Asserting the scanned
+    blocks here would not be "stricter", it would be wrong.
+
+    What this branch uniquely proves is the §1a ORIGINATOR ARBITRATION: alto-
+    postprocess refuses to write `pages`/`lines` onto a record whose
+    `source.origin` is digital-born (`_assert_origin_consistent`), and the ONE
+    thing that legitimately re-opens that door is `needs_ocr: true` — the converter
+    finding a text layer it does not trust. Until now that handoff was covered only
+    by unit tests inside one repo.
+    """
+    origin = (doc.get("source") or {}).get("origin")
+    print(f"ℹ️  born-digital branch: source.origin = {origin!r}")
+
+    # Blocks digital-convert owns outright.
+    assert "pages" in doc, "❌ 'pages' block missing from digital-convert"
+    assert "lines" in doc, "❌ 'lines' block missing from digital-convert"
+
+    stamped = (doc.get("assembled") or {}).get("blocks") or {}
+    lines_program = (stamped.get("lines") or {}).get("program")
+    assert lines_program == "digital-convert", (
+        f"❌ 'lines' was written by {lines_program!r}, expected 'digital-convert'. On the "
+        "born-digital branch alto-postprocess must never originate lines (§1a)."
+    )
+
+    # Blocks that CANNOT exist here. A record carrying them means either the branch
+    # was fed a scanned document, or a tool wrote a block it does not own.
+    for forbidden, why in (
+        ("page_categories", "no page image exists to classify on this branch"),
+        ("translations", "the translator needs alto-postprocess's PAGE_ALTO output"),
+        ("entities", "nlp-enrich needs the DOC_LINE_CATEG classify CSV and INPUT_ALTO_DIR"),
+    ):
+        assert forbidden not in doc, (
+            f"❌ '{forbidden}' present on a born-digital record — {why}. Either the fixture "
+            f"is not actually born-digital, or a tool wrote a block it does not own."
+        )
+
+    pages = doc.get("pages") or []
+    needs_ocr_pages = [p for p in pages if p.get("needs_ocr")]
+    return pages, needs_ocr_pages
+
+
+def assert_document_contract(json_path, llm_stage_ran="auto", stage_paths=(), expect_needs_ocr=False):
     doc = _load(json_path)
 
     # 0. The contract itself, before any block-by-block check: a record that does
     #    not validate is broken whatever else it contains (D4).
     assert_schema_valid(doc, json_path)
     assert_doc_id_stable(list(stage_paths), doc, json_path)
+
+    # 0b. W10: which contract applies is derived from the RECORD, not from a flag.
+    #     `source.origin` already names the originator, and `resolve_originator()`
+    #     is the same function alto-postprocess uses to decide whether it may write
+    #     `pages`/`lines` at all — so the assert and the tool agree by construction
+    #     rather than by a CI argument someone has to remember to pass. Same lesson
+    #     as doc_id inheritance: the record carries the answer.
+    origin = (doc.get("source") or {}).get("origin")
+    originator = resolve_originator(origin) if origin else None
+    if originator == "digital-convert":
+        pages, needs_ocr_pages = assert_digital_contract(doc, json_path)
+
+        if expect_needs_ocr:
+            # The §1a handoff case. This is the assertion that must NOT be able to
+            # pass vacuously: a fixture whose text layer decodes cleanly would
+            # satisfy "no page needs OCR" trivially, and prove nothing.
+            assert needs_ocr_pages, (
+                "❌ expected at least one page with needs_ocr: true, got none. The garbled "
+                "fixture's whole purpose is to trip decode-sanity; if it stopped doing so, "
+                "this gate is now vacuous and the §1a arbitration is untested."
+            )
+            for page in needs_ocr_pages:
+                reason = page.get("needs_ocr_reason")
+                assert reason, (
+                    f"❌ page {page.get('page')!r} sets needs_ocr: true with no "
+                    "'needs_ocr_reason'. The reason is what tells alto-postprocess (and a "
+                    "human) WHY re-origination is authorised."
+                )
+                print(f"✅ needs_ocr page {page.get('page')!r}: {reason[:90]}…")
+            # At least one line must be flagged Garbage. NOT "all lines" — the
+            # converter flags per line, and the garbled fixture deliberately mixes
+            # decodable and undecodable lines (1 of 3), so an all-lines assert would
+            # fail against correct behaviour.
+            garbage = [ln for ln in (doc.get("lines") or []) if ln.get("categ") == "Garbage"]
+            assert garbage, (
+                "❌ needs_ocr is set but no line carries categ 'Garbage' — the page-level "
+                "verdict and the line-level evidence disagree."
+            )
+            print(f"✅ {len(garbage)} line(s) flagged Garbage, consistent with the page verdict")
+        else:
+            assert not needs_ocr_pages, (
+                f"❌ {len(needs_ocr_pages)} page(s) unexpectedly set needs_ocr on the happy-path "
+                "fixture. Either the fixture regressed or decode-sanity became over-eager."
+            )
+            for line in doc.get("lines") or []:
+                assert line.get("text"), (
+                    f"❌ line {line.get('line')!r} on page {line.get('page')!r} has no text on the "
+                    "happy path; a born-digital PDF's text layer is the whole input."
+                )
+            print(f"✅ {len(pages)} page(s), all lines carry text, no page needs OCR")
+
+        _assert_enrichment(doc, llm_stage_ran)
+        print(f"✅ e2e_assert.py: born-digital contract verified for {json_path}")
+        return
+
+    # ── the scanned branch (pc -> alto -> translate -> nlp -> llm) ──────────────
 
     # 1. ALTO Postprocess: merge_blocks vs set_blocks regression check
     # 'pages' and 'content' must exist from alto-postprocess.
@@ -227,28 +362,8 @@ def assert_document_contract(json_path, llm_stage_ran="auto", stage_paths=()):
         assert "backend" in trans, "❌ Translation missing 'backend'"
         assert "text" not in trans, "❌ 'translations' contains raw corpus text instead of metadata schema"
 
-    # 4. LLM Enrich: API Util Regeneration — conditional on stage 5 having run (G5).
-    #    `assembled.blocks` is the record's own account of which tool wrote what,
-    #    so it distinguishes "llm-enrich contributed" from "the key happened to be
-    #    there", which a bare `in doc` cannot.
-    stamped = (doc.get("assembled") or {}).get("blocks") or {}
-    if llm_stage_ran == "auto":
-        llm_stage_ran = "enrichment" in stamped
-        print(
-            f"ℹ️  --llm-stage-ran not given; inferring stage 5 {'ran' if llm_stage_ran else 'was skipped'} "
-            f"from assembled.blocks. CI always passes the gate's value explicitly."
-        )
-    if llm_stage_ran:
-        assert "enrichment" in doc, "❌ 'enrichment' block missing from llm-enrich stage"
-        assert "enrichment" in stamped, (
-            "❌ 'enrichment' present but not recorded in assembled.blocks: it was not written "
-            "through DocumentRecord.set_block(), so it carries no program/paradata stamp"
-        )
-    else:
-        print(
-            "ℹ️  stage 5 (llm-enrich) did not run — 'enrichment' block not required. "
-            "This is the OPENROUTER_KEY-absent path e2e-pipeline-smoke.yml allows."
-        )
+    # 4. LLM Enrich: API Util Regeneration — conditional on the llm stage having run.
+    _assert_enrichment(doc, llm_stage_ran)
 
     print(f"✅ e2e_assert.py: Document contract verified successfully for {json_path}")
 
@@ -277,6 +392,14 @@ def main(argv=None):
         "assembled.blocks, for a manual run against a downloaded artifact.",
     )
     parser.add_argument(
+        "--expect-needs-ocr",
+        action="store_true",
+        help="born-digital branch only: require at least one page with needs_ocr: true "
+        "and a matching Garbage line (the §1a handoff that authorises alto-postprocess "
+        "to re-originate). Without this the happy path is asserted instead: no page "
+        "needs OCR and every line carries text.",
+    )
+    parser.add_argument(
         "--stages",
         nargs="*",
         default=[],
@@ -286,7 +409,12 @@ def main(argv=None):
     )
     args = parser.parse_args(argv)
 
-    assert_document_contract(args.record, llm_stage_ran=args.llm_stage_ran, stage_paths=args.stages)
+    assert_document_contract(
+        args.record,
+        llm_stage_ran=args.llm_stage_ran,
+        stage_paths=args.stages,
+        expect_needs_ocr=args.expect_needs_ocr,
+    )
     return 0
 
 

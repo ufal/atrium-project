@@ -1,11 +1,17 @@
 # Caller example — Agent-Skill branch validation (atrium-project#31, strategy §12.3).
 # Place as .github/workflows/skill-validate.yml ON THE `agent-skill` BRANCH of a
-# service repo and set `client-script` to that repo's client (Appendix E table):
-#   atrium-page-classification → scripts/atrium_classify.py
-#   atrium-translator          → scripts/atrium_translate.py
-#   atrium-alto-postprocess    → scripts/atrium_postprocess.py
-#   atrium-nlp-enrich          → scripts/atrium_enrich.py
-#   atrium-llm-enrich          → scripts/atrium_keywords.py
+# service repo and fill in that repo's row from the table below. The `app-import` and
+# `primary-endpoints` values are the same ones the default branch's
+# tests/test_api_contract.py uses (issue #32), so the skill branch and the default
+# branch assert the same contract.
+#
+#   repo                        client-script                  app-import        primary-endpoints
+#   -----------------------------------------------------------------------------------------------------
+#   atrium-page-classification  scripts/atrium_classify.py     service.api       /predict_image /predict_document
+#   atrium-translator           scripts/atrium_translate.py    service.api       /translate
+#   atrium-alto-postprocess     scripts/atrium_postprocess.py  service.text_api  /process
+#   atrium-nlp-enrich           scripts/atrium_enrich.py       service.api       /enrich /enrich_text /rescale /jobs
+#   atrium-llm-enrich           scripts/atrium_keywords.py     service.api       /extract_keywords /extract_keywords_text
 
 name: Skill Branch Validation
 
@@ -15,9 +21,31 @@ on:
   pull_request:
     branches: [agent-skill]
 
+# Push + pull_request on the same branch means two runs of this workflow for one
+# push to an open PR. Cancel the superseded one — unlike the smoke lanes, nothing
+# here is destructive or long-running, so cancelling costs nothing.
+concurrency:
+  group: skill-validate-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege, stated rather than inherited (#18). The reusable's jobs only read
+# the repo and start a local service; nothing is published.
+permissions:
+  contents: read
+
 jobs:
   skill-validate:
+    # `@v1`, not `@test`: `test` is the pre-release channel, so a repo that copied this
+    # template silently tracked unreleased hub changes. Every live caller in the ecosystem
+    # (35 across the default branches, 5 on the agent-skill branches) moved to `@v1` in the
+    # 2026-07-31 pin migration; this template was missed because `workflow_lint.py`'s glob
+    # covered `.github/workflows/*.yml` and `docs/templates/workflows/*.yml` but not this
+    # directory. The glob now includes it (issue #10, G7).
     uses: ufal/atrium-project/.github/workflows/skill-validate.reusable.yml@v1
     with:
       client-script: scripts/atrium_classify.py
+      app-import: service.api
+      primary-endpoints: "/predict_image /predict_document"
       # skill-docs: "SKILL.md README.md service/README.md"   # (default)
+      # service-requirements: service/requirements.txt        # (default)
+      # python-version: "3.11"                                # (default)

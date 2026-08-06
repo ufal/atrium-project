@@ -81,13 +81,29 @@ def workflow_files(root: Path) -> list[Path]:
     The templates matter as much as the live workflows: they are what the next
     repo copies, so a defect there is a defect waiting to be adopted.
     """
-    paths = sorted((root / ".github" / "workflows").glob("*.yml"))
-    paths += sorted((root / "docs" / "templates" / "workflows").glob("*.yml"))
+    # W5 (2026-08-06): `*.yaml` included alongside `*.yml`. GitHub accepts both
+    # spellings for workflows; a template saved with the other extension was simply
+    # invisible to every check here.
+    #
     # docs/templates/skill/ publishes a caller template too, and being outside the
     # glob is exactly how it kept an `@test` pin through the 2026-07-31 migration
     # that moved all 40 live callers to `@v1` (issue #10, G7). A published template
     # is adopted by copy, so an unlinted one is a defect waiting to be inherited.
-    paths += sorted((root / "docs" / "templates" / "skill").glob("*.yml"))
+    search_dirs = [
+        root / ".github" / "workflows",
+        root / "docs" / "templates" / "workflows",
+        root / "docs" / "templates" / "skill",
+    ]
+    paths: list[Path] = []
+    for directory in search_dirs:
+        paths += sorted(directory.glob("*.yml"))
+        paths += sorted(directory.glob("*.yaml"))
+    # dependabot.yml is a policy file this ecosystem publishes a template for, and
+    # the Requires-Python guard lives in it — worth parsing even though it carries no
+    # `name:`/`jobs:` (see check_template_shape for why that distinction matters).
+    dependabot = root / ".github" / "dependabot.yml"
+    if dependabot.exists():
+        paths.append(dependabot)
     return paths
 
 
@@ -286,6 +302,176 @@ def check_template_inputs(path: Path, doc: dict, root: Path, hub_root: Path, fin
     return checked
 
 
+#: Sentinel for `permissions: write-all` -- satisfies every scope.
+_SHORTHAND_WRITE_ALL = object()
+#: Sentinel for `permissions: read-all` -- read on every scope, write on none.
+_SHORTHAND_READ_ALL = object()
+
+
+def _normalise_permissions(perms):
+    """Map a `permissions:` value to a dict, or a shorthand sentinel.
+
+    GitHub accepts three shapes: a mapping, the string `read-all`/`write-all`, and
+    `{}` (all scopes none). Treating the string form as a mapping is what crashed
+    the linter (see check_template_permissions).
+    """
+    if perms is None:
+        return None
+    if isinstance(perms, dict):
+        return perms
+    text = str(perms).strip()
+    if text == "write-all":
+        return _SHORTHAND_WRITE_ALL
+    if text == "read-all":
+        return _SHORTHAND_READ_ALL
+    # Unknown scalar -- treat as granting nothing rather than guessing.
+    return {}
+
+
+def check_template_shape(path: Path, doc: dict, text: str, findings: Findings) -> int:
+    """Check -- a published `*.caller.example.yml` must actually call something.
+
+    W1's failure mode, made mechanical. `docker.caller.example.yml` was overwritten
+    with a dependabot config: 58 lines, zero `uses:`. Nothing caught it, because
+    `check_duplicate_names` skips any file with no `name:` key -- and a dependabot
+    config has none -- so the very check written to catch "the fingerprint of a
+    copy-paste clobber" was blind to the clobber that actually happened. The
+    workflow it was meant to exemplify (the most-used reusable in the ecosystem) had
+    no caller example for two days.
+
+    A caller example whose entire purpose is to be copied as a caller must contain a
+    `uses:`. That is the whole rule.
+    """
+    if not path.name.endswith(".caller.example.yml"):
+        return 0
+    if "uses:" in text:
+        return 1
+    findings.error(
+        path,
+        "is a *.caller.example.yml but contains no `uses:` -- it cannot be a caller "
+        "example. This is the docker.caller.example.yml clobber signature (a "
+        "dependabot config written over the docker caller template, 2026-08-04): "
+        "the file a downstream repo copies would not call anything.",
+    )
+    return 1
+
+
+def check_caller_ref(path: Path, doc: dict, findings: Findings) -> int:
+    """Check -- hub reusables are pinned at `@v1`, not a branch or another tag.
+
+    G7 widened the template glob so the `@test`-pinned skill template became
+    VISIBLE, but visibility is not a rule: nothing yet fails a caller pinned at
+    `@test`, `@main` or `@v2-beta`. A branch pin means the caller silently follows
+    whatever lands on that branch -- which is exactly how a reusable change reaches
+    all five repos without anyone choosing to adopt it.
+    """
+    checked = 0
+    for job_name, job in (doc.get("jobs") or {}).items():
+        if not isinstance(job, dict) or "uses" not in job:
+            continue
+        uses = str(job["uses"])
+        if "ufal/atrium-project/.github/workflows/" not in uses:
+            continue  # third-party or local reusable; pins are check_pins' job
+        checked += 1
+        ref = uses.rsplit("@", 1)[-1] if "@" in uses else ""
+        if ref != "v1":
+            findings.error(
+                path,
+                f"job '{job_name}' pins a hub reusable at '@{ref}', not '@v1'. "
+                "Branch and pre-release pins make a hub change reach this repo "
+                "without anyone adopting it; `v1` is the ecosystem's adoption point.",
+            )
+    return checked
+
+
+def check_job_hygiene(path: Path, doc: dict, findings: Findings) -> int:
+    """Check -- every runner job sets `timeout-minutes`, and every triggerable
+    workflow sets `concurrency` and an explicit `permissions` block.
+
+    These three policies were rolled out by hand, and `all-repos-smoke.yml` lost all
+    three within two days of the rollout. A hand-applied policy with no rule behind
+    it is a policy that drifts back.
+
+    Reusables (`workflow_call`-only) are exempt from `concurrency`: the CALLER owns
+    the concurrency group, and setting one in the callee would collapse five repos'
+    builds into a single queue.
+    """
+    checked = 0
+    jobs = doc.get("jobs") or {}
+    if not jobs:
+        return 0  # dependabot config or similar -- not a workflow
+
+    triggers = doc.get(True) or doc.get("on") or {}
+    if isinstance(triggers, str):
+        triggers = {triggers: None}
+    trigger_names = set(triggers) if isinstance(triggers, dict) else set()
+    is_reusable_only = trigger_names == {"workflow_call"}
+
+    for job_name, job in jobs.items():
+        if not isinstance(job, dict):
+            continue
+        # A caller job (`uses:`) runs no runner of its own -- the callee sets the timeout.
+        if "uses" in job:
+            continue
+        checked += 1
+        if job.get("timeout-minutes") is None:
+            findings.error(
+                path,
+                f"job '{job_name}' has no `timeout-minutes`. A hung job holds a "
+                "runner for the 6-hour default; every other job in this ecosystem "
+                "sets one.",
+            )
+
+    if not is_reusable_only and doc.get("concurrency") is None:
+        findings.error(
+            path,
+            "has no `concurrency` group. Overlapping runs of the same workflow race "
+            "each other; every other triggerable workflow here sets one.",
+        )
+
+    has_job_perms = any(
+        isinstance(j, dict) and j.get("permissions") is not None for j in jobs.values()
+    )
+    if doc.get("permissions") is None and not has_job_perms:
+        findings.error(
+            path,
+            "declares no `permissions:` at workflow or job level, so it inherits the "
+            "repository default token scope. Least privilege is explicit here.",
+        )
+    return checked
+
+
+def check_required_inputs(path: Path, doc: dict, root: Path, hub_root: Path, findings: Findings) -> int:
+    """Check -- a caller passes every input its callee declares `required: true`.
+
+    `skill-validate.reusable.yml` declares `client-script: required: true` and
+    nothing enforced it, so a caller omitting it fails at run time with an empty
+    string rather than at lint time with a name.
+    """
+    checked = 0
+    for job_name, job in (doc.get("jobs") or {}).items():
+        if not isinstance(job, dict) or "uses" not in job:
+            continue
+        callee_path = resolve_callee(str(job["uses"]), root, hub_root)
+        if callee_path is None:
+            continue
+        callee = yaml.safe_load(callee_path.read_text(encoding="utf-8")) or {}
+        call_spec = (callee.get(True) or callee.get("on") or {}).get("workflow_call") or {}
+        declared = call_spec.get("inputs") or {}
+        passed = set(job.get("with") or {})
+        for name, spec in declared.items():
+            if not isinstance(spec, dict) or not spec.get("required"):
+                continue
+            checked += 1
+            if name not in passed:
+                findings.error(
+                    path,
+                    f"job '{job_name}' omits required input '{name}' of "
+                    f"{callee_path.name}.",
+                )
+    return checked
+
+
 def check_template_permissions(path: Path, doc: dict, root: Path, hub_root: Path, findings: Findings) -> int:
     """Check 4 -- a template's permission grant covers what its reusable requests.
 
@@ -312,14 +498,29 @@ def check_template_permissions(path: Path, doc: dict, root: Path, hub_root: Path
         if job.get("permissions") is None and doc.get("permissions") is None:
             continue
 
-        granted = {**(doc.get("permissions") or {}), **(job.get("permissions") or {})}
+        # W5 (2026-08-06): `permissions:` also accepts the SHORTHAND STRINGS
+        # `read-all` / `write-all` (and a job may use `{}` for "none"). The previous
+        # `{**doc_perms, **job_perms}` assumed both were always mappings and raised
+        # `TypeError: 'str' object is not a mapping` on the legal shorthand — the
+        # linter crashed instead of reporting, taking down every later check with it.
+        # Reproduced directly against `permissions: read-all`.
+        doc_perms = _normalise_permissions(doc.get("permissions"))
+        job_perms = _normalise_permissions(job.get("permissions"))
+        # A job-level block REPLACES the workflow-level one; it does not merge with
+        # it. So the effective grant is the job's when it has one, else the workflow's.
+        effective = job_perms if job_perms is not None else doc_perms
+        if effective is _SHORTHAND_WRITE_ALL:
+            continue  # write-all satisfies every scope
+        # read-all grants `read` on every scope -- and write on none.
+        read_all = effective is _SHORTHAND_READ_ALL
+        granted = effective if isinstance(effective, dict) else {}
         for callee_job, callee_body in (callee.get("jobs") or {}).items():
             needed = callee_body.get("permissions") or callee.get("permissions") or {}
             if not isinstance(needed, dict):
                 continue
             for scope, level in needed.items():
                 checked += 1
-                have = granted.get(scope, "none")
+                have = "read" if read_all else granted.get(scope, "none")
                 if PERMISSION_ORDER.get(str(have), 0) >= PERMISSION_ORDER.get(str(level), 0):
                     continue
                 findings.error(
@@ -359,17 +560,24 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     pins = perms = inputs = 0
+    shapes = refs = hygiene = required = 0
     docs: dict[Path, dict] = {}
     for path in paths:
         doc = load(path, findings)
         if doc is None:
             continue
         rel = path.relative_to(root)
+        text = path.read_text(encoding="utf-8")
         docs[rel] = doc
-        pins += check_pins(rel, path.read_text(encoding="utf-8"), findings, args.offline)
+        pins += check_pins(rel, text, findings, args.offline)
         check_secrets_inherit(rel, doc, findings)
         perms += check_template_permissions(rel, doc, root, hub_root, findings)
         inputs += check_template_inputs(rel, doc, root, hub_root, findings)
+        # W5 additions.
+        shapes += check_template_shape(rel, doc, text, findings)
+        refs += check_caller_ref(rel, doc, findings)
+        hygiene += check_job_hygiene(rel, doc, findings)
+        required += check_required_inputs(rel, doc, root, hub_root, findings)
     check_duplicate_names(docs, findings)
 
     for note in findings.notes:
@@ -381,6 +589,10 @@ def main(argv: list[str] | None = None) -> int:
             f"{pins} write-scoped pins verified; "
             f"{perms} caller/callee permission pairs satisfied; "
             f"{inputs} passed inputs declared; "
+            f"{required} required inputs passed; "
+            f"{refs} hub-reusable refs at @v1; "
+            f"{hygiene} runner jobs carry timeout-minutes; "
+            f"{shapes} caller templates contain a `uses:`; "
             f"no duplicate workflow names; no structural `secrets: inherit`."
         )
         return 0

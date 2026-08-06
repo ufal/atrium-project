@@ -397,3 +397,79 @@ both W1 (to hold the result) and W3 (to validate it without cutting a release).
 - **Branch protection and the GPU runner themselves** — repository settings and external infrastructure,
   tracked in [#40](https://github.com/ufal/atrium-project/issues/40). This roadmap supplies the concrete
   proposal (§3.5) and removes the GPU single-supplier dependency (§3.6), but cannot land either.
+
+---
+
+## 7. Round 2 (2026-08-06) — what landed, and the two blockers that turned out to be one
+
+A fresh audit at the live HEADs (hub `63dbbdc`; translator `d6f393e`, pc `857307b`, nlp `e0efc18`,
+llm `d475a78`, alto `03a8bd4` — each tool repo's `test` byte-identical to its default branch).
+
+### The finding that reframed two open items
+
+`#10.plan.md` recorded the `:test` channel as **"BLOCKED (soft) — needs one branch push per repo"**.
+It was a hard block, in the hub's own code. Issue #10 added the tag rule
+
+```yaml
+type=raw,value=test,enable=${{ github.ref == 'refs/heads/test' }}
+```
+
+inside `build-and-push`, whose gate still read
+`if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'release'`. Those two conditions are
+**mutually exclusive** — on a tag `github.ref` is never `refs/heads/test`, and on a branch push the job
+does not run. `type=sha` lives in the same job, so a branch push published **nothing at all**. llm-enrich
+pushed `test` six times on 2026-08-06, every run green, no image. The pushes the plan was waiting for had
+already happened.
+
+That single defect was also the reason the **E2E `image-tag: test` flip** could not proceed, so the two
+items were one item.
+
+### Landed this round
+
+| # | Change | Why it is not cosmetic |
+|---|---|---|
+| **W1** | Restored `docker.caller.example.yml`; moved the dependabot hardening to `dependabot.example.yml` (renamed — it calls nothing, so `.caller.` was wrong) | The most-used reusable had **no caller example** for two days: `ed25341` overwrote it with a dependabot config. Worse, the Requires-Python/`numpy >= 2.5.0` guard — whose absence broke pc twice (#36, #37) — ended up in the *docker* file, so anyone copying the correctly-named `dependabot.caller.example.yml` got the version **without** the guard. |
+| **W2** | `build-and-push` gate now admits `push` to `refs/heads/test` | Unblocks the `:test` channel and the E2E flip. `:test` is deliberately **not** release-gated: the Trivy blocker is `refs/tags/`-only, and a pre-release channel a CVE can block is useless for triage. |
+| **W3** | Split metadata; the build pushes only `sha-<short>`, and `imagetools create` promotes semver/latest/test **after** the gate | The gate ran *after* the push. Live: llm-enrich `v0.5.2` (run `31093843094`) — build succeeded 10:36→10:42, gate failed 10:43→10:44, and `…-llm:0.5.2 + latest` is in GHCR **now** carrying the CVE the gate rejected while the run reports failure. A failed gate now leaves only an unadvertised immutable tag. |
+| **W4** | `all-repos-smoke.yml` cron 02:00 → 04:00; corrected the `:test` claims in `e2e-pipeline-smoke.yml`; corrected `fixtures/e2e/README.md` | The cron collision is one that workflow's **own header lists as a defect it fixed** — it had been reintroduced. The README claimed all tool repos are checked out "at the same ref (default `test`)"; the workflow passes **no `ref:`** for any of the four, so a green run does not describe one coherent artifact. |
+| **W5** | `workflow_lint.py`: crash fix + 5 new rules + widened glob; **first-ever tests** (`tests/test_workflow_lint.py`, 17) | `permissions: read-all` is legal shorthand and crashed the linter with `TypeError: 'str' object is not a mapping` — it **failed open**, and a linter that fails open is worse than none, because the green tick reads as "checked". New rules found **10 real defects** in published templates on the first run. |
+| **W6** | `assert-clean-tree` + `-rs` skip visibility + removed the duplicate advisory ruff | A suite that rewrites tracked files is a build step with assertions (nlp's `manifest.tsv`). Phase 6's lesson generalised: *a skipped test is not a cheaper test, it is an untested module wearing a green tick.* Both default to non-breaking. |
+| **W7** | `issue-log-refresh.yml`: `dry-run` input, `${{ github.repository }}`, scheduled-failure issue | Still **0 runs ever**. The new schedule fires it unattended holding `contents: write` + `pull-requests: write` + a repo secret, with three never-exercised fixes and — alone among scheduled workflows here — no failure notification. |
+| **W8/W9** | llm-enrich: `digital` Dockerfile stage, `build-targets`, compose service, `digital_born/` in `.dockerignore`; `--document-json-out` as the canonical flag | `ghcr.io/ufal/atrium-llm-enrich-digital` did not exist at **any** tag, which is the "needs a published image" blocker on the sixth E2E stage. Separately, `digital_born/` (5.1 MB of A/B research corpus) was baked into every published image. |
+| **W10** | New `e2e-digital-smoke.yml`; `e2e_assert.py` branches on `resolve_originator(source.origin)` | The born-digital path was tested only by unit tests in one repo. |
+
+### Why the digital branch is a sibling workflow, not a sixth stage
+
+Every scanned stage is structurally unreachable from a born-digital record: `pc` needs a page image that
+does not exist; `alto` **must not** run (`_assert_origin_consistent()` refuses `pages`/`lines` against
+`digital-born-*`, pinned by `test_without_needs_ocr_alto_is_still_refused`); `translator` needs
+`PAGE_ALTO/`; `nlp` needs the classify CSV *and* `INPUT_ALTO_DIR`. Only `llm` works — with no new code,
+because `doc_to_visual_md.py` already dispatches on `*.document.json`. So the branch is
+**`digital-convert → llm-enrich`**, and the assert derives which contract applies from the record's own
+`source.origin` rather than a CI flag.
+
+Two corrections to the plan, both found by running the real converter rather than reading it:
+
+- **`lines[].categ == "Garbage"` is true of ONE line, not all three.** The garbled fixture deliberately
+  mixes decodable and undecodable lines (the converter's own reason string says *"1 of 3 lines"*), so an
+  all-lines assert would fail against correct behaviour. The gate asserts *at least one*.
+- **The record filename must end in `.document.json`.** llm-enrich's dispatcher matches that exact suffix
+  (`_DOCUMENT_JSON_SUFFIX`), so the planned `d1_digital.json` would have been treated as an unknown input.
+
+The `needs_ocr` case is the one that matters: it is the §1a arbitration that *authorises* alto-postprocess
+to re-originate. It is asserted with `--expect-needs-ocr`, which inverts the happy-path checks — verified
+to **fail** against `minimal.pdf`, so it cannot pass vacuously.
+
+### Sequencing — do not conflate these three
+
+```
+W2 (:test gate) ──→ confirm `docker pull …:test` for the FIVE ──→ flip E2E image-tag default
+                                                              └──→ W8 publishes a SIXTH (-digital)
+```
+
+Adding `-digital` to `build-targets` means the `image-tag: test` flip now waits on a sixth tag that has
+never been published. Confirm the five first.
+
+W2, W3 and W6 all edit `docker-tool.reusable.yml`, whose blast radius is all five repos, and a reusable's
+permissions are capped by the calling job's grant — a regression that has taken down all five at once
+before. Land them as one reviewed change, validated via a caller pinned `@test` before `v1` moves.

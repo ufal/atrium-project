@@ -11,6 +11,18 @@ on:
   schedule:
     - cron: "0 2 * * 0"   # weekly, Sunday 02:00 UTC
 
+# A self-hosted runner is a SHARED, PERSISTENT machine: two overlapping runs fight
+# over the same GPU and the same HF cache, and the loser reports a CUDA OOM that
+# looks like a model bug. Serialise, and never cancel a run mid-inference.
+concurrency:
+  group: gpu-inference-${{ github.ref }}
+  cancel-in-progress: false
+
+# Least privilege, stated explicitly rather than inherited (#18). This workflow
+# only reads the repo; it publishes nothing.
+permissions:
+  contents: read
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   # Template vars to be localized per repository:
@@ -20,6 +32,10 @@ env:
 jobs:
   gpu-tests:
     runs-on: [self-hosted, gpu]
+    # Generous, because model download + inference on a cold cache is genuinely slow
+    # — but finite. On a self-hosted runner the 6-hour default does not just waste a
+    # hosted minute, it holds the ONLY GPU the ecosystem has.
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 

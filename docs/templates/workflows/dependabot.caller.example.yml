@@ -1,3 +1,31 @@
+# Canonical dependabot config for a tool repo. Copy to .github/dependabot.yml and
+# point `directory:` at wherever that repo actually keeps its manifests — a single
+# `directory: "/"` sees only the root, so a repo whose real pins live under setup/
+# or service/ needs one entry per manifest directory or its dependency surface goes
+# unmonitored entirely (atrium-page-classification, #18 audit).
+#
+# ── The Requires-Python trap (read before trimming the `ignore` list) ────────────
+# Dependabot raises a requirement's FLOOR to the latest version using the version
+# range alone. It reads neither the package's `Requires-Python` nor the interpreter
+# this ecosystem pins, so when a dependency ships a release that drops the Python we
+# build on, the bot writes a requirement with NO installable candidate — and pip
+# aborts the whole install rather than degrading:
+#
+#     numpy>=2.5.1,<3.0    # numpy 2.5.0+ is Requires-Python >=3.12
+#     → ERROR: No matching distribution found for numpy<3.0,>=2.5.1
+#
+# That fails at dependency install, before a single test runs, and it hit
+# page-classification twice (#36, #37) because the first fix only lowered the floor
+# and left the range permitting 2.5.x. The trap needs a permissive upper bound to
+# spring: a bare `<3.0` reads to the bot as "2.5.x is allowed here."
+#
+# This is a CLASS RISK, not one package's quirk. Every image and CI job across the
+# ecosystem pins Python 3.11 (`FROM python:3.11-slim`; `python-version: "3.11"` in the
+# docker-tool / security / workflow-lint reusables), so ANY dependency whose next
+# release requires >=3.12 does the same thing. When it does: cap the range at the last
+# version carrying cp311 wheels AND add the matching `ignore` here. The cap alone will
+# not stop the bot re-raising the floor next Monday, so lift the two together, never
+# separately, when the images move to 3.12.
 version: 2
 updates:
   - package-ecosystem: "github-actions"
@@ -16,7 +44,15 @@ updates:
       interval: "weekly"
     target-branch: "test"
     ignore:
+      # Pinned by the ecosystem, not by preference — bumping torch/torchvision means
+      # revalidating the CUDA wheel index and every model checkpoint, so they move by
+      # hand. transformers is held below the 5.0 major for the same reason.
       - dependency-name: "torch"
       - dependency-name: "torchvision"
       - dependency-name: "transformers"
         versions: [">= 5.0.0"]
+      # Requires-Python guard, per the note above. Drop this entry only in a repo
+      # that genuinely has no numpy in its tree, and lift the bound only alongside
+      # the interpreter bump.
+      - dependency-name: "numpy"
+        versions: [">= 2.5.0"]

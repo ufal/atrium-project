@@ -1,0 +1,272 @@
+# atrium-project — E2E smoke for the BORN-DIGITAL branch (W10, issue #10 tail).
+#
+#     digital-convert  ->  llm-enrich
+#
+# Two stages, not six. This is a SIBLING of e2e-pipeline-smoke.yml, not a sixth
+# stage bolted onto it, and the data flow is what forces that — every scanned stage
+# is structurally unreachable from a born-digital record:
+#
+#   pc          needs a page image; a born-digital PDF has none, and no raster step
+#               exists to make one.
+#   alto        MUST NOT run. atrium_document's `_assert_origin_consistent()`
+#               refuses every `pages`/`lines` write against a record whose
+#               `source.origin` is `digital-born-*`, pinned by
+#               `test_without_needs_ocr_alto_is_still_refused`. Chaining alto here
+#               would assert that the ownership rule is broken.
+#   translator  needs `PAGE_ALTO/`, which is alto's split output.
+#   nlp         needs the DOC_LINE_CATEG classify CSV *and* `INPUT_ALTO_DIR`.
+#   llm         WORKS AS-IS, no new code: `doc_to_visual_md.py` already dispatches
+#               on a `*.document.json` record alongside .pdf/.docx.
+#
+# `digital-convert` is this branch's ORIGINATOR — like page-classification on the
+# scanned branch, it takes no `--document-json` baseline, it creates the record.
+#
+# ── What this covers that nothing else does ─────────────────────────────────────
+# The §1a arbitration. A born-digital record normally locks alto-postprocess out of
+# `pages`/`lines` entirely; the ONE thing that re-authorises it is the converter
+# setting `needs_ocr: true` — "there is a text layer here and I do not trust it".
+# That handoff is the whole reason two originators can coexist, and until this
+# workflow it was covered only by unit tests inside a single repo. Case 2 below
+# asserts it against a real published image.
+#
+# ── Fixtures are GENERATED, never committed ─────────────────────────────────────
+# `atrium-llm-enrich/tests/fixtures/digital/make_fixtures.py` is a deterministic,
+# pure-stdlib PDF/DOCX generator with sha256-pinned outputs — same design as this
+# repo's own `tools/e2e/render_alto_page.py`, and it needs no Pillow, reportlab or
+# pypdf. `--manifest` is pointed at the work dir on purpose: the generator REWRITES
+# its manifest by default, and writing into a checkout mid-run is exactly the
+# tree-mutation the docker reusable's `assert-clean-tree` now fails on.
+#
+# ── Sequencing, which is not optional ───────────────────────────────────────────
+# This needs `ghcr.io/ufal/atrium-llm-enrich-digital`, a SIXTH published image that
+# did not exist before W8 added the Dockerfile stage and the build target. So the
+# `:test` channel must be confirmed for the existing five FIRST, then the E2E
+# default flipped, and only then is this workflow's `image-tag: test` meaningful.
+# Do not conflate the three.
+
+name: E2E Digital-Born Smoke Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      image-tag:
+        description: >-
+          GHCR tag to exercise. `latest` = the last release; `test` = the
+          pre-release channel (needs the -digital image published there first).
+        type: choice
+        options: [latest, test]
+        default: latest
+      openrouter-model:
+        description: "OpenRouter model slug for the llm stage"
+        default: "openai/gpt-4o-mini"
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/e2e-digital-smoke.yml"
+      - "tools/e2e/e2e_assert.py"
+      - "tools/e2e/requirements.txt"
+  schedule:
+    # 06:00, clear of e2e-pipeline-smoke.yml (02:00) and all-repos-smoke.yml (04:00).
+    # Three heavy jobs on one cron contend for runners and interleave three unrelated
+    # failure reports into one digest window.
+    - cron: '0 6 */3 * *'
+
+concurrency:
+  group: e2e-digital-smoke-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_TAG: ${{ inputs.image-tag || 'latest' }}
+  DIGITAL_IMAGE: ghcr.io/ufal/atrium-llm-enrich-digital
+  LLM_IMAGE: ghcr.io/ufal/atrium-llm-enrich-remote
+
+jobs:
+  digital-branch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      packages: read   # pull the -digital and -remote images from GHCR
+      contents: read
+      issues: write    # open an issue when the SCHEDULED run fails
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_KEY }}
+      OPENROUTER_MODEL: ${{ inputs.openrouter-model || 'openai/gpt-4o-mini' }}
+
+    steps:
+      - name: Checkout hub (fixtures, assert script)
+        uses: actions/checkout@v4
+        with:
+          repository: ufal/atrium-project
+          ref: v1
+
+      - name: Set up Python for assertions
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: tools/e2e/requirements.txt
+
+      - name: Install e2e tooling dependencies
+        run: pip install -r tools/e2e/requirements.txt
+
+      # llm-enrich is checked out ONLY for its fixture generator. The converter
+      # itself runs from the published image, which is the thing under test.
+      - name: Checkout atrium-llm-enrich (fixture generator only)
+        uses: actions/checkout@v4
+        with:
+          repository: ufal/atrium-llm-enrich
+          path: work/llm-enrich-src
+
+      - name: Gate on OPENROUTER_KEY
+        id: gate
+        run: |
+          if [ -n "${OPENROUTER_API_KEY}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::llm stage skipped — OPENROUTER_KEY is not set. The digital-convert stage still runs."
+          fi
+
+      # Same #18 rule as the scanned smoke: skipping on PR/dispatch is fine (forks
+      # hold no secret), but a stage that goes dark on the NIGHTLY is the failure
+      # this ecosystem has already paid for once.
+      - name: Require the secret on scheduled runs
+        if: steps.gate.outputs.enabled != 'true' && github.event_name == 'schedule'
+        run: |
+          echo "::error::OPENROUTER_KEY is not set — the scheduled digital E2E cannot exercise the llm stage."
+          exit 1
+
+      - name: Create workspace
+        run: |
+          W="${{ github.workspace }}/work"
+          mkdir -p "$W/digital_in" "$W/doc_json" "$W/llm_out"
+          # Every image runs as its own baked-in non-root user (atrium, uid 10001),
+          # unrelated to the runner uid that just created these directories. Without
+          # this, the first container write fails with EACCES.
+          chmod -R a+rwX "$W"
+
+      - name: Generate the digital fixtures
+        working-directory: work/llm-enrich-src
+        run: |
+          set -euo pipefail
+          W="${{ github.workspace }}/work"
+          # --manifest into the WORK dir: the generator rewrites its manifest by
+          # default, which would dirty the checkout.
+          python3 tests/fixtures/digital/make_fixtures.py \
+            --outdir "$W/digital_in" \
+            --manifest "$W/digital_in/MANIFEST.json"
+          # --verify re-derives every fixture and compares against the manifest, so a
+          # generator that silently changed its output fails HERE, with a sha256
+          # mismatch, rather than downstream as a confusing contract failure.
+          python3 tests/fixtures/digital/make_fixtures.py \
+            --outdir "$W/digital_in" \
+            --manifest "$W/digital_in/MANIFEST.json" \
+            --verify
+          chmod -R a+rwX "$W/digital_in"
+          ls -la "$W/digital_in"
+
+      # ── Case 1: the happy path ──────────────────────────────────────────────
+      # minimal.pdf — 2 pages, a clean embedded text layer, no diacritics.
+      #
+      # The output filename MUST end in `.document.json`: llm-enrich's
+      # `doc_to_visual_md.py` dispatches on that exact suffix
+      # (`_DOCUMENT_JSON_SUFFIX`), so a record named `d1_digital.json` would be
+      # treated as an unknown input instead of a document record.
+      - name: Stage D1 - digital-convert (happy path)
+        run: >
+          docker run --rm -v ${{ github.workspace }}:/workspace
+          ${DIGITAL_IMAGE}:${IMAGE_TAG}
+          /workspace/work/digital_in/minimal.pdf
+          --document-json-out /workspace/work/doc_json/minimal.document.json
+
+      - name: Assert the born-digital contract (happy path)
+        run: |
+          python tools/e2e/e2e_assert.py work/doc_json/minimal.document.json \
+            --llm-stage-ran false
+
+      # ── Case 2: the needs_ocr handoff (§1a) ─────────────────────────────────
+      # garbled.pdf — CP1250 bytes declared WinAnsi with no /ToUnicode, so the text
+      # layer decodes to mojibake. The converter must NOTICE and say so, because
+      # that verdict is what re-authorises alto-postprocess to re-originate.
+      #
+      # `--expect-needs-ocr` inverts the happy-path assertions, so this case cannot
+      # pass vacuously: run it against minimal.pdf and it fails.
+      - name: Stage D1b - digital-convert (garbled text layer)
+        run: >
+          docker run --rm -v ${{ github.workspace }}:/workspace
+          ${DIGITAL_IMAGE}:${IMAGE_TAG}
+          /workspace/work/digital_in/garbled.pdf
+          --document-json-out /workspace/work/doc_json/garbled.document.json
+
+      - name: Assert the needs_ocr handoff
+        run: |
+          python tools/e2e/e2e_assert.py work/doc_json/garbled.document.json \
+            --llm-stage-ran false \
+            --expect-needs-ocr
+
+      # ── Stage D2: llm-enrich reads the record the converter produced ─────────
+      # No new code path: openrouter_client.py takes the document-json pair, and
+      # doc_to_visual_md.py already renders a `*.document.json` record.
+      - name: Stage D2 - llm-enrich
+        if: steps.gate.outputs.enabled == 'true'
+        run: >
+          docker run --rm -e OPENROUTER_API_KEY -e OPENROUTER_MODEL
+          -v ${{ github.workspace }}:/workspace
+          ${LLM_IMAGE}:${IMAGE_TAG}
+          openrouter_client.py
+          --input /workspace/work/doc_json/minimal.document.json
+          --output-dir /workspace/work/llm_out
+          --model ${{ env.OPENROUTER_MODEL }}
+          --provider-data-collection deny
+          --document-json /workspace/work/doc_json/minimal.document.json
+          --document-json-out /workspace/work/doc_json/d2_llm.document.json
+
+      - name: Assert the final accreted record
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          python tools/e2e/e2e_assert.py work/doc_json/d2_llm.document.json \
+            --llm-stage-ran true \
+            --stages work/doc_json/minimal.document.json work/doc_json/d2_llm.document.json
+
+      - name: Upload records on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-digital-outputs
+          path: |
+            work/doc_json/*.json
+            work/digital_in/MANIFEST.json
+          if-no-files-found: warn
+
+      - name: Open an issue on scheduled failure
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `E2E digital-born smoke failed (${new Date().toISOString().slice(0, 10)})`;
+            const body = [
+              'The born-digital branch smoke failed:',
+              `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              '',
+              `Image tag exercised: \`${process.env.IMAGE_TAG || 'latest'}\``,
+              '',
+              'Where to look first:',
+              '- A sha256 mismatch in the fixture step means `make_fixtures.py` changed its',
+              '  output; the generator is the contract, so re-pin the manifest deliberately.',
+              '- A failure on the `--expect-needs-ocr` case means decode-sanity stopped',
+              '  flagging the garbled fixture. That gate going quiet is worse than it going',
+              '  red: it is the §1a arbitration becoming untested.',
+              '- A schema failure names the owning repo per block; `:latest` only moves on a',
+              '  version tag, so a fix on `test` cannot green a `latest` run.',
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['ci', 'pipeline'],
+            });

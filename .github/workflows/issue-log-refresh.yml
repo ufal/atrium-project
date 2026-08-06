@@ -18,6 +18,16 @@ name: Refresh Issue Logs
 
 on:
   workflow_dispatch:
+    inputs:
+      dry-run:
+        description: >-
+          Report the export diff to the Step Summary WITHOUT opening a PR. Use this
+          for the first manual run: the three fixes above have never been exercised
+          (0 recorded runs since 2026-07-28), and the schedule below now fires this
+          unattended while holding contents:write + pull-requests:write and a repo
+          secret. Prove it works before it can open anything.
+        type: boolean
+        default: false
   release:
     types: [published]
   # Issue #10, G9: this workflow had NEVER run — 0 recorded runs since it was
@@ -70,9 +80,32 @@ jobs:
           #
           # NOT --idempotent-paths: that switches the naming to issues/{number}.md
           # and would rewrite every committed filename.
-          gh2md ufal/atrium-project agent_dev_logs/issues --multiple-files --no-prs
+          # `${{ github.repository }}`, not a hardcoded `ufal/atrium-project`: this
+          # workflow is published as a pattern, and a hardcoded slug in a forked or
+          # renamed repo exports SOMEONE ELSE'S issues into this repo's PR.
+          gh2md "${GITHUB_REPOSITORY}" agent_dev_logs/issues --multiple-files --no-prs
+
+      # W7: the dry-run leg. Reports what WOULD change and stops, so the first real
+      # invocation of a workflow that has never run once can be observed without it
+      # opening a PR.
+      - name: Report the export diff (dry run)
+        if: inputs.dry-run
+        run: |
+          set -uo pipefail
+          {
+            echo "### Issue log refresh — DRY RUN"
+            echo ""
+            echo "No pull request was opened. Below is what a real run would commit."
+            echo ""
+            echo '```text'
+            git status --porcelain agent_dev_logs/issues || true
+            echo '```'
+            echo ""
+            echo "Files changed: $(git status --porcelain agent_dev_logs/issues | wc -l)"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create Pull Request
+        if: ${{ !inputs.dry-run }}
         # SHA-pinned: this action runs with contents:write + pull-requests:write
         # (see the permissions block above), so a force-pushed tag would run
         # attacker code holding both. Dependabot keeps the SHA and the version
@@ -90,3 +123,36 @@ jobs:
             Note: an issue that changed state since the last run lands under a new
             filename (`…issue.open.md` -> `…issue.closed.md`); the stale file needs
             deleting by hand, since gh2md's slug naming encodes the state.
+
+      # W7: every other scheduled workflow in this ecosystem opens an issue when it
+      # fails on a schedule (e2e-pipeline-smoke.yml and all five scheduled-smoke.yml
+      # do). This one did not — so an unattended Monday failure of a workflow holding
+      # contents:write, pull-requests:write and a repo secret would have been visible
+      # only to whoever thought to check the Actions tab. A scheduled job with no
+      # failure path is a job that fails silently by design.
+      - name: Open an issue on scheduled failure
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const title = `Issue log refresh failed (${new Date().toISOString().slice(0, 10)})`;
+            const body = [
+              'The scheduled `issue-log-refresh.yml` run failed:',
+              `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              '',
+              'Likely causes, in the order they have actually bitten:',
+              '- `GH2MD_READ_ACCESS` expired or was revoked (gh2md reads *only* `GITHUB_ACCESS_TOKEN`).',
+              '- A gh2md release changed the positional `output_path` CLI contract.',
+              '- `peter-evans/create-pull-request` could not push `docs/issue-log-update`.',
+              '',
+              'Until this is fixed the issue exports are stale, and the local',
+              '`update_issues.sh` + personal token this workflow exists to retire is',
+              'the only thing keeping them current.',
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['ci'],
+            });

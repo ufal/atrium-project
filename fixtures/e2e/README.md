@@ -10,8 +10,16 @@ pc → alto → translate → nlp → llm → TEITOK
 
 Driven by [`.github/workflows/e2e-pipeline-smoke.yml`](../../.github/workflows/e2e-pipeline-smoke.yml)
 with helpers in [`tools/e2e/`](../../tools/e2e/). Every job boundary is one cross-repo interface;
-assertions check **formats and contracts, never model quality**. All tool repos are checked out at
-the same ref (default `test`), so any repo's push that breaks a neighbour surfaces here within a day.
+assertions check **formats and contracts, never model quality**.
+
+> ⚠️ **What a green run actually covers.** Each stage runs a *published image* (selected by the
+> `image-tag` input) but mounts *source checked out with no `ref:`* — i.e. each tool repo's **default
+> branch**, not the branch or tag the image was built from. Only the hub checkout is pinned (`@v1`).
+> So a run does **not** describe one coherent artifact, and this file previously claimed "all tool
+> repos are checked out at the same ref (default `test`)", which was never true of the workflow as
+> written. Treat a green run as "default-branch source is compatible with the `image-tag` runtime",
+> and read the two together. Coupling `ref:` to `image-tag` (a `tool-ref` input) is the real fix and
+> is filed separately — it is a behaviour change to what the gate means, not a doc correction.
 
 ## 📄 Contents & provenance
 

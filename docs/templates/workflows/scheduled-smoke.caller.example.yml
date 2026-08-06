@@ -12,6 +12,13 @@ on:
     - cron: "0 3 * * *"    # daily 03:00 UTC
   workflow_dispatch:
 
+# A nightly that overlaps its own previous run (a slow external API, a stuck model
+# download) doubles the load on the very upstream it is probing. Serialise, but do
+# not cancel: a partial smoke reports nothing useful.
+concurrency:
+  group: scheduled-smoke-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   # Template vars to be localized per repository:
@@ -22,6 +29,9 @@ env:
 jobs:
   slow-tests:
     runs-on: ubuntu-latest
+    # This lane pulls models and calls external APIs, so it is legitimately slow —
+    # but a hung external call must not hold a runner for the 6-hour default.
+    timeout-minutes: 60
     permissions:
       contents: read
       issues: write

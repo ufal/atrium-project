@@ -43,6 +43,25 @@ on:
         required: false
         type: string
         default: '["base"]'
+      assert-clean-tree:
+        description: >-
+          Fail the test job if the suite modified any TRACKED file (W6). A suite that
+          rewrites committed fixtures is a build step with assertions, and the mutation
+          lands in whoever commits next — nlp-enrich's suite reordered
+          data_samples/manifest.tsv on every run. Set false only for a repo with a
+          documented, deliberate reason to write into its own tree during tests.
+        required: false
+        type: boolean
+        default: true
+      max-skips:
+        description: >-
+          Maximum number of skipped tests tolerated before the job fails (W6).
+          -1 (default) reports the count and reasons without enforcing a ceiling, so
+          this is non-breaking on adoption; set a real number to ratchet a repo down
+          once its skips are understood.
+        required: false
+        type: number
+        default: -1
     secrets:
       # Declared explicitly so callers can drop `secrets: inherit`, which handed
       # this workflow EVERY secret in the calling repo — HF_TOKEN, OPENROUTER_KEY,
@@ -130,14 +149,83 @@ jobs:
       - name: Prepare environment
         run: if [ -f ".env.example" ]; then cp .env.example .env; fi
 
-      - name: Lint with Ruff
-        continue-on-error: true
-        run: ruff check .
+      # W6 (2026-08-06): the advisory `ruff check .` that stood here was REMOVED.
+      # `pre-commit.reusable.yml` already runs ruff BLOCKING on the same events, so
+      # every PR carried two contradictory signals for one rule set — an amber
+      # "lint failed (ignored)" beside a red "pre-commit failed", both about the same
+      # finding. `continue-on-error: true` also means it could never gate anything, so
+      # deleting it loses no enforcement. Repos wanting lint here should call the
+      # pre-commit reusable, which is where the ruff config already lives.
 
       - name: Test & Coverage
         env:
           PYTHONPATH: .
-        run: python -m pytest -m "not slow" --cov=. --cov-report=term-missing --cov-report=xml
+        # `-rs` reports every SKIPPED test with its reason. Phase 6's lesson, made
+        # ecosystem-wide: a skipped test is not a cheaper test, it is an untested
+        # module wearing a green tick — docx_to_md.py sat at 15% coverage behind a
+        # green run with 17 tests silently skipping in CI. Skips are now visible in
+        # the log and summarised below.
+        # `tee` so the skip step below parses THIS run's real terminal summary
+        # rather than re-collecting (a re-collect re-evaluates skipif markers and can
+        # legitimately disagree with the run that just happened).
+        run: |
+          set -o pipefail
+          python -m pytest -m "not slow" -rs \
+            --cov=. --cov-report=term-missing --cov-report=xml \
+            | tee pytest-output.txt
+
+      # W6: surface the skip count, and let a repo ratchet it down over time.
+      # Default `max-skips: -1` means "report only", so this is non-breaking for all
+      # five repos on day one; a repo that has cleaned up sets a real ceiling and CI
+      # holds the line.
+      - name: Skipped-test visibility
+        if: always()
+        env:
+          MAX_SKIPS: ${{ inputs.max-skips }}
+        run: |
+          set -uo pipefail
+          if [ ! -f pytest-output.txt ]; then
+            echo "no pytest output captured (the test step did not run) — nothing to report"
+            exit 0
+          fi
+          # pytest's terminal summary, e.g. "== 296 passed, 8 skipped in 12.3s =="
+          COUNT=$(sed -n 's/.*[^0-9]\([0-9]\+\) skipped.*/\1/p' pytest-output.txt | tail -1)
+          COUNT=${COUNT:-0}
+          {
+            echo "### Skipped tests"
+            echo ""
+            echo "Skipped: **${COUNT}** (ceiling: \`${MAX_SKIPS}\`; \`-1\` = report only)"
+            echo ""
+            if [ "${COUNT}" -gt 0 ]; then
+              echo '```text'
+              grep '^SKIPPED' pytest-output.txt || true
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "${MAX_SKIPS}" != "-1" ] && [ "${COUNT}" -gt "${MAX_SKIPS}" ]; then
+            echo "::error::${COUNT} skipped tests exceeds the configured ceiling of ${MAX_SKIPS}."
+            exit 1
+          fi
+
+      # W6: idempotency. A test suite that mutates tracked files is not a test suite,
+      # it is a build step with assertions — and the mutation lands in whoever's next
+      # commit. nlp-enrich's suite reordered the committed
+      # `data_samples/manifest.tsv` on every run; that was found by hand. This makes
+      # the whole ecosystem fail loudly instead, in the one place all five repos share.
+      - name: Assert the working tree is unchanged by the tests
+        if: always() && inputs.assert-clean-tree
+        run: |
+          set -euo pipefail
+          # Untracked build/coverage output is expected; only TRACKED files matter.
+          DIRTY=$(git status --porcelain --untracked-files=no)
+          if [ -n "$DIRTY" ]; then
+            echo "::error::The test run modified tracked files. Tests must not mutate the repository."
+            echo "$DIRTY"
+            echo "--- diff ---"
+            git --no-pager diff -- . | head -200
+            exit 1
+          fi
+          echo "working tree clean — tests did not mutate tracked files"
 
       - name: Coverage to Step Summary
         if: always()
@@ -198,7 +286,27 @@ jobs:
 
   build-and-push:
     needs: test
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'release'
+    # W2 (2026-08-06): `push` to `refs/heads/test` added. Issue #10 introduced the
+    # `type=raw,value=test` tag rule below, but this gate still admitted only tag
+    # pushes and release events — and `github.ref` is never `refs/heads/test` on a
+    # tag. The two were MUTUALLY EXCLUSIVE, so the `:test` channel could not be
+    # published by any event, and `#10.plan.md`'s "BLOCKED (soft) — needs one branch
+    # push per repo" was a hard block: llm-enrich pushed `test` six times on
+    # 2026-08-06, every run green, no image published. `type=sha` lives in this same
+    # job, so a branch push published nothing at all.
+    #
+    # `:test` is deliberately NOT release-gated. The Trivy blocker below is
+    # `if: startsWith(github.ref, 'refs/tags/')`, so it does not apply here — a
+    # pre-release channel that a CVE can block is not usable for the triage it
+    # exists to serve. Release tags keep the gate; `test` keeps moving.
+    #
+    # Cost is bounded by the CALLER's concurrency group, which every one of the five
+    # already sets to `cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}`
+    # — superseded `test` builds cancel; only tag builds are protected from cancellation.
+    if: >-
+      startsWith(github.ref, 'refs/tags/v')
+      || github.event_name == 'release'
+      || (github.event_name == 'push' && github.ref == 'refs/heads/test')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -219,14 +327,36 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
+      # ── W3: scan-then-promote (2026-08-06) ──────────────────────────────────
+      # The metadata is split in two. Only `meta-immutable` is PUSHED by the build;
+      # `meta-release` is applied afterwards, and only once the release gate passes.
+      #
+      # Why: the gate ran AFTER the push, so a blocked release still shipped. Live
+      # proof — llm-enrich v0.5.2, run 31093843094: "Build and push" succeeded
+      # 10:36→10:42, then "Fail the release on fixable CRITICAL" failed 10:43→10:44,
+      # leaving ghcr.io/ufal/atrium-llm-enrich-llm tagged 0.5.2 + latest + sha-6c71425
+      # in GHCR carrying the CVE the gate rejected, while the workflow reported
+      # failure. Consumers pulling `:latest` got the rejected image; the run's red
+      # tick said otherwise. Not systemic in outcome (pc v1.7.4-beta and alto
+      # v1.4.3-beta both passed) but systemic in shape.
+      #
+      # After this change a failed gate leaves ONLY `sha-<short>` — an immutable,
+      # unadvertised audit tag that nothing consumes by default.
+      - name: Extract metadata (immutable tag — pushed by the build)
+        id: meta-immutable
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}
+          tags: |
+            type=sha
+
+      - name: Extract metadata (release tags — applied only after the gate)
+        id: meta-release
         uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}
           tags: |
             type=semver,pattern={{version}}
-            type=sha
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
             # A moving tag for the pre-release channel (issue #10).
             #
@@ -255,8 +385,10 @@ jobs:
           context: .
           target: ${{ matrix.target }}
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          # Immutable tag ONLY. Release tags (semver/latest/test) are applied by the
+          # promotion step at the end of this job, after the gate — see W3 above.
+          tags: ${{ steps.meta-immutable.outputs.tags }}
+          labels: ${{ steps.meta-immutable.outputs.labels }}
           build-args: |
             ATRIUM_RUNNER_REPO=https://github.com/${{ github.repository }}
             ATRIUM_RUNNER_REF=${{ github.ref_name }}
@@ -333,3 +465,43 @@ jobs:
           severity: CRITICAL
           ignore-unfixed: true
           exit-code: "1"
+
+      # ── W3: promote the release tags, only now that the gate has passed ──────
+      # `if: success()` is what makes this a gate rather than a report: every step
+      # above must have passed, including "Fail the release on fixable CRITICAL".
+      #
+      # `imagetools create` re-points tags at an EXISTING digest in the registry —
+      # no rebuild, no re-push of layers, so this costs a few seconds and cannot
+      # produce a different artifact than the one just scanned. `packages: write`
+      # is already granted by this job.
+      #
+      # On a `test` branch push this applies `:test`; on a version tag it applies
+      # `<semver>` and `latest`. When neither rule matched, `meta-release` emits no
+      # tags and the step no-ops (guarded below) — a PR build promotes nothing.
+      - name: Promote release tags to the scanned digest
+        if: success() && steps.meta-release.outputs.tags != ''
+        env:
+          DIGEST_REF: ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}@${{ steps.build.outputs.digest }}
+          RELEASE_TAGS: ${{ steps.meta-release.outputs.tags }}
+        run: |
+          set -euo pipefail
+          # metadata-action emits one tag per line.
+          ARGS=()
+          while IFS= read -r tag; do
+            [ -n "$tag" ] || continue
+            echo "  promoting -> $tag"
+            ARGS+=(--tag "$tag")
+          done <<< "$RELEASE_TAGS"
+          if [ ${#ARGS[@]} -eq 0 ]; then
+            echo "no release tags to promote"; exit 0
+          fi
+          docker buildx imagetools create "${ARGS[@]}" "$DIGEST_REF"
+          {
+            echo "### Promoted tags (post-scan)"
+            echo ""
+            echo "Digest: \`$DIGEST_REF\`"
+            echo ""
+            while IFS= read -r tag; do
+              [ -n "$tag" ] && echo "- \`$tag\`"
+            done <<< "$RELEASE_TAGS"
+          } >> "$GITHUB_STEP_SUMMARY"
