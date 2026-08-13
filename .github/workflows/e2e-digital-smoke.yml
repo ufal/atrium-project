@@ -98,13 +98,13 @@ jobs:
 
     steps:
       - name: Checkout hub (fixtures, assert script)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ufal/atrium-project
           ref: v1
 
       - name: Set up Python for assertions
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -116,7 +116,7 @@ jobs:
       # llm-enrich is checked out ONLY for its fixture generator. The converter
       # itself runs from the published image, which is the thing under test.
       - name: Checkout atrium-llm-enrich (fixture generator only)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ufal/atrium-llm-enrich
           path: work/llm-enrich-src
@@ -234,7 +234,7 @@ jobs:
 
       - name: Upload records on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-digital-outputs
           path: |
@@ -244,7 +244,7 @@ jobs:
 
       - name: Open an issue on scheduled failure
         if: failure() && github.event_name == 'schedule'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const title = `E2E digital-born smoke failed (${new Date().toISOString().slice(0, 10)})`;
