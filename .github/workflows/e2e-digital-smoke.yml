@@ -96,7 +96,22 @@ permissions:
   contents: read
 
 env:
-  IMAGE_TAG: ${{ inputs.image-tag || 'latest' }}
+  # Channel by EVENT, not one flat default (2026-08-18).
+  #
+  # `inputs.image-tag` is empty on every non-dispatch event, so `|| 'latest'`
+  # meant a PUSH smoked the RELEASED image. For `-digital` that is a guaranteed
+  # red — `:latest` exists only once a release tag carrying the digital build
+  # target is cut — and this workflow's own file is on the `paths` filter above.
+  # So every edit to this file re-ran it against an artifact the edit could not
+  # possibly have produced. Run 32130934621 is precisely that: a push of the
+  # workflow's own repair, failing on a missing release image.
+  #
+  #   push      -> `test`. A code push asks "does what we are about to release
+  #                still hold?", which is the pre-release channel's whole job.
+  #   schedule  -> `latest`. The nightly's job is the opposite question: does the
+  #                artifact consumers actually pull still work?
+  #   dispatch  -> whatever was chosen.
+  IMAGE_TAG: ${{ inputs.image-tag || (github.event_name == 'push' && 'test' || 'latest') }}
   DIGITAL_IMAGE: ghcr.io/ufal/atrium-llm-enrich-digital
   LLM_IMAGE: ghcr.io/ufal/atrium-llm-enrich-remote
 
@@ -242,9 +257,14 @@ jobs:
               echo "2. Cut an \`atrium-llm-enrich\` release tag newer than v0.5.2 — the first one"
               echo "   to include the \`digital\` build target also publishes \`:latest\`."
               echo ""
-              echo "Note that a freshly published GHCR package is private; it must be made"
-              echo "public, or this job's \`packages: read\` login relied on, before any"
-              echo "consumer can pull it."
+              echo "Then mind the third gate, which bites immediately after the first two:"
+              echo "a GHCR package is PRIVATE on creation, and it is owned by"
+              echo "\`atrium-llm-enrich\`, not by this repo. This job's \`GITHUB_TOKEN\` cannot"
+              echo "read a private package belonging to a different repository, so the pull"
+              echo "fails with \`denied\` even once the image exists. Fix it once, on the"
+              echo "package page: either set visibility to public (matching the other five"
+              echo "ATRIUM images), or under *Manage Actions access* grant"
+              echo "\`ufal/atrium-project\` at least Read."
             } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
