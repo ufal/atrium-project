@@ -43,6 +43,20 @@
 # `:test` channel must be confirmed for the existing five FIRST, then the E2E
 # default flipped, and only then is this workflow's `image-tag: test` meaningful.
 # Do not conflate the three.
+#
+# STATUS 2026-08-18: step one of that sequence has not happened, and cannot happen
+# on its own. The `:test` channel is unreachable for ALL FIVE repos, because every
+# caller pins `docker-tool.reusable.yml@v1` and the v1 tag still carries the old
+# `build-and-push` gate (`refs/tags/v*` or `release` only). The fix for that gate
+# is on the hub's default branch; the tag was never moved onto it, so the fix has
+# never reached a caller. Until `v1` moves, a push to any repo's `test` branch
+# builds, reports success, and publishes nothing — which is what both llm-enrich
+# test pushes on 2026-08-06 did.
+#
+# Moving `v1` retags CI for five repositories at once and is a release decision,
+# so it is deliberately NOT made here. The preflight step below states the
+# remaining options in the run's own Step Summary instead of letting the workflow
+# die on a misleading `denied` from the daemon.
 
 name: E2E Digital-Born Smoke Test
 
@@ -52,7 +66,9 @@ on:
       image-tag:
         description: >-
           GHCR tag to exercise. `latest` = the last release; `test` = the
-          pre-release channel (needs the -digital image published there first).
+          pre-release channel. NEITHER resolves for the -digital image today —
+          see the STATUS note at the top of this file; the preflight step reports
+          which one is missing and what unblocks it.
         type: choice
         options: [latest, test]
         default: latest
@@ -97,11 +113,25 @@ jobs:
       OPENROUTER_MODEL: ${{ inputs.openrouter-model || 'openai/gpt-4o-mini' }}
 
     steps:
+      # NOT `repository: ufal/atrium-project` + `ref: v1`, which is what this
+      # step did until 2026-08-18. This workflow LIVES in the hub, so the default
+      # checkout already gives the hub — pinning it to `v1` meant the workflow file
+      # came from the ref being run while `tools/e2e/e2e_assert.py` came from a tag
+      # cut 2026-08-06, and the two had already diverged:
+      #
+      #   `git show v1:tools/e2e/e2e_assert.py | grep -c expect-needs-ocr`  ->  0
+      #
+      # `--expect-needs-ocr` does not exist at v1, so the "Assert the needs_ocr
+      # handoff" step below would have died on `unrecognized arguments` the moment
+      # the image problem in front of it was cleared. v1 does not contain this
+      # workflow file at all, which is the tell: a self-referencing checkout pinned
+      # to a tag that predates the thing doing the checking.
+      #
+      # Same reasoning codeql.yml and pre-commit.yml already record for using
+      # `uses: ./…` over `@v1` — a ref being tested must be validated by the tooling
+      # that ships with it.
       - name: Checkout hub (fixtures, assert script)
         uses: actions/checkout@v7
-        with:
-          repository: ufal/atrium-project
-          ref: v1
 
       - name: Set up Python for assertions
         uses: actions/setup-python@v7
@@ -139,6 +169,85 @@ jobs:
         run: |
           echo "::error::OPENROUTER_KEY is not set — the scheduled digital E2E cannot exercise the llm stage."
           exit 1
+
+      # `packages: read` has been granted by this job since it was written, and
+      # nothing ever used it — every step went straight to `docker run`, which for
+      # an unauthenticated daemon can only reach PUBLIC packages. The other four
+      # ATRIUM images are public, so the sibling smokes get away with it; a GHCR
+      # package is PRIVATE on creation, so the first pull of a newly published
+      # image fails with `denied` no matter who is asking.
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Preflight: is there anything to test? ────────────────────────────────
+      # Run 31930694882 failed as:
+      #
+      #   docker: Error response from daemon: Head
+      #   "https://ghcr.io/v2/ufal/atrium-llm-enrich-digital/manifests/latest": denied
+      #
+      # which reads as a permissions problem and is not one. `-digital` has never
+      # been published at ANY tag, and two independent gates put it there:
+      #
+      #   * `:latest` moves only on `refs/tags/v*` (docker-tool.reusable.yml,
+      #     `type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}`).
+      #     The `digital` build target was added to llm-enrich's docker.yml in
+      #     57d8073 (2026-08-06); the newest tag, v0.5.2, is 6c71425 and does NOT
+      #     contain it. No release has been cut since, so no `latest` exists.
+      #   * The `:test` channel could not have covered the gap either. llm-enrich
+      #     calls `docker-tool.reusable.yml@v1`, and at the v1 tag `build-and-push`
+      #     is still gated on `startsWith(github.ref, 'refs/tags/v') || release` —
+      #     the W2 fix that admits `push` to `refs/heads/test` landed on the hub's
+      #     default branch but the v1 tag was never moved onto it. Both test-branch
+      #     pushes on 2026-08-06 (57d8073, f19fcd7) reported success and published
+      #     nothing; GHCR still holds no `sha-57d8073`, no `sha-f19fcd7` and no
+      #     `test` tag for ANY llm-enrich image.
+      #
+      # So this workflow cannot pass until the hub's `v1` tag is moved (unblocking
+      # the `:test` channel for all five repos) or an llm-enrich release is cut with
+      # the digital target in it. Failing here, by name, with that written down beats
+      # failing four steps later on a daemon error that names the wrong cause.
+      - name: Preflight - confirm the images exist at the requested tag
+        run: |
+          set -uo pipefail
+          missing=0
+          check() {
+            if docker manifest inspect "$1" >/dev/null 2>&1; then
+              echo "  ok       $1"
+            else
+              echo "  MISSING  $1"
+              missing=1
+            fi
+          }
+          echo "Resolving images for tag '${IMAGE_TAG}':"
+          check "${DIGITAL_IMAGE}:${IMAGE_TAG}"
+          if [ "${{ steps.gate.outputs.enabled }}" = "true" ]; then
+            check "${LLM_IMAGE}:${IMAGE_TAG}"
+          fi
+          if [ "$missing" -ne 0 ]; then
+            echo "::error::No image published at ':${IMAGE_TAG}'. The born-digital branch cannot be smoked until one exists."
+            {
+              echo "### E2E digital-born smoke — no image to test"
+              echo ""
+              echo "\`${DIGITAL_IMAGE}:${IMAGE_TAG}\` could not be resolved after authenticating to GHCR."
+              echo ""
+              echo "This is a publication gap, not a credentials problem. To unblock, either:"
+              echo ""
+              echo "1. Move the hub's \`v1\` tag onto a commit containing the \`build-and-push\`"
+              echo "   gate that admits \`push\` to \`refs/heads/test\`, then re-push"
+              echo "   \`atrium-llm-enrich\`'s \`test\` branch and re-run this with \`image-tag: test\`; or"
+              echo "2. Cut an \`atrium-llm-enrich\` release tag newer than v0.5.2 — the first one"
+              echo "   to include the \`digital\` build target also publishes \`:latest\`."
+              echo ""
+              echo "Note that a freshly published GHCR package is private; it must be made"
+              echo "public, or this job's \`packages: read\` login relied on, before any"
+              echo "consumer can pull it."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
 
       - name: Create workspace
         run: |
@@ -242,19 +351,34 @@ jobs:
             work/digital_in/MANIFEST.json
           if-no-files-found: warn
 
+      # De-duplicated as of 2026-08-18. On a `*/3` cron an unconditional
+      # `issues.create` files a fresh issue every third day for as long as the
+      # breakage lasts, and the breakage here is a publication gap that no amount
+      # of re-reporting closes — #45 (2026-08-16) is one of that series. One open
+      # issue per ongoing breakage, commented on each recurrence, is the
+      # reportable unit; a run is not.
       - name: Open an issue on scheduled failure
         if: failure() && github.event_name == 'schedule'
         uses: actions/github-script@v9
         with:
           script: |
-            const title = `E2E digital-born smoke failed (${new Date().toISOString().slice(0, 10)})`;
+            // Marker in the body rather than a title match: the title carries the
+            // run date, so it differs every time and can never match itself.
+            const MARKER = '<!-- atrium:e2e-digital-smoke-failure -->';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const imageTag = process.env.IMAGE_TAG || 'latest';
             const body = [
+              MARKER,
               'The born-digital branch smoke failed:',
-              `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              runUrl,
               '',
-              `Image tag exercised: \`${process.env.IMAGE_TAG || 'latest'}\``,
+              `Image tag exercised: \`${imageTag}\``,
               '',
               'Where to look first:',
+              '- `MISSING` in the preflight step means the image was never published, not',
+              '  that credentials are wrong. `-digital` reaches `:latest` only via an',
+              '  llm-enrich release tag, and reaches `:test` only once the hub `v1` tag',
+              '  carries the `build-and-push` gate that admits `refs/heads/test` pushes.',
               '- A sha256 mismatch in the fixture step means `make_fixtures.py` changed its',
               '  output; the generator is the contract, so re-pin the manifest deliberately.',
               '- A failure on the `--expect-needs-ocr` case means decode-sanity stopped',
@@ -263,10 +387,32 @@ jobs:
               '- A schema failure names the owning repo per block; `:latest` only moves on a',
               '  version tag, so a fix on `test` cannot green a `latest` run.',
             ].join('\n');
-            await github.rest.issues.create({
+
+            const existing = await github.paginate(github.rest.issues.listForRepo, {
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title,
+              state: 'open',
+              labels: 'ci,pipeline',
+              per_page: 100,
+            });
+            const open = existing.find((i) => !i.pull_request && (i.body || '').includes(MARKER));
+
+            if (open) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: open.number,
+                body: `Still failing as of ${new Date().toISOString().slice(0, 10)} (tag \`${imageTag}\`): ${runUrl}`,
+              });
+              core.notice(`Commented on existing failure issue #${open.number} instead of opening a duplicate.`);
+              return;
+            }
+
+            const created = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `E2E digital-born smoke failed (${new Date().toISOString().slice(0, 10)})`,
               body,
               labels: ['ci', 'pipeline'],
             });
+            core.notice(`Opened failure issue #${created.data.number}.`);
