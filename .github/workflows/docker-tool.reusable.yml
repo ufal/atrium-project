@@ -262,6 +262,10 @@ jobs:
     permissions:
       contents: read
     strategy:
+      # Same reasoning as `build-and-push` below: the targets are independent images, so
+      # stopping at the first broken one hides the state of the rest and costs a review
+      # cycle per target rather than per push. (issue atrium-project#10)
+      fail-fast: false
       matrix:
         target: ${{ fromJSON(inputs.build-targets) }}
     steps:
@@ -314,6 +318,18 @@ jobs:
       packages: write
       security-events: write   # SARIF upload for the post-publish scan below
     strategy:
+      # Each leg publishes a DIFFERENT image (`-llm`, `-digital`, `-api`, `-remote`), so
+      # one leg's failure says nothing about another's. With the default fail-fast the
+      # release gate's rejection of one target cancels the promotion of targets that
+      # already built and scanned clean. Live proof — llm-enrich v0.6.0, run
+      # 32242079038: `build-and-push (llm)` failed the fixable-CRITICAL gate on vllm
+      # 0.9.2, which is the gate doing its job; `build-and-push (digital)` was then
+      # CANCELLED mid-promotion despite its own build and Trivy scan both passing, so
+      # `ghcr.io/ufal/atrium-llm-enrich-digital:latest` -- the first-ever `:latest` for
+      # the born-digital converter -- was never published and still 404s, while the
+      # digital E2E cron resolves `:latest`. One target's CVE must not withhold another
+      # target's clean image. (issue atrium-project#10)
+      fail-fast: false
       matrix:
         target: ${{ fromJSON(inputs.build-targets) }}
     steps:
