@@ -26,3 +26,63 @@ updates:
       actions:
         patterns:
           - "*"
+
+  # Runtime + test deps for the pipeline scripts. This entry previously sat at
+  # directory "/", where the only requirements file was a duplicate of
+  # setup/requirements-test.txt — so setup/ and service/ (the files the Dockerfile
+  # and the CI workflows actually install) were never scanned. One entry per real
+  # requirements directory.
+  - package-ecosystem: "pip"
+    directory: "/setup"
+    schedule:
+      interval: "weekly"
+    target-branch: "test"
+    groups:
+      setup-deps:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "torch"
+      - dependency-name: "torchvision"
+      - dependency-name: "transformers"
+        versions: [">= 5.0.0"]
+      # numpy 2.5.0 raised its floor to Requires-Python >= 3.12. This repo is 3.11
+      # everywhere -- the CI setup-python, ruff's target-version, and the Dockerfile's
+      # python:3.11-slim base -- so `numpy>=2.5.1` is not a code incompatibility, it is
+      # an UNSATISFIABLE requirement: pip cannot resolve any candidate and the install
+      # step fails before a test runs. PR #39 sat red for a week for that reason, and no
+      # amount of fixing the code would have turned it green.
+      #
+      # Lift this when the repo moves to 3.12, which is a deliberate decision about the
+      # base image and not something a dependency bump should make for us.
+      # (issue atrium-project#10)
+      - dependency-name: "numpy"
+        versions: [">= 2.5.0"]
+
+  # FastAPI service layer.
+  - package-ecosystem: "pip"
+    directory: "/service"
+    schedule:
+      interval: "weekly"
+    target-branch: "test"
+    groups:
+      service-deps:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "torch"
+      - dependency-name: "torchvision"
+      - dependency-name: "transformers"
+        versions: [">= 5.0.0"]
+      # numpy 2.5.0 raised its floor to Requires-Python >= 3.12. This repo is 3.11
+      # everywhere -- the CI setup-python, ruff's target-version, and the Dockerfile's
+      # python:3.11-slim base -- so `numpy>=2.5.1` is not a code incompatibility, it is
+      # an UNSATISFIABLE requirement: pip cannot resolve any candidate and the install
+      # step fails before a test runs. PR #39 sat red for a week for that reason, and no
+      # amount of fixing the code would have turned it green.
+      #
+      # Lift this when the repo moves to 3.12, which is a deliberate decision about the
+      # base image and not something a dependency bump should make for us.
+      # (issue atrium-project#10)
+      - dependency-name: "numpy"
+        versions: [">= 2.5.0"]

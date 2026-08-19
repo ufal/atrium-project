@@ -386,7 +386,8 @@ def check_caller_ref(path: Path, doc: dict, findings: Findings) -> int:
 
 def check_job_hygiene(path: Path, doc: dict, findings: Findings) -> int:
     """Check -- every runner job sets `timeout-minutes`, and every triggerable
-    workflow sets `concurrency` and an explicit `permissions` block.
+    workflow sets `concurrency` (with cancellation semantics a scheduled run can
+    survive) and an explicit `permissions` block.
 
     These three policies were rolled out by hand, and `all-repos-smoke.yml` lost all
     three within two days of the rollout. A hand-applied policy with no rule behind
@@ -422,12 +423,42 @@ def check_job_hygiene(path: Path, doc: dict, findings: Findings) -> int:
                 "sets one.",
             )
 
-    if not is_reusable_only and doc.get("concurrency") is None:
+    concurrency = doc.get("concurrency")
+    if not is_reusable_only and concurrency is None:
         findings.error(
             path,
             "has no `concurrency` group. Overlapping runs of the same workflow race "
             "each other; every other triggerable workflow here sets one.",
         )
+    elif "schedule" in trigger_names and isinstance(concurrency, dict):
+        # Requiring the BLOCK is not the same as requiring it to be correct, and this
+        # rule exists because the gap between the two ate a nightly. Every group here is
+        # keyed `<workflow>-${{ github.ref }}`, so a scheduled run and a push run on the
+        # same ref land in ONE group -- and with cancel-in-progress the push wins. On
+        # 2026-08-19 that cancelled all-repos-smoke run #32 eleven seconds before a push
+        # run started, and a cancelled run reports no failure: the nightly stops
+        # producing a signal without ever going red. (issue atrium-project#10)
+        #
+        # Two remedies, both accepted, because they suit different workflows:
+        #   * scope the group by `github.event_name` -- keeps push/PR de-duplication,
+        #     which is the whole point of cancelling on a busy branch; or
+        #   * `cancel-in-progress: false` -- right for the heavy, infrequent jobs whose
+        #     runs are never redundant (the e2e smokes and vocab-refresh already do this).
+        group = str(concurrency.get("group", ""))
+        cancel = concurrency.get("cancel-in-progress", False)
+        # An expression (`${{ !startsWith(github.ref, 'refs/tags/') }}`) is not False: it
+        # evaluates true for every non-tag ref, scheduled runs included.
+        may_cancel = cancel is not False
+        event_scoped = "github.event_name" in group or "github.run_id" in group
+        if may_cancel and not event_scoped:
+            findings.error(
+                path,
+                f"is triggered by `schedule` but its concurrency group ({group!r}) does "
+                f"not distinguish the event and cancel-in-progress is {cancel!r}. A push "
+                "to the same ref will cancel the scheduled run, which then reports no "
+                "failure rather than a result. Add `github.event_name` to the group, or "
+                "set `cancel-in-progress: false`.",
+            )
 
     has_job_perms = any(isinstance(j, dict) and j.get("permissions") is not None for j in jobs.values())
     if doc.get("permissions") is None and not has_job_perms:

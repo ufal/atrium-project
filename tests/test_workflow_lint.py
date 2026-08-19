@@ -222,6 +222,101 @@ jobs:
     assert "concurrency" in out
 
 
+# ── a scheduled run a push can cancel (issue atrium-project#10) ──────────────
+#
+# The presence check above passed on all-repos-smoke.yml the whole time it was
+# cancelling its own nightly: the block was there, its VALUE was wrong. Run #32 died
+# eleven seconds before a push run started, and a cancelled run reports no failure --
+# so the nightly stopped producing a signal without ever going red.
+
+_SCHEDULED = """\
+name: Nightly
+on:
+  push:
+    branches: [test]
+  schedule:
+    - cron: "0 3 * * *"
+concurrency:
+  group: %s
+  cancel-in-progress: %s
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: echo hi
+"""
+
+
+def test_scheduled_workflow_cancelled_by_a_push_is_rejected(tmp_path):
+    """A ref-keyed group plus cancel-in-progress means the push wins and the cron loses."""
+    write_workflow(tmp_path, "x.yml", _SCHEDULED % ("nightly-${{ github.ref }}", "true"))
+    rc, out = run_lint(tmp_path)
+    assert rc == 1
+    assert "cancel the scheduled run" in out
+
+
+def test_scheduled_workflow_may_cancel_when_the_group_scopes_the_event(tmp_path):
+    """Remedy 1 — event-scoping. Push de-duplication is worth keeping on a busy branch;
+    it just must not reach across events into the scheduled run."""
+    write_workflow(
+        tmp_path,
+        "x.yml",
+        _SCHEDULED % ("nightly-${{ github.event_name }}-${{ github.ref }}", "true"),
+    )
+    rc, out = run_lint(tmp_path)
+    assert rc == 0, out
+
+
+def test_scheduled_workflow_may_decline_to_cancel(tmp_path):
+    """Remedy 2 — right for heavy, infrequent jobs whose runs are never redundant."""
+    write_workflow(tmp_path, "x.yml", _SCHEDULED % ("nightly-${{ github.ref }}", "false"))
+    rc, out = run_lint(tmp_path)
+    assert rc == 0, out
+
+
+def test_a_cancel_expression_is_not_treated_as_false(tmp_path):
+    """`${{ !startsWith(github.ref, 'refs/tags/') }}` is how security.yml spells "never
+    cancel a tag build". It is true for every other ref -- scheduled runs included -- so
+    reading it as a safe default is exactly the misreading this check exists to stop."""
+    write_workflow(
+        tmp_path,
+        "x.yml",
+        _SCHEDULED
+        % ("nightly-${{ github.ref }}", "${{ !startsWith(github.ref, 'refs/tags/') }}"),
+    )
+    rc, out = run_lint(tmp_path)
+    assert rc == 1
+    assert "cancel the scheduled run" in out
+
+
+def test_unscheduled_workflow_may_cancel_freely(tmp_path):
+    """The rule is about scheduled runs only: a push/PR workflow SHOULD cancel supersedes."""
+    write_workflow(
+        tmp_path,
+        "x.yml",
+        """\
+name: X
+on: push
+concurrency:
+  group: x-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: echo hi
+""",
+    )
+    rc, out = run_lint(tmp_path)
+    assert rc == 0, out
+
+
 def test_reusable_workflow_is_exempt_from_concurrency(tmp_path):
     """A callee must NOT set a concurrency group: the caller owns it, and one here
     would collapse five repos' builds into a single queue."""

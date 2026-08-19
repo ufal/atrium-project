@@ -43,7 +43,9 @@ permissions:
 
 concurrency:
   group: all-repos-smoke-${{ github.ref }}
-  cancel-in-progress: true
+  # A scheduled run is never redundant with a push run, and a cancelled one
+  # reports no failure rather than a result. (issue atrium-project#10)
+  cancel-in-progress: false
 
 jobs:
   fast-lane:
