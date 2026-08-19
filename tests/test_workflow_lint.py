@@ -284,8 +284,7 @@ def test_a_cancel_expression_is_not_treated_as_false(tmp_path):
     write_workflow(
         tmp_path,
         "x.yml",
-        _SCHEDULED
-        % ("nightly-${{ github.ref }}", "${{ !startsWith(github.ref, 'refs/tags/') }}"),
+        _SCHEDULED % ("nightly-${{ github.ref }}", "${{ !startsWith(github.ref, 'refs/tags/') }}"),
     )
     rc, out = run_lint(tmp_path)
     assert rc == 1
