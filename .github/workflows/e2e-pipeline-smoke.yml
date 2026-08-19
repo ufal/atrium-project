@@ -86,13 +86,13 @@ jobs:
 
     steps:
       - name: Checkout ATRIUM Hub Repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           repository: ufal/atrium-project # Explicitly checkout the hub repo to get the fixtures
           ref: v1 # References the @v1 tag instead of default branch
 
       - name: Set up Python for Assertions
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -125,7 +125,6 @@ jobs:
                    "$W/translated" "$W/nlp_out" "$W/llm_out" "$W/doc_json" "$W/paradata"
           cp "fixtures/e2e/ALTO/${E2E_DOC}.alto.xml" "$W/ALTO/"
           cp "fixtures/e2e/DOC_LINE_CATEG/${E2E_DOC}.csv" "$W/DOC_LINE_CATEG/"
-          cp "fixtures/e2e/VOCAB/teater_nested_vocab.json" "$W/"
           chmod -R a+rwX "$W"
 
       - name: Render fixture page image from the ALTO
@@ -181,11 +180,33 @@ jobs:
           FAIL_ON_EMPTY=true
           EOF
 
+      # ── Stage 5 vocabulary (2026-08-19) ────────────────────────────────────
+      # Points at llm-enrich's OWN committed vocabulary in the checkout Stage 5
+      # already mounts and runs from, rather than a fixture copy of it here.
+      #
+      # This step used to write a QUOTED path to a hub-side copy, and both halves
+      # were wrong (run 32208408456):
+      #
+      #   * llm-enrich's load_config kept the quote characters, so the path could
+      #     not exist. VocabularyManager fell through to a live AMCR harvest whose
+      #     terms all land in the "Other" theme — which is withheld from the
+      #     prompt — leaving a one-value enum that rejected every correct answer
+      #     the model gave. The run enriched nothing and still exited 0.
+      #   * the fixture had gone stale. llm-enrich replaced
+      #     data_samples/teater_nested_vocab.json with a built union of AMCR and
+      #     TEATER under data_samples/vocab/, so the hub copy no longer matched
+      #     the vocabulary the tool actually ships.
+      #
+      # llm-enrich now strips quotes and refuses to auto-sync, so either fix alone
+      # is sufficient; sourcing the vocabulary from the tool repo is what stops it
+      # drifting again, since there is no second copy to keep in step. Unquoted
+      # deliberately — these configs are shell-flavoured KEY=VALUE, not shell.
       - name: Write llm-enrich e2e config
         if: steps.gate.outputs.enabled == 'true'
         run: |
           W="${{ github.workspace }}/work"
-          echo 'VOCAB_PATH="/workspace/work/teater_nested_vocab.json"' > "$W/llm_config.txt"
+          VOCAB=/workspace/work/atrium-llm-enrich-main/data_samples/vocab/union_nested.json
+          echo "VOCAB_PATH=$VOCAB" > "$W/llm_config.txt"
 
       # ── HuggingFace model cache (2026-08-06) ────────────────────────────────
       # Stage 1 pulled `timm/regnety_160.swag_ft_in1k` from the Hub on EVERY run,
@@ -210,7 +231,7 @@ jobs:
       # The pc image declares HF_HOME=/cache/huggingface and runs as uid 10001, so the
       # host directory is mounted there and made writable before the container starts.
       - name: Cache HuggingFace models (Stage 1)
-        uses: actions/cache@v6
+        uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/hf-cache
           key: e2e-hf-${{ inputs.image-tag || 'latest' }}-regnety160
@@ -236,7 +257,7 @@ jobs:
           --document-json-out /workspace/work/doc_json/1_pc.json
 
       - name: Fetch latest ALTO Postprocess source
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           repository: ufal/atrium-alto-postprocess
           path: work/atrium-alto-postprocess-main
@@ -253,7 +274,7 @@ jobs:
           -c "pip install https://github.com/cneud/alto-tools/archive/refs/heads/master.zip && export PATH=\"\$PATH:/home/atrium/.local/bin\" && python run_pipeline.py --config /workspace/work/config_e2e_alto.txt --document-json /workspace/work/doc_json/1_pc.json --document-json-out /workspace/work/doc_json/2_alto.json"
 
       - name: Fetch latest Translator source
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           repository: ufal/atrium-translator
           path: work/atrium-translator-main
@@ -275,7 +296,7 @@ jobs:
           --document-json-out /workspace/work/doc_json/3_translate.json
 
       - name: Fetch latest NLP Enrich source
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           repository: ufal/atrium-nlp-enrich
           path: work/atrium-nlp-enrich-main
@@ -297,7 +318,7 @@ jobs:
 
       - name: Fetch latest LLM Enrich source
         if: steps.gate.outputs.enabled == 'true'
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           repository: ufal/atrium-llm-enrich
           path: work/atrium-llm-enrich-main
@@ -349,14 +370,14 @@ jobs:
 
       - name: Upload Pipeline Artifacts
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: e2e-pipeline-outputs
           path: work/doc_json/*.json
 
       - name: Open issue on scheduled failure
         if: failure() && github.event_name == 'schedule'
-        uses: actions/github-script@v9
+        uses: actions/github-script@v7
         with:
           script: |
             const title = `E2E pipeline smoke failed (${new Date().toISOString().slice(0,10)})`;
