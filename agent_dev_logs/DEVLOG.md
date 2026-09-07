@@ -1,6 +1,6 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 15 open issues. `test` HEAD `293b9f7` (2026-07-30), `main` `563ccd0` (2 commits behind)._
-> _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_3007.md` (prior: `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
+> _Hub/planning repo. 18 open issues. `test`==`main` HEAD `8b1bf50` (2026-09-07) · tag `v1` moving with it._
+> _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0709.md` (prior: `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
 - **#4 SSH Open Marketplace records** — Opened by stranak: create SSHOMP records for every tool in our workflows (UDPipe ✅,
@@ -400,3 +400,135 @@ enriched JSONs and complex XMLs.
 branches contain APIs accepting JSON inputs according to the `atrium_document` standard.
 * **#32 API services per repo should be standartized - OpenAPI** — A duplicate TODO was noted to ensure test and
 `agent-skill` branches contain APIs accepting JSON inputs according to the `atrium_document` standard.
+
+## 2026-08-02
+
+* **#40 CI/CD: Enforce Branch Protection (GH) & Enable GPU Runner (GHA)** — Opened by K4TEL: two infrastructure
+gaps remain after the GHA/Docker hardening — an external GPU runner for `pytest -m slow`, and branch-protection
+rules on the hub's `main`/`test`. @motyc pushes back on the GPU half same day: UFAL-profile GH Actions must not be
+wired to any ARUP/B environment — the border is a Docker image built in ARUP/B's own fork and run on their
+Kubernetes cluster, not live GPU access from this CI. If GPU testing is needed at all, it has to come from outside
+this infrastructure; @stranak points at Metacentrum (`metavo.metacentrum.cz`, application-gated) as the e-INFRA.cz
+GPU grid, and @motyc adds CERIT's n8n-agents/Galaxy services as possible helpers. Branch protection stays with
+@stranak. **Both tasks remain open as of 09-07.**
+
+## 2026-08-03 – 2026-08-04
+
+* Hub template (`atrium_document.py`/`.schema.json`) iterated four more times (`542ab8f`, `8998ee9`, `6bc32eb`,
+`db5a00f`, `72fc55f`, `ba7a264`) as the shared JSON contract kept growing.
+* **`docs/docker_gha_roadmap.md` added** (`c159101`) — a full, documentation-only audit of the post-07-30 GHA/Docker
+state against issue #18, explicitly deferring any code change to a later round. Three finding classes: **live
+breakages** (B1–B9 — two API images with no ASGI server declared anywhere so they cannot start; every suffixed
+compose `image:` reference asking for the wrong tag shape; a paradata self-report naming a GHCR tag that was never
+published; the E2E's own no-secret fallback path guaranteed to fail its own assertion; llm-enrich's unbuilt `api`
+Dockerfile stage referenced by compose anyway; all five composes bind-mounting a `data/` directory that exists in
+no repo; a GPU-overlay doc/script mismatch between `.yml` and `.yaml`; alto's production entrypoint using the
+filesystem-watching dev reloader; E2E silently patching `alto-tools` at runtime inside the published image); 
+**enforcement gaps** (E1–E11 — the hub's own self-check doesn't check the hub's own reusable-linter changes;
+`workflow_lint.py` has zero tests and crashes on the legal `permissions: read-all` shorthand; the linter has no
+rule for `timeout-minutes`/`concurrency`/workflow-level `permissions`/action-version floors; a second, unlinted
+`@test`-pinned copy of `skill-validate.caller.example.yml` sits beside the linted `@v1` one; `all-repos-smoke.yml`
+runs the full untagged pytest suite — including the model/network lane — on a GPU-less hosted runner and omits
+llm-enrich from its own matrix); and **~1,020 lines of still-uncollapsed duplication** across
+`release.yml`/`scheduled-smoke.yml`/`gpu-inference.yml`/`shellcheck.yml` (D1–D4), each with real per-repo drift
+already present (translator alone runs Python 3.12 in its smoke job against 3.11 everywhere else; alto owns the
+ecosystem's only real GPU test and has no GPU workflow, while nlp/llm each have one that can collect zero tests).
+Four decisions declared settled for the eventual execution round: retire `test` and protect the default branch
+(the two are now byte-identical mirrors in all six repos, doubling CI spend for no protection); make the GPU lane
+runner-agnostic; collapse all four duplicated workflow families; and treat `:edge` images plus supply-chain/image
+hygiene as in scope alongside that collapse.
+* **Spot-checked 2026-09-07: B1 and B2 are now fixed** (in nlp-enrich, via a fix explicitly cited to "atrium-project#10,
+G3" rather than to this roadmap directly) — see the 08-06 entry below. The roadmap's four "settled decisions"
+(retire `test`, GPU-agnostic lane, collapse the four families, `:edge`/hygiene) have **not** been executed as a
+dedicated wave; `test` and default remain parallel, byte-identical, both-CI'd branches in all six repos as of 09-07.
+
+## 2026-08-05 – 2026-08-06
+
+* **Issue #10 — "the 08-06 round."** A fresh LLM-review pass finds and fixes five P0s, each invisible to the repo
+that owned it: alto's `/process` endpoint merging a `result["lines"]` no code path actually returns, writing a
+hardcoded one-page stub; the same endpoint re-keying records via a lower-cased `Path.stem`; llm-enrich's remote
+CLIs doing the identical re-keying on `.teitok.xml`, discarding every upstream block; nlp-enrich's
+`teitok-schema.yml` red on its only run; page-classification's Dependabot `numpy` guard added and reverted five
+minutes later. Found while fixing: **translator's `service/api.py` omitted `backend` entirely, so every real
+`/translate` upload returned HTTP 500** — uncaught because every existing test mocked the pipeline. Two hub-built
+mechanisms with ~0% adoption — `canonical_doc_id()` and `validate_document()` (the Layer D gate, documented as
+normative, enforced nowhere) — are put on every production write path; `test_document_originators.py`, cited
+elsewhere as the thing that pins this, **did not exist in the hub** until this round vendored and enforced it ×5.
+* Digest+plan for #10 refreshed twice against the landed fixes (`4013f29`, `c69dd21`, `d5cb5d0`); GHA
+self-check/example-workflow fixes (`b3badb9`, `a286615`, `324541b`); ruff formatting (`5b4e189`, `9701dc9`).
+
+## 2026-08-18 – 2026-08-19
+
+* **Issue #10 — "the 08-19 round."** Nine findings, six of them mechanisms that were present, green, and checking
+something other than the thing that mattered. Correctness: `set_source()` silently discarded a new sub-key
+(`origin`) whenever the baseline's `source` block already existed but was partial — reintroducing, through a
+different door, the exact permanent-abstention bug the 08-06 round had just removed from alto; fixed so an absent
+key is additive while a written key stays immutable. Gates that could not fire: every workflow's `concurrency`
+group was keyed only by `${{ github.ref }}`, so a scheduled run and a push run on the same ref shared a group and
+`cancel-in-progress` let the push silently kill the scheduled one with no failure reported — on 08-19 this
+cancelled an `all-repos-smoke` run **eleven seconds** before a push run started; fixed as a **new check in
+`tools/ci/workflow_lint.py`** (scope by `github.event_name` or disable `cancel-in-progress`) rather than a one-off
+hand-edit, and it now runs on every push in all six repos. `sys.modules` poisoning removed from pc's test suite (four
+files stubbing `atrium_document`); stale action-major pins restored ecosystem-wide.
+* **Two corrections to the round's own work**, recorded with the same discipline the 08-06 edition used on itself:
+a review pass that ran the new linter against tool-repo checkouts ~5 hours stale concluded five repos would go red
+the moment `v1` moved (11 false findings — the compliance commits had actually landed 09:07–09:15 UTC, `v1` moved
+at 09:37); and a second pass inferred nlp-enrich's `:test` GHCR tag was absent from a lightweight tag's *current*
+target alone, when job-step evidence and a live anonymous probe both said otherwise. Both traced to the same root:
+"a claim about live state was derived rather than measured."
+* **`v1` tag moved** to `f54983e` at 09:37 UTC, carrying the widened `build-and-push` gate that admits `push` to
+`refs/heads/test` — unblocking the publish sequence the 07-30 round had left waiting. Coverage floors raised
+(alto 59→61); `service/*` genuinely dropped from alto's and translator's coverage `omit` lists. Dependabot bump
+merged (`f54983e`, actions group ×5); issue #10 digest+plan refreshed after the round (`7673a37`).
+* **State at end of round**: all six repos green, shared-code parity 40/40 pairs verified by direct blob hash (not
+by trusting `para-drift`'s own badge). Open per the round's own accounting: the publish sequence still needed one
+more `test` push to prove `:test` resolves under the new gate; no release wave yet (all five tool-repo versions
+unchanged since 08-06, so `:latest` still described pre-round images); `e2e-digital-smoke.yml` at 7 runs / 7
+failures, never reaching an assert step; `issue-log-refresh.yml` had quietly failed twice already (08-10, 08-17) on
+an exhaustive `permissions:` block that zeroed out `issues:` and 403'd its own failure handler.
+
+## 2026-09-03 – 2026-09-04
+
+* `issue-log-refresh.yml` **finally runs and succeeds** — twice, via PR #52 (`bc55fe4`, "docs: refresh issue logs
+via gh2md"), pulling in a full `gh2md` export including **closed** issues for the first time (`agent_dev_logs/issues/*.issue.closed.md`).
+The workflow's own first attempt at opening this as a PR (`docs/issue-log-update` branch) had itself failed
+(run #129) before the merge succeeded.
+* **Reversed the same day**: `dbaa44e` ("removing closed issues and reformat for pre-commit") deletes every
+`*.issue.closed.md` file the automation just added and reformats the rest — closed-issue exports are not the
+convention this directory follows (per #29, only open issues get a living export here) and pre-commit's formatting
+rules didn't match gh2md's raw output.
+* **#51 Request DARIAH Vocabs Service Namespace** — Opened by K4TEL: publishing the harmonised AMCR+TEATER
+vocabulary as SKOS needs a namespace first; `vocab_sources.py` already captures the AMCR `skos:exactMatch` URIs
+but nothing exports them yet. @motyc defers it same day: a commencing SKOSification project for AMCR/TEATER led by
+@petrpajdla already exists on an **18-month** timeline; acquiring a namespace is not trivial, and this issue should
+not become blocking — current vocabulary IDs will become PID references to the published SKOS version once that
+project lands. Using SKOS as an internal alignment framework now remains desirable and unblocked.
+
+## 2026-09-06
+
+* **#53 Follow best practices in all repos - `12 Factor` rules** — Opened by K4TEL: apply the twelve-factor
+methodology across all six repos (codebase, dependencies, config, backing services, build/release/run, stateless
+processes, port binding, concurrency, disposability, dev/prod parity, logs, admin processes). No response yet as
+of 09-07; likely successor framing to the ad-hoc lettered findings issue #10's rounds have been accumulating.
+* `issue-log-refresh.yml` **removed entirely** (`3ea60ff`, 281 lines) — after running successfully exactly once
+(09-04), the automation is abandoned in favor of the pre-existing manual `gh2md` + `update_issues.sh` flow; the
+same day's commits (`211a89d`, `21216f3`) are manual issue-log refreshes.
+
+## 2026-09-07
+
+* **State**: 18 open issues (#4, #6, #10, #13, #15, #16, #17, #18, #21, #22, #24, #26, #27, #31, #32, #40, #51,
+#53). `test` and `main` both at `8b1bf50`; tag `v1` moves with every push that carries it forward. `@v1` reusable
+pin confirmed live across all five tool repos' workflows. `e2e-pipeline-smoke.yml` (the JSON five-stage pipeline)
+is robustly green — 112 runs, one failure since 08-19. `e2e-digital-smoke.yml` remains **red on every one of 19
+runs since 08-06**, auto-tracked via bot-opened issue #49 (7 "still failing" comments so far); the root cause has
+moved from "image never resolves" (pre-08-18) to a genuine content defect: the pipeline now runs cleanly through
+digital-convert and the llm-enrich stage, schema-validates, and keeps `doc_id` stable across both stages, then
+fails the final assertion with `AssertionError: 'enrichment' block missing from llm-enrich stage` — the CLI/remote
+image path the workflow drives does not populate the block that `/enrich`'s API path does. Full detail:
+`digests/project_state_0709.md`.
+
+---
+_Timeline index refreshed 2026-09-07 against live `test`/`main` HEAD, the current release/CI/issue state of all
+six repos (including direct CI-log inspection of the failing `e2e-digital-smoke.yml` run and its tracking issue
+#49), and `docs/docker_gha_roadmap.md`. Nothing removed from the issues themselves (per #29); this file is a
+derived reading aid in `agent_dev_logs/`._
