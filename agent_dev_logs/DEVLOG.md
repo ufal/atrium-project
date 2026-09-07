@@ -423,7 +423,7 @@ compose `image:` reference asking for the wrong tag shape; a paradata self-repor
 published; the E2E's own no-secret fallback path guaranteed to fail its own assertion; llm-enrich's unbuilt `api`
 Dockerfile stage referenced by compose anyway; all five composes bind-mounting a `data/` directory that exists in
 no repo; a GPU-overlay doc/script mismatch between `.yml` and `.yaml`; alto's production entrypoint using the
-filesystem-watching dev reloader; E2E silently patching `alto-tools` at runtime inside the published image); 
+filesystem-watching dev reloader; E2E silently patching `alto-tools` at runtime inside the published image);
 **enforcement gaps** (E1–E11 — the hub's own self-check doesn't check the hub's own reusable-linter changes;
 `workflow_lint.py` has zero tests and crashes on the legal `permissions: read-all` shorthand; the linter has no
 rule for `timeout-minutes`/`concurrency`/workflow-level `permissions`/action-version floors; a second, unlinted
