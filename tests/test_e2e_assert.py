@@ -13,6 +13,8 @@ So the cases below are deliberately the ones the nightly E2E cannot reach:
   * stage 5 skipped (the `OPENROUTER_KEY`-absent path, and the future
     `pull_request` trigger) — must PASS without an `enrichment` block;
   * stage 5 ran but wrote no `enrichment` — must FAIL;
+  * stage 5 ran, reached the model and it located nothing — must PASS on a stamped
+    `items: []`, and say out loud that it was empty (atrium-project#49);
   * `doc_id` forked between two stages — must FAIL (this is D1/D2, the finding no
     single repo's tests can see);
   * a schema-invalid record — must FAIL on the schema, BEFORE any block assertion,
@@ -103,6 +105,41 @@ def test_llm_stage_that_ran_must_produce_enrichment(tmp_path, record):
     final = _write(tmp_path, "5_llm.json", record)
     with pytest.raises(AssertionError, match="enrichment"):
         e2e_assert.assert_document_contract(final, llm_stage_ran=True, stage_paths=[final])
+
+
+def test_stamped_but_empty_enrichment_passes_and_warns(tmp_path, record, capsys):
+    """atrium-project#49: "ran and found nothing" is a PASS, and must be visible as one.
+
+    llm-enrich writes its block whenever it reached the model, with `items: []` when the
+    model located nothing — the only way the record can distinguish that from "the stage
+    never ran". This gate owns the integration contract, so an empty-but-stamped block
+    satisfies it; asserting a live model finds archaeology in a fixture would make the
+    nightly flap on provider drift and vocabulary changes.
+
+    But it is not silent. A smoke that enriches zero passages every night is proving only
+    that the plumbing connects, and that is exactly how #49 went unread for a fortnight —
+    so the empty case prints a warning naming the fixture as the thing to check.
+    """
+    record["enrichment"] = {"items": []}
+    final = _write(tmp_path, "5_llm.json", record)
+
+    e2e_assert.assert_document_contract(final, llm_stage_ran=True, stage_paths=[final])
+
+    out = capsys.readouterr().out
+    assert "EMPTY" in out and "atrium-project#49" in out
+    assert "item(s) contributed" not in out
+
+
+def test_non_empty_enrichment_reports_its_item_count(tmp_path, record, capsys):
+    """The counterpart: a real enrichment says how much it found, so a drop to zero is
+    readable in the run log rather than only in a downloaded artifact."""
+    final = _write(tmp_path, "5_llm.json", record)
+
+    e2e_assert.assert_document_contract(final, llm_stage_ran=True, stage_paths=[final])
+
+    out = capsys.readouterr().out
+    assert "item(s) contributed by 'llm-enrich'" in out
+    assert "EMPTY" not in out
 
 
 def test_unstamped_enrichment_block_is_rejected(tmp_path, record):

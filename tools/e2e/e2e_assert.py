@@ -196,11 +196,39 @@ def _assert_enrichment(doc, llm_stage_ran):
             f"from assembled.blocks. CI always passes the gate's value explicitly."
         )
     if llm_stage_ran:
-        assert "enrichment" in doc, "❌ 'enrichment' block missing from llm-enrich stage"
+        assert "enrichment" in doc, (
+            "❌ 'enrichment' block missing from llm-enrich stage.\n"
+            "   The stage is REQUIRED to write this block whenever it reached the model, "
+            "including when the model located nothing — an empty `items` list stamped by "
+            "llm-enrich is how 'ran and found nothing' is told apart from 'never ran'. "
+            "A run that could NOT reach the model writes no record and exits non-zero "
+            "instead, so it fails at its own step rather than here.\n"
+            "   So a record arriving here without the block means one of: llm-enrich is "
+            "older than that contract (atrium-project#49, fixed in llm-enrich after "
+            "v0.6.2 — check the image tag this run pulled); or a tool downstream of it "
+            "dropped the block; or the file handed to this assert is not the llm stage's "
+            "output at all but the baseline that went into it."
+        )
         assert "enrichment" in stamped, (
             "❌ 'enrichment' present but not recorded in assembled.blocks: it was not written "
             "through DocumentRecord.set_block(), so it carries no program/paradata stamp"
         )
+        # Reported, NOT asserted. Whether a live model finds archaeology in a fixture is a
+        # model-quality question and pinning it would make the gate flap on provider drift;
+        # what this gate owns is the integration contract. But a run that enriches zero
+        # passages every night is a fixture problem worth seeing in the log rather than
+        # discovering when someone finally reads the artifact — which is how #49 went.
+        items = (doc.get("enrichment") or {}).get("items") or []
+        program = (stamped.get("enrichment") or {}).get("program")
+        if items:
+            print(f"✅ enrichment: {len(items)} item(s) contributed by {program!r}")
+        else:
+            print(
+                f"⚠️  enrichment: block stamped by {program!r} but EMPTY — the stage ran and "
+                "located nothing. Valid, and not a failure, but if it is empty on every run "
+                "the smoke is only proving the plumbing: check the fixture actually contains "
+                "archaeological content (atrium-project#49)."
+            )
     else:
         print(
             "ℹ️  the llm-enrich stage did not run — 'enrichment' block not required. "

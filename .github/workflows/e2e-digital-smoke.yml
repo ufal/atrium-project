@@ -44,19 +44,17 @@
 # default flipped, and only then is this workflow's `image-tag: test` meaningful.
 # Do not conflate the three.
 #
-# STATUS 2026-08-18: step one of that sequence has not happened, and cannot happen
-# on its own. The `:test` channel is unreachable for ALL FIVE repos, because every
-# caller pins `docker-tool.reusable.yml@v1` and the v1 tag still carries the old
-# `build-and-push` gate (`refs/tags/v*` or `release` only). The fix for that gate
-# is on the hub's default branch; the tag was never moved onto it, so the fix has
-# never reached a caller. Until `v1` moves, a push to any repo's `test` branch
-# builds, reports success, and publishes nothing — which is what both llm-enrich
-# test pushes on 2026-08-06 did.
+# STATUS 2026-09-07: the publication gap above is CLOSED, and the note is kept because
+# the preflight step it explains is still the right first thing to read when a run goes
+# red early. `atrium-llm-enrich` v0.6.0 (2026-08-19) was the first release carrying the
+# `digital` build target, so `-digital:latest` has existed since then; run 34090340995
+# pulled `-remote:latest` and `-digital:latest` without incident and got all the way to
+# the final assert. Option 2 in the preflight summary is what happened.
 #
-# Moving `v1` retags CI for five repositories at once and is a release decision,
-# so it is deliberately NOT made here. The preflight step below states the
-# remaining options in the run's own Step Summary instead of letting the workflow
-# die on a misleading `denied` from the daemon.
+# The `:test` channel is a separate question and is NOT known to be fixed — nothing here
+# has exercised it since. A push-triggered run is still the first thing that would find
+# out, and the preflight will say `MISSING` rather than dying on a `denied` from the
+# daemon if `v1` has still not moved.
 
 name: E2E Digital-Born Smoke Test
 
@@ -65,10 +63,10 @@ on:
     inputs:
       image-tag:
         description: >-
-          GHCR tag to exercise. `latest` = the last release; `test` = the
-          pre-release channel. NEITHER resolves for the -digital image today —
-          see the STATUS note at the top of this file; the preflight step reports
-          which one is missing and what unblocks it.
+          GHCR tag to exercise. `latest` = the last release (resolves for every
+          image since llm-enrich v0.6.0); `test` = the pre-release channel, which
+          may still be unpublished — see the STATUS note at the top of this file.
+          The preflight step reports which one is missing and what unblocks it.
         type: choice
         options: [latest, test]
         default: latest
@@ -337,6 +335,35 @@ jobs:
             --llm-stage-ran false \
             --expect-needs-ocr
 
+      # ── Case 3: a record the semantic stage can actually read ───────────────
+      # enrichable.pdf — one page of diacritic-free Czech archaeological prose.
+      #
+      # This case exists because of run 34090340995 (issue #49). Stage D2 below used to be
+      # fed `minimal.document.json`, and minimal.pdf reads "Excavation report, block one,
+      # line one." — placeholder text chosen to make BLOCK BOUNDARIES reviewable, carrying
+      # no site, find, method, period or material. llm-enrich's own document-level prompt
+      # tells the model "If the document has no archaeologically relevant passages, return
+      # an empty items list", so `records enriched: 0` was the model obeying it. The smoke
+      # was asserting a semantic outcome against a fixture built to pin bboxes, and the
+      # failure it reported ("'enrichment' block missing") named neither cause.
+      #
+      # minimal.pdf keeps its two jobs from Case 1 and is deliberately NOT rewritten: its
+      # bytes are a geometry golden, and one fixture serving both a geometry and a semantic
+      # contract is how the two got confused. Asserting the born-digital contract on this
+      # record before D2 also proves the new fixture is a clean born-digital input rather
+      # than something D2's result could be blamed on later.
+      - name: Stage D1c - digital-convert (enrichable content)
+        run: >
+          docker run --rm -v ${{ github.workspace }}:/workspace
+          ${DIGITAL_IMAGE}:${IMAGE_TAG}
+          /workspace/work/digital_in/enrichable.pdf
+          --document-json-out /workspace/work/doc_json/enrichable.document.json
+
+      - name: Assert the born-digital contract (enrichable fixture)
+        run: |
+          python tools/e2e/e2e_assert.py work/doc_json/enrichable.document.json \
+            --llm-stage-ran false
+
       # ── Stage D2: llm-enrich reads the record the converter produced ─────────
       # No new code path: openrouter_client.py takes the document-json pair, and
       # doc_to_visual_md.py already renders a `*.document.json` record.
@@ -347,19 +374,22 @@ jobs:
           -v ${{ github.workspace }}:/workspace
           ${LLM_IMAGE}:${IMAGE_TAG}
           openrouter_client.py
-          --input /workspace/work/doc_json/minimal.document.json
+          --input /workspace/work/doc_json/enrichable.document.json
           --output-dir /workspace/work/llm_out
           --model ${{ env.OPENROUTER_MODEL }}
           --provider-data-collection deny
-          --document-json /workspace/work/doc_json/minimal.document.json
+          --document-json /workspace/work/doc_json/enrichable.document.json
           --document-json-out /workspace/work/doc_json/d2_llm.document.json
 
+      # `--stages` chains D1c -> D2, not D1 -> D2: the doc_id continuity being checked is
+      # the one along the path the record actually took, and D1's record is a different
+      # document (`minimal`) that D2 never saw.
       - name: Assert the final accreted record
         if: steps.gate.outputs.enabled == 'true'
         run: |
           python tools/e2e/e2e_assert.py work/doc_json/d2_llm.document.json \
             --llm-stage-ran true \
-            --stages work/doc_json/minimal.document.json work/doc_json/d2_llm.document.json
+            --stages work/doc_json/enrichable.document.json work/doc_json/d2_llm.document.json
 
       - name: Upload records on failure
         if: failure()
@@ -406,6 +436,13 @@ jobs:
               '  red: it is the §1a arbitration becoming untested.',
               '- A schema failure names the owning repo per block; `:latest` only moves on a',
               '  version tag, so a fix on `test` cannot green a `latest` run.',
+              '- \"`enrichment` block missing\" is about the CONTRACT, not about how much the',
+              '  model found. llm-enrich writes that block whenever it reached the model,',
+              '  with an empty `items` list when nothing was located, and exits non-zero',
+              '  without writing a record when it could not reach the model at all. So a',
+              '  missing block means an image older than atrium-project#49, a downstream tool',
+              '  dropping the block, or the assert being pointed at the baseline instead of',
+              '  the stage output. An EMPTY block is reported as a warning, not a failure.',
             ].join('\n');
 
             const existing = await github.paginate(github.rest.issues.listForRepo, {
