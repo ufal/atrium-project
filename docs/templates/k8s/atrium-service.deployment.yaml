@@ -1,0 +1,148 @@
+# EXAMPLE Kubernetes manifest for an ATRIUM tool-repo `api` image (issue #55).
+#
+# Copy, replace every <placeholder>, and apply. This is the reference contract that
+# closes the gap the issue's own acceptance criterion depends on: a Dockerfile
+# `HEALTHCHECK` is invisible to Kubernetes — the kubelet reads `livenessProbe` /
+# `readinessProbe` / `startupProbe` from THIS document, never from the image. See
+# docs/k8s_deployment.md for the full rationale behind every field below; this file
+# is deliberately just the manifest, with only pointer comments.
+#
+# Ask ARÚP/ARÚB to run this manifest (not "the image") — see
+# docs/k8s_acceptance_runbook.md for the acceptance procedure this manifest supports.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atrium-<tool>-api            # e.g. atrium-nlp-enrich-api
+  labels:
+    app.kubernetes.io/name: atrium-<tool>-api
+    app.kubernetes.io/part-of: atrium
+spec:
+  replicas: 1                        # raise once a repo's job/state model is verified
+                                      # safe under >1 replica — see the nlp-enrich note
+                                      # in docs/k8s_deployment.md §"Known limits".
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0               # never drop below the healthy replica count while
+      maxSurge: 1                     # rolling — the whole point of this issue.
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: atrium-<tool>-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: atrium-<tool>-api
+    spec:
+      # terminationGracePeriodSeconds must exceed the WHOLE shutdown chain: the
+      # preStop sleep below, THEN the container's own `--timeout-graceful-shutdown`,
+      # THEN serve_lifecycle's drain_timeout (issue #55, docs/templates/shared/
+      # atrium_service.py) — the kubelet SIGKILLs at this deadline regardless of what
+      # the process is still doing. 60s here = 5s preStop + 20s uvicorn HTTP drain +
+      # 25s tracked-task drain (every repo's actual defaults) + 10s headroom. Widen
+      # it for a repo with longer-running SINGLE requests (translator's per-chunk
+      # LINDAT calls, llm-enrich's per-line LLM calls can legitimately run minutes) —
+      # this default protects typical requests, not every possible one; see
+      # docs/k8s_deployment.md's "Known limits".
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: api
+          image: ghcr.io/ufal/atrium-<tool>:<version>-api   # e.g. …-nlp-enrich:v1.2.0-api
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: PORT
+              value: "8000"
+            # - name: ALLOWED_ORIGINS         # CSV, default "*" — set for a real deployment
+            #   value: "https://example.org"
+            # - name: MAX_UPLOAD_MB
+            #   value: "10"
+
+          # --- Probes: three DIFFERENT endpoints, on purpose ---------------------
+          #
+          # startupProbe -> /ready: gates the OTHER two probes until the first pass.
+          # Generous failureThreshold*periodSeconds — model warmup (HF cache miss,
+          # first-run download) can take minutes, and a short startupProbe budget
+          # turns a slow-but-healthy warmup into a restart loop, which is worse than
+          # the H10 problem this issue exists to fix.
+          startupProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            periodSeconds: 5
+            failureThreshold: 60       # up to 5 minutes to warm up
+
+          # readinessProbe -> /ready: removes THIS pod from the Service's endpoint
+          # list without restarting it. Flips to 503 the instant serve_lifecycle's
+          # SIGTERM handler runs, before uvicorn's own connection drain even begins
+          # — this is deliberately a DIFFERENT route than livenessProbe below;
+          # folding both into the same /health would mean the only way to stop
+          # routing new work here is to also declare the process unhealthy.
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            periodSeconds: 5
+            failureThreshold: 2
+            timeoutSeconds: 3
+
+          # livenessProbe -> /health: restarts the pod ONLY if the process is truly
+          # stuck. Deliberately generous and deliberately unaffected by draining —
+          # /health stays 200 through a graceful shutdown (docs/templates/shared/
+          # atrium_service.py), specifically so a slow-but-in-progress drain is never
+          # mistaken for a hang and SIGKILLed early.
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 15
+            failureThreshold: 3
+            timeoutSeconds: 5
+
+          lifecycle:
+            preStop:
+              exec:
+                # THE MOST EASILY SKIPPED LINE IN THIS FILE. Verified empirically
+                # (issue #55 strategy write-up): uvicorn stops accepting new
+                # connections within milliseconds of receiving SIGTERM — far faster
+                # than kube-proxy can react to this pod leaving the Service's
+                # endpoint list after readinessProbe next reports 503. Without this
+                # delay, a rolling restart still drops requests that were already
+                # routed here, even with perfectly correct in-app SIGTERM handling.
+                # This sleep is what buys the endpoint-removal propagation time; it
+                # is not "for the app", the app's own drain runs afterward during
+                # the SIGTERM that follows preStop.
+                command: ["sleep", "5"]
+
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              memory: "4Gi"            # <tool>-specific — size against the model(s)
+                                        # this service loads; no CPU limit by default
+                                        # (throttling a model-serving process under
+                                        # load is its own footgun, out of scope here).
+
+          volumeMounts:
+            - name: hf-cache
+              mountPath: /cache/huggingface   # every ATRIUM image sets HF_HOME here
+
+      volumes:
+        - name: hf-cache
+          emptyDir: {}                  # swap for a PVC to persist the model cache
+                                          # across pod restarts and avoid re-downloading
+
+#---
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: atrium-<tool>-api
+#spec:
+#  selector:
+#    app.kubernetes.io/name: atrium-<tool>-api
+#  ports:
+#    - port: 8000
+#      targetPort: 8000
+#      name: http

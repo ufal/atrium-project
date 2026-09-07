@@ -4,9 +4,14 @@
 #
 # The reusable installs the caller's root requirements-test.txt and runs
 # tests/test_api_contract.py, which asserts the strategy §4.1 /info envelope,
-# /health, the advertised endpoint set, and OpenAPI 3.x validity against the
-# in-process app. The test is importorskip-guarded, so a repo whose service needs
-# the heavy model stack skips cleanly here.
+# /health, /ready (issue #55), the advertised endpoint set, and OpenAPI 3.x
+# validity against the in-process app. The test is importorskip-guarded, so a
+# repo whose service needs the heavy model stack skips cleanly here.
+#
+# This is the in-process half of the contract; the container-level half (a real
+# `docker run`, Docker's own HEALTHCHECK, /health and /ready over a published
+# port, then SIGTERM) lives in docker-tool.reusable.yml's docker-build-smoke job,
+# opt-in per Dockerfile stage via that reusable's `probe-targets` input.
 #
 # IMPORTANT — the reusable hardcodes the ROOT path `requirements-test.txt`, and its
 # `[ -f ]` guard means a missing file installs nothing SILENTLY and then fails two

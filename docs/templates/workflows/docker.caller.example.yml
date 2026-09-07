@@ -52,4 +52,12 @@ jobs:
       requirements: setup/requirements.txt setup/requirements-test.txt
       hf-model-cache: true
       # hf-cache-key: v4.3              # bump to invalidate the HF model cache
-      # build-targets: '["base"]'       # Dockerfile stages to publish; default ["base"]
+      build-targets: '["base", "api"]'  # Dockerfile stages to publish; default ["base"]
+      probe-targets: '["api"]'          # subset of build-targets that are HTTP servers —
+                                         # container-smoke tested (HEALTHCHECK, /health,
+                                         # /ready, SIGTERM) in docker-build-smoke on every
+                                         # PR (issue #55). Default '[]': batch-CLI targets
+                                         # like `base` here are never runnable servers, so
+                                         # leave them out — probing one fails correctly-
+                                         # behaving images that were never meant to serve
+                                         # HTTP.

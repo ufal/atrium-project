@@ -63,6 +63,7 @@ declare -A SHARED_FILES=(
     ["test_para_licenses.py"]="tests/test_para_licenses.py"
     ["test_document_originators.py"]="tests/test_document_originators.py"
     ["atrium_service.py"]="service/atrium_service.py"
+    ["healthcheck.py"]="service/healthcheck.py"
     ["check_version.py"]="check_version.py"
     ["atrium_document.py"]="atrium_document.py"
     ["atrium_document.schema.json"]="atrium_document.schema.json"

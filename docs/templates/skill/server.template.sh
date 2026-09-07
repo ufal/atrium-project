@@ -1,14 +1,21 @@
 #!/usr/bin/env bash
-# Start the ATRIUM <Tool> API server and wait until it is healthy (strategy Appendix C).
+# Start the ATRIUM <Tool> API server and wait until it is READY (strategy Appendix C).
 #
 # Copy to scripts/server.sh (that exact name — every doc must reference the
 # committed filename) and fill in every <placeholder>. Behavior contract:
-#   1. Probe GET <base-url>/info; answered → exit 0 (idempotent).
+#   1. Probe GET <base-url>/ready; answered 200 → exit 0 (idempotent).
 #   2. Else start: docker compose (api profile) by default; --gpu adds the GPU
 #      overlay where one exists; --local runs uvicorn in the repo's venv,
 #      provisioning it with the repo's actual setup script first.
-#   3. Poll /info up to 15 min (first-run downloads); on timeout print where
+#   3. Poll /ready up to 15 min (first-run downloads); on timeout print where
 #      the logs are and exit non-zero.
+#
+# Polls /ready, not /info (issue #55): /info answers 200 the moment the FastAPI
+# process is up, whether or not model/backend warmup has finished, so a caller
+# racing this script against a slow first-run download used to get a "healthy"
+# server that 503s on its first real request. /ready is gated on the service's
+# own warm-up flag (docs/templates/shared/atrium_service.py) specifically so
+# this wait means "actually ready to serve", not just "a port is listening".
 #
 # Usage:
 #   bash scripts/server.sh            # Docker, or local uvicorn fallback
@@ -24,7 +31,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PORT="${ATRIUM_<XX>_PORT:-8000}"
 BASE_URL="${ATRIUM_<XX>_URL:-http://localhost:${PORT}}"
-HEALTH_URL="${BASE_URL}/info"
+HEALTH_URL="${BASE_URL}/ready"
 MODE="auto"
 
 for arg in "$@"; do

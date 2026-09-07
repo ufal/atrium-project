@@ -473,3 +473,73 @@ never been published. Confirm the five first.
 W2, W3 and W6 all edit `docker-tool.reusable.yml`, whose blast radius is all five repos, and a reusable's
 permissions are capped by the calling job's grant — a regression that has taken down all five at once
 before. Land them as one reviewed change, validated via a caller pinned `@test` before `v1` moves.
+
+
+---
+
+## 8. Round 3 (2026-09-07) — issue #55: H10 closed, and B8 was already fixed
+
+### B8 was stale — corrected here rather than re-fixed
+
+The table row at §2.1 (**B8**, line 85) and this document's own §2.7 remediation note (line 285) both
+still describe `alto-postprocess`'s API entrypoint as running `uvicorn.run(..., reload=True)` unconditionally,
+citing `atrium-alto-postprocess/service/text_api.py:309-311`. At the live HEAD used for this round
+(`atrium-alto-postprocess` `0ec516a`), that file is 476 lines, not ~311, and its actual `__main__` block
+(`text_api.py:471-476`) reads:
+
+```python
+    uvicorn.run(
+        "text_api:app",
+        host=os.getenv("HOST", "0.0.0.0"),
+        port=int(os.getenv("PORT", "8000")),
+        reload=os.getenv("RELOAD", "false").strip().lower() in ("true", "1", "yes", "on"),
+    )
+```
+
+`reload` is env-gated and defaults to `false` — the fix this row asked for already landed (commit `19433cb`,
+"edits in configs and code - minor fixes", already on `test`/default before this round started). No compose
+file in any repo references `reload` either. **Per this document's own convention (§7), findings are marked
+resolved by an appended round, never by silent table edits — recorded here rather than left to keep
+misleading the next reader.** `agent_dev_logs/plans/55.plan.md`, `agent_dev_logs/digests/53.digest.md` and
+`agent_dev_logs/digests/55.digest.md` carried the same stale claim; corrected in the same pass (issue #55).
+
+### H10 — closed
+
+**H10** (§2.5, line 149: *"No `HEALTHCHECK` in any Dockerfile and no `healthcheck:` in any compose
+file"*) and **W6**'s ownership of it (§4, lines 356-371) are closed by issue #55:
+
+- Every `-api` Dockerfile stage declares `HEALTHCHECK` (targeting shallow `GET /health` via the new
+  canonical `docs/templates/shared/healthcheck.py`, stdlib-only — no image installs `curl`, and only
+  alto-postprocess installs `wget`) and `STOPSIGNAL SIGTERM`.
+- Every service composes a `SIGTERM`-aware graceful drain around its existing `lifespan`, via the new
+  `ServiceState` / `attach_inflight_middleware` / `serve_lifecycle` surface in
+  `docs/templates/shared/atrium_service.py` — additive and backward-compatible, so `attach_health(app)` and
+  `attach_health(app, deep_check)` keep working unchanged where a repo has not yet opted in.
+- `docker-tool.reusable.yml`'s `docker-build-smoke` job, opt-in per stage via the new `probe-targets`
+  input, is the **first thing in this ecosystem's CI to ever start one of these containers** (roadmap
+  **B9** recorded that no Dockerfile `ENTRYPOINT` was exercised anywhere before this): it `docker run`s the
+  built image, waits for Docker's own `HEALTHCHECK` to report `healthy`, curls `/health` and the new `/ready`
+  over the published port, then `docker stop`s it and asserts a clean exit inside the grace period —
+  satisfying W6's stated acceptance that *"the contract test asserts `/health` against a container, not
+  just an imported app."*
+
+**Two findings folded in during the same pass, both prerequisites the issue's own acceptance criterion
+turned out to depend on** (see `agent_dev_logs/digests/55.digest.md` for the full reasoning):
+
+- **Kubernetes never reads a Docker `HEALTHCHECK`.** The kubelet's `livenessProbe`/`readinessProbe`/
+  `startupProbe` are pod-spec fields, entirely independent of the image's `HEALTHCHECK`. Closing H10 as
+  originally scoped would not, by itself, have made anything "visible to a Kubernetes liveness probe" —
+  the new `/ready` route plus `docs/k8s_deployment.md` and `docs/templates/k8s/atrium-service.deployment.yaml`
+  are what actually address the issue's stated motivation.
+- **Four of five services had no runnable API image.** Only nlp-enrich published one; alto-postprocess,
+  translator and page-classification reached FastAPI only via a compose `entrypoint:` override on the
+  *batch* image, and llm-enrich's `api` stage existed but was excluded from `build-targets` (**B5**). Since
+  the ARÚP/ARÚB handoff boundary was fixed at *"a Docker image, run at their own Kubernetes"* (#40,
+  2026-08-02, motyc), there was nothing deployable for the partner to validate. All four now publish an
+  `api` target.
+
+**Acceptance.** All five `-api` images build and, where `probe-targets` is set, pass the CI container smoke.
+`docs/k8s_acceptance_runbook.md` is the tracked vehicle for the issue's own acceptance criterion — previously
+absent; `agent_dev_logs/digests/55.digest.md` had pointed at #56 and a "workplan §7" that do not cover
+Kubernetes at all.
+**Owner:** @K4TEL · **Blast radius:** 5 tool repos + hub.

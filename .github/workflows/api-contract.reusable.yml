@@ -2,14 +2,25 @@
 #
 # Called by each service repo. Installs the repo's test dependencies and runs the
 # hermetic API contract test (tests/test_api_contract.py), which asserts the §4.1
-# /info envelope, /health, the advertised endpoint set, and OpenAPI 3.x validity
-# against the in-process app. The test is importorskip-guarded, so a repo whose
-# service needs the heavy model stack skips cleanly here and runs the same test for
-# real in its full (model-enabled) suite — the torch-free services (alto, nlp,
-# llm-enrich) run it here directly.
+# /info envelope, /health, /ready (issue #55), the advertised endpoint set, and
+# OpenAPI 3.x validity against the in-process app. The test is importorskip-guarded,
+# so a repo whose service needs the heavy model stack skips cleanly here and runs the
+# same test for real in its full (model-enabled) suite — the torch-free services
+# (alto, nlp, llm-enrich) run it here directly.
 #
 # The byte-parity of the shared service/atrium_service.py helper is enforced
 # separately by para-drift.reusable.yml.
+#
+# W6's acceptance for issue #55/H10 asks that "the contract test asserts /health
+# against a container, not just an imported app." That assertion lives in
+# docker-tool.reusable.yml's docker-build-smoke job instead of a second job here:
+# it already builds the real image, runs it, waits for Docker's own HEALTHCHECK,
+# curls /health and /ready over the published port, and SIGTERMs it — building a
+# second container here to re-run the same pytest file against a base-url would
+# duplicate that build and run for no added coverage. This file's job is the cheap,
+# fast, in-process half of the same contract (every push, no Docker required); the
+# container-level proof is opt-in per repo via docker-tool.reusable.yml's
+# probe-targets input, exercised only on PRs (docker-build-smoke's own gate).
 
 name: ATRIUM API Meta-Contract
 

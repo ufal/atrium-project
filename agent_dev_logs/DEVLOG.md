@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues. `test`==`main` HEAD `8b1bf50` (2026-09-07) · tag `v1` moving with it._
+> _Hub/planning repo. 21 open issues. `test`==`main` HEAD `7f50741` (2026-09-07) · tag `v1` moving with it._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0709.md` (prior: `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -516,8 +516,9 @@ same day's commits (`211a89d`, `21216f3`) are manual issue-log refreshes.
 
 ## 2026-09-07
 
-* **State**: 18 open issues (#4, #6, #10, #13, #15, #16, #17, #18, #21, #22, #24, #26, #27, #31, #32, #40, #51,
-#53). `test` and `main` both at `8b1bf50`; tag `v1` moves with every push that carries it forward. `@v1` reusable
+* **State**: 21 open issues (#4, #6, #10, #13, #15, #16, #17, #18, #21, #22, #24, #26, #27, #31, #32, #40, #51,
+#53, #54, #55, #56 — the last three opened 09-07 and missing from this line until the 09-07 #55 round below).
+`test` and `main` both at `7f50741`; tag `v1` moves with every push that carries it forward. `@v1` reusable
 pin confirmed live across all five tool repos' workflows. `e2e-pipeline-smoke.yml` (the JSON five-stage pipeline)
 is robustly green — 112 runs, one failure since 08-19. `e2e-digital-smoke.yml` remains **red on every one of 19
 runs since 08-06**, auto-tracked via bot-opened issue #49 (7 "still failing" comments so far); the root cause has
@@ -526,6 +527,47 @@ digital-convert and the llm-enrich stage, schema-validates, and keeps `doc_id` s
 fails the final assertion with `AssertionError: 'enrichment' block missing from llm-enrich stage` — the CLI/remote
 image path the workflow drives does not populate the block that `/enrich`'s API path does. Full detail:
 `digests/project_state_0709.md`.
+
+* **#55 Add `HEALTHCHECK` and `SIGTERM` handling to all five tool-repo services** — Opened by K4TEL as a
+sub-issue of #53, carving out factor **IX. Disposability** with its own acceptance criterion ("ARÚP/ARÚB confirm
+the images run cleanly on their Kubernetes"). Implemented the same day across all six repos, **local and
+unpushed**: 53 files. Both stated defects were real (zero `HEALTHCHECK`, zero `SIGTERM` handling anywhere), and
+measuring the repos turned up **three more that blocked the acceptance criterion regardless**. First,
+**Kubernetes never reads a Docker `HEALTHCHECK`** — the kubelet's probes are pod-spec fields, so the directive
+alone could not make `/health` "visible to a Kubernetes liveness probe"; the partner-facing half had to be a
+probe contract plus a reference manifest (`docs/k8s_deployment.md`,
+`docs/templates/k8s/atrium-service.deployment.yaml`). Second, **four of five services had no runnable API image
+at all** — only nlp-enrich published one; alto, translator and pc reached FastAPI solely through a compose
+`entrypoint:` override on the *batch* image, and llm-enrich's `api` stage was declared but excluded from
+`build-targets` (roadmap **B5**) — so with the handoff boundary fixed at "a Docker image, run at ARUP/B's own
+Kubernetes" (#40, motyc), there was nothing for the partner to pull. Third, **three services blocked the event
+loop** during inference, and uvicorn's SIGTERM handler is an event-loop callback, so
+`--timeout-graceful-shutdown` had nothing to measure until those moved to `asyncio.to_thread`.
+* **The fix that matches the issue's own sentence.** "A rolling restart kills in-flight work" was literally
+true of nlp-enrich's `POST /jobs`: it returned `queued` and left the job in a bare `asyncio.create_task(...)`
+with the result discarded, so uvicorn saw zero in-flight requests and exited mid-job — a defect no
+in-flight-request counter and no graceful-shutdown timeout can reach. Jobs now register with
+`ServiceState.track()`, which the drain awaits; verified against a **real uvicorn 0.52 subprocess sent a real
+SIGTERM**, which ran the tracked job to completion before exiting. The same test settled that the installed
+handler must **chain to** uvicorn's own `Server.handle_exit` rather than replace it, and that a clean exit is
+**143** (128+SIGTERM), not 0 — uvicorn re-raises the captured signal on purpose.
+* **New canonical surface**: `ServiceState` / `attach_inflight_middleware` / `serve_lifecycle` / an extended
+`attach_health` in `docs/templates/shared/atrium_service.py`, plus a new `healthcheck.py` (stdlib `urllib` —
+no image ships `curl`, and only alto ships `wget`). Additive and backward-compatible; shallow `/health` stays
+byte-identical, which is what leaves the five `test_health_shallow_ok` copies and
+`skill-validate.reusable.yml`'s live probe untouched. Readiness moved to a **separate `/ready`** deliberately:
+a liveness probe that fails while draining gets the pod SIGKILLed before the drain finishes. Also the first
+tests any of the four canonical shared modules has ever had (17; roadmap **E9**), and
+`docker-build-smoke` now optionally **runs** the image it builds (`load: true` + a new `probe-targets` input) —
+the first thing in this ecosystem's CI to ever start one of these containers (roadmap **B9**).
+* **Two record corrections found in passing.** Roadmap **B8** (alto's `uvicorn --reload` in production) was
+**already fixed** in code and had been described as open in six documents; recorded in
+`docker_gha_roadmap.md` §8 per that file's convention. And `digests/55.digest.md`'s own pointer to "hub #56 and
+the standing partner ask ... in the workplan's §7" was doubly wrong — **#56 is DOG/Switchboard registration**
+and no "workplan" document exists in this repo — so #55's acceptance had no tracked vehicle until
+`docs/k8s_acceptance_runbook.md`. Scope grew well past the issue's "days of work" estimate and past the Q3
+milestone's 2026-09-30 due date; the milestone move is part of the GitHub-side follow-up, not a surprise for
+later. Full detail: `digests/55.digest.md` · `plans/55.plan.md`.
 
 ---
 _Timeline index refreshed 2026-09-07 against live `test`/`main` HEAD, the current release/CI/issue state of all

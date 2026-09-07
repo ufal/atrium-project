@@ -30,6 +30,9 @@ not auto-update.
 * **Docker Operations:** Docker build smoke tests trigger on Pull Requests. Full Docker builds and pushes to
 the GitHub Container Registry (GHCR) trigger on version tags (`v*`) and published releases — **and only
 there**, so CI can never exercise an image built from the current default branch (roadmap **W3**).
+* **Health & lifecycle (issue #55):** every `-api` image declares `HEALTHCHECK`/`STOPSIGNAL` and every
+service handles `SIGTERM` with a bounded, in-flight-aware drain. `probe-targets` opts a Dockerfile stage
+into a real `docker run` + healthcheck-wait + `/health`/`/ready` + `SIGTERM` smoke on every PR. See §3.4.
 * **Version Syncing:** `CITATION.cff` files are synced with internal `para_config` versions across the board.
 * **Paradata Drift Guard:** Every repo calls `para-drift.reusable.yml@v1` to diff its local canonical shared
 files against the hub copies. Parity currently holds byte-identically in all five repos. Note this enforces
@@ -221,6 +224,45 @@ when it blocks. **HIGH and unfixable-CRITICAL have no policy yet** (roadmap **H7
 `atrium-page-classification` do not declare `workflow_dispatch`, so **their weekly cron is the only way to
 run a scan at all** (roadmap **E10**).
 
+### 3.4 Runtime health and shutdown conventions (issue #55)
+
+Landed 2026-09: every `-api` image now declares `HEALTHCHECK` + `STOPSIGNAL`, and every service composes a
+graceful-shutdown lifecycle around its existing FastAPI `lifespan`. This closes roadmap **H10** and W6's
+acceptance for it.
+
+**The probe contract, identical across all five services** (`docs/templates/shared/atrium_service.py`):
+
+| Route                   | Answers                                                                                 | Docker `HEALTHCHECK` target                | Kubernetes probe                                                     |
+|-------------------------|-----------------------------------------------------------------------------------------|--------------------------------------------|----------------------------------------------------------------------|
+| `GET /health`           | liveness — 200 always, **including while draining**                                     | ✅ (`docs/templates/shared/healthcheck.py`) | `livenessProbe`                                                      |
+| `GET /health?deep=true` | deep liveness — runs the service's own dependency check; 503 while draining or degraded | —                                          | — (deliberately not wired to any K8s probe; see `k8s_deployment.md`) |
+| `GET /ready`            | readiness — 503 until warm, 200 while serving, 503 the instant `SIGTERM` arrives        | —                                          | `readinessProbe`, `startupProbe`                                     |
+
+⚠️ **`HEALTHCHECK` is a Docker/Compose/Podman mechanism only — Kubernetes never reads it.** The kubelet
+reads `livenessProbe`/`readinessProbe`/`startupProbe` from the pod spec. Issue #55 was opened on the
+premise that `HEALTHCHECK` makes `/health` visible to a K8s liveness probe; it does not. The Kubernetes
+half of this convention is a **reference manifest**, not a Dockerfile directive — see
+[`k8s_deployment.md`](k8s_deployment.md) and [`templates/k8s/atrium-service.deployment.yaml`](templates/k8s/atrium-service.deployment.yaml).
+
+**Graceful shutdown** (`serve_lifecycle`, same file): installs a `SIGTERM`/`SIGINT` handler that flips
+`/ready` to 503 and then **chains to** whatever handler was previously registered — verified empirically
+against a real uvicorn 0.52 subprocess that the "previous" handler this captures is always uvicorn's own
+`Server.handle_exit`, so its own graceful HTTP drain keeps working. On shutdown, additionally waits (bounded)
+for in-flight requests and any task registered via `ServiceState.track()` to finish — the mechanism that
+stops a rolling restart from killing nlp-enrich's background job queue mid-run, which a request-count alone
+cannot do (a job-submission request returns immediately; the job keeps running after).
+
+**Verified in CI, not just claimed**: `docker-tool.reusable.yml`'s `docker-build-smoke` job, opt-in per
+Dockerfile stage via the new `probe-targets` input, `docker run`s the built image, waits for Docker's own
+`HEALTHCHECK` to report `healthy`, curls `/health` and `/ready` over the published port, then `docker stop`s
+it (sending `SIGTERM`) and asserts a clean exit inside the grace period. Before this, no Dockerfile
+`ENTRYPOINT` in any of the five repos was ever exercised anywhere in CI (roadmap **B9**).
+
+⚠️ **A container's own exit code after a handled `SIGTERM` is 143 (128+15), not 0.** uvicorn's
+`capture_signals()` deliberately re-raises the captured signal after a graceful shutdown completes, so a
+supervisor sees the same status a process that never caught the signal would show. Do not read exit 143 as
+a crash — for these images it is the expected signature of a clean, handled stop.
+
 ---
 
 ## 4. Scheduled workload allocation
@@ -273,7 +315,7 @@ All ready-to-commit templates live in `docs/templates/workflows/`.
 
 | Workflow                 | What it does                                        | Deployment state                                                                      | Lives as        |
 |--------------------------|-----------------------------------------------------|---------------------------------------------------------------------------------------|-----------------|
-| **Docker Tool**          | Test + coverage + multi-target GHCR publish + scan. | ✅ All 5 repos (→ `docker-tool.reusable.yml@v1`).                                      | Reusable Bundle |
+| **Docker Tool**          | Test + coverage + multi-target GHCR publish + scan + opt-in container health/`SIGTERM` smoke (issue #55). | ✅ All 5 repos (→ `docker-tool.reusable.yml@v1`).                                      | Reusable Bundle |
 | **Security**             | Version check + periodic Trivy re-scan.             | ✅ All 5 repos (→ `security.reusable.yml@v1`). ⚠️ No dispatch in TR/PC.                | Reusable Bundle |
 | **Paradata Drift**       | Canonical shared-file parity diff vs hub.           | ✅ All 5 repos.                                                                        | Reusable Bundle |
 | **CodeQL**               | Static security/quality analysis for Python.        | ✅ All 5 repos (→ `codeql.reusable.yml@v1`).                                           | Reusable Bundle |

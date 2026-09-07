@@ -43,6 +43,20 @@ on:
         required: false
         type: string
         default: '["base"]'
+      probe-targets:
+        description: >-
+          Subset of build-targets that are actually runnable servers, container-smoke
+          tested in docker-build-smoke (issue #55): `docker run`, wait for Docker's own
+          HEALTHCHECK to report healthy, GET /health and /ready over the published port,
+          then `docker stop` (SIGTERM) and assert a clean exit inside the grace period.
+          Default '[]' is a deliberate no-op on adoption — most build-targets are batch
+          CLIs (ENTRYPOINT ["python", "run_pipeline.py"] and similar), and probing one
+          would fail correctly-behaving images that were never meant to serve HTTP.
+          Pass the server-shaped targets explicitly, e.g. '["api"]'. Assumes the probed
+          image EXPOSEs 8000 and answers GET /health — true of every ATRIUM api stage.
+        required: false
+        type: string
+        default: '[]'
       assert-clean-tree:
         description: >-
           Fail the test job if the suite modified any TRACKED file (W6). A suite that
@@ -285,8 +299,80 @@ jobs:
           # the wrong image in multi-stage repos (nlp-enrich, llm-enrich).
           target: ${{ matrix.target }}
           push: false
+          # load: true puts the built image into this runner's local Docker daemon so
+          # the container-run probe below (issue #55) can start it. Single-platform
+          # only — fine, every ATRIUM image is implicitly linux/amd64 today (roadmap
+          # H8). Before this, the smoke build produced an image nothing ever started:
+          # roadmap B9 recorded that no Dockerfile ENTRYPOINT was exercised anywhere in
+          # CI. `load` is a no-op cost for targets not in probe-targets.
+          load: true
+          tags: atrium-smoke/${{ inputs.image-name }}:${{ matrix.target }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Run container and wait for HEALTHCHECK (issue #55)
+        # Opt-in per target via probe-targets — most build-targets are batch CLIs with
+        # no HTTP server to probe. This is the assertion that would have caught "no
+        # service handles SIGTERM" and "no Dockerfile declares HEALTHCHECK" on day one:
+        # it is the only place in this whole workflow that starts one of these
+        # containers and watches it behave, rather than merely building the image.
+        if: contains(fromJSON(inputs.probe-targets), matrix.target)
+        env:
+          IMAGE: atrium-smoke/${{ inputs.image-name }}:${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          cid=$(docker run -d -p 18080:8000 "$IMAGE")
+          echo "container: $cid"
+          trap 'docker logs "$cid" || true; docker rm -f "$cid" >/dev/null 2>&1 || true' EXIT
+
+          echo "Waiting up to 4 minutes for Docker's own HEALTHCHECK to report healthy..."
+          # docker inspect's Health.Status is what HEALTHCHECK exists to make
+          # meaningful — a wrong probe path or a missing interpreter in the image is
+          # otherwise invisible. 4 minutes covers the --start-period=180s convention
+          # (docs/docker_gha.md §3.4) plus one retry interval.
+          deadline=$((SECONDS + 240))
+          status="starting"
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            status=$(docker inspect --format='{{.State.Health.Status}}' "$cid" 2>/dev/null || echo starting)
+            [ "$status" = "healthy" ] && break
+            if [ "$status" = "unhealthy" ]; then
+              echo "container reported unhealthy before ever becoming healthy" >&2
+              exit 1
+            fi
+            sleep 5
+          done
+          if [ "$status" != "healthy" ]; then
+            echo "container did not report healthy within the timeout (last status: $status)" >&2
+            exit 1
+          fi
+          echo "container is healthy"
+
+          echo "Probing /health and /ready over the published port..."
+          curl -sf http://127.0.0.1:18080/health
+          echo
+          curl -s -o /dev/null -w "/ready http_code: %{http_code}\n" http://127.0.0.1:18080/ready
+
+          echo "Sending SIGTERM (docker stop) and asserting a clean, timely exit..."
+          start=$SECONDS
+          docker stop --time 15 "$cid" >/dev/null
+          elapsed=$((SECONDS - start))
+          exit_code=$(docker inspect --format='{{.State.ExitCode}}' "$cid")
+          echo "stopped in ${elapsed}s, exit code ${exit_code}"
+          if [ "$elapsed" -ge 15 ]; then
+            echo "container needed SIGKILL — SIGTERM alone did not stop it in time" >&2
+            exit 1
+          fi
+          # 143 = 128 + SIGTERM: the expected code for a process that caught the signal
+          # and exited in response to it — uvicorn's own capture_signals() deliberately
+          # re-raises the captured signal after a graceful exit so a supervisor sees
+          # exactly this, not a faked 0. A service that explicitly reports a clean exit
+          # instead is also accepted.
+          if [ "$exit_code" != "143" ] && [ "$exit_code" != "0" ]; then
+            echo "unexpected exit code $exit_code (expected 143, the SIGTERM exit code," >&2
+            echo "or 0 for a service that deliberately reports a clean exit)" >&2
+            exit 1
+          fi
+          echo "clean SIGTERM shutdown confirmed"
 
   build-and-push:
     needs: test

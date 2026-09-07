@@ -19,7 +19,8 @@ docker compose --profile api up -d
 | Method | Path        | Purpose                                                                        |
 |--------|-------------|--------------------------------------------------------------------------------|
 | GET    | `/info`     | service identity + capabilities: `service`, `version`, `endpoints`, `limits`, <capabilities> |
-| GET    | `/health`   | liveness probe; `?deep=true` additionally <backend/model probe> (503 on fail)  |
+| GET    | `/health`   | liveness probe; 200 always, even mid-shutdown. `?deep=true` additionally <backend/model probe> (503 on fail or while draining) |
+| GET    | `/ready`    | readiness probe (issue #55): 503 until warm, 200 while serving, 503 the instant a shutdown signal arrives — this is the Kubernetes `readinessProbe`/`startupProbe` target, not `/health` |
 | POST   | `/<primary>`| <domain endpoint(s), one row each, with params>                                |
 
 ### `POST /<primary>` (<multipart form / JSON>)

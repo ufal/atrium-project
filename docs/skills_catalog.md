@@ -20,9 +20,10 @@ Google Antigravity, Gemini CLI, and other Agent-Skill hosts.
 | `atrium-llm-enrich` | [llm-enrich](https://github.com/ufal/atrium-llm-enrich/tree/agent-skill) | vocabulary-guided LLM keyword extraction (TEATER/AMCR) | `POST /extract_keywords` · `/extract_keywords_text` | `scripts/atrium_keywords.py` | `ATRIUM_LE_URL` |
 
 All five also expose the standardized meta-contract: **`GET /info`**
-(`service`/`version`/`endpoints`/`limits` + capabilities) and **`GET /health`** (`?deep=true` for
-readiness). Full request/response schemas: fetch `GET /openapi.json` (Swagger UI at `/docs`) from a
-running server.
+(`service`/`version`/`endpoints`/`limits` + capabilities), **`GET /health`** (liveness; `?deep=true` for
+a dependency check), and **`GET /ready`** (readiness — issue #55: 503 until warm-up completes or once a
+shutdown signal arrives, which is what `scripts/server.sh` now polls instead of `/info`). Full
+request/response schemas: fetch `GET /openapi.json` (Swagger UI at `/docs`) from a running server.
 
 ## Typical pipeline order
 
