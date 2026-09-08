@@ -44,17 +44,17 @@ re-describing AMCR's or TEATER's concepts; adding an RDF library to any repo.
 
 ## 📐 2. What we already had (verified against the tree, not assumed)
 
-| Asset                                           | Where                             | State                                      |
-|-------------------------------------------------|-----------------------------------|--------------------------------------------|
-| 1,460 AMCR concepts, 50 heslar lists            | `vocab_sources.harvest_amcr`      | ✅ harvested, with real URIs                |
-| 4,134 TEATER concepts, 12 branches, cs/en/de    | `vocab_sources.harvest_teater`    | ✅ harvested, with real URIs                |
-| 707 `skos:exactMatch` URIs on 668 AMCR concepts | `vocab_sources.py:203-208`        | ⚠️ captured, **never exported**            |
-| A genuine broader/narrower tree (TEATER)        | `VocabRecord.broader`             | ⚠️ captured, never exported                |
-| alt labels (2,707) and scope notes (2,330)      | `VocabRecord.alt_*`, `note_*`     | ⚠️ captured, dropped by `nested_keep`      |
-| `entities[].pid.{wikidata,geonames,aat,amcr}`   | `atrium_document.schema.json`     | ❌ declared, **written by nothing**         |
-| 11 page categories                              | `model_registry.py:5-17`          | ⚠️ bare strings, definitions in prose only |
-| 5 + 2 line categories                           | two repos, disjoint               | ❌ see defect V-1                           |
-| A second, divergent harvester                   | `atrium-translator/load_vocab.py` | ⚠️ discards every id it receives           |
+| Asset | Where | State |
+|---|---|---|
+| 1,460 AMCR concepts, 50 heslar lists | `vocab_sources.harvest_amcr` | ✅ harvested, with real URIs |
+| 4,134 TEATER concepts, 12 branches, cs/en/de | `vocab_sources.harvest_teater` | ✅ harvested, with real URIs |
+| 707 `skos:exactMatch` URIs on 668 AMCR concepts | `vocab_sources.py:203-208` | ⚠️ captured, **never exported** |
+| A genuine broader/narrower tree (TEATER) | `VocabRecord.broader` | ⚠️ captured, never exported |
+| alt labels (2,707) and scope notes (2,330) | `VocabRecord.alt_*`, `note_*` | ⚠️ captured, dropped by `nested_keep` |
+| `entities[].pid.{wikidata,geonames,aat,amcr}` | `atrium_document.schema.json` | ❌ declared, **written by nothing** |
+| 11 page categories | `model_registry.py:5-17` | ⚠️ bare strings, definitions in prose only |
+| 5 + 2 line categories | two repos, disjoint | ❌ see defect V-1 |
+| A second, divergent harvester | `atrium-translator/load_vocab.py` | ⚠️ discards every id it receives |
 
 `VocabRecord` (`vocab_sources.py:85-121`) is already a `skos:Concept` in all but name — `cs`/`en`/`de`
 → `prefLabel`, `alt_*` → `altLabel`, `note_*` → `scopeNote`, `source_id` → `notation`, `uri` → the
@@ -71,12 +71,12 @@ exports them"* — was exactly right, and it needed no namespace to fix.
 
 ### 3.1 Four layers, three of which mint nothing
 
-| Layer                  | Concepts                                 | URI                                                                               |
-|------------------------|------------------------------------------|-----------------------------------------------------------------------------------|
-| **L1 Source**          | 1,460 AMCR + 4,134 TEATER                | The sources' own: `https://api.aiscr.cz/id/HES-…`, `https://teater.aiscr.cz/id/…` |
-| **L2 ATRIUM-authored** | 64 concepts in 6 schemes                 | Minted under `SKOS_BASE`                                                          |
-| **L3 Mappings**        | 75 in the registry + 707 harvested       | Assertions **between** L1/L2/external. Mint nothing.                              |
-| **L4 Propagation**     | `entities[].pid`, and the `*_uri` fields | Reference L1/L2. Mint nothing.                                                    |
+| Layer | Concepts | URI |
+|---|---|---|
+| **L1 Source** | 1,460 AMCR + 4,134 TEATER | The sources' own: `https://api.aiscr.cz/id/HES-…`, `https://teater.aiscr.cz/id/…` |
+| **L2 ATRIUM-authored** | 64 concepts in 6 schemes | Minted under `SKOS_BASE` |
+| **L3 Mappings** | 75 in the registry + 707 harvested | Assertions **between** L1/L2/external. Mint nothing. |
+| **L4 Propagation** | `entities[].pid`, and the `*_uri` fields | Reference L1/L2. Mint nothing. |
 
 ### 3.2 The one swappable constant
 
@@ -117,14 +117,14 @@ an AMCR term to migrate off, because one was never created.
 Hub-canonical, in `docs/templates/shared/`, vendored to all five tool repos and byte-enforced by
 `para-drift.reusable.yml`. **Standard library only.** Contents:
 
-| Scheme          | Concepts                  | Declared by                                                                |
-|-----------------|---------------------------|----------------------------------------------------------------------------|
-| `page-category` | 11 (+5 facet collections) | `atrium-page-classification/model_registry.py`                             |
-| `line-category` | 7 (5 + 2, by originator)  | `alto-postprocess/text_util.py` + `llm-enrich/api_util/digital_to_json.py` |
-| `quality-band`  | 3                         | `alto-postprocess/document_hook.py`                                        |
-| `entity-type`   | 4                         | `nlp-enrich/api_util/teitok_alto.py`                                       |
-| `cnec`          | 28                        | the subset `_CNEC_TO_CONLL` maps                                           |
-| `theme`         | 11                        | `nlp-enrich/data_samples/taxonomy_config.json`                             |
+| Scheme | Concepts | Declared by |
+|---|---|---|
+| `page-category` | 11 (+5 facet collections) | `atrium-page-classification/model_registry.py` |
+| `line-category` | 7 (5 + 2, by originator) | `alto-postprocess/text_util.py` + `llm-enrich/api_util/digital_to_json.py` |
+| `quality-band` | 3 | `alto-postprocess/document_hook.py` |
+| `entity-type` | 4 | `nlp-enrich/api_util/teitok_alto.py` |
+| `cnec` | 28 | the subset `_CNEC_TO_CONLL` maps |
+| `theme` | 11 | `nlp-enrich/data_samples/taxonomy_config.json` |
 
 Plus 75 mapping assertions: 28 CNEC→coarse type, 19 TEATER branch→theme, 27 heslář→theme, and one
 `closeMatch` (see V-1). Renders to Turtle and JSON-LD; both are produced from **one** triple
@@ -166,10 +166,10 @@ Curation decisions stay where they belong: in the nested artifacts the pipeline 
 
 This was the single most consequential finding, and it was only visible by measuring:
 
-| Source                 | Edges  | Cross-scheme     | Verdict                                                    |
-|------------------------|--------|------------------|------------------------------------------------------------|
-| AMCR `hierarchie_vyse` | 1,176  | **1,176 (100%)** | associative → `skos:related`                               |
-| TEATER `broader`       | 14,684 | **0**            | real hierarchy → `skos:broader` + `skos:broaderTransitive` |
+| Source | Edges | Cross-scheme | Verdict |
+|---|---|---|---|
+| AMCR `hierarchie_vyse` | 1,176 | **1,176 (100%)** | associative → `skos:related` |
+| TEATER `broader` | 14,684 | **0** | real hierarchy → `skos:broader` + `skos:broaderTransitive` |
 
 `obývání` — an *activity* — declares 22 "superior" terms, and every one is an `areal`, a site type.
 That is "this activity is recorded for these site types", not a thesaurus hierarchy. Emitting it as
@@ -289,16 +289,16 @@ Neither is in `CATEGORIES`.
 
 ## 🗂️ 7. Follow-ups (not done here, deliberately)
 
-| #  | Item                                                                                      | Why not now                                                           |
-|----|-------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
-| F1 | Take the V-1 fix                                                                          | Changes what reaches the model; needs an owner's call                 |
-| F2 | Fix V-2 by filtering to directories                                                       | Behaviour change in the training path                                 |
-| F3 | Retire the translator's duplicate harvester in favour of nlp-enrich's artifacts           | Cross-repo dependency change; needs a release plan                    |
-| F4 | Add verified CNEC 2.0 glosses as `skos:definition`                                        | Needs the CNEC reference; inventing them would be worse than omitting |
-| F5 | Register the `w3id.org/atrium` redirect                                                   | Optional; blocks nothing                                              |
-| F6 | Add `*_uri` fields to the document schema and populate `teater_category_uri`              | Additive, but wants the enrichment path in scope                      |
-| F7 | Re-harvest so `close_match`/`broad_match`/`citation_uri` populate the committed artifacts | Needs network; the parser is ready and tested                         |
-| F8 | Delete the orphaned `fixtures/e2e/VOCAB/teater_nested_vocab.json`                         | Unreferenced since 2026-08-19; unrelated cleanup                      |
+| # | Item | Why not now |
+|---|---|---|
+| F1 | Take the V-1 fix | Changes what reaches the model; needs an owner's call |
+| F2 | Fix V-2 by filtering to directories | Behaviour change in the training path |
+| F3 | Retire the translator's duplicate harvester in favour of nlp-enrich's artifacts | Cross-repo dependency change; needs a release plan |
+| F4 | Add verified CNEC 2.0 glosses as `skos:definition` | Needs the CNEC reference; inventing them would be worse than omitting |
+| F5 | Register the `w3id.org/atrium` redirect | Optional; blocks nothing |
+| F6 | Add `*_uri` fields to the document schema and populate `teater_category_uri` | Additive, but wants the enrichment path in scope |
+| F7 | Re-harvest so `close_match`/`broad_match`/`citation_uri` populate the committed artifacts | Needs network; the parser is ready and tested |
+| F8 | Delete the orphaned `fixtures/e2e/VOCAB/teater_nested_vocab.json` | Unreferenced since 2026-08-19; unrelated cleanup |
 
 > ⚠️ Unrelated but found in passing, and worth someone's attention:
 > `docs/templates/workflows/update_issues.sh:92` contains a hardcoded GitHub PAT. It is committed.
@@ -308,27 +308,27 @@ Neither is in `CATEGORIES`.
 
 Everything below was run:
 
-| Check                                                                             | Result                                                                                      |
-|-----------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
-| `atrium_vocab.py --selftest`                                                      | 6 schemes, 64 concepts, 5 collections, 75 mappings — OK                                     |
-| Turtle + JSON-LD parsed by `rdflib`                                               | 507 triples each, **isomorphic**                                                            |
-| SKOS integrity (prefLabel uniqueness, inScheme, S27 broader/related disjointness) | 0 violations                                                                                |
-| `atrium_vocab.schema.json` vs the JSON-LD                                         | 0 errors, 121 nodes                                                                         |
-| `union.skos.ttl` parsed by `rdflib`                                               | 55,188 triples; 0 concepts with >1 direct `skos:broader`                                    |
-| `vocab_build.py --from-flat --skos --check`                                       | rc 0 (clean)                                                                                |
-| …with the SKOS artifact tampered                                                  | rc 1 (gate holds)                                                                           |
-| Byte-stability across runs                                                        | identical sha256                                                                            |
-| `revendor_shared.sh --check`                                                      | 11 canonical files in parity across 5 repos                                                 |
-| hub suites (`tests/` + `docs/templates/shared/`)                                  | 190 passed                                                                                  |
-| nlp-enrich vocab suites                                                           | 273 passed                                                                                  |
-| llm-enrich full suite (`not slow`)                                                | 830 passed, 43 skipped                                                                      |
-| alto-postprocess full suite (`not slow`)                                          | 814 passed, 9 skipped                                                                       |
-| translator full suite                                                             | 452 passed, 2 skipped                                                                       |
-| page-classification full suite                                                    | 382 passed, 16 skipped, 2 xfailed                                                           |
-| alto behaviour-preservation                                                       | 32,400 paired calls, **0** mismatches                                                       |
-| `entities[].pid` populated end-to-end                                             | 3 of 4 sample entities resolve; the person resolves to nothing and writes no row            |
-| `ruff check`                                                                      | clean in all six repos                                                                      |
-| Upstream `origin/test` re-fetched before finalising                               | hub moved `4053b48`→`193697e` (issue-log refresh only); **no overlap** with any edited file |
+| Check | Result |
+|---|---|
+| `atrium_vocab.py --selftest` | 6 schemes, 64 concepts, 5 collections, 75 mappings — OK |
+| Turtle + JSON-LD parsed by `rdflib` | 507 triples each, **isomorphic** |
+| SKOS integrity (prefLabel uniqueness, inScheme, S27 broader/related disjointness) | 0 violations |
+| `atrium_vocab.schema.json` vs the JSON-LD | 0 errors, 121 nodes |
+| `union.skos.ttl` parsed by `rdflib` | 55,188 triples; 0 concepts with >1 direct `skos:broader` |
+| `vocab_build.py --from-flat --skos --check` | rc 0 (clean) |
+| …with the SKOS artifact tampered | rc 1 (gate holds) |
+| Byte-stability across runs | identical sha256 |
+| `revendor_shared.sh --check` | 11 canonical files in parity across 5 repos |
+| hub suites (`tests/` + `docs/templates/shared/`) | 190 passed |
+| nlp-enrich vocab suites | 273 passed |
+| llm-enrich full suite (`not slow`) | 830 passed, 43 skipped |
+| alto-postprocess full suite (`not slow`) | 814 passed, 9 skipped |
+| translator full suite | 452 passed, 2 skipped |
+| page-classification full suite | 382 passed, 16 skipped, 2 xfailed |
+| alto behaviour-preservation | 32,400 paired calls, **0** mismatches |
+| `entities[].pid` populated end-to-end | 3 of 4 sample entities resolve; the person resolves to nothing and writes no row |
+| `ruff check` | clean in all six repos |
+| Upstream `origin/test` re-fetched before finalising | hub moved `4053b48`→`193697e` (issue-log refresh only); **no overlap** with any edited file |
 
 ## 🔄 9. Maintenance
 
@@ -340,6 +340,18 @@ Everything below was run:
 * **`atrium_vocab.py` is in every repo's `ruff.toml` `[format] exclude`.** Without it `ruff format`
   reflows the vendored copy to the local line length and breaks para-drift — the same trap
   `force-exclude = true` was added for.
+* **`tests/test_atrium_vocab.py` is in every repo's `[format] exclude` too, and the file itself is
+  written to be format-stable.** This was missed on the first pass and para-drift caught it in
+  llm-enrich CI. The cause was not a new discovery — `docs/templates/ruff.toml`'s own `[format]`
+  comment already spells it out: `line-length` is **100** in the two enrich repos and **120**
+  everywhere else, so `ruff format` reflows a shared file to whatever the local width says and
+  *"a shared file's byte content became a function of which repo committed it last"*. The
+  exclusion is therefore mandatory, which is why `test_para_licenses.py` and
+  `test_document_originators.py` were already in that list; the only mistake was not adding the
+  third canonical test to it. Belt and
+  braces: the file was also rewritten so every code line stays under 100 characters, making
+  `ruff format` a no-op at *both* widths — verified — so parity no longer depends on the exclusion
+  being remembered. Long comment lines are fine; ruff does not reflow comments or docstrings.
 * **`atrium_vocab` is in `docs/templates/ruff.toml`'s `known-first-party`.** Omitting it reproduces
   the "unwinnable loop" that file already documents: `test_atrium_vocab.py` is byte-identical across
   six repos, isort classifies a bare `import atrium_vocab` as third-party in the hub (where the

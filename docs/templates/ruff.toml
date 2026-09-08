@@ -8,8 +8,9 @@ line-length = 120
 # exclusions otherwise apply only while walking directories. That is precisely how a
 # vendored canonical file gets re-wrapped on commit -- the exclusion is configured,
 # looks correct, and silently does nothing. Verified empirically: with the exclude but
-# without this flag, `ruff format --check` on the seven shared files still reported
-# "6 files would be reformatted"; with it, all seven are skipped. (issue #10)
+# without this flag, `ruff format --check` on the seven shared files that existed at the
+# time still reported "6 files would be reformatted"; with it, all seven were skipped.
+# (issue #10. The list has grown since -- see [format] below for the current set.)
 force-exclude = true
 
 extend-exclude = [
@@ -67,7 +68,7 @@ known-first-party = [
 [format]
 # THE VENDORED CANONICAL FILES ARE NOT THIS REPO'S TO FORMAT.
 #
-# `para-drift.reusable.yml` requires these eight files to be BYTE-IDENTICAL across the
+# `para-drift.reusable.yml` requires the 12 files listed below to be BYTE-IDENTICAL across the
 # hub and all five tool repos. But every tool repo runs `ruff-format` as a pre-commit
 # hook while the hub deliberately does not ("lint only; the hub is not auto-formatted"),
 # and `line-length` is not uniform across the ecosystem -- it is 120 here, in
@@ -101,5 +102,6 @@ exclude = [
     "service/atrium_service.py",
     "tests/test_para_licenses.py",
     "tests/test_document_originators.py",
+    "tests/test_atrium_vocab.py",
     "docs/templates/shared/*.py",
 ]
