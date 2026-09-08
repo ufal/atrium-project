@@ -309,8 +309,7 @@ def test_serve_lifecycle_chains_to_previous_handler_rather_than_replacing_it():
                 # test must not send a real signal to the pytest process itself.
                 current_handler = signal.getsignal(signal.SIGTERM)
                 assert current_handler is not _fake_previous_handler, (
-                    "serve_lifecycle must install its own handler, not leave the "
-                    "previous one in place unwrapped"
+                    "serve_lifecycle must install its own handler, not leave the previous one in place unwrapped"
                 )
                 current_handler(signal.SIGTERM, None)
                 assert state.draining is True

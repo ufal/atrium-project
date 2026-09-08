@@ -67,6 +67,9 @@ declare -A SHARED_FILES=(
     ["check_version.py"]="check_version.py"
     ["atrium_document.py"]="atrium_document.py"
     ["atrium_document.schema.json"]="atrium_document.schema.json"
+    ["atrium_vocab.py"]="atrium_vocab.py"
+    ["atrium_vocab.schema.json"]="atrium_vocab.schema.json"
+    ["test_atrium_vocab.py"]="tests/test_atrium_vocab.py"
 )
 
 CHECK_ONLY=0

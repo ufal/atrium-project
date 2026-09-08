@@ -76,6 +76,30 @@ jobs:
       - name: Verify atrium_document.schema.json parity
         run: diff -u tool-repo/atrium_document.schema.json hub-repo/docs/templates/shared/atrium_document.schema.json
 
+      - name: Verify atrium_vocab.py parity (issue #51)
+        # The controlled-label registry. Byte-parity matters more here than for most
+        # canonical files: the module IS the declaration of which label values are
+        # legal in `lines[].categ`, `pages[].category` and friends, so a repo running a
+        # stale copy would validate its output against a label set nobody else agrees
+        # with -- the exact drift the registry was written to end. Edit the hub copy,
+        # never a vendored one; scripts/revendor_shared.sh does the copy.
+        run: diff -u tool-repo/atrium_vocab.py hub-repo/docs/templates/shared/atrium_vocab.py
+
+      - name: Verify atrium_vocab.schema.json parity (issue #51)
+        run: diff -u tool-repo/atrium_vocab.schema.json hub-repo/docs/templates/shared/atrium_vocab.schema.json
+
+      - name: Verify tests/test_atrium_vocab.py parity (issue #51)
+        # Canonical for the same reason as test_document_originators.py: the registry is
+        # a cross-repo contract, so the test pinning it has to run everywhere the
+        # contract is relied on, not only in the repo that authored it.
+        run: diff -u tool-repo/tests/test_atrium_vocab.py hub-repo/docs/templates/shared/test_atrium_vocab.py
+
+      - name: Registry self-test (issue #51)
+        # Cheap, hermetic, stdlib-only: proves the vendored registry's own tables are
+        # internally consistent and that both serialisations still render. A parity
+        # diff proves the bytes match; this proves the bytes are not matching garbage.
+        run: python3 tool-repo/atrium_vocab.py --selftest
+
       - name: Verify check_version.py parity (issue #18)
         # The release gate and security.reusable.yml's version-check both run this
         # vendored script. It replaced ~360 lines of copy-pasted inline python that

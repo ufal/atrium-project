@@ -7,6 +7,8 @@ across the pipeline into one FAIR, versioned JSON for search and catalogue expor
 
 Template files: [`templates/shared/atrium_document.py`](templates/shared/atrium_document.py) ·
 [`templates/shared/atrium_document.schema.json`](templates/shared/atrium_document.schema.json).
+Several of this record's fields carry **controlled terms**; which values are legal in each, and what
+they mean, is [`skos_strategy.md`](skos_strategy.md) and the registry it describes.
 Design discussion: [ufal/atrium-llm-enrich#13](https://github.com/ufal/atrium-llm-enrich/issues/13).
 
 ## Why accretion, not an aggregator
@@ -425,3 +427,41 @@ have to guess: the originator wrote the answer into it.
 ("derive it with `canonical_doc_id()` from the SAME original filename"), which is unactionable
 for a stage that is never handed the original. It now names the inheritance rule and the reason a
 correct derivation is still the wrong answer.
+
+## Changelog — 2026-09-08 (issue #51: controlled terms get a declaration)
+
+Additive throughout — **no `SCHEMA_VERSION` bump**. No field is renamed or removed, no ownership
+changes, and every previously-valid record stays valid.
+
+Seven of this record's fields carry controlled terms as bare strings — `page_categories`,
+`pages[].category`, `lines[].categ`, `pages[].quality_band`, `entities[].type_teitok`,
+`entities[].type_cnec`, `enrichment.items[].teater_category`. Each label set was declared in a
+different repository in a different form, and nothing reconciled them. A new hub-canonical module,
+[`templates/shared/atrium_vocab.py`](templates/shared/atrium_vocab.py), is now the single
+declaration, published as SKOS. See [`skos_strategy.md`](skos_strategy.md).
+
+* **`x-atrium-scheme`** — new annotation on each vocabulary-bearing field, naming its registry
+  scheme. A JSON Schema annotation, so it is inert to validators and readable by tooling.
+* **No `enum` was added, anywhere.** It is the obvious move and it is wrong here.
+  `validate_document()` is a live output gate that *raises*, and `page-classification/utils.py`
+  derives its label list from `sorted(os.listdir())` at run time — so an enum would convert a
+  naming slip into a stalled pipeline. The registry's `validate_labels()` reports instead, matching
+  the abstain-with-a-`NOTE` idiom §1a already uses for an unrecognised origin.
+* **`page_categories.examples` corrected.** They were `{"1": "Text", "2": "Plate"}`; neither is a
+  member of `model_registry.CATEGORIES`. The schema's own illustration of a controlled field used
+  values the controlling code would never emit.
+* **`lines[].categ` description corrected, and it is the substantive one.** It said `"Garbage"` and
+  `"Inverted"` are load-bearing because `json_to_md.py`'s `DROP_CATEGORIES` filters them — true —
+  and left the reader to infer that those are what the field carries. They are `digital-convert`'s
+  labels. `alto-postprocess`, the *other* authorised originator, emits
+  `Clear`/`Empty`/`Noisy`/`Non-text`/`Trash`, a **disjoint** set. So the filter matches nothing on
+  the OCR/ALTO path: a `Trash` line reaches the model exactly like a `Clear` one. The description
+  now states both sets and points at the defect (V-1) and its one-line fix rather than implying the
+  field is already filtered. **The filter itself is unchanged** — correcting it changes what text
+  the model reads, which is a behaviour decision with an owner, not a documentation fix.
+
+`atrium_vocab.py` and `atrium_vocab.schema.json` join the hub-canonical set: `SHARED_FILES` in
+`scripts/revendor_shared.sh`, two `diff -u` steps plus a `--selftest` step in
+`para-drift.reusable.yml`, and the `[format] exclude` list in every repo's `ruff.toml` — without
+that last one `ruff format` reflows the vendored copy to the local line length and para-drift fails,
+which is the trap `force-exclude = true` was added for.

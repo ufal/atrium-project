@@ -574,3 +574,21 @@ _Timeline index refreshed 2026-09-07 against live `test`/`main` HEAD, the curren
 six repos (including direct CI-log inspection of the failing `e2e-digital-smoke.yml` run and its tracking issue
 #49), and `docs/docker_gha_roadmap.md`. Nothing removed from the issues themselves (per #29); this file is a
 derived reading aid in `agent_dev_logs/`._
+
+## 2026-09-08
+
+- **#51 SKOSification of internal data — DARIAH Vocabs standards** — split the issue in two and
+  acted on the half that was never blocked. The namespace request stays deferred to @petrpajdla's
+  18-month project per @motyc; the internal SKOS alignment he called "definitely desirable" is
+  built. New hub-canonical `docs/templates/shared/atrium_vocab.py` (+ `.schema.json`) declares the
+  six ATRIUM-authored label sets — page categories, line categories, quality bands, coarse entity
+  types, CNEC codes, harmonisation themes — that previously lived in four repos in four different
+  forms; vendored to all five tool repos and enforced by `para-drift.reusable.yml`.
+  `vocab_build.py --skos` emits `union.skos.ttl` (5,594 concepts / 55,188 triples) using the
+  sources' own URIs, so ATRIUM mints nothing that would later need migrating. `vocab_sources.py`
+  stops discarding `closeMatch`/`broadMatch`/`relatedMatch`, and harvests TEATER's AAT citations as
+  `dcterms:source` rather than as mappings. `vocab_manager.resolve_pid()` makes `entities[].pid`
+  fillable for the first time since schema 1.0. Strategy: [`../docs/skos_strategy.md`](../docs/skos_strategy.md).
+  Three defects recorded there, one of them live: `DROP_CATEGORIES` matches nothing on the OCR path
+  because `lines[].categ`'s two originators emit disjoint label sets (V-1, documented not fixed —
+  it changes what the model reads).
