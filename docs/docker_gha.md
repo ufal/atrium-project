@@ -258,6 +258,24 @@ Dockerfile stage via the new `probe-targets` input, `docker run`s the built imag
 it (sending `SIGTERM`) and asserts a clean exit inside the grace period. Before this, no Dockerfile
 `ENTRYPOINT` in any of the five repos was ever exercised anywhere in CI (roadmap **B9**).
 
+It runs on pull requests, on pushes to `test`, and on `v*` tags. The push leg was added in 2026-09 after
+the gap it left became concrete: alto-postprocess added its `api` stage on a push, so the probe never
+started that image; a fork PR weeks later was the first thing to do so, and found the `ENTRYPOINT` dying at
+import. The fix was pushed to `test` as well, where the job skipped again — so it shipped unproven, and the
+red check landed on an unrelated contributor's PR. A probe that only runs on `pull_request` checks
+contributor branches but not the integration branch `build-and-push` publishes from.
+
+**Its two budgets are derived from the `HEALTHCHECK` convention below, not chosen.** The healthy wait is
+330s because Docker only declares a container *unhealthy* after `retries` consecutive failures past the
+start period — `--start-period=180s` + 3 × `--interval=30s` = 270s, plus one interval of slack. A shorter
+budget (240s was the original) clears the healthy path at 210s but expires before the unhealthy verdict, so
+a genuinely broken container is reported as an ambiguous timeout. The `docker stop` budget is 30s because
+it must exceed the shutdown budget the service is *entitled* to: `GRACEFUL_SHUTDOWN_S=20` plus a drain
+defaulting to 25s. `--time 15` sent `SIGKILL` before uvicorn's own deadline, so a service that actually
+used its drain window would exit 137 and fail the probe for behaving correctly — it passed only because the
+probe sends no requests, which is the case it is not testing. **Change the Dockerfile convention and these
+two numbers move with it.**
+
 ⚠️ **A container's own exit code after a handled `SIGTERM` is 143 (128+15), not 0.** uvicorn's
 `capture_signals()` deliberately re-raises the captured signal after a graceful shutdown completes, so a
 supervisor sees the same status a process that never caught the signal would show. Do not read exit 143 as

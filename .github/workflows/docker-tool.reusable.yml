@@ -267,7 +267,32 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
   docker-build-smoke:
-    if: github.event_name == 'pull_request'
+    # W3: was `github.event_name == 'pull_request'` alone, and that gate is why
+    # the container probe below could be published without ever being proven.
+    #
+    # alto-postprocess added its `api` stage on a PUSH to `test`, so the job did
+    # not run and nothing ever started the image; the first thing to actually do
+    # so was a fork PR weeks later, which found the ENTRYPOINT dying at import
+    # (`python service/text_api.py` puts /app/service on sys.path[0], not /app).
+    # The fix was then ALSO pushed to `test` — where this job skipped again — so
+    # the fix shipped unproven by any container start, and it surfaced as a red
+    # check on an unrelated contributor's PR that had not caused it.
+    #
+    # A probe that only runs on pull_request tests contributor branches and not
+    # the integration branch they merge into, which is backwards: `test` is what
+    # `build-and-push` publishes from. This gate now mirrors that job's own,
+    # minus the release leg (a released image is built from a tag that already
+    # passed here on its way through `test`).
+    #
+    # Deliberately NOT added to build-and-push's `needs:` in the same change.
+    # While this job skipped on push, adding it would have skipped
+    # `build-and-push` with it and silently stopped publishing `:test` — the
+    # exact failure W2 above was written to fix. Sequence it: let this gate run
+    # on a few pushes first, then make it blocking as its own change.
+    if: >-
+      github.event_name == 'pull_request'
+      || (github.event_name == 'push' && github.ref == 'refs/heads/test')
+      || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     # Least privilege (issue #10, G8). This job builds the image but never pushes
@@ -325,12 +350,22 @@ jobs:
           echo "container: $cid"
           trap 'docker logs "$cid" || true; docker rm -f "$cid" >/dev/null 2>&1 || true' EXIT
 
-          echo "Waiting up to 4 minutes for Docker's own HEALTHCHECK to report healthy..."
+          echo "Waiting up to 5.5 minutes for Docker's own HEALTHCHECK to report healthy..."
           # docker inspect's Health.Status is what HEALTHCHECK exists to make
           # meaningful — a wrong probe path or a missing interpreter in the image is
-          # otherwise invisible. 4 minutes covers the --start-period=180s convention
-          # (docs/docker_gha.md §3.4) plus one retry interval.
-          deadline=$((SECONDS + 240))
+          # otherwise invisible.
+          #
+          # The budget is derived from the HEALTHCHECK convention in
+          # docs/docker_gha.md §3.4 (--start-period=180s --interval=30s --retries=3),
+          # and it has to cover the UNHEALTHY verdict, not just the healthy one.
+          # Docker only marks a container unhealthy after `retries` consecutive
+          # failing probes past the start period: 180 + 3x30 = 270s. The old 240s
+          # budget cleared the healthy path (180 + 30 = 210s) but expired 30s BEFORE
+          # a genuinely broken container could be declared unhealthy — so a real
+          # failure was reported as an ambiguous "did not report healthy within the
+          # timeout", which reads like a slow runner. 330s = 270 + one interval of
+          # slack, still far inside this job's timeout-minutes: 45.
+          deadline=$((SECONDS + 330))
           status="starting"
           while [ "$SECONDS" -lt "$deadline" ]; do
             status=$(docker inspect --format='{{.State.Health.Status}}' "$cid" 2>/dev/null || echo starting)
@@ -353,12 +388,25 @@ jobs:
           curl -s -o /dev/null -w "/ready http_code: %{http_code}\n" http://127.0.0.1:18080/ready
 
           echo "Sending SIGTERM (docker stop) and asserting a clean, timely exit..."
+          # The budget must EXCEED the graceful-shutdown budget the service is
+          # entitled to, or the probe kills a correctly-behaving container and
+          # blames it. The ATRIUM api convention is GRACEFUL_SHUTDOWN_S=20 (passed
+          # to uvicorn's --timeout-graceful-shutdown) with a connection drain
+          # defaulting to 25s above it, so `--time 15` sent SIGKILL five seconds
+          # before uvicorn's own deadline: a service that actually used its drain
+          # window would exit 137 and fail here for doing the right thing. It has
+          # only ever passed because the probe sends no requests, which is exactly
+          # the case it is not testing.
+          #
+          # 30s clears the 25s drain with slack. This asserts "SIGTERM alone is
+          # enough", not "shutdown is fast" — the second is not this probe's business.
+          stop_budget=30
           start=$SECONDS
-          docker stop --time 15 "$cid" >/dev/null
+          docker stop --time "$stop_budget" "$cid" >/dev/null
           elapsed=$((SECONDS - start))
           exit_code=$(docker inspect --format='{{.State.ExitCode}}' "$cid")
           echo "stopped in ${elapsed}s, exit code ${exit_code}"
-          if [ "$elapsed" -ge 15 ]; then
+          if [ "$elapsed" -ge "$stop_budget" ]; then
             echo "container needed SIGKILL — SIGTERM alone did not stop it in time" >&2
             exit 1
           fi
