@@ -197,20 +197,40 @@ def test_missing_stage_record_fails_by_name(tmp_path, record):
 def test_schema_invalid_record_fails_on_the_schema_first(tmp_path, record):
     """D4: validation is assertion zero — before any block check, so the diagnosis is honest.
 
-    The record here is BOTH schema-invalid and missing `pages`; the failure must name the
-    schema violation, otherwise the block assertions are reporting on a record that was
-    never valid in the first place.
+    The record here is BOTH schema-invalid and missing `pages`; the failure must come from the
+    schema, otherwise the block assertions are reporting on a record that was never valid in
+    the first place.
+
+    **Ordering is proven by the exception TYPE, not by string matching.** `assert_schema_valid()`
+    raises SystemExit; every block assertion below it raises AssertionError. So
+    `pytest.raises(SystemExit)` cannot be satisfied by a run that reached a block check — that
+    is the load-bearing half of this test, and it is why the negative assertion below is
+    belt-and-braces rather than the substance.
+
+    Since the atrium-project#54 freeze the schema catches the deleted block too: `assembled.blocks`
+    still stamps `pages`, and the top-level stamp/payload coherence rule makes a stamp without a
+    payload invalid. Note this is the ONLY deletion in this file that leaves the stamp behind —
+    every other one (lines ~95, ~103, ~155) removes both, and line ~147 builds the deliberate
+    opposite shape. Both faults are therefore reported together now, in one run, which is exactly
+    the economics assert_schema_valid() exists for: one release round per repo, not one per field.
+
+    The negative assertion consequently matches the block assertion's OWN wording. The bare word
+    "pages" stopped being a usable proxy the moment the schema gained an opinion about it.
     """
     record["doc_id"] = 42  # schema says string
-    del record["pages"]
+    del record["pages"]  # stamp deliberately left in assembled.blocks — incoherent since #54
     final = _write(tmp_path, "5_llm.json", record)
     with pytest.raises(SystemExit) as exc:
         e2e_assert.assert_document_contract(final, llm_stage_ran=True, stage_paths=[])
     message = str(exc.value)
     assert "does not validate" in message
     assert "doc_id" in message
-    # ...and NOT the missing-block error, which is the whole point of ordering.
-    assert "pages" not in message.split("violation(s)")[0].replace("doc_id", "")
+    assert "'pages' is a required property" in message, (
+        "stamp/payload coherence should catch the orphaned assembled.blocks['pages'] stamp"
+    )
+    assert "2 violation(s)" in message, "both faults must be reported in one run, not serialised"
+    # ...and NOT the block assertion, which is the whole point of ordering.
+    assert "Contributions were erased" not in message
 
 
 def test_every_schema_violation_is_reported_not_just_the_first(tmp_path, record):

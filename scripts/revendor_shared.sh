@@ -18,10 +18,26 @@
 #
 # DESTINATIONS ARE NOT UNIFORM — this is the whole reason a script beats a
 # `cp -t`: the tests go to tests/, the service base class goes to service/, and
-# everything else sits at the repo root next to the code that imports it. Adding
-# a file to docs/templates/shared/ therefore means adding a row to SHARED_FILES
-# below AND a parity step to para-drift.reusable.yml, or the new file travels
-# nowhere and is enforced nowhere.
+# everything else sits at the repo root next to the code that imports it.
+#
+# ADDING A FILE TO docs/templates/shared/ TAKES THREE REGISTRATIONS, and missing
+# any one of them is silent:
+#   1. a row in SHARED_FILES below           — or it travels nowhere;
+#   2. a `diff -u` step in para-drift.reusable.yml — or it is enforced nowhere;
+#   3. a row in the `[format] exclude` list of docs/templates/ruff.toml — or
+#      `ruff format` reflows the vendored copy to the LOCAL line-length (120 in
+#      three repos, 100 in two) and para-drift goes red on the next commit. That
+#      is not hypothetical; it is what happened to test_document_originators.py
+#      on 2026-08-06, and the reason `force-exclude = true` exists.
+# Point 3 is invisible to this script, so it is written here rather than only in
+# the ruff config a maintainer adding a file has no reason to open.
+#
+# SOME CANONICAL FILES CARRY A --selftest, and para-drift runs it as a step of
+# its own, on the VENDORED copy. Byte-parity alone would not catch a canonical
+# file that is identical everywhere and broken everywhere, so this script runs
+# the same selftests after copying — otherwise "exit 0 means para-drift would
+# pass" stops being true the moment a selftest step exists that this script does
+# not know about. See SELFTESTS below.
 #
 # Usage:
 #   scripts/revendor_shared.sh                      # re-vendor into ../atrium-*
@@ -70,6 +86,19 @@ declare -A SHARED_FILES=(
     ["atrium_vocab.py"]="atrium_vocab.py"
     ["atrium_vocab.schema.json"]="atrium_vocab.schema.json"
     ["test_atrium_vocab.py"]="tests/test_atrium_vocab.py"
+    # atrium-project#54. Sits at the repo root beside atrium_vocab.py, which it
+    # imports for concept URIs — Python puts a script's own directory on sys.path,
+    # so the selftest below resolves that import from the vendored copy without
+    # any PYTHONPATH, exactly as para-drift runs it.
+    ["atrium_rocrate.py"]="atrium_rocrate.py"
+)
+
+# Canonical files that carry a `--selftest`, as PATHS RELATIVE TO THE TOOL REPO
+# ROOT (i.e. values from SHARED_FILES, not keys). Mirrors the `--selftest` steps
+# in para-drift.reusable.yml; adding one there means adding it here.
+SELFTESTS=(
+    "atrium_vocab.py"
+    "atrium_rocrate.py"
 )
 
 CHECK_ONLY=0
@@ -92,7 +121,11 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         -h|--help)
-            sed -n '3,40p' "${BASH_SOURCE[0]}"
+            # Print the header comment block and stop at the first line that is not
+            # a comment. The previous form was a fixed `sed -n '3,40p'` range, which
+            # drifted the moment the header grew: it printed `set -euo pipefail` and
+            # two variable assignments as if they were documentation.
+            awk 'NR > 2 && /^#/ { sub(/^# ?/, ""); print; next } NR > 2 { exit }' "${BASH_SOURCE[0]}"
             exit 0
             ;;
         *)
@@ -120,14 +153,21 @@ echo
 COPIED=0
 UNCHANGED=0
 DRIFTED=0
+SKIPPED=0
 FAILED=0
+SELFTEST_RUN=0
 
 for repo in "${REPOS[@]}"; do
     repo_dir="$SIBLING_ROOT/$repo"
     if [[ ! -d "$repo_dir" ]]; then
-        # Not fatal: a maintainer often has only a subset checked out, and
-        # failing the whole run would push them back to copying by hand.
+        # The LOOP continues — a maintainer often has only a subset checked out, and
+        # aborting would push them back to copying by hand. The EXIT CODE still says
+        # no, because this script'"'"'s promise is "0 means para-drift would pass in every
+        # repo named", and a repo nobody looked at cannot be claimed to be in parity.
+        # Those two are not in tension; the previous comment described only the first
+        # half while the code did both.
         echo "SKIP  $repo — no checkout at $repo_dir"
+        SKIPPED=$((SKIPPED + 1))
         FAILED=1
         continue
     fi
@@ -190,11 +230,41 @@ if [[ "$CHECK_ONLY" -eq 0 ]]; then
     done
 fi
 
+# Byte-parity says the five copies agree with the hub. It does not say the thing
+# they agree on works — a canonical module can be identical everywhere and broken
+# everywhere. para-drift runs each `--selftest` as its own step for exactly that
+# reason, so running them here is what keeps this script'"'"'s exit code equivalent to
+# that job'"'"'s. Run against the VENDORED copy, never the canonical one: the failure
+# this catches is a file that copied badly or landed beside a stale sibling.
+if [[ "$CHECK_ONLY" -eq 0 && ${#SELFTESTS[@]} -gt 0 ]]; then
+    echo
+    echo "Running canonical selftests (the --selftest steps para-drift.reusable.yml runs):"
+    for repo in "${REPOS[@]}"; do
+        repo_dir="$SIBLING_ROOT/$repo"
+        [[ -d "$repo_dir" ]] || continue
+        for rel in "${SELFTESTS[@]}"; do
+            target="$repo_dir/$rel"
+            [[ -f "$target" ]] || continue
+            if python3 "$target" --selftest >/dev/null 2>&1; then
+                echo "  ok    $repo/$rel --selftest"
+            else
+                echo "  FAIL  $repo/$rel --selftest"
+                python3 "$target" --selftest || true
+                FAILED=1
+            fi
+            SELFTEST_RUN=$((SELFTEST_RUN + 1))
+        done
+    done
+fi
+
 echo
 if [[ "$CHECK_ONLY" -eq 1 ]]; then
     echo "Summary: $UNCHANGED in parity, $DRIFTED drifted (nothing written)."
 else
-    echo "Summary: $COPIED copied, $UNCHANGED already up to date."
+    echo "Summary: $COPIED copied, $UNCHANGED already up to date, $SELFTEST_RUN selftest(s) run."
+fi
+if [[ "$SKIPPED" -ne 0 ]]; then
+    echo "         $SKIPPED repo(s) skipped — no checkout. Parity is UNKNOWN for those, not clean."
 fi
 
 if [[ "$FAILED" -ne 0 || "$DRIFTED" -ne 0 ]]; then

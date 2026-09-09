@@ -91,9 +91,7 @@ DOCUMENTED_DIVERGENCES = {
         "long-standing 'mounted at /frontend' claim is true. A no-op on any branch without "
         "service/frontend/, so it is forward-mergeable rather than a fork (2026-09-09)"
     ),
-    ("atrium-llm-enrich", "service/api.py"): (
-        "same guarded /frontend mount as atrium-translator (2026-09-09)"
-    ),
+    ("atrium-llm-enrich", "service/api.py"): ("same guarded /frontend mount as atrium-translator (2026-09-09)"),
 }
 
 # Guarded byte-identical by the hub's para-drift.reusable.yml.
@@ -268,14 +266,11 @@ def check_repo(repo: Path, test_ref: str, skill_ref: str, quiet: bool) -> list:
     missing_service = sorted(
         path
         for path in test_files - skill_files
-        if path.startswith("service/")
-        and not path.startswith("service/test")
-        and Path(path).name != "__init__.py"
+        if path.startswith("service/") and not path.startswith("service/test") and Path(path).name != "__init__.py"
     )
     if missing_service:
         findings.append(
-            "service/ file(s) on " + test_ref + " that the skill branch does not carry: "
-            + ", ".join(missing_service)
+            "service/ file(s) on " + test_ref + " that the skill branch does not carry: " + ", ".join(missing_service)
         )
 
     # --- container contract ---------------------------------------------------------------

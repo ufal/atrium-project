@@ -465,3 +465,210 @@ declaration, published as SKOS. See [`skos_strategy.md`](skos_strategy.md).
 `para-drift.reusable.yml`, and the `[format] exclude` list in every repo's `ruff.toml` — without
 that last one `ruff format` reflows the vendored copy to the local line length and para-drift fails,
 which is the trap `force-exclude = true` was added for.
+
+## Changelog — 2026-09-09 (issue #54: the freeze)
+
+The WP3/T3.3 deliverable. `SCHEMA_VERSION` stays **`1.0`** — see *Why this is not a bump*
+below, which is the load-bearing paragraph of this section. After it, the schema is a
+compatibility obligation rather than a design surface: the next change to it is a `2.0` with a
+migration, not another additive pass.
+
+### What the top-level `required` was, and why it was wrong
+
+```json
+"required": ["schema_version", "doc_id"]
+```
+
+Two keys against seventeen declared properties. `validate_document()` is a live output gate in
+five repos and a `SystemExit` gate in the hub's E2E, and the strongest statement it could make
+about a record was *"it has a version and an id"*. A stage that ran, wrote nothing, and emitted
+a two-key file passed every gate in the ecosystem — `finalize()` printed
+`WARNING – <program> contributed no block to <doc_id>` and wrote the record anyway, and nothing
+downstream distinguished that from a document that genuinely has no entities yet.
+
+### What it is now
+
+```json
+"required": ["schema_version", "record_type", "doc_id", "provenance", "assembled"]
+```
+
+plus two assertions that could not be expressed as a flat list:
+
+* **`anyOf` — a record must carry evidence that something was written into it.** Either
+  `source`, or at least one entry in `assembled.blocks`. Nothing else changed about either.
+* **`allOf` — stamp/payload coherence.** Every name in `assembled.blocks` must exist as a
+  top-level property. Eleven `if`/`then` clauses: the nine content blocks plus `derived_from`
+  and `regenerable`. A name this table has not been taught has no clause and passes, which is
+  rule 6's spirit and the same abstain-rather-than-refuse idiom `ORIGIN_ORIGINATORS` uses.
+
+The enumeration this rests on is not prose: `tests/test_document_required.py` carries every
+record shape production writes, each annotated with the call site it was traced from, plus the
+defect shapes the freeze refuses. It passes 18 cases against this schema and fails exactly five
+against the previous one.
+
+### Why the floor is exactly those five keys, and not six
+
+`DocumentRecord.to_dict()` emits all five on **every** path, with no branch that can skip one:
+`schema_version` and `record_type` are `setdefault` in `__init__`, `doc_id` is assigned there
+unconditionally (and `__init__` raises on a falsy one), and `to_dict()` itself always assigns
+`provenance` and always sets `assembled.had_baseline` / `assembled.note`.
+`merge_document_records()` hardcodes all five at the end of its own build. So no record any tool
+has ever written is newly rejected — only hand-built dicts are, which is the point.
+
+`source` is **not** in the floor, and the reason is worth stating because it is the obvious
+sixth candidate. Four of the five tools never call `set_source()` at all — `page-classification`,
+`translator`, `nlp-enrich` and `llm-enrich` — and `page-classification` is stage 1 of the scanned
+pipeline. Requiring `source` would refuse a legitimate rule-3 standalone run of most of the
+ecosystem. For the same reason `source.sha256` and `source.origin` stay optional even when
+`source` is present: `sha256` has exactly two writers (`page_split.py`, `digital_to_json.py`) and
+`resolve_source_origin()` is allowed to return `None`.
+
+### Why `assembled.blocks` alone was not enough — the branch that made `anyOf` necessary
+
+The first draft of this change required `assembled.blocks` to be present and non-empty, on the
+grounds that `_stamp()` runs only where a payload is written, so an empty stamp registry *is*
+"contributed nothing". That would have broken the pipeline at stage 1.
+
+`set_source()` deliberately does not call `_stamp()` — `source` is not a tool's block, it is the
+first-writer handshake, and stamping it would put a `program`/`run_id`/`paradata_ref` on a
+structural key that `RESERVED_KEYS` explicitly excludes from tool ownership. So
+`alto-postprocess/page_split.py` — the originator, the first thing that touches a scanned
+document — emits exactly `schema_version, record_type, doc_id, source, provenance, assembled`,
+with **no `blocks` key at all**, and hands it to a hard gate (`document_hook.py`'s
+`_validate_own_output()`). A blanket `blocks` requirement would have made the originator refuse
+to emit its own first record.
+
+The `anyOf` says the true thing instead: *`source` or a block*. `page_split`'s record satisfies
+the first branch. Everything else satisfies the second. The only shape that satisfies neither is
+a record with no origin information and no contribution — which is precisely what #54 asked to
+make invalid.
+
+`minProperties: 1` lives inside the `anyOf` branch rather than on `assembled.blocks` itself, so
+that a fan-in merge of two source-only records — which legitimately carries `blocks: {}`, since
+`merge_document_records()` always writes the key — still validates through the first branch.
+
+### The one call site this newly refuses, and it is a defect
+
+`atrium-alto-postprocess/classify_TEXT.py`'s `write_document_block()` call sits **outside** the
+`if not df.empty` guard. An empty CSV therefore reaches `merge_blocks={"lines": []}`, which
+passes the hook's `if not any([source, set_blocks, merge_blocks])` check (a dict with a key is
+truthy) and then fails its own `if records:` check — so the `with` block runs, contributes
+nothing, and writes a five-key record. In a real pipeline the baseline exists and its blocks pass
+through, so this only bites a standalone run; but a standalone run is exactly what rule 3 exists
+to support, and "wrote a record that says nothing" is not a supported outcome of it.
+
+Fix at the call site (guard the hook call on `not df.empty`), not in the schema. The schema is
+right to refuse it.
+
+### Why this is not a `SCHEMA_VERSION` bump
+
+Versioning rule 2 above bumps MAJOR for "renaming/removing a field, or changing block
+ownership". None of that happens here: no property is renamed, none is removed, no ownership
+moves, and — the test that actually matters — **every record any tool in the ecosystem has ever
+written stays valid**, because the five floor keys are unconditional in `to_dict()` and the two
+new assertions are satisfied by construction wherever `_stamp()` wrote the stamp.
+
+That is the same distinction rule 2's Issue #18 amendment already draws: *widening write
+authorisation is additive; re-attributing an already-written block would not be*. Here the
+analogue is: **narrowing what a validator accepts is additive when the narrowed set still
+contains everything the producers produce.** It stops being additive the moment a real producer
+is excluded, and the way to know which case you are in is to enumerate the producers — which is
+what the per-stage record table in `54.plan.md` does.
+
+A bump would also be actively harmful. `SCHEMA_VERSION` is what `load_document()`'s MAJOR-refuse
+guard reads: bumping to `2.0` would make every already-written `1.0` record refuse to load in
+every updated tool, in exchange for a change that does not alter how a single one of them is
+read. The migration mechanism exists for changes that need it; this is not one.
+
+### Rejected alternatives, recorded so they are not relitigated
+
+1. **Require every block (a flat seventeen-key `required`).** Rejected: it contradicts the
+   accretion model outright. `assembled.note` literally says *"a block is absent until its tool
+   has run"* — requiring all of them would make every intermediate record invalid and the only
+   valid record the last one.
+2. **Require a positive content block (`anyOf` over `pages`/`lines`/`entities`/…).** Rejected:
+   `page_split`'s source-only record carries none, and each rule-3 standalone record carries
+   exactly one, so the branch list would have to be all nine — at which point it says nothing
+   the `assembled.blocks` branch does not say better, and it says it without the stamp that
+   makes the claim auditable.
+3. **Add `enum`s to the controlled-term fields while the schema is open.** Rejected for the
+   reason already recorded under the 2026-09-08 pass: `validate_document()` raises, and
+   `page-classification/utils.py` derives its label list from the filesystem at run time, so an
+   enum turns a naming slip into a stalled pipeline. `atrium_vocab.validate_labels()` reports.
+   (This freeze does, however, make the *drift* visible — see the fixture note below.)
+4. **`minItems: 1` on `provenance.contributors`.** Rejected: the contributor append is gated on
+   `if self._touched`, so the two records described above legitimately carry `[]`.
+5. **Require `source.origin` whenever a positional block is present.** Deferred, not rejected —
+   it would close a real §1a hole (a positional plane written by a run that never called
+   `set_source()` escapes the originator check permanently), but it is a behaviour change to
+   four production call sites, not a freeze. Tracked as a follow-up.
+
+### Also recorded by this freeze
+
+* **`forms` has no writer anywhere.** `BLOCK_OWNERS` assigns it to `llm-enrich`, the schema
+  describes it in full, and no production code path in any of the six repos calls
+  `set_block("forms")`. It stays in the schema as a reserved, specified block — a freeze is the
+  right moment to say out loud that it is unimplemented rather than to discover it later from a
+  consumer that expected it.
+* **`fixtures/atrium_document.example.json` carries four controlled values the registry does not
+  know**: `page_categories` `"Text"`/`"Plate"`, `lines[].categ` `"Text"`, and
+  `enrichment.items[].teater_category` `"kostel"`. This is defect V-4 from `skos_strategy.md`
+  §6 in its second home: that pass corrected the *schema's* `examples`, and the fixture — which
+  is what a maintainer actually reads, and what `tests/test_fixture_schema.py` pins — kept the
+  same wrong values. Nothing catches it today because the fixture test checks schema validity
+  and the schema deliberately has no `enum`. Fix the fixture; do not add the enum.
+
+### New: `atrium_rocrate.py` — the RO-Crate view
+
+`docs/document_schema.md` has called this record "one FAIR, versioned JSON for search and
+**catalogue export**" since it was written, and nothing had ever exported it. The DMP's WP3
+standards column names RO-Crate. `templates/shared/atrium_rocrate.py` is the export, and it joins
+the hub-canonical set (`SHARED_FILES`, a `diff -u` step and a `--selftest` step in
+`para-drift.reusable.yml`, and a `[format] exclude` row in every repo's `ruff.toml`).
+
+It **maps, it does not invent**. Every property comes from a field the record or its paradata
+already carries, and a field that does not exist is omitted rather than guessed:
+
+| RO-Crate                 | ATRIUM source                                                                                  |
+|--------------------------|------------------------------------------------------------------------------------------------|
+| root `license`           | `provenance.license_url` / `license` — already the most-restrictive union from `para_licenses` |
+| root `author`            | the four ORCID `Person`s identical in every `CITATION.cff`                                     |
+| root `hasPart`           | `derived_from` values, and **only** those                                                      |
+| root `isBasedOn`         | `source`, as a contextual entity: no path, because originals are archive-managed               |
+| root `about`             | every controlled term, as a `DefinedTerm` under `atrium_vocab.concept_uri()`                   |
+| `CreateAction`           | one per `provenance.contributors[]` entry                                                      |
+| `CreativeWork` per block | one per `assembled.blocks[…]` stamp — the accretion granularity, preserved                     |
+| `SoftwareApplication`    | paradata `tool_version` / `repository` / `docker_image` / `runner_ref`                         |
+
+**The reference-discipline rule, restated in RO-Crate terms.** `regenerable` entries are recipes
+for files that do not exist, so they are contextual entities and never appear in `hasPart`. A
+crate that lists a file it does not contain is invalid — which is the same failure the record's
+"transient artifacts are never referenced" rule prevents one layer up. The module's `--selftest`
+asserts it directly.
+
+Two house rules it inherits deliberately: **stdlib only** (no RDF library, for the reason
+`atrium_vocab.py` gives — a general-purpose serialiser emitting blank nodes or unordered graphs
+fails a byte-comparison gate on every run), and **deterministic output** (`@graph` sorted by
+`@id`, `sort_keys=True`, and `datePublished` derived from the record's own newest block stamp
+rather than from the clock, so re-exporting an archived record reproduces the crate it shipped
+with).
+
+---
+
+### Two edits elsewhere in this document
+
+1. **"Schema `1.0` Context"** — replace the `**Contract:**` bullet's opening with a statement of
+   the frozen assertions, so a reader meets them before the changelog:
+
+   > **Contract:** every record carries `schema_version`, `record_type`, `doc_id`, `provenance`
+   > and `assembled`; carries either `source` or at least one stamped block; and carries a
+   > payload for every block its `assembled.blocks` names. Beyond that floor, blocks are written
+   > by exactly one tool per document — for the positional blocks, *which* tool is fixed by
+   > `source.origin` (see **Originators**, below).
+
+2. **"Consumers to Update on Bumps"** — add two rows:
+
+   > * `atrium_rocrate.py`, whose mapping table names the fields it reads
+   > * `fixtures/atrium_document.example.json`, which `tests/test_fixture_schema.py` validates
+   > * `tests/test_document_required.py`, which enumerates every record shape production writes —
+   >   a change to `required` that reds a case there is a behaviour change to a shipped tool
