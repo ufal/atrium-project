@@ -224,8 +224,29 @@ stays legitimately trimmed).
 referenced by `SKILL.md`, `README.md`, or `service/README.md` must exist on the branch, and every
 endpoint they advertise as `GET /x` / `POST /x` must be one the service actually serves.**
 (Generalized from exemplar defects (a) `serve.sh` vs committed `server.sh`, and (c)
-`frontend-lindat/` documented but absent. The endpoint half caught llm-enrich's and translator's
-branch READMEs claiming a frontend "mounted at `/frontend`" that neither `service/api.py` mounts.)
+`frontend-lindat/` documented but absent.)
+
+**What that rule does _not_ cover — static mounts.** An earlier revision of this section claimed
+the endpoint half had caught llm-enrich's and translator's branch READMEs advertising a frontend
+"mounted at `/frontend`" that neither `service/api.py` mounted. It had not, and could not: step 2
+skips `/`-rooted tokens as absolute paths, and step 4's `GET /x` pattern deliberately ignores a
+bare backticked `/frontend`, because that same form also names Claude Code slash-commands. The
+claim was false for six weeks and CI stayed green throughout; it was found by reading
+`app.mount()` calls, not by a check. Both branches now carry the mount (2026-09-09), written as a
+guarded no-op so the same code is safe on any branch:
+
+```python
+_frontend_dir = Path(__file__).resolve().parent / "frontend"
+if _frontend_dir.exists():
+    app.mount("/frontend", StaticFiles(directory=str(_frontend_dir), html=True), name="frontend")
+```
+
+Because it turns itself off where the directory is absent, this is forward-mergeable to the
+default branch rather than a permanent skill-branch fork — which is the shape any §9 frontend
+change should take. A mount is still not something `skill-validate` verifies. What guards it
+is `tools/skill_drift_check.py`, which compares `service/api.py` byte-for-byte: a mount added or
+dropped on one branch and not the other surfaces there as content drift, and the deliberate case
+is recorded in that tool's `DOCUMENTED_DIVERGENCES` table with the reason.
 
 ## 🔌 6. Zero-dependency client contract
 

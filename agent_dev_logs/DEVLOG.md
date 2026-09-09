@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 21 open issues. `test`==`main` HEAD `7f50741` (2026-09-07) · tag `v1` moving with it._
+> _Hub/planning repo. 21 open issues. `test`==`main` HEAD `bbcdf58` (2026-09-09) · tag `v1` moving with it._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0709.md` (prior: `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -592,3 +592,39 @@ derived reading aid in `agent_dev_logs/`._
   Three defects recorded there, one of them live: `DROP_CATEGORIES` matches nothing on the OCR path
   because `lines[].categ`'s two originators emit disjoint label sets (V-1, documented not fixed —
   it changes what the model reads).
+
+## 2026-09-09
+
+- **#31 AGENT SKILL — API service per repo** — re-aligned all five `agent-skill` branches with
+  their `test` branches and repaired the validation CI. The previous sync (2026-09-08) was real;
+  `test` moved the same morning with the #51 SKOS work and dependency pins, putting
+  `skill_drift_check.py` back to **0/5 aligned** within a day. Ported everything it flagged —
+  including `atrium_document.schema.json`, whose one #51 blob was missing from all five — and
+  newly vendored `atrium_vocab.py` + `atrium_vocab.schema.json`, absent from every skill branch
+  because each importer guards with `try/except ImportError` and so degraded in silence. Now
+  **5/5 aligned**, with three reviewed divergences declared in the tool rather than remembered.
+
+  Three defects surfaced that no check was looking for. **(1)** All five `skill-validate` callers
+  passed only `client-script`, so `app-import` fell back to `service.api` — wrong for
+  alto-postprocess (`service.text_api`), whose step 4b had import-skipped on *every* run behind
+  the `::warning::` that exists to stop a skip reading as a pass — and `primary-endpoints` fell
+  back to `""`, disabling the primary-endpoint assertions in both 4a and 4b everywhere. The hub's
+  caller template already carried both; `31.digest.md`/`31.plan.md` recorded the situation
+  backwards, asserting the template was stale and the callers correct. **(2)** alto's skill-branch
+  API container could not start: `service/text_api.py` imported `atrium_document` at line 21 with
+  only `service/` ever added to `sys.path`, so `python service/text_api.py` — the compose `api`
+  entrypoint — died at `ModuleNotFoundError`. Reproduced, then fixed by the port. **(3)** The
+  issue-#55 container contract was gone from all five: no `HEALTHCHECK`, no `STOPSIGNAL`, no
+  `--timeout-graceful-shutdown`, while `service/healthcheck.py` shipped inert on four branches,
+  was missing outright on nlp-enrich (the cause of that repo's red run), and nlp-enrich's
+  `service/README.md` documented the behaviour as live throughout. The `Dockerfile` /
+  `docker-compose*` content allowlist is what hid it.
+
+  Also: translator and llm-enrich now actually mount the `/frontend` their READMEs had advertised
+  for six weeks, via an `.exists()`-guarded block that is a no-op elsewhere and so forward-merges
+  to the default branches; llm-enrich's page, which had been left behind by the service redesign
+  and answered 422 on every text submission, is rewritten against the live envelope.
+  `skill_drift_check.py` gained a missing-`service/`-file check (it had called nlp-enrich clean
+  while CI failed on exactly that), an issue-#55 container-contract check, and
+  `DOCUMENTED_DIVERGENCES`. Strategy §5's claim that CI catches a false `/frontend` mount is
+  corrected — it cannot, and did not. Full detail: `digests/31.digest.md` · `plans/31.plan.md`.
