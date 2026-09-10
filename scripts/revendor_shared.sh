@@ -91,6 +91,7 @@ declare -A SHARED_FILES=(
     # so the selftest below resolves that import from the vendored copy without
     # any PYTHONPATH, exactly as para-drift runs it.
     ["atrium_rocrate.py"]="atrium_rocrate.py"
+    ["test_atrium_rocrate.py"]="tests/test_atrium_rocrate.py"
 )
 
 # Canonical files that carry a `--selftest`, as PATHS RELATIVE TO THE TOOL REPO

@@ -61,6 +61,7 @@ known-first-party = [
     "atrium_paradata",
     "atrium_service",
     "atrium_vocab",
+    "atrium_rocrate",
     "para_licenses",
     "check_version",
 ]
@@ -103,5 +104,7 @@ exclude = [
     "tests/test_para_licenses.py",
     "tests/test_document_originators.py",
     "tests/test_atrium_vocab.py",
+    "atrium_rocrate.py",
+    "tests/test_atrium_rocrate.py",
     "docs/templates/shared/*.py",
 ]

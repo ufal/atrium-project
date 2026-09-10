@@ -100,6 +100,29 @@ jobs:
         # diff proves the bytes match; this proves the bytes are not matching garbage.
         run: python3 tool-repo/atrium_vocab.py --selftest
 
+      - name: Verify atrium_rocrate.py parity (issue #54)
+        # Registered in revendor_shared.sh's SHARED_FILES and SELFTESTS from the start,
+        # but never here or in the ruff `[format] exclude` list — two of the three
+        # registrations that script's header warns are "silent" if missed. Both went
+        # missing at once, and the result was the failure mode the header predicts:
+        # nlp-enrich's copy was reflowed to its local line-length (100 against 120 in
+        # three other repos) and sat 92 lines from canonical with nothing looking.
+        run: diff -u tool-repo/atrium_rocrate.py hub-repo/docs/templates/shared/atrium_rocrate.py
+
+      - name: RO-Crate exporter self-test (issue #54)
+        # SELFTESTS in revendor_shared.sh has listed this since the file was added; the
+        # step it mirrors did not exist. Same reasoning as the registry self-test above.
+        run: python3 tool-repo/atrium_rocrate.py --selftest
+
+      - name: Verify tests/test_atrium_rocrate.py parity (issue #54)
+        # The exporter shipped with no test anywhere in the ecosystem — 319 statements
+        # vendored into five repos, and atrium-translator's coverage ratchet (81, the
+        # strictest) was the only thing that noticed, failing at 72.90%. Enforced here
+        # like test_document_originators.py above, so the module and the test that
+        # covers it travel together. Edit the hub copy, never a vendored one;
+        # scripts/revendor_shared.sh does the copy.
+        run: diff -u tool-repo/tests/test_atrium_rocrate.py hub-repo/docs/templates/shared/test_atrium_rocrate.py
+
       - name: Verify check_version.py parity (issue #18)
         # The release gate and security.reusable.yml's version-check both run this
         # vendored script. It replaced ~360 lines of copy-pasted inline python that
