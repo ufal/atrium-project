@@ -85,11 +85,24 @@ jobs:
       OPENROUTER_MODEL: ${{ inputs.openrouter-model || 'openai/gpt-4o-mini' }}
 
     steps:
+      # NOT `repository: ufal/atrium-project` + `ref: v1`, which is what this step did
+      # until 2026-09-11 — the same defect e2e-digital-smoke.yml removed on 2026-08-18
+      # and recorded at length above its own checkout. This workflow LIVES in the hub,
+      # so the default checkout already gives the hub AT THE COMMIT BEING TESTED.
+      # Pinning it meant the workflow file came from the ref being run while
+      # `fixtures/e2e/` and `tools/e2e/e2e_assert.py` came from wherever `v1` pointed:
+      # a self-referencing checkout validated by tooling other than the tooling that
+      # ships with it, which is exactly what a smoke test must not do.
+      #
+      # It failed loudly once the `v1` tag was deleted (run 34591132140 — the fetch of
+      # `+refs/tags/v1*` matched nothing and checkout exited 1). That is the good
+      # outcome: a latent version skew surfaced as a hard error instead of quietly
+      # asserting today's pipeline against a tag's fixtures.
+      #
+      # Same reasoning codeql.yml and pre-commit.yml already record for preferring
+      # `uses: ./…` over `@v1`.
       - name: Checkout ATRIUM Hub Repository
         uses: actions/checkout@v7
-        with:
-          repository: ufal/atrium-project # Explicitly checkout the hub repo to get the fixtures
-          ref: v1 # References the @v1 tag instead of default branch
 
       - name: Set up Python for Assertions
         uses: actions/setup-python@v7
