@@ -310,13 +310,43 @@ jobs:
       - name: Set permissions for Translator source
         run: chmod -R a+rwX ${{ github.workspace }}/work/atrium-translator-main
 
+      # (B9 / #62) Stages 3, 4 and 5 each used to replace the image's entrypoint with a
+      # command BYTE-IDENTICAL IN EFFECT to the entrypoint it replaced. Three exact
+      # no-ops: they cost nothing at runtime and everything in assurance, because the
+      # lane then reported that it never exercised a real entrypoint -- while silently
+      # doing so in all three cases. Deleting them changes no behaviour and makes the
+      # lane honest about what it tests. Stage 1 has always had this shape.
+      #
+      #   stage 3  translator  ENTRYPOINT ["python", "main.py"]          (base)
+      #   stage 4  nlp-enrich  ENTRYPOINT ["python", "run_pipeline.py"]  (base)
+      #   stage 5  llm-enrich  ENTRYPOINT ["python"]                     (remote)
+      #
+      # SAFE AGAINST `:latest`, NOT JUST `test`. This lane defaults to the RELEASED
+      # image set (see the header note), so the deletions are only sound if the
+      # PUBLISHED images carry those entrypoints. Checked at each repo's newest release
+      # tag before landing: translator v0.10.5, nlp-enrich v0.20.1, llm-enrich v0.6.3 --
+      # all three declare exactly the lines above.
+      #
+      # THE TRAP, and the one way to get this wrong: with the interpreter forced as the
+      # entrypoint, `main.py` was argv[1] TO PYTHON. Without it, ENTRYPOINT already
+      # supplies the script, so leaving `main.py` here would pass it as an argument TO
+      # main.py. Stages 3 and 4 therefore drop the script name along with the override;
+      # stage 5 KEEPS `openrouter_client.py`, because llm-enrich's `remote` stage
+      # entrypoint is the bare interpreter and the script really is its first argument.
+      # None of this is visible to YAML linting -- only to a run.
+      #
+      # `-w` still points at the checked-out source, so the relative script names in
+      # those entrypoints resolve from that checkout exactly as they did before. That
+      # `-w` is a SEPARATE build/release/run gap (the lane runs the image's interpreter
+      # against the repository's source, so a change that never reached the image still
+      # passes) and has its own follow-up; it is not this issue's to close.
+      #
+      # tests/test_e2e_entrypoints.py is what stops a silent override returning.
       - name: Stage 3 - Translator
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
           -w /workspace/work/atrium-translator-main
-          --entrypoint python
           ghcr.io/ufal/atrium-translator:${{ inputs.image-tag || 'latest' }}
-          main.py
           /workspace/work/PAGE_ALTO/${E2E_DOC}/${E2E_DOC}-1.alto.xml
           --alto --formats alto.xml --source_lang cs --target_lang en
           -o /workspace/work/translated
@@ -332,13 +362,13 @@ jobs:
       - name: Set permissions for NLP Enrich source
         run: chmod -R a+rwX ${{ github.workspace }}/work/atrium-nlp-enrich-main
 
+      # Runs the image as built -- see the note above Stage 3. `run_pipeline.py` is gone
+      # from the command because ENTRYPOINT ["python", "run_pipeline.py"] supplies it.
       - name: Stage 4 - NLP Enrich
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
           -w /workspace/work/atrium-nlp-enrich-main
-          --entrypoint python
           ghcr.io/ufal/atrium-nlp-enrich:${{ inputs.image-tag || 'latest' }}
-          run_pipeline.py
           --config /workspace/work/config_e2e_nlp.txt
           --stages manifest udp nt stats
           --document-json /workspace/work/doc_json/3_translate.json
@@ -358,6 +388,10 @@ jobs:
       - name: Stage 5 - LLM Enrich
         id: llm
         if: steps.gate.outputs.enabled == 'true'
+        # Runs the image as built -- see the note above Stage 3. `openrouter_client.py`
+        # STAYS: the `remote` stage's entrypoint is the bare interpreter, so the script
+        # name is a real argument to it, not a duplicate of it.
+        #
         # The gate above proves the SECRET EXISTS. It cannot prove OpenRouter will accept
         # it, and those are different failures. A revoked key, an exhausted balance or a
         # provider-routing refusal comes back as an HTTP 4xx from the provider — and used
@@ -378,7 +412,6 @@ jobs:
           docker run --rm -e OPENROUTER_API_KEY -e OPENROUTER_MODEL \
             -v "${{ github.workspace }}:/workspace" \
             -w /workspace/work/atrium-llm-enrich-main \
-            --entrypoint python \
             ghcr.io/ufal/atrium-llm-enrich-remote:${{ inputs.image-tag || 'latest' }} \
             openrouter_client.py \
             --input "/workspace/work/DOC_LINE_CATEG/${E2E_DOC}.csv" \

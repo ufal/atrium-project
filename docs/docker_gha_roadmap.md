@@ -553,3 +553,121 @@ turned out to depend on** (see `agent_dev_logs/digests/55.digest.md` for the ful
 absent; `agent_dev_logs/digests/55.digest.md` had pointed at #56 and a "workplan §7" that do not cover
 Kubernetes at all.
 **Owner:** @K4TEL · **Blast radius:** 5 tool repos + hub.
+
+---
+
+## 9. Round 4 (2026-09-11) — issue #62 + alto-postprocess#50: B9 closed, factor II green
+
+**B9** (§2.1, line 86) is the last live §2.1 breakage and the sharpest build/release/run violation the
+register held: *a release artefact that re-resolves its own pinned dependency at run time.* It was filed as
+one finding and closed as two issues — [#62](https://github.com/ufal/atrium-project/issues/62) (the hub
+workflow) and [alto-postprocess#50](https://github.com/ufal/atrium-alto-postprocess/issues/50) (the
+dependency) — because the two halves live in different repositories and only one of them was hard.
+
+Per this file's convention the §2.1 row is left as written (its line numbers are "as of `main` at
+2026-08-04"); the closure is recorded here.
+
+### The finding that resized the issue by an order of magnitude
+
+B9's second sentence — *"E2E also overrides every image's `--entrypoint`, so no Dockerfile ENTRYPOINT is
+ever exercised anywhere in CI"* — is true as written and reads like a workflow rewrite. Verification found
+that **three of the four overrides were exact no-ops**: each replaced the image's real `ENTRYPOINT` with a
+command byte-identical in effect to the `ENTRYPOINT` it replaced.
+
+| Stage                 | Image                        | Override                                    | The image's own `ENTRYPOINT`        | Verdict                                                              |
+|-----------------------|------------------------------|---------------------------------------------|-------------------------------------|----------------------------------------------------------------------|
+| 1 page-classification | `atrium-page-classification` | none                                        | `["python3", "/app/entrypoint.py"]` | already correct — **the model the other four were measured against** |
+| 2 alto-postprocess    | `atrium-alto-postprocess`    | `/bin/sh -c "pip install …master.zip && …"` | `["python", "run_pipeline.py"]`     | the real one — existed only to host the install                      |
+| 3 translator          | `atrium-translator`          | `python` + `main.py …`                      | `["python", "main.py"]`             | exact no-op                                                          |
+| 4 nlp-enrich          | `atrium-nlp-enrich`          | `python` + `run_pipeline.py …`              | `["python", "run_pipeline.py"]`     | exact no-op                                                          |
+| 5 llm-enrich          | `atrium-llm-enrich-remote`   | `python` + `openrouter_client.py …`         | `["python"]` (`remote` stage)       | exact no-op                                                          |
+
+They cost nothing at runtime and everything in assurance. The lane *reported* that it never exercised a real
+entrypoint, and in three cases it silently did — and nothing in the file distinguished those three from the
+one that was doing real work. That is the whole reason a two-line deletion looked like a project.
+
+### What landed
+
+- **alto-postprocess#50** (`6ddabf7`) — the `alto-tools` dependency is **retired, not re-pinned**. The two
+  code paths this repo used (`-t` text, `-s` statistics) are vendored into `alto_tools.py`, attributed in
+  the README's *"Vendored code 📦"* section and `LICENSES/alto-tools-Apache-2.0.txt` (Apache-2.0, upstream
+  commit recorded, with instructions for updating it). The layoutreader clone is pinned in the same pass:
+  `ARG LAYOUTREADER_COMMIT=3b46ee82cd02dcea94ee4064152e5f4de91e205e`, fetched by commit rather than
+  `--depth 1` off a branch. This is §3.3's *"vendor the used functionality and reference it clearly"*
+  applied for the first time.
+- **#62, part one** (`6ba4807`) — Stage 2 drops the `/bin/sh` shim, the `pip install` and the `PATH`
+  re-export, and runs the image as built. Run
+  [#130](https://github.com/ufal/atrium-project/actions/runs/34567086963) is green on the result, with
+  Stage 2 executing (56 s), not skipping.
+- **#62, part two** (this round) — the three no-op overrides are deleted, together with the duplicated
+  script-name argument each deletion exposes. Every stage now has Stage 1's shape: image reference, then
+  arguments only.
+
+### The evidence that made part two safe to land
+
+This lane defaults to `image-tag: latest`, i.e. **the last release of each tool, not `test`**. Deleting an
+override is therefore only sound if the *published* image carries the entrypoint being fallen back on — a
+property no amount of reading the Dockerfiles on `test` establishes. Checked at each repo's newest release
+tag before landing: **translator `v0.10.5`**, **nlp-enrich `v0.20.1`**, **llm-enrich `v0.6.3`** — all three
+declare exactly the lines in the table above.
+
+The one way to get this wrong is the **duplicated script name**. With the interpreter forced as the
+entrypoint, `main.py` was argv[1] to Python; without it, `ENTRYPOINT ["python", "main.py"]` already supplies
+the script, so leaving `main.py` in the command passes it as an argument *to* `main.py`. Stages 3 and 4
+therefore drop the script name with the override; Stage 5 keeps `openrouter_client.py`, because
+llm-enrich's `remote` entrypoint is the bare interpreter and the script really is its first argument. None
+of this is visible to YAML linting — only to a run.
+
+### The guard
+
+`tests/test_e2e_entrypoints.py` (new; picked up by `hub-self-check.yml`'s existing `shared-tests` job)
+parses every hub workflow and asserts two structural properties: **no step's `run:` body overrides a
+container entrypoint** unless the (workflow, step) pair is declared in an `ALLOWED_OVERRIDES` map with a
+reason, and **no `docker run` command installs a dependency at run time**. It is parsed, not grepped, so the
+prose explaining what was removed is not itself an offence — and both checks were confirmed to fail against
+purpose-built breakage, including the verbatim historical Stage 2 shim, before being trusted.
+
+This replaces #62's literal acceptance grep (`grep -c "pip install" … == 1`), which is brittle in both
+directions: red the day a second legitimate runner-side install is added, green if that one line ever moved
+*into* a container command. The count is still 1 today, and
+`grep -c -- "--entrypoint" .github/workflows/e2e-pipeline-smoke.yml` now returns **0** — the new comment
+blocks say "entrypoint override" rather than spelling the flag, precisely so the file can document itself
+without breaking its own acceptance criterion.
+
+### Rider: factor II is now green
+
+Three unpinned resolutions were named in #62. All three are closed: alto-postprocess's layoutreader clone
+above, and `requirements_flexiconv.txt` in **nlp-enrich** and **llm-enrich**, both of which read
+`flexiconv @ git+https://github.com/ufal/flexiconv.git` with no ref and now pin `@v0.3.10`
+(`a982b88f363828bd6c71478d72d4f4e56a555677`; `main` is ahead at `a4f0fd9…`, untagged), with the resolution
+recorded beside the pin as `workflow_lint.py` already requires for action SHAs.
+
+Those two were the orphans #62's own thread flagged — cited in a hub acceptance bullet that no hub commit
+could satisfy, with no issue in either repo. **Every `git+` requirement in the ecosystem now carries an
+explicit ref.** Blast radius is small and known: no Dockerfile installs either file; only llm-enrich's
+`scheduled-smoke.yml` does, behind a `|| echo` fallback, and both repos' `test_flexiconv_convert.py` skip
+when the tool is absent — so llm-enrich's nightly is the only place a bad pin surfaces.
+
+### The successor finding — not closed here
+
+**Every stage still runs the image's *interpreter* against a *fresh checkout*.** Each `docker run` sets
+`-w /workspace/work/atrium-<tool>-main`, an `actions/checkout` of the tool's default branch, rather than the
+image's `/app`. So a source change that never reached the published image still passes E2E — the same class
+of defect as B9, on the other axis, and arguably larger. It is also *why the entrypoint overrides looked
+harmless for so long*: with `-w` pointing at the checkout, the forced interpreter and the real entrypoint
+resolved the same relative script, so nothing ever misbehaved.
+
+This round is a prerequisite for closing it rather than a partial fix: once `-w` goes,
+`ENTRYPOINT ["python", "main.py"]` resolves `/app/main.py`, which is the desired end state. It needs its own
+issue.
+
+Also still undecided, and deliberately not folded in: whether the E2E lane should migrate onto
+`docker-build-smoke`'s proven `load: true` + `probe-targets` mechanism (#55) rather than pulling published
+tags at all. A design question, not a fix for B9.
+
+**Acceptance.** `grep -c -- "--entrypoint" .github/workflows/e2e-pipeline-smoke.yml` → 0;
+`grep -c "pip install"` → 1 (`:115`, runner-side); every `git+` requirement in the ecosystem carries a ref
+and the layoutreader clone a commit; the vendored extraction/statistics code is referenced in the
+alto-postprocess README with its upstream origin and licence. The remaining criterion — *the lane passes with
+the real entrypoints* — is a CI run, at both `image-tag: latest` and `image-tag: test`.
+**Owner:** @K4TEL · **Blast radius:** hub + 3 tool repos (alto-postprocess, nlp-enrich, llm-enrich).
