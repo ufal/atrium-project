@@ -485,7 +485,7 @@ The table row at §2.1 (**B8**, line 85) and this document's own §2.7 remediati
 still describe `alto-postprocess`'s API entrypoint as running `uvicorn.run(..., reload=True)` unconditionally,
 citing `atrium-alto-postprocess/service/text_api.py:309-311`. At the live HEAD used for this round
 (`atrium-alto-postprocess` `0ec516a`), that file is 476 lines, not ~311, and its actual `__main__` block
-(`text_api.py:471-476`) reads:
+(`text_api.py:471-476` at the time; `:529-558` today) reads:
 
 ```python
     uvicorn.run(
@@ -493,8 +493,18 @@ citing `atrium-alto-postprocess/service/text_api.py:309-311`. At the live HEAD u
         host=os.getenv("HOST", "0.0.0.0"),
         port=int(os.getenv("PORT", "8000")),
         reload=os.getenv("RELOAD", "false").strip().lower() in ("true", "1", "yes", "on"),
+        timeout_graceful_shutdown=int(os.getenv("GRACEFUL_SHUTDOWN_S", "20")),
     )
 ```
+
+> **Round of 2026-09-11 (atrium-project#58).** Two corrections to the snippet above, per this
+> file's convention of appending a dated round rather than editing a findings row. (1) The line
+> citation drifted again: the block is at `text_api.py:529-558` in the current tree, not
+> `:471-476`. (2) The quote omitted `timeout_graceful_shutdown`, added under #55 and shown above
+> — without it the snippet reads as though alto never bounded its drain. Separately, #58 gave the
+> other four services the same env-driven `__main__` block, so this is no longer alto-only
+> prior art; their entrypoint is `python -m service.api` rather than a script launch, because
+> only alto carries the `sys.path` bootstrap that makes the script form work.
 
 `reload` is env-gated and defaults to `false` — the fix this row asked for already landed (commit `19433cb`,
 "edits in configs and code - minor fixes", already on `test`/default before this round started). No compose

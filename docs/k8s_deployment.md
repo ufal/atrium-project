@@ -73,7 +73,8 @@ a rolling restart actually exercises them:
    two independently-timed things. `preStop` runs *before* the container receives `SIGTERM`,
    buying the propagation time the readiness flip needs.
 4. **`terminationGracePeriodSeconds: 60`** — must exceed the `preStop` delay **plus** the
-   container's own `--timeout-graceful-shutdown` **plus** `serve_lifecycle`'s
+   container's own graceful-shutdown budget (`GRACEFUL_SHUTDOWN_S`, see "Configuring the
+   port and bind address" below) **plus** `serve_lifecycle`'s
    `drain_timeout` (see `atrium_service.py`): `5 + 20 + 25 = 50`, with the manifest's `60`
    giving 10s of headroom. The kubelet `SIGKILL`s at this deadline no matter what the
    process is doing; size it to the slowest legitimate in-flight request a repo expects —
@@ -84,10 +85,43 @@ a rolling restart actually exercises them:
 5. **`livenessProbe` → `/health`**, deliberately looser than readiness (15s period, 3
    failures) — it exists to catch a truly wedged process, not to participate in routing.
 
+## Configuring the port and bind address
+
+The manifest's `env:` block sets `PORT`, and all five images honour it — `service/api.py`'s
+`__main__` block (alto-postprocess: `service/text_api.py`) reads `PORT`, `HOST`,
+`GRACEFUL_SHUTDOWN_S` and `RELOAD` from the environment, with the manifest's values as
+defaults. Until atrium-project#58 this was true of alto-postprocess only: the other four
+baked `--port 8000` into an exec-form `ENTRYPOINT`, where no shell exists to expand a
+variable, so the declared setting did nothing.
+
+| Variable              | Default   | Effect                                                                                                                                                          |
+|-----------------------|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `PORT`                | `8000`    | The port the service binds **and** the port `service/healthcheck.py` probes.                                                                                    |
+| `HOST`                | `0.0.0.0` | The bind address. See the warning below before changing it.                                                                                                     |
+| `GRACEFUL_SHUTDOWN_S` | `20`      | uvicorn's bound on waiting for in-flight requests, formerly the `--timeout-graceful-shutdown` CLI flag. Raise it together with `terminationGracePeriodSeconds`. |
+| `RELOAD`              | `false`   | Filesystem-watching auto-reload. A development convenience; never set it in a deployment.                                                                       |
+
+**To run on a different port, change two fields, not one.** `PORT` in the `env:` block and
+`containerPort` in the `ports:` block must agree — `PORT` is what the process binds,
+`containerPort` is what Kubernetes records. The three probes reference the port by *name*
+(`port: http`), so they follow `containerPort` automatically and cannot drift from it; that
+is the only reason changing the port is a two-line edit rather than a five-line one.
+
+> ⚠️ **`HOST=127.0.0.1` produces a container that reports healthy and serves nobody.**
+> `service/healthcheck.py` always probes `127.0.0.1` by design — a health probe should
+> interrogate the local process, not the published interface — and it never reads `HOST`.
+> So a loopback bind passes every liveness and readiness check while being unreachable from
+> outside the pod. This is the one value in the table above whose failure mode is silent;
+> leave `HOST` at `0.0.0.0` unless you have a specific reason not to.
+
+A fuller environment-variable reference across all five services is tracked separately in
+atrium-project#60; this section covers only what the manifest itself exposes.
+
+
 ## Known limits — read before promising ARÚP/ARÚB more than this delivers
 
 - **A synchronous request that outlives the whole shutdown chain is still cut short.**
-  `--timeout-graceful-shutdown` and `terminationGracePeriodSeconds` are finite by
+  `GRACEFUL_SHUTDOWN_S` and `terminationGracePeriodSeconds` are finite by
   necessity — this issue makes the *typical* in-flight request safe across a rolling
   restart, it does not make every possible one safe regardless of duration. Four of the
   five services process a request synchronously within the HTTP request/response cycle

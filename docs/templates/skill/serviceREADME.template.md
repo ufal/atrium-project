@@ -7,6 +7,8 @@ from `para_config.txt` `[tool]` (single source of truth, never hard-coded).
 
 ```bash
 pip install -r <requirements files>
+python -m service.<module>                  # honours PORT/HOST; default 0.0.0.0:8000
+# or, for development with auto-reload:
 uvicorn service.<module>:app --host 0.0.0.0 --port 8000
 # or:
 docker compose --profile api up -d
@@ -60,11 +62,25 @@ curl -s http://localhost:8000/info
 
 ## Configuration (environment)
 
-| Variable          | Default | Meaning                     |
-|-------------------|---------|-----------------------------|
-| `MAX_UPLOAD_MB`   | <n>     | canonical upload limit      |
-| `ALLOWED_ORIGINS` | `*`     | CSV of CORS origins         |
-| <service vars>    | <…>     | <…>                         |
+| Variable              | Default   | Meaning                                                                 |
+|-----------------------|-----------|-------------------------------------------------------------------------|
+| `PORT`                | `8000`    | port the service **binds**, and the one `service/healthcheck.py` probes |
+| `HOST`                | `0.0.0.0` | bind address. ⚠️ see the warning below                                  |
+| `GRACEFUL_SHUTDOWN_S` | `20`      | seconds uvicorn waits for in-flight requests (issue #55)                |
+| `RELOAD`              | `false`   | filesystem auto-reload — development only, never in a deployment        |
+| `LOG_LEVEL`           | `INFO`    | root logger level for the `python -m service.<module>` start path       |
+| `MAX_UPLOAD_MB`       | <n>       | canonical upload limit                                                  |
+| `ALLOWED_ORIGINS`     | `*`       | CSV of CORS origins                                                     |
+| <service vars>        | <…>       | <…>                                                                     |
+
+The first five rows are the ecosystem-wide contract (atrium-project#58, #55, #61) and are
+identical in all five services — copy them verbatim rather than rewording per repo. They
+are read by `service/<module>.py`'s `__main__` block, which is what the `api` image's
+`ENTRYPOINT` runs.
+
+> ⚠️ `HOST=127.0.0.1` yields a container that reports **healthy** and serves nobody:
+> `service/healthcheck.py` always probes loopback by design and never reads `HOST`, so a
+> loopback bind passes every probe while being unreachable from outside the container.
 
 ## How it works
 

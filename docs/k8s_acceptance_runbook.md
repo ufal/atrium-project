@@ -42,7 +42,7 @@ kubectl rollout status deployment/atrium-nlp-enrich-api --timeout=5m
 kill $PF_PID
 ```
 
-**Acceptance bar (both must hold, per repo):**
+**Acceptance bar (all three must hold, per repo):**
 1. **The startup/liveness/readiness probes behave as documented** — `startupProbe` passes on
    a cold pod without flapping into a restart during model warmup; `livenessProbe` does not
    fire during a routine rolling restart (check `kubectl get events` for an unexpected
@@ -51,6 +51,23 @@ kill $PF_PID
 2. **A rolling restart drops no in-flight request** — the backgrounded smoke request from
    step 4 completes successfully (`$?` = 0, expected response body) despite the restart
    landing mid-request.
+3. **A non-default `PORT` is honoured** (atrium-project#58) — set `PORT` to something other
+   than `8000` in the manifest's `env:` block **and change `containerPort` to match** (the
+   three probes reference the port by name, so they follow automatically). The pod must reach
+   Ready and serve normally. This is the criterion that would have failed silently before #58:
+   the four non-alto services ignored `PORT` while `service/healthcheck.py` honoured it, so a
+   non-default value moved the probe and not the listener and the pod never became Ready.
+
+   ```bash
+   # after editing PORT and containerPort to 9000 in the manifest:
+   kubectl rollout status deployment/atrium-<tool>-api --timeout=5m
+   kubectl exec deploy/atrium-<tool>-api -- python /app/service/healthcheck.py
+   # -> healthy: http://127.0.0.1:9000/health returned HTTP 200
+   ```
+
+   Run `healthcheck.py` *inside* the pod as shown, not just a `curl` from outside: an
+   external curl through a port-forward passes even when the in-container probe is looking
+   at the wrong port, which is precisely the failure this criterion exists to catch.
 
 ## Per-repo smoke request
 
@@ -68,13 +85,13 @@ restart proves nothing about draining.
 
 ## Results log (fill in)
 
-| Repo                | Deploys clean | Probes behave | Rolling restart drops nothing | Notes |
-|---------------------|---------------|---------------|-------------------------------|-------|
-| page-classification | ☐             | ☐             | ☐                             |       |
-| alto-postprocess    | ☐             | ☐             | ☐                             |       |
-| translator          | ☐             | ☐             | ☐                             |       |
-| nlp-enrich          | ☐             | ☐             | ☐                             |       |
-| llm-enrich          | ☐             | ☐             | ☐                             |       |
+| Repo                | Deploys clean | Probes behave | Rolling restart drops nothing | Non-default `PORT` | Notes |
+|---------------------|---------------|---------------|-------------------------------|--------------------|-------|
+| page-classification | ☐             | ☐             | ☐                             | ☐                  |       |
+| alto-postprocess    | ☐             | ☐             | ☐                             | ☐                  |       |
+| translator          | ☐             | ☐             | ☐                             | ☐                  |       |
+| nlp-enrich          | ☐             | ☐             | ☐                             | ☐                  |       |
+| llm-enrich          | ☐             | ☐             | ☐                             | ☐                  |       |
 
 > Environment note: this runbook cannot be run from this session or from any hub CI job —
 > there is no Kubernetes cluster in scope here, by design (#40). The nearest in-repo proxy is

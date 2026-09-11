@@ -258,6 +258,16 @@ Dockerfile stage via the new `probe-targets` input, `docker run`s the built imag
 it (sending `SIGTERM`) and asserts a clean exit inside the grace period. Before this, no Dockerfile
 `ENTRYPOINT` in any of the five repos was ever exercised anywhere in CI (roadmap **B9**).
 
+A **second** start follows it (atrium-project#58), deliberately shorter: the same image with
+`-e PORT=9000 -p 18080:9000`, waited to `healthy` and curled once. Reaching `healthy` is the whole
+assertion, because Docker runs the image's `HEALTHCHECK` *inside* the container with the container's
+environment and the probe body (`service/healthcheck.py`) builds its URL from `$PORT` — so one status
+transition proves the listener moved **and** that the in-container probe found it there. Until #58 the
+four non-alto services ignored `$PORT` while `healthcheck.py` honoured it, so this exact start reported
+unhealthy forever. The default-port probe above is left untouched on purpose: it is what proves the
+reference manifest and every probe in it still work unchanged. Note a regression surfaces here as a
+~5.5-minute **timeout**, not an immediate error — the listener is simply not where the probe looks.
+
 It runs on pull requests, on pushes to `test`, and on `v*` tags. The push leg was added in 2026-09 after
 the gap it left became concrete: alto-postprocess added its `api` stage on a push, so the probe never
 started that image; a fork PR weeks later was the first thing to do so, and found the `ENTRYPOINT` dying at
