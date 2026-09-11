@@ -49,11 +49,24 @@ spec:
         - name: api
           image: ghcr.io/ufal/atrium-<tool>:<version>-api   # e.g. …-nlp-enrich:v1.2.0-api
           ports:
+            # containerPort and `env: PORT` below are the ONE pair that has to agree:
+            # PORT is what the process binds (service/api.py's __main__ block reads it,
+            # and service/healthcheck.py probes it), containerPort is what Kubernetes
+            # records. Change both together, or the probes below cannot reach the
+            # listener. Every other port reference in this manifest points at the NAME
+            # `http`, so nothing else has to be kept in sync by hand. (atrium-project#58)
             - containerPort: 8000
               name: http
           env:
             - name: PORT
               value: "8000"
+            # - name: HOST                    # default "0.0.0.0" — bind address.
+            #   value: "0.0.0.0"              # NOTE: 127.0.0.1 makes the container
+            #                                 # report HEALTHY (healthcheck.py always
+            #                                 # probes loopback) while being unreachable
+            #                                 # from outside the pod. See k8s_deployment.md.
+            # - name: GRACEFUL_SHUTDOWN_S     # default "20" — uvicorn's in-flight drain.
+            #   value: "20"                   # Raise with terminationGracePeriodSeconds.
             # - name: ALLOWED_ORIGINS         # CSV, default "*" — set for a real deployment
             #   value: "https://example.org"
             # - name: MAX_UPLOAD_MB
@@ -69,7 +82,7 @@ spec:
           startupProbe:
             httpGet:
               path: /ready
-              port: 8000
+              port: http
             periodSeconds: 5
             failureThreshold: 60       # up to 5 minutes to warm up
 
@@ -82,7 +95,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /ready
-              port: 8000
+              port: http
             periodSeconds: 5
             failureThreshold: 2
             timeoutSeconds: 3
@@ -95,7 +108,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: 8000
+              port: http
             periodSeconds: 15
             failureThreshold: 3
             timeoutSeconds: 5
@@ -144,5 +157,5 @@ spec:
 #    app.kubernetes.io/name: atrium-<tool>-api
 #  ports:
 #    - port: 8000
-#      targetPort: 8000
+#      targetPort: http      # the NAME, so it follows containerPort
 #      name: http

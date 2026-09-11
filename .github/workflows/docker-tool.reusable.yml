@@ -422,6 +422,67 @@ jobs:
           fi
           echo "clean SIGTERM shutdown confirmed"
 
+      - name: Run container on a NON-DEFAULT port (issue #58)
+        # The step above proves the DEFAULT path: it must stay exactly as it is, because
+        # it is what guarantees the reference manifest and every probe in it keep working
+        # unchanged. This is a SECOND, deliberately shorter start that proves $PORT is a
+        # real knob rather than a documented one.
+        #
+        # Why simply reaching `healthy` is the whole assertion: Docker runs the image's
+        # HEALTHCHECK *inside* the container, with the container's environment, and that
+        # probe body (service/healthcheck.py, byte-identical in all five repos) builds its
+        # URL from $PORT. So a container that reports healthy with PORT=9000 has proved in
+        # ONE status transition that the listener moved AND that the in-container probe
+        # found it there. Before issue #58 the four non-alto services ignored $PORT while
+        # healthcheck.py honoured it, so this exact start reported unhealthy forever — the
+        # failure this step exists to keep from coming back.
+        #
+        # ⚠️ A regression surfaces here as a ~5.5-minute TIMEOUT, not an immediate error:
+        # the listener is simply not where the probe looks, so the container never leaves
+        # `starting` until the budget expires. That is expected, not a slow runner.
+        #
+        # No /ready probe and no SIGTERM assertion here: both belong to the default-port
+        # step above, and repeating them would double this job's slowest phase to re-test
+        # what is not port-dependent.
+        if: contains(fromJSON(inputs.probe-targets), matrix.target)
+        env:
+          IMAGE: atrium-smoke/${{ inputs.image-name }}:${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          cid=$(docker run -d -e PORT=9000 -p 18080:9000 "$IMAGE")
+          echo "container: $cid (PORT=9000)"
+          trap 'docker logs "$cid" || true; docker rm -f "$cid" >/dev/null 2>&1 || true' EXIT
+
+          echo "Waiting for HEALTHCHECK to report healthy with PORT=9000..."
+          # Same 330s budget and the same reasoning as the default-port step above
+          # (--start-period 180s + 3 x --interval 30s, plus one interval of slack).
+          deadline=$((SECONDS + 330))
+          status="starting"
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            status=$(docker inspect --format='{{.State.Health.Status}}' "$cid" 2>/dev/null || echo starting)
+            [ "$status" = "healthy" ] && break
+            if [ "$status" = "unhealthy" ]; then
+              echo "container reported unhealthy at PORT=9000: the in-container probe" >&2
+              echo "could not reach the listener, so \$PORT is not being honoured" >&2
+              exit 1
+            fi
+            sleep 5
+          done
+          if [ "$status" != "healthy" ]; then
+            echo "container did not report healthy at PORT=9000 within the timeout" >&2
+            echo "(last status: $status). The listener is almost certainly still on the" >&2
+            echo "default port while service/healthcheck.py probes \$PORT — i.e. the" >&2
+            echo "api stage no longer honours it." >&2
+            exit 1
+          fi
+          echo "container is healthy on PORT=9000"
+
+          # The published-port half: proves the move is visible from OUTSIDE the
+          # container too, not just to the in-container probe.
+          curl -sf http://127.0.0.1:18080/health
+          echo
+          echo "non-default port honoured end to end"
+
   build-and-push:
     needs: test
     # W2 (2026-08-06): `push` to `refs/heads/test` added. Issue #10 introduced the
