@@ -265,13 +265,28 @@ jobs:
       - name: Set permissions for ALTO Postprocess source
         run: chmod -R a+rwX ${{ github.workspace }}/work/atrium-alto-postprocess-main
 
+      # (B9 / #50, #62) Runs the image AS BUILT: no entrypoint override, and nothing
+      # fetched or installed at run time. This step used to wrap the stage in a
+      # `/bin/sh -c` shim that pulled `alto-tools` from a moving
+      # `refs/heads/master.zip` INSIDE the already-published image — overriding that
+      # image's own commit pin at the moment of testing it, so whatever the lane
+      # proved, it was not a property of the artefact we ship.
+      # alto-postprocess vendored the two alto-tools code paths it used (its
+      # `alto_tools.py`, Apache-2.0), so there is nothing left to fetch and no `PATH`
+      # to re-export. `ENTRYPOINT ["python", "run_pipeline.py"]` (its Dockerfile,
+      # stage `base` — the unsuffixed tag pulled here) now runs the stage, with the
+      # arguments below appended to it, as in Stage 1.
+      #
+      # `-w` still points at the checked-out source, so `run_pipeline.py` and the
+      # `alto_tools` module beside it both resolve from that checkout.
       - name: Stage 2 - ALTO Postprocess
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
           -w /workspace/work/atrium-alto-postprocess-main
-          --entrypoint /bin/sh
           ghcr.io/ufal/atrium-alto-postprocess:${{ inputs.image-tag || 'latest' }}
-          -c "pip install https://github.com/cneud/alto-tools/archive/refs/heads/master.zip && export PATH=\"\$PATH:/home/atrium/.local/bin\" && python run_pipeline.py --config /workspace/work/config_e2e_alto.txt --document-json /workspace/work/doc_json/1_pc.json --document-json-out /workspace/work/doc_json/2_alto.json"
+          --config /workspace/work/config_e2e_alto.txt
+          --document-json /workspace/work/doc_json/1_pc.json
+          --document-json-out /workspace/work/doc_json/2_alto.json
 
       - name: Fetch latest Translator source
         uses: actions/checkout@v7
