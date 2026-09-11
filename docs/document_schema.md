@@ -156,21 +156,23 @@ Alongside the tool's existing `ParadataLogger`, so both records share one `run_i
 ```python
 from atrium_document import DocumentRecord
 
-with DocumentRecord.open(doc_id, "llm-enrich",
-                         baseline=args.document_json,      # may be None — rule 3
-                         run_id=logger.run_id,
-                         paradata_ref=paradata_path) as doc:
+with DocumentRecord.open(
+    doc_id,
+    "llm-enrich",
+    baseline=args.document_json,  # may be None — rule 3
+    run_id=logger.run_id,
+    paradata_ref=paradata_path,
+) as doc:
     doc.set_block("enrichment", {"items": items})
     doc.add_derived_from("enriched", f"{doc_id}_enriched.json")
-    doc.add_regenerable("markdown", {"from": teitok_path,
-                                     "converter": "xml_to_md@0.3.0", "detail": "full"})
+    doc.add_regenerable("markdown", {"from": teitok_path, "converter": "xml_to_md@0.3.0", "detail": "full"})
     doc.add_license_detail(paradata["license_detail"])
 ```
 
 Field-level contribution into a shared block:
 
 ```python
-doc.merge_block("lines", rows)   # writes only this program's declared fields
+doc.merge_block("lines", rows)  # writes only this program's declared fields
 ```
 
 Shell stages use the CLI shim, as they do for paradata:

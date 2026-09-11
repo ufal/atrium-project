@@ -273,6 +273,7 @@ Executed across the ecosystem; the only remaining item is nlp C4:
 ```python
 from api_util.summarize_nt_udp import build_parser
 
+
 def test_cli_argparse_dpi_support():
     """summarize_nt_udp must expose --dpi and --alto-dpi."""
     help_text = build_parser().format_help()

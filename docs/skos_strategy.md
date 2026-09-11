@@ -81,7 +81,7 @@ exports them"* — was exactly right, and it needed no namespace to fix.
 ### 3.2 The one swappable constant
 
 ```python
-SKOS_BASE = "https://w3id.org/atrium/"     # atrium_vocab.py
+SKOS_BASE = "https://w3id.org/atrium/"  # atrium_vocab.py
 ```
 
 Every ATRIUM-authored URI is derived from it by `concept_uri()` / `scheme_uri()` /
@@ -251,7 +251,8 @@ which credited the values to *"alto-postprocess's compute_quality_score"*.
 
 ```python
 from atrium_vocab import UNTRUSTWORTHY_LINE_CATEGORIES
-DROP_CATEGORIES = frozenset(UNTRUSTWORTHY_LINE_CATEGORIES)   # {"Garbage", "Inverted", "Trash"}
+
+DROP_CATEGORIES = frozenset(UNTRUSTWORTHY_LINE_CATEGORIES)  # {"Garbage", "Inverted", "Trash"}
 ```
 
 It needs an owner because it changes what the model sees. The registry makes it one line and makes

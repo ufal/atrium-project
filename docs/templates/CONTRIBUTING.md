@@ -124,14 +124,18 @@ never a hard-coded string — this keeps `/info`, `CITATION.cff`, and releases f
 def _read_tool_version(default: str = "0.0.0") -> str:
     import configparser
     from pathlib import Path
+
     root = Path(__file__).resolve().parent.parent
     for cand in (root / "para_config.txt", root / "setup" / "para_config.txt"):
         if cand.exists():
-            cp = configparser.ConfigParser(); cp.read(cand, encoding="utf-8")
+            cp = configparser.ConfigParser()
+            cp.read(cand, encoding="utf-8")
             v = cp.get("tool", "version", fallback=None)
             if v:
                 return v[1:] if v.lower().startswith("v") else v
     return default
+
+
 # FastAPI(title="…", version=_read_tool_version())
 ```
 
