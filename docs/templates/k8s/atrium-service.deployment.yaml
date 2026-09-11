@@ -71,6 +71,27 @@ spec:
             #   value: "https://example.org"
             # - name: MAX_UPLOAD_MB
             #   value: "10"
+            #
+            # --- Backing services (atrium-project#63) -----------------------
+            # Endpoints the service calls OUT to. Unset, each falls back to the
+            # LINDAT public host it always used, so omitting these changes
+            # nothing; set one to attach a self-hosted instance with no rebuild.
+            # An empty value counts as unset, same as omitting the entry.
+            #
+            # nlp-enrich reads UDPIPE_URL and NAMETAG_URL; translator reads
+            # TRANSLATION_URL (alias LINDAT_BASE_URL, which loses when both are
+            # set) and UDPIPE_URL for vocabulary lemma matching. UDPIPE_URL is
+            # deliberately ONE name for one service across both images — a
+            # deployment may still set them apart per workload.
+            #
+            # Whichever value resolves is what the service records in its
+            # paradata, so provenance names the host actually contacted.
+            # - name: UDPIPE_URL              # nlp-enrich, translator
+            #   value: "https://udpipe.internal/api/process"
+            # - name: NAMETAG_URL             # nlp-enrich
+            #   value: "https://nametag.internal/api/recognize"
+            # - name: TRANSLATION_URL         # translator
+            #   value: "https://translate.internal/api/v2"
 
           # --- Probes: three DIFFERENT endpoints, on purpose ---------------------
           #

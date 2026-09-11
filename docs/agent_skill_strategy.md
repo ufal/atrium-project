@@ -606,6 +606,11 @@ agent calls directly.
 
 - **Server**: a running instance is required. Default `http://localhost:8000`; override with
   `--base-url` or the `ATRIUM_<XX>_URL` environment variable.
+  `ATRIUM_<XX>_URL` is *inbound* — where the client finds this service. It is
+  unrelated to the *outbound* backing-service variables (`UDPIPE_URL`,
+  `NAMETAG_URL`, `TRANSLATION_URL`, `KOREKTOR_URL`, atrium-project#63), which
+  say where this service finds the third-party APIs it calls. The two are
+  orthogonal; neither replaces the other.
 - **Client dependencies**: none — Python 3 standard library only.
 - **Server dependencies**: Docker (recommended) or a Python venv with
   `service/requirements.txt`.
