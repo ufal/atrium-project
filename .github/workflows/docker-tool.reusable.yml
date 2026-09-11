@@ -311,7 +311,37 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
       - name: Set up Docker Buildx
+        id: buildx
         uses: docker/setup-buildx-action@v4
+        # Booting the container driver pulls moby/buildkit:buildx-stable-1 from
+        # Docker Hub, so an anonymous round-trip to a third-party registry gates
+        # every Docker job in all six tool repos. A single TCP reset there fails
+        # a job that has nothing to do with Docker Hub — alto-postprocess run
+        # 34620887123 ("edit env example - corrector") lost `docker-build-smoke
+        # (api)` to `read: connection reset by peer` on auth.docker.io while the
+        # other THREE buildx boots in the same run, the same minute, succeeded.
+        #
+        # continue-on-error is required here so that a failed boot does not ABORT
+        # the job — without it the run stops at this step and the guarded retry
+        # below is dead code. (It is not about steps.<id>.outcome being set:
+        # that is populated for any step with an id. `outcome` is the result
+        # BEFORE continue-on-error is applied and `conclusion` is after, which
+        # is why the retry tests `outcome`, not `conclusion`.)
+        #
+        # The retry itself is NOT continue-on-error, so a real outage still
+        # fails the job loudly. This buys one attempt, not silence — and it is a
+        # mitigation, not a cure: the dependency on Docker Hub is unchanged.
+        #
+        # Switching to `driver: docker` would remove the pull outright, but the
+        # gha cache exporter used below requires the container driver; trading
+        # the build cache away for a rarely-hit network dependency is the wrong
+        # side of that deal.
+        continue-on-error: true
+
+      - name: Set up Docker Buildx (retry after a transient registry failure)
+        if: steps.buildx.outcome == 'failure'
+        uses: docker/setup-buildx-action@v4
+
       - name: Smoke Build
         # SHA-pinned (#18): build actions execute arbitrary build logic and, in the
         # publishing job below, hold registry push credentials.
@@ -586,6 +616,35 @@ jobs:
             type=raw,value=test,enable=${{ github.ref == 'refs/heads/test' }}
 
       - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v4
+        # Booting the container driver pulls moby/buildkit:buildx-stable-1 from
+        # Docker Hub, so an anonymous round-trip to a third-party registry gates
+        # every Docker job in all six tool repos. A single TCP reset there fails
+        # a job that has nothing to do with Docker Hub — alto-postprocess run
+        # 34620887123 ("edit env example - corrector") lost `docker-build-smoke
+        # (api)` to `read: connection reset by peer` on auth.docker.io while the
+        # other THREE buildx boots in the same run, the same minute, succeeded.
+        #
+        # continue-on-error is required here so that a failed boot does not ABORT
+        # the job — without it the run stops at this step and the guarded retry
+        # below is dead code. (It is not about steps.<id>.outcome being set:
+        # that is populated for any step with an id. `outcome` is the result
+        # BEFORE continue-on-error is applied and `conclusion` is after, which
+        # is why the retry tests `outcome`, not `conclusion`.)
+        #
+        # The retry itself is NOT continue-on-error, so a real outage still
+        # fails the job loudly. This buys one attempt, not silence — and it is a
+        # mitigation, not a cure: the dependency on Docker Hub is unchanged.
+        #
+        # Switching to `driver: docker` would remove the pull outright, but the
+        # gha cache exporter used below requires the container driver; trading
+        # the build cache away for a rarely-hit network dependency is the wrong
+        # side of that deal.
+        continue-on-error: true
+
+      - name: Set up Docker Buildx (retry after a transient registry failure)
+        if: steps.buildx.outcome == 'failure'
         uses: docker/setup-buildx-action@v4
 
       - name: Build and push
