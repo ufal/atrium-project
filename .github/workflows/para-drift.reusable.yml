@@ -129,3 +129,14 @@ jobs:
         # had already drifted between call sites; this step is what stops it
         # drifting again. Edit the hub copy, never a vendored one.
         run: diff -u tool-repo/check_version.py hub-repo/docs/templates/shared/check_version.py
+
+      - name: Verify tests/test_logging_contract.py parity (issue #61)
+        # Static regression guard for factor XI (logs as an event stream): no
+        # basicConfig() outside a __main__ block, no print() in a service library
+        # module, LOG_LEVEL actually read, LOG_LEVEL actually controlling something.
+        # Registered in revendor_shared.sh's SHARED_FILES and in the ruff `[format]
+        # exclude` list too -- see the atrium_rocrate.py step above for what happens
+        # when one of the three registrations is missed instead of all together.
+        # Edit the hub copy, never a vendored one; scripts/revendor_shared.sh does
+        # the copy.
+        run: diff -u tool-repo/tests/test_logging_contract.py hub-repo/docs/templates/shared/test_logging_contract.py

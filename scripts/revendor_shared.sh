@@ -92,6 +92,10 @@ declare -A SHARED_FILES=(
     # any PYTHONPATH, exactly as para-drift runs it.
     ["atrium_rocrate.py"]="atrium_rocrate.py"
     ["test_atrium_rocrate.py"]="tests/test_atrium_rocrate.py"
+    # atrium-project#61. No --selftest: it is itself a pytest file, run by the
+    # ordinary fast lane in every repo (`pytest -m "not slow"`), so there is no
+    # separate self-test step to register below.
+    ["test_logging_contract.py"]="tests/test_logging_contract.py"
 )
 
 # Canonical files that carry a `--selftest`, as PATHS RELATIVE TO THE TOOL REPO

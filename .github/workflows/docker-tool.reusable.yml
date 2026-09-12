@@ -412,6 +412,20 @@ jobs:
           fi
           echo "container is healthy"
 
+          # (issue #61) The control half of the LOG_LEVEL probe below: at the default
+          # level (no LOG_LEVEL set -> INFO), startup/warmup already emitted at least
+          # one INFO record in the agreed
+          # "%(asctime)s %(levelname)s %(name)s %(message)s" shape. If this ever stops
+          # matching, the WARNING-suppression step below would pass for the wrong
+          # reason -- nothing being logged at all, not INFO being filtered out.
+          if ! docker logs "$cid" 2>&1 | grep -qE '^[0-9-]+ [0-9:,]+ INFO [^ ]+ '; then
+            echo "no INFO-level record found at the default LOG_LEVEL -- either" >&2
+            echo "nothing is logging through the configured root logger, or the" >&2
+            echo "format string drifted from the agreed shape (issue #61)" >&2
+            exit 1
+          fi
+          echo "confirmed: an INFO record reaches stdout at the default LOG_LEVEL"
+
           echo "Probing /health and /ready over the published port..."
           curl -sf http://127.0.0.1:18080/health
           echo
@@ -512,6 +526,57 @@ jobs:
           curl -sf http://127.0.0.1:18080/health
           echo
           echo "non-default port honoured end to end"
+
+      - name: Run container with LOG_LEVEL=WARNING and assert INFO is suppressed (issue #61)
+        # The end-to-end half of #61's second acceptance criterion: "LOG_LEVEL=DEBUG
+        # docker run … visibly changes output volume". This is the WARNING direction —
+        # raising the bar, not lowering it — because it needs no request traffic to
+        # observe: startup/warmup alone emit INFO records at the default level (the
+        # control asserted in the HEALTHCHECK step above), so silencing them is
+        # visible from the container's own logs with nothing more than a clean start
+        # and stop. A test that only checked DEBUG adding MORE output would pass even
+        # if LOG_LEVEL were read and ignored in the "less" direction — this repo's own
+        # history: LOG_LEVEL was wired correctly and controlled nothing in two
+        # services until #61.
+        #
+        # Deliberately no request/SIGTERM battery here — that behaviour is not
+        # LOG_LEVEL-dependent and is already covered by the step above. Reaching
+        # `healthy` is enough exposure for startup/warmup logging to have run.
+        if: contains(fromJSON(inputs.probe-targets), matrix.target)
+        env:
+          IMAGE: atrium-smoke/${{ inputs.image-name }}:${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          cid=$(docker run -d -e LOG_LEVEL=WARNING -p 18080:8000 "$IMAGE")
+          echo "container: $cid (LOG_LEVEL=WARNING)"
+          trap 'docker logs "$cid" || true; docker rm -f "$cid" >/dev/null 2>&1 || true' EXIT
+
+          echo "Waiting for HEALTHCHECK to report healthy with LOG_LEVEL=WARNING..."
+          # Same 330s budget and reasoning as the default-port step above.
+          deadline=$((SECONDS + 330))
+          status="starting"
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            status=$(docker inspect --format='{{.State.Health.Status}}' "$cid" 2>/dev/null || echo starting)
+            [ "$status" = "healthy" ] && break
+            if [ "$status" = "unhealthy" ]; then
+              echo "container reported unhealthy before ever becoming healthy" >&2
+              exit 1
+            fi
+            sleep 5
+          done
+          if [ "$status" != "healthy" ]; then
+            echo "container did not report healthy within the timeout (last status: $status)" >&2
+            exit 1
+          fi
+          echo "container is healthy"
+
+          if docker logs "$cid" 2>&1 | grep -qE '^[0-9-]+ [0-9:,]+ INFO [^ ]+ '; then
+            echo "an INFO-level record reached stdout with LOG_LEVEL=WARNING set (issue #61)" >&2
+            echo "-- LOG_LEVEL is read but not honoured; startup/warmup logging is not" >&2
+            echo "routed through the level the entrypoint configured" >&2
+            exit 1
+          fi
+          echo "confirmed: no INFO record reaches stdout with LOG_LEVEL=WARNING"
 
   build-and-push:
     needs: test
