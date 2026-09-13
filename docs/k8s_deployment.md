@@ -114,8 +114,99 @@ is the only reason changing the port is a two-line edit rather than a five-line 
 > outside the pod. This is the one value in the table above whose failure mode is silent;
 > leave `HOST` at `0.0.0.0` unless you have a specific reason not to.
 
-A fuller environment-variable reference across all five services is tracked separately in
-atrium-project#60; this section covers only what the manifest itself exposes.
+The four variables above are what the port-and-bind discussion needs. The section below is
+the full operator-facing contract across all five services — including the three
+(`ALLOWED_ORIGINS`, `MAX_UPLOAD_MB`, `LOG_LEVEL`) whose effective default depends on *how* you
+started the container, and the one service this manifest cannot deploy unmodified.
+
+## Environment variables — one contract, and the defaults that disagree with it
+
+Every service reads all of these identically. The manifest sets one and comments the rest —
+"In the template manifest" below is set / commented / **—** (not present at all, on purpose).
+Each repo's own `.env.example` is the complete ledger this table is drawn down from; its layout
+is fixed by [`templates/env.example.template`](templates/env.example.template). A variable
+named in one place and not the other is a bug in whichever was edited last —
+atrium-project#60's CI guard (`tests/test_env_contract.py`, both hub-local and vendored into
+each of the five repos) fails on exactly that.
+
+**Table A — common to all five**
+
+| Variable              | Code default  | In the template manifest | What it does / why you would change it                                                                                                                                                            |
+|-----------------------|---------------|--------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `PORT`                | `8000`        | **set**                  | The port the process binds **and** the port `service/healthcheck.py` probes. Change `containerPort` in the same edit.                                                                             |
+| `HOST`                | `0.0.0.0`     | commented                | Bind address. ⚠️ `127.0.0.1` yields a pod that reports healthy and serves nobody — see the warning above.                                                                                         |
+| `GRACEFUL_SHUTDOWN_S` | `20`          | commented                | uvicorn's bound on waiting for in-flight requests. Raise it together with `terminationGracePeriodSeconds`.                                                                                        |
+| `ALLOWED_ORIGINS`     | `*`           | commented                | CSV of CORS origins. `*` is every origin. An **empty** value is not the same as omitting it — see the callout below.                                                                              |
+| `MAX_UPLOAD_MB`       | *per service* | commented                | Canonical upload limit. There is no shared number — see the table below.                                                                                                                          |
+| `LOG_LEVEL`           | `INFO`        | commented                | Root logger level for the entrypoint. All five honour it identically (atrium-project#61); `tests/test_logging_contract.py` is vendored in each repo and fails if one drifts.                      |
+| `RELOAD`              | `false`       | **—, deliberately**      | uvicorn filesystem auto-reload. There is no correct value for a Deployment, so there is no commented entry to uncomment by accident.                                                              |
+| `HEALTHCHECK_PATH`    | `/health`     | **—**                    | The path the container's own `HEALTHCHECK` probes. Kubernetes does not read a `HEALTHCHECK` (see this document's opening section), so it is irrelevant here — change it only alongside the route. |
+| `MAX_UPLOAD_BYTES`    | —             | **—**                    | **Deprecated.** A byte-valued fallback that loses to `MAX_UPLOAD_MB` whenever both are set. Do not introduce it.                                                                                  |
+
+The `RELOAD` and `HEALTHCHECK_PATH` rows exist so their absence from the manifest reads as a
+decision, not an omission.
+
+**Two defaults, and which one applies to you.** Every value in the *Code default* column above
+is what you get in Kubernetes. Three of them are not what you get under `docker compose`, and
+each difference runs the same direction — compose supplies the safer value, and Kubernetes
+silently gets the raw one:
+
+| Variable                                                | Code default — Kubernetes gets this                                         | Compose default                                                                                                                                                                       | Consequence                                                                                                                                                                                                            |
+|---------------------------------------------------------|-----------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ALLOWED_ORIGINS`                                       | `*` — every origin                                                          | alto-postprocess `http://localhost:8080,http://localhost:5500`; page-classification `http://localhost:8080,http://127.0.0.1:8080`; llm-enrich / nlp-enrich / translator: not narrowed | A Kubernetes deployment that omits this serves CORS to anything. Set it explicitly. (`localhost` and `127.0.0.1` are *different* origins to a browser, which is why the two compose defaults are not interchangeable.) |
+| `OLLAMA_HOST` (llm-enrich)                              | `http://localhost:11434` — the **pod's own** loopback, where no Ollama runs | `http://host.docker.internal:11434`                                                                                                                                                   | Omitting it in Kubernetes does not fall back to the working compose value — it gives a URL that cannot reach an Ollama anywhere. Point it at the Ollama Service's DNS name.                                            |
+| `MAX_CONCURRENT_JOBS`, `DEFAULT_KW_METHOD` (nlp-enrich) | `2` / `keybert`                                                             | the same values, passed through `.env`                                                                                                                                                | Under Kubernetes these behave normally and can be changed via the `env:` block; under `docker compose` prior to atrium-project#60 they could not be changed from `.env` at all.                                        |
+
+> ⚠️ **`value: ""` is not the same as omitting the entry.** In an `env:` block,
+> `- name: ALLOWED_ORIGINS` / `value: ""` parses to an *empty* origin list and blocks every
+> browser request; omitting the entry gives you `*`. `PORT`, `GRACEFUL_SHUTDOWN_S` and
+> `LOG_LEVEL` are worse — an empty value raises at startup and the pod crash-loops on
+> `startupProbe`. To leave a variable at its default, delete the entry; do not blank it.
+
+**`MAX_UPLOAD_MB` — what the five services share is the variable name and the resolver, not the
+number.** The limit is a property of what each service ingests:
+
+| Repo                | `MAX_UPLOAD_MB` | Set at                   | Why this number                                           |
+|---------------------|-----------------|--------------------------|-----------------------------------------------------------|
+| translator          | `50`            | `service/api.py:55`      | highest — ALTO XML in, ALTO XML out                       |
+| alto-postprocess    | `25`            | `service/text_api.py:82` | ALTO XML for a whole scanned volume                       |
+| llm-enrich          | `10`            | `service/api.py:46`      | a CSV of lines                                            |
+| page-classification | `10`            | `service/api.py:56`      | a multi-page PDF                                          |
+| nlp-enrich          | `5`             | `service/api.py:43`      | lowest — a 5 MB CSV is already at the `MAX_WORDS` ceiling |
+
+The manifest's commented `MAX_UPLOAD_MB: "10"` is llm-enrich's and page-classification's
+number. Uncommenting it as-is silently *raises* nlp-enrich's limit 2× and *lowers*
+alto-postprocess's 2.5× and translator's 5×.
+
+**Table B — per-repo operator deltas.** Operator-facing only; each repo's `.env.example` is the
+complete ledger, and what is here is what a deployment legitimately sets.
+
+| Repo                | Variable                                                                 | Default                   | Why an operator sets it                                                                                                                                                                                                                                                                             |
+|---------------------|--------------------------------------------------------------------------|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| alto-postprocess    | `MODEL_DIR`                                                              | `<repo>/models`           | Point at a mounted PVC instead of the image layer — this is the knob that turns the crash-on-model-load-failure in *Known limits* into a fixable condition.                                                                                                                                         |
+|                     | `LANGID_CONFIG`                                                          | `<repo>/setup/config.txt` | Language-ID config, when mounted from a ConfigMap.                                                                                                                                                                                                                                                  |
+|                     | `DOCUMENT_JSON_DIR`                                                      | *(none)*                  | Where `document.json` output is written.                                                                                                                                                                                                                                                            |
+| llm-enrich          | `LLM_BACKEND`                                                            | `openrouter`              | `openrouter` or `ollama`; decides which block below applies.                                                                                                                                                                                                                                        |
+|                     | `OPENROUTER_API_KEY`                                                     | —                         | **Required, secret** — raises at startup when empty.                                                                                                                                                                                                                                                |
+|                     | `OPENROUTER_MODEL`                                                       | —                         | **Required** — raises at startup when empty.                                                                                                                                                                                                                                                        |
+|                     | `OLLAMA_HOST` / `OLLAMA_MODEL`                                           | see callout / —           | Ollama backend; `OLLAMA_MODEL` **required** for it.                                                                                                                                                                                                                                                 |
+|                     | `LLM_TIMEOUT` / `LLM_MAX_RETRIES`                                        | `300` / `3`               | Per-call read timeout and retries; a cut-off call costs the whole enrichment.                                                                                                                                                                                                                       |
+| nlp-enrich          | `UDPIPE_URL` / `NAMETAG_URL`                                             | LINDAT public hosts       | Attach a self-hosted UDPipe 2 / NameTag 3 (atrium-project#63).                                                                                                                                                                                                                                      |
+|                     | `MAX_CONCURRENT_JOBS`                                                    | `2`                       | Bounds real CPU (each job is a subprocess) and shields the shared LINDAT endpoints.                                                                                                                                                                                                                 |
+|                     | `API_JOB_TIMEOUT`                                                        | `600`                     | Seconds a single job may run before it is killed.                                                                                                                                                                                                                                                   |
+|                     | `MAX_WORDS` / `MAX_RESCALE_DIM`                                          | `30000` / `100000`        | Synchronous-request caps.                                                                                                                                                                                                                                                                           |
+|                     | `API_JOBS_ROOT`                                                          | `<repo>/TEMP/api_jobs`    | Point at an `emptyDir`/PVC with room for concurrent jobs, not the container filesystem.                                                                                                                                                                                                             |
+| page-classification | —                                                                        | —                         | **None.** Its service layer reads nothing beyond Table A: `service/inference.py`, `service/document_json.py` and `service/api_client.py` contain no environment reads, and the batch CLI is configured through argparse and `config.txt`. A short entry here means few deployment knobs, not a gap. |
+| translator          | `TRANSLATION_BACKEND`                                                    | `lindat`                  | `lindat` (CUBBITT) or `openai_compatible`.                                                                                                                                                                                                                                                          |
+|                     | `TRANSLATION_URL`                                                        | LINDAT public host        | Attach a self-hosted translation service (atrium-project#63). `LINDAT_BASE_URL` is an accepted alias and **loses** when both are set.                                                                                                                                                               |
+|                     | `UDPIPE_URL`                                                             | LINDAT public host        | Vocabulary lemma matching — deliberately the same name nlp-enrich uses for the same service.                                                                                                                                                                                                        |
+|                     | `LINDAT_MIN_INTERVAL_S` / `LINDAT_MAX_RETRIES` / `LINDAT_BACKOFF_BASE_S` | `0.0` / `4` / `1.0`       | Rate-limits *this deployment* against a shared public service.                                                                                                                                                                                                                                      |
+|                     | `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`                               | —                         | Only when `TRANSLATION_BACKEND=openai_compatible`. `LLM_API_KEY` is a **secret**.                                                                                                                                                                                                                   |
+
+**The manifest ships no `Secret`, no `secretKeyRef` and no `envFrom` — deliberately.** A
+reference manifest that carried a key-shaped placeholder is a reference manifest someone
+eventually commits a real key into. The commented `secretKeyRef` stanza in the `env:` block
+shows the shape; creating the `Secret` is your step.
 
 
 ## Known limits — read before promising ARÚP/ARÚB more than this delivers
@@ -156,6 +247,14 @@ atrium-project#60; this section covers only what the manifest itself exposes.
   service that cannot load its models should not silently sit "not ready" forever) — worth
   knowing so a crash-loop on this one service specifically is read as a config problem, not
   a regression in this manifest.
+- **The reference manifest cannot deploy llm-enrich unmodified.** `service/api.py:128-134`
+  raises at startup when `OPENROUTER_API_KEY` or `OPENROUTER_MODEL` is empty (and `:150`
+  likewise for `OLLAMA_MODEL` on the ollama backend), so an llm-enrich pod applied straight
+  from this template crash-loops on `startupProbe` — and it will look exactly like a probe
+  defect in the acceptance runbook unless the key is supplied first. Create a `Secret` out of
+  band and uncomment the `secretKeyRef` stanza. This is the one repo of the five where
+  "substitute `<tool>` and `<version>`, then apply" is not the whole procedure (see "What to
+  change per repo" below).
 
 ## What to change per repo
 
@@ -164,4 +263,5 @@ Replace `<tool>` and `<version>` in the manifest with the real image
 naming/tag-channel conventions), and size `resources.limits.memory` against the model(s) that
 repo actually loads. Everything else in the manifest is identical across all five services —
 that uniformity is the point: one reference contract, applied five times, rather than five
-independently-negotiated deployment specs.
+independently-negotiated deployment specs — **with one exception**: llm-enrich additionally
+needs the `Secret` described in "Known limits" above before it will start at all.

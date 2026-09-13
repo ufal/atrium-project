@@ -96,6 +96,23 @@ declare -A SHARED_FILES=(
     # ordinary fast lane in every repo (`pytest -m "not slow"`), so there is no
     # separate self-test step to register below.
     ["test_logging_contract.py"]="tests/test_logging_contract.py"
+    # atrium-project#60. Also no --selftest, for the same reason. UNLIKE every other
+    # entry above, this one has a fourth registration — see PRECONDITIONS below — because
+    # it imports a repo-local declaration module that cannot be vendored alongside it.
+    ["test_env_contract.py"]="tests/test_env_contract.py"
+)
+
+# Canonical files that import a REPO-LOCAL module this script cannot provide. Copying
+# such a file into a repo that lacks its precondition turns that repo's entire test
+# SUITE into a pytest collection error, which aborts the whole session — the failure
+# hub-self-check.yml's own history records for a missing transitive dependency
+# (:67-79 in that workflow). Checked before every copy, in both --check and write mode,
+# so this script's exit code stays true to its promise ("0 means para-drift would
+# pass") instead of landing a session-aborting import and discovering it five red CI
+# runs later. Keys are canonical filenames (SHARED_FILES keys); values are paths
+# relative to the TOOL REPO ROOT that must already exist.
+declare -A PRECONDITIONS=(
+    ["test_env_contract.py"]="tests/env_contract_data.py"
 )
 
 # Canonical files that carry a `--selftest`, as PATHS RELATIVE TO THE TOOL REPO
@@ -184,6 +201,13 @@ for repo in "${REPOS[@]}"; do
 
         if [[ ! -f "$src" ]]; then
             echo "  FAIL  $name — missing from the canonical directory"
+            FAILED=1
+            continue
+        fi
+
+        precondition="${PRECONDITIONS[$name]:-}"
+        if [[ -n "$precondition" && ! -f "$repo_dir/$precondition" ]]; then
+            echo "  FAIL  $name — $repo has no $precondition (required before vendoring this file)"
             FAILED=1
             continue
         fi

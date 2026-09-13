@@ -18,19 +18,19 @@ docker compose --profile api up -d
 
 ## Endpoints
 
-| Method | Path        | Purpose                                                                        |
-|--------|-------------|--------------------------------------------------------------------------------|
-| GET    | `/info`     | service identity + capabilities: `service`, `version`, `endpoints`, `limits`, <capabilities> |
-| GET    | `/health`   | liveness probe; 200 always, even mid-shutdown. `?deep=true` additionally <backend/model probe> (503 on fail or while draining) |
-| GET    | `/ready`    | readiness probe (issue #55): 503 until warm, 200 while serving, 503 the instant a shutdown signal arrives — this is the Kubernetes `readinessProbe`/`startupProbe` target, not `/health` |
-| POST   | `/<primary>`| <domain endpoint(s), one row each, with params>                                |
+| Method | Path         | Purpose                                                                                                                                                                                  |
+|--------|--------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| GET    | `/info`      | service identity + capabilities: `service`, `version`, `endpoints`, `limits`, <capabilities>                                                                                             |
+| GET    | `/health`    | liveness probe; 200 always, even mid-shutdown. `?deep=true` additionally <backend/model probe> (503 on fail or while draining)                                                           |
+| GET    | `/ready`     | readiness probe (issue #55): 503 until warm, 200 while serving, 503 the instant a shutdown signal arrives — this is the Kubernetes `readinessProbe`/`startupProbe` target, not `/health` |
+| POST   | `/<primary>` | <domain endpoint(s), one row each, with params>                                                                                                                                          |
 
 ### `POST /<primary>` (<multipart form / JSON>)
 
-| Field | Default | Notes |
-|-------|---------|-------|
-| `file` | *required* | <accepted suffixes, field named `file`> |
-| <param> | <default> | <meaning> |
+| Field   | Default    | Notes                                   |
+|---------|------------|-----------------------------------------|
+| `file`  | *required* | <accepted suffixes, field named `file`> |
+| <param> | <default>  | <meaning>                               |
 
 ```bash
 curl -X POST "http://localhost:8000/<primary>" -F "file=@<sample>" <-F params>
@@ -43,8 +43,8 @@ curl -s http://localhost:8000/info
 <real example response — copy from an actual server run>
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
+| Field   | Type   | Description                                                         |
+|---------|--------|---------------------------------------------------------------------|
 | <field> | <type> | <meaning — MUST match what api.py actually returns (defect-d rule)> |
 
 ## Errors
@@ -71,7 +71,7 @@ curl -s http://localhost:8000/info
 | `LOG_LEVEL`           | `INFO`    | root logger level for the `python -m service.<module>` start path       |
 | `MAX_UPLOAD_MB`       | <n>       | canonical upload limit                                                  |
 | `ALLOWED_ORIGINS`     | `*`       | CSV of CORS origins                                                     |
-| <service vars>        | <…>       | <…>                                                                     |
+| <service vars>        | <…>       | operator-facing only — the complete ledger is `.env.example`            |
 
 The first five rows are the ecosystem-wide contract (atrium-project#58, #55, #61) and are
 identical in all five services — copy them verbatim rather than rewording per repo. They
@@ -81,6 +81,12 @@ are read by `service/<module>.py`'s `__main__` block, which is what the `api` im
 > ⚠️ `HOST=127.0.0.1` yields a container that reports **healthy** and serves nobody:
 > `service/healthcheck.py` always probes loopback by design and never reads `HOST`, so a
 > loopback bind passes every probe while being unreachable from outside the container.
+
+This table is the deployment-facing **subset**. The complete ledger — every variable this
+image reads, including the algorithmic ones a deployment never touches — is
+[`.env.example`](../.env.example) at the repo root, whose layout is fixed by
+[`docs/templates/env.example.template`](https://github.com/ufal/atrium-project/blob/main/docs/templates/env.example.template)
+in the hub. The cross-service operator reference is the hub's `docs/k8s_deployment.md`.
 
 ## How it works
 

@@ -140,3 +140,17 @@ jobs:
         # Edit the hub copy, never a vendored one; scripts/revendor_shared.sh does
         # the copy.
         run: diff -u tool-repo/tests/test_logging_contract.py hub-repo/docs/templates/shared/test_logging_contract.py
+
+      - name: Verify tests/test_env_contract.py parity (issue #60)
+        # The env-var contract guard: .env.example names are a superset of the
+        # service-layer reads, defaults match the code, service/README.md agrees, and
+        # a fixed set of names read via the three para-drift-canonical modules above
+        # (atrium_paradata.py, service/atrium_service.py, service/healthcheck.py) plus
+        # the entrypoint's __main__ block is always found -- so a scanner that has
+        # stopped scanning cannot pass. Registered in revendor_shared.sh's
+        # SHARED_FILES and in the ruff `[format] exclude` list, same as every entry
+        # above. UNLIKE those, this file also has a PRECONDITIONS entry in
+        # revendor_shared.sh, because it imports a repo-local tests/env_contract_data.py
+        # this workflow cannot provide -- see that script's own comment for why. Edit
+        # the hub copy, never a vendored one.
+        run: diff -u tool-repo/tests/test_env_contract.py hub-repo/docs/templates/shared/test_env_contract.py

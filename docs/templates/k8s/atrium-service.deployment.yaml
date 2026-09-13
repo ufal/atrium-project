@@ -58,6 +58,15 @@ spec:
             - containerPort: 8000
               name: http
           env:
+            # This block and the "Environment variables" table in
+            # docs/k8s_deployment.md are the same contract in two forms. The five
+            # repos' own .env.example files are the complete ledger both are drawn
+            # from; docs/templates/env.example.template fixes their layout. The
+            # invariant: every variable named in Table A appears here, set or
+            # commented, and every variable named here appears in Table A — a
+            # variable in one and not the other is a bug in whichever was edited
+            # last, and atrium-project#60's CI guard (tests/test_env_contract.py)
+            # fails on exactly that.
             - name: PORT
               value: "8000"
             # - name: HOST                    # default "0.0.0.0" — bind address.
@@ -67,10 +76,30 @@ spec:
             #                                 # from outside the pod. See k8s_deployment.md.
             # - name: GRACEFUL_SHUTDOWN_S     # default "20" — uvicorn's in-flight drain.
             #   value: "20"                   # Raise with terminationGracePeriodSeconds.
-            # - name: ALLOWED_ORIGINS         # CSV, default "*" — set for a real deployment
-            #   value: "https://example.org"
-            # - name: MAX_UPLOAD_MB
-            #   value: "10"
+            # - name: LOG_LEVEL               # default "INFO" — root logger level for the
+            #   value: "INFO"                 # entrypoint (DEBUG/INFO/WARNING/ERROR). All
+            #                                 # five services honour it identically
+            #                                 # (atrium-project#61); tests/test_logging_
+            #                                 # contract.py is vendored in each repo and
+            #                                 # fails if one drifts.
+            #
+            # RELOAD is deliberately NOT listed here. It is uvicorn's filesystem
+            # auto-reload — a development convenience that respawns the process on
+            # file change. There is no correct value for it in a Deployment, so
+            # there is no commented entry to uncomment by accident. (atrium-project#60)
+            #
+            # - name: ALLOWED_ORIGINS         # CSV, default "*" (every origin) — set for a
+            #   value: "https://example.org"  # real deployment. An EMPTY value is NOT the
+            #                                 # same as omitting the entry: value: "" parses
+            #                                 # to an empty origin list and blocks every
+            #                                 # browser request. To keep the default, delete
+            #                                 # the entry; do not blank it.
+            # - name: MAX_UPLOAD_MB           # NO shared default: alto-postprocess 25,
+            #   value: "10"                   # llm-enrich 10, nlp-enrich 5,
+            #                                 # page-classification 10, translator 50.
+            #                                 # Uncommenting this as-is RAISES nlp-enrich's
+            #                                 # limit and LOWERS alto's and translator's.
+            #                                 # Use your service's number (k8s_deployment.md).
             #
             # --- Backing services (atrium-project#63) -----------------------
             # Endpoints the service calls OUT to. Unset, each falls back to the
@@ -92,6 +121,22 @@ spec:
             #   value: "https://nametag.internal/api/recognize"
             # - name: TRANSLATION_URL         # translator
             #   value: "https://translate.internal/api/v2"
+            #
+            # --- Secrets: llm-enrich only ---------------------------------
+            # llm-enrich raises at startup without a key (service/api.py:128-134),
+            # so it is the one service this manifest cannot deploy unmodified.
+            # Create the Secret out of band — never as a literal `value:` here, and
+            # never in a file that gets committed:
+            #   kubectl create secret generic atrium-llm-enrich \
+            #     --from-literal=openrouter-api-key=sk-...
+            # - name: OPENROUTER_API_KEY
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: atrium-llm-enrich
+            #       key: openrouter-api-key
+            # - name: OPENROUTER_MODEL        # not secret, but equally required
+            #   value: "openai/gpt-4o-mini"
+            # translator's openai_compatible backend uses LLM_API_KEY the same way.
 
           # --- Probes: three DIFFERENT endpoints, on purpose ---------------------
           #

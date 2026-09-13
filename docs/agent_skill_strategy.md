@@ -169,11 +169,18 @@ correct clients treat any 4xx as a caller error, so nothing breaks.
 
 ### 4.5 Environment variables
 
+The normative artifacts are `docs/templates/env.example.template` (the layout every repo's
+`.env.example` follows) and each repo's own `.env.example` (the complete ledger — every
+variable the api image reads, at its code default). This section states the *rules* those
+artifacts implement; it does not enumerate variables, and a variable named here and absent
+there is a bug in this section. atrium-project#60's CI guard (`tests/test_env_contract.py`,
+hub-local and vendored into all five tool repos) is what keeps that true.
+
 | Variable          | Scope  | Standard                                                                                                                                                                                                                                |
 |-------------------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ALLOWED_ORIGINS` | server | CSV of CORS origins, default `*`. alto-postprocess currently defaults to a localhost list (`service/text_api.py`) — align to `*` for parity with siblings.                                                                              |
-| `MAX_UPLOAD_MB`   | server | canonical upload limit. translator currently reads `MAX_UPLOAD_BYTES` (default 50 MB) — introduce `MAX_UPLOAD_MB`, keep `MAX_UPLOAD_BYTES` as a deprecated fallback for one release.                                                    |
-| service-specific  | server | keep as-is: `MAX_WORDS`, `MAX_CONCURRENT_JOBS`, `API_JOB_TIMEOUT` (nlp-enrich); `TRANSLATION_BACKEND` (translator); `GPT2_MODEL_NAME`, `PERPLEXITY_THRESHOLD_MAX` (alto); `OPENROUTER_API_KEY`, `OLLAMA_HOST`, `HF_TOKEN` (llm-enrich). |
+| `ALLOWED_ORIGINS` | server | CSV of CORS origins, code default `*`. Compose files may supply a narrower default of their own for local development; Kubernetes never reads one, so the k8s-facing reference (`docs/k8s_deployment.md`) always states the code default. |
+| `MAX_UPLOAD_MB`   | server | canonical upload limit, resolved by `atrium_service.resolve_max_upload_mb`. **The number is per-service, not shared** — alto-postprocess 25, llm-enrich 10, nlp-enrich 5, page-classification 10, translator 50 (see `docs/k8s_deployment.md`). `MAX_UPLOAD_BYTES` remains a deprecated fallback and loses whenever both are set. |
+| service-specific  | server | keep as-is; enumerated per repo in that repo's `.env.example` §5 ("Service knobs — operator") and in `docs/k8s_deployment.md`'s Table B.                                                                                                |
 | `ATRIUM_<XX>_URL` | client | per-tool base-URL override, [§6](#-6-zero-dependency-client-contract) / [Appendix E](#appendix-e--naming-tables).                                                                                                                       |
 
 ### 4.6 Versioning
@@ -699,7 +706,10 @@ Named **`server.sh`** (everywhere, including every doc that mentions it — defe
 4. Response schema: JSON example + field-description table (must match `api.py` — defect (d)
    rule).
 5. Errors: the §4.4 table with service-specific notes.
-6. Configuration: env-var table (§4.5 subset).
+6. Configuration: the shared seven-row contract copied verbatim from
+   `docs/templates/skill/serviceREADME.template.md`, plus this service's operator-facing
+   variables, plus a pointer to the repo's `.env.example` (the complete ledger — layout per
+   `docs/templates/env.example.template`).
 7. Run: venv/uvicorn + `docker compose --profile api up` (+ GPU variant).
 8. Frontend(s): where mounted, what they demonstrate.
 9. Tests: how to run the API tests (default branch only).

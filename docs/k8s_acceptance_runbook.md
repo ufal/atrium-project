@@ -11,6 +11,25 @@ this is a partner-side procedure, not something this repo's CI can run — the b
 decided on 2026-08-02 (#40, motyc) is exactly "a Docker image, run at ARÚP/ARÚB's own
 Kubernetes," so validating it is necessarily out-of-band.
 
+## Before you start
+
+1. **llm-enrich needs a key before it will start at all.** `service/api.py:128-134` raises
+   when `OPENROUTER_API_KEY` or `OPENROUTER_MODEL` is empty, so an llm-enrich pod applied
+   straight from the template crash-loops on `startupProbe`. Create the `Secret` and
+   uncomment the `secretKeyRef` stanza first (`docs/k8s_deployment.md` §"Environment
+   variables") — otherwise acceptance criterion 1 records a probe failure for a
+   configuration reason, which is exactly the kind of wrong result this runbook exists to
+   avoid.
+2. **Check your smoke file against the repo's upload limit.** `MAX_UPLOAD_MB` differs per
+   service — translator 50, alto-postprocess 25, llm-enrich 10, page-classification 10,
+   **nlp-enrich 5**. A file over the limit returns 413 immediately, the request is no
+   longer in flight when the restart lands, and criterion 2 passes vacuously. nlp-enrich is
+   the live collision: its smoke request below asks for "a large CSV" against the fleet's
+   lowest cap — keep it under 5 MB or the acceptance run proves nothing.
+3. **`ALLOWED_ORIGINS` defaults to `*`.** If the acceptance cluster is reachable from a
+   browser on a network where that matters, set it in the manifest before applying, not
+   after.
+
 ## Shared procedure (every repo)
 
 ```bash
@@ -42,7 +61,7 @@ kubectl rollout status deployment/atrium-nlp-enrich-api --timeout=5m
 kill $PF_PID
 ```
 
-**Acceptance bar (all three must hold, per repo):**
+**Acceptance bar (all four must hold, per repo):**
 1. **The startup/liveness/readiness probes behave as documented** — `startupProbe` passes on
    a cold pod without flapping into a restart during model warmup; `livenessProbe` does not
    fire during a routine rolling restart (check `kubectl get events` for an unexpected
@@ -69,6 +88,26 @@ kill $PF_PID
    external curl through a port-forward passes even when the in-container probe is looking
    at the wrong port, which is precisely the failure this criterion exists to catch.
 
+4. **The declared environment is the one the process sees** (atrium-project#60). `PORT`
+   (criterion 3) proves one variable travels; this proves the contract does. Set three
+   values in the manifest's `env:` block — `LOG_LEVEL: "DEBUG"`,
+   `ALLOWED_ORIGINS: "https://acceptance.invalid"`, and `MAX_UPLOAD_MB` at `"1"` — then:
+
+   ```bash
+   kubectl logs deploy/atrium-<tool>-api | head -20          # DEBUG lines present
+   curl -s -i -H 'Origin: https://acceptance.invalid' localhost:8000/info \
+     | grep -i access-control-allow-origin                    # present
+   curl -s -i -H 'Origin: https://not-allowed.invalid' localhost:8000/info \
+     | grep -i access-control-allow-origin                    # ABSENT
+   curl -s -o /dev/null -w '%{http_code}\n' -X POST localhost:8000/<endpoint> \
+     -F "file=@<2MB-file>"                                    # 413
+   ```
+
+   Three variables with three different delivery mechanisms and one silent failure mode
+   between them — `ALLOWED_ORIGINS` is the one whose misconfiguration is invisible from the
+   server side, so the negative-origin check matters more than the positive one. Reset all
+   three before the other criteria.
+
 ## Per-repo smoke request
 
 Use a request that legitimately takes several seconds, so it is still in flight when
@@ -85,13 +124,15 @@ restart proves nothing about draining.
 
 ## Results log (fill in)
 
-| Repo                | Deploys clean | Probes behave | Rolling restart drops nothing | Non-default `PORT` | Notes |
-|---------------------|---------------|---------------|-------------------------------|--------------------|-------|
-| page-classification | ☐             | ☐             | ☐                             | ☐                  |       |
-| alto-postprocess    | ☐             | ☐             | ☐                             | ☐                  |       |
-| translator          | ☐             | ☐             | ☐                             | ☐                  |       |
-| nlp-enrich          | ☐             | ☐             | ☐                             | ☐                  |       |
-| llm-enrich          | ☐             | ☐             | ☐                             | ☐                  |       |
+| Repo                | Deploys clean | Probes behave | Rolling restart drops nothing | Non-default `PORT` | Env contract honoured | Notes |
+|---------------------|---------------|---------------|-------------------------------|--------------------|-----------------------|-------|
+| page-classification | ☐             | ☐             | ☐                             | ☐                  | ☐                     |       |
+| alto-postprocess    | ☐             | ☐             | ☐                             | ☐                  | ☐                     |       |
+| translator          | ☐             | ☐             | ☐                             | ☐                  | ☐                     |       |
+| nlp-enrich          | ☐             | ☐             | ☐                             | ☐                  | ☐                     |       |
+| llm-enrich          | ☐             | ☐             | ☐                             | ☐                  | ☐                     |       |
+
+> Record in Notes the values you set for criterion 4, and for llm-enrich the backend you used.
 
 > Environment note: this runbook cannot be run from this session or from any hub CI job —
 > there is no Kubernetes cluster in scope here, by design (#40). The nearest in-repo proxy is
