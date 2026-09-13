@@ -108,13 +108,46 @@ _ENV_READ = re.compile(r'(?:os\.)?(?:environ\.get|getenv|environ\[)\(?\s*["\']([
 _ENV_HELPER = re.compile(r'_env_(?:float|int|str)\(\s*((?:["\'][A-Z_][A-Z0-9_]*["\']\s*,?\s*)+)')
 _SKIP_DIRS = {"tests", "eval", "data_samples", "agent_dev_logs", ".git"}
 
+# Directory NAMES with no repo-specific meaning, wherever they sit under the repo
+# root: build caches and node_modules, plus "site-packages"/"dist-packages" as a
+# defensive second layer alongside the pyvenv.cfg detection below (a venv's OWN root
+# name is arbitrary -- .venv, venv, env, venv-trans -- but every virtualenv and every
+# system Python names its third-party package directory exactly one of these two).
+_SKIP_MARKERS = {"site-packages", "dist-packages", "node_modules", "__pycache__"}
+
+
+def _venv_roots() -> set:
+    """Every directory under the repo root that IS a Python virtual environment.
+
+    `pyvenv.cfg` is the one file `python -m venv` / `virtualenv` always writes at a
+    venv's root, regardless of what the venv directory itself is named -- unlike
+    _SKIP_MARKERS above, this needs no name guess at all. Found the hard way: a real
+    checkout with a `venv-trans/` and a `.venv/` sitting inside the repo (never
+    committed, but very much present on disk) turned this file's ~4 real findings
+    into ~250 platform/tooling variables (ANDROID_DATA, COVERAGE_FILE,
+    PIP_CONFIG_FILE, ...) pulled from every installed library's own os.getenv calls
+    -- including `.venv/bin/activate_this.py`, which sits OUTSIDE site-packages
+    entirely, so that marker alone does not catch it.
+    """
+    return {p.parent for p in REPO_ROOT.rglob("pyvenv.cfg")}
+
 
 def _indirect_env_reads(source: str) -> set[str]:
-    """Resolve `os.environ.get(_SOME_CONST, ...)` to the literal it names.
+    """Resolve two shapes of `os.environ.get(<name>, ...)` where `<name>` is not an
+    inline string literal, so a plain regex over the call site misses it entirely.
 
-    atrium_paradata.py reads ATRIUM_RUNNER_IMAGE / _REPO / _REF through module-level
-    constants rather than inline strings, so a regex over the call sites misses all
-    three and then reports them as documented-but-unread.
+    1. A MODULE-LEVEL STRING CONSTANT: `_ENV_RUNNER_IMAGE = "ATRIUM_RUNNER_IMAGE"`,
+       then `os.environ.get(_ENV_RUNNER_IMAGE)`. atrium_paradata.py reads
+       ATRIUM_RUNNER_IMAGE / _REPO / _REF this way for all three.
+
+    2. A LOOP OVER A NAME->KEY DICT: nlp-enrich's backing-service override reads
+       `for env_key, fact_key in _ENV_OVERRIDABLE.items(): os.environ.get(env_key, ...)`
+       where `_ENV_OVERRIDABLE = {"UDPIPE_URL": "udpipe_url", "NAMETAG_URL": ...}`.
+       Every key in such a dict is genuinely read once per loop execution — this is
+       not a guess, it is what the loop body does — so all of them resolve, not just
+       one. Scoped narrowly: the dict must be a module-level literal with only
+       string-constant keys, the loop target must be a 2-tuple of plain names, and
+       the get/getenv call inside the loop body must use the loop's KEY variable.
     """
     try:
         tree = ast.parse(source)
@@ -124,10 +157,25 @@ def _indirect_env_reads(source: str) -> set[str]:
     constants = {
         target.id: node.value.value
         for node in tree.body
-        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)
+        if isinstance(node, ast.Assign)
+        and isinstance(node.value, ast.Constant)
+        and isinstance(node.value.value, str)
         for target in node.targets
         if isinstance(target, ast.Name)
     }
+
+    env_name_dicts: dict[str, set[str]] = {}
+    for node in tree.body:
+        if not (isinstance(node, ast.Assign) and isinstance(node.value, ast.Dict)):
+            continue
+        keys = node.value.keys
+        if not keys or not all(isinstance(k, ast.Constant) and isinstance(k.value, str) for k in keys):
+            continue
+        literal_keys = {k.value for k in keys if re.fullmatch(r"[A-Z_][A-Z0-9_]*", k.value)}
+        if literal_keys:
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    env_name_dicts[target.id] = literal_keys
 
     names: set[str] = set()
     for node in ast.walk(tree):
@@ -142,6 +190,34 @@ def _indirect_env_reads(source: str) -> set[str]:
             value = constants[first.id]
             if re.fullmatch(r"[A-Z_][A-Z0-9_]*", value):
                 names.add(value)
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.For):
+            continue
+        target, it = node.target, node.iter
+        if not (
+            isinstance(target, ast.Tuple)
+            and len(target.elts) == 2
+            and all(isinstance(e, ast.Name) for e in target.elts)
+            and isinstance(it, ast.Call)
+            and isinstance(it.func, ast.Attribute)
+            and it.func.attr == "items"
+            and isinstance(it.func.value, ast.Name)
+            and it.func.value.id in env_name_dicts
+        ):
+            continue
+        key_var = target.elts[0].id
+        for inner in ast.walk(node):
+            if not isinstance(inner, ast.Call) or not inner.args:
+                continue
+            inner_func = inner.func
+            inner_attr = inner_func.attr if isinstance(inner_func, ast.Attribute) else getattr(inner_func, "id", "")
+            if inner_attr not in {"get", "getenv"}:
+                continue
+            first = inner.args[0]
+            if isinstance(first, ast.Name) and first.id == key_var:
+                names |= env_name_dicts[it.func.value.id]
+                break
     return names
 
 
@@ -206,8 +282,14 @@ def _code_defaults(source: str) -> dict[str, str]:
 
 
 def _iter_scanned_files():
+    venv_roots = _venv_roots()
     for py in sorted(REPO_ROOT.rglob("*.py")):
-        if any(part in _SKIP_DIRS for part in py.relative_to(REPO_ROOT).parts):
+        parts = py.relative_to(REPO_ROOT).parts
+        if any(part in _SKIP_DIRS for part in parts):
+            continue
+        if any(part in _SKIP_MARKERS for part in parts):
+            continue
+        if any(root in py.parents for root in venv_roots):
             continue
         yield py
 
