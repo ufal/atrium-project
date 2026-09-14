@@ -50,11 +50,11 @@ _RUFF_TOML = _HUB_ROOT / "docs" / "templates" / "ruff.toml"
 # port name, no leading `-`) and `name: atrium-<tool>-api` (metadata, lowercase/hyphenated)
 # without needing to scope to the env: block specifically, because no other `- name: X`
 # in this file names an ALL_CAPS identifier.
-_ENV_ENTRY = re.compile(r'^\s*(?P<hash>#\s*)?-\s*name:\s*([A-Z][A-Z0-9_]*)\b', re.MULTILINE)
+_ENV_ENTRY = re.compile(r"^\s*(?P<hash>#\s*)?-\s*name:\s*([A-Z][A-Z0-9_]*)\b", re.MULTILINE)
 
 # Table A rows: | `NAME` | default | manifest-status | description |
 _TABLE_ROW = re.compile(
-    r'^\|\s*`([A-Z][A-Z0-9_]*)`\s*\|[^|]*\|\s*([^|]*?)\s*\|',
+    r"^\|\s*`([A-Z][A-Z0-9_]*)`\s*\|[^|]*\|\s*([^|]*?)\s*\|",
     re.MULTILINE,
 )
 
@@ -170,10 +170,7 @@ def test_the_raw_text_reader_is_not_vacuous():
     assert _MANIFEST.exists(), f"{_MANIFEST} not found — did it move?"
 
     doc = yaml.safe_load(_MANIFEST.read_text(encoding="utf-8"))
-    live_via_yaml = {
-        e["name"]
-        for e in doc["spec"]["template"]["spec"]["containers"][0]["env"]
-    }
+    live_via_yaml = {e["name"] for e in doc["spec"]["template"]["spec"]["containers"][0]["env"]}
     assert live_via_yaml == {"PORT"}, (
         f"expected yaml.safe_load to see exactly one live env var (PORT), saw {live_via_yaml} "
         "— if this changed on purpose, the raw-text reader still has to account for it"
@@ -181,8 +178,7 @@ def test_the_raw_text_reader_is_not_vacuous():
 
     live, commented = _manifest_entries()
     assert live == live_via_yaml, (
-        "the raw-text reader and yaml.safe_load disagree on LIVE entries: "
-        f"raw={live} yaml={live_via_yaml}"
+        f"the raw-text reader and yaml.safe_load disagree on LIVE entries: raw={live} yaml={live_via_yaml}"
     )
     assert len(commented) >= 6, (
         f"the raw-text reader found only {len(commented)} commented-out env entries "
@@ -233,9 +229,7 @@ def test_the_three_shared_file_registrations_agree():
 
     only_in_shared_files = shared_files - para_drift
     only_in_para_drift = para_drift - shared_files
-    assert not only_in_shared_files, (
-        f"in SHARED_FILES but has no para-drift diff step: {sorted(only_in_shared_files)}"
-    )
+    assert not only_in_shared_files, f"in SHARED_FILES but has no para-drift diff step: {sorted(only_in_shared_files)}"
     assert not only_in_para_drift, (
         f"has a para-drift diff step but is not in SHARED_FILES: {sorted(only_in_para_drift)}"
     )
@@ -253,8 +247,7 @@ def test_the_three_shared_file_registrations_agree():
 def test_the_registration_check_is_not_vacuous():
     shared_files = _shared_files_from_revendor_script()
     assert len(shared_files) >= 10, (
-        f"only found {len(shared_files)} SHARED_FILES entries — the parser may have "
-        "broken against a script edit"
+        f"only found {len(shared_files)} SHARED_FILES entries — the parser may have broken against a script edit"
     )
     assert "atrium_service.py" in shared_files
     assert "test_logging_contract.py" in shared_files
