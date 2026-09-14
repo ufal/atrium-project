@@ -1,5 +1,15 @@
 # 🧭 ATRIUM Ecosystem — Repository Review & Forward Strategy
 
+> ⚠️ **This review is dated 2026-07-22 and is not the current source of truth for the
+> facts it records.** `docs/docker_gha_roadmap.md` (2026-08-04 onward) supersedes its
+> CI/dependency/build findings; the para-drift-guarded canonical set specifically has
+> grown from the "paradata trio" (`atrium_paradata.py`, `para_licenses.py`,
+> `tests/test_para_licenses.py`) this document describes to 16 files, tracked in the
+> single manifest `docs/templates/shared/MANIFEST.json` (atrium-project#59) — not
+> re-derived section by section here. Reusable-workflow pins have also moved from
+> this document's `@test` to the immutable `@v1`. Left in place as a historical
+> record rather than rewritten; do not cite counts or pin refs from this file as current.
+
 _Maintainer: lutsai.k@gmail.com · Last reviewed: **2026-07-22** (supersedes 2026-06-24)_
 _Repos: atrium-project (hub) · atrium-page-classification · atrium-alto-postprocess ·
 atrium-nlp-enrich · atrium-translator · **atrium-llm-enrich** (added to scope 2026-07-22)_
@@ -49,26 +59,26 @@ config) → "All checks passed!" in all five tool repos** (llm-enrich's three Ju
 
 ## 📊 4. Status matrix
 
-| ID  | Item                                                          | pc | alto | nlp | translator | llm | hub |
-|-----|--------------------------------------------------------------|----|------|-----|------------|-----|-----|
-| F1  | API `/info` version hard-coded, drifts from `para_config`    | ✅ | ✅   | ✅  | ✅         | ✅  | —   |
-| F2  | `CITATION.cff` `date-released` stale                         | ✅ | ✅   | ✅  | ✅         | ✅  | —   |
-| G1  | Eager heavy imports break the no-model fast lane             | ✅ | ✅   | ✅  | ✅         | ✅  | —   |
-| G2  | `requirements-test.txt` present & self-contained             | ✅ | ✅   | ✅  | ✅         | ✅  | —   |
-| H1  | `para_licenses.py` converged + tested (shared suite)         | ✅ | ✅   | ✅  | ✅         | ✅  | ✅  |
-| H2  | `atrium_paradata.py` byte-identical to hub canonical         | ✅ | ✅   | ✅  | ✅         | ✅  | ✅  |
-| I1  | in-process CLI tests (`build_parser`/`main(argv)`)           | ✅ | ✅   | ⏳ C4 | ✅       | n/a | —   |
-| COV | `fail_under` ratchet set from measured baseline              | 28 | 50   | 30  | 70         | 42  | —   |
-| R1  | **Release gate blocks tag/version mismatch**                 | ✅ | ✅   | ✅  | ✅         | ✅  | —   |
-| P1c | **Broad-except / silent-swallow correctness fixes**          | ✅ | ✅   | ✅  | —          | ✅  | —   |
-| P2t | **Test gaps closed (engine, annotation, img2jpeg, bakeoff)** | ✅ | —    | ✅  | ✅         | ✅  | —   |
-| M1  | **nlp↔llm LLM-engine governance (decision)**                 | —  | —    | ⏸️  | —          | ⏸️  | ⏸️  |
-| DOC | Canonical tracker / digests reflect reality                  | —  | —    | —   | —          | —   | 🔧  |
-| A1  | **API `/info` envelope: service/endpoints/limits (§4.1, #32)**| 🔧 | 🔧   | 🔧  | 🔧         | 🔧  | 🔧  |
-| A2  | **API `/health` shallow+deep everywhere (§4.1, #32)**        | 🔧 | 🔧   | ✅  | 🔧         | 🔧  | 🔧  |
-| A3  | **Error-code harmonization to §4.4 (4xx not 500/400, #32)**   | ✅ | 🔧   | ✅  | 🔧         | 🔧  | —   |
-| A4  | **API contract test + `api-contract.reusable.yml` (#32)**     | 🔧 | 🔧   | 🔧  | 🔧         | 🔧  | 🔧  |
-| A5  | **llm-enrich FastAPI service built (§4.2, #32)**             | —  | —    | —   | —          | 🔧  | —   |
+| ID  | Item                                                           | pc | alto | nlp  | translator | llm | hub |
+|-----|----------------------------------------------------------------|----|------|------|------------|-----|-----|
+| F1  | API `/info` version hard-coded, drifts from `para_config`      | ✅  | ✅    | ✅    | ✅          | ✅   | —   |
+| F2  | `CITATION.cff` `date-released` stale                           | ✅  | ✅    | ✅    | ✅          | ✅   | —   |
+| G1  | Eager heavy imports break the no-model fast lane               | ✅  | ✅    | ✅    | ✅          | ✅   | —   |
+| G2  | `requirements-test.txt` present & self-contained               | ✅  | ✅    | ✅    | ✅          | ✅   | —   |
+| H1  | `para_licenses.py` converged + tested (shared suite)           | ✅  | ✅    | ✅    | ✅          | ✅   | ✅   |
+| H2  | `atrium_paradata.py` byte-identical to hub canonical           | ✅  | ✅    | ✅    | ✅          | ✅   | ✅   |
+| I1  | in-process CLI tests (`build_parser`/`main(argv)`)             | ✅  | ✅    | ⏳ C4 | ✅          | n/a | —   |
+| COV | `fail_under` ratchet set from measured baseline                | 28 | 50   | 30   | 70         | 42  | —   |
+| R1  | **Release gate blocks tag/version mismatch**                   | ✅  | ✅    | ✅    | ✅          | ✅   | —   |
+| P1c | **Broad-except / silent-swallow correctness fixes**            | ✅  | ✅    | ✅    | —          | ✅   | —   |
+| P2t | **Test gaps closed (engine, annotation, img2jpeg, bakeoff)**   | ✅  | —    | ✅    | ✅          | ✅   | —   |
+| M1  | **nlp↔llm LLM-engine governance (decision)**                   | —  | —    | ⏸️   | —          | ⏸️  | ⏸️  |
+| DOC | Canonical tracker / digests reflect reality                    | —  | —    | —    | —          | —   | 🔧  |
+| A1  | **API `/info` envelope: service/endpoints/limits (§4.1, #32)** | 🔧 | 🔧   | 🔧   | 🔧         | 🔧  | 🔧  |
+| A2  | **API `/health` shallow+deep everywhere (§4.1, #32)**          | 🔧 | 🔧   | ✅    | 🔧         | 🔧  | 🔧  |
+| A3  | **Error-code harmonization to §4.4 (4xx not 500/400, #32)**    | ✅  | 🔧   | ✅    | 🔧         | 🔧  | —   |
+| A4  | **API contract test + `api-contract.reusable.yml` (#32)**      | 🔧 | 🔧   | 🔧   | 🔧         | 🔧  | 🔧  |
+| A5  | **llm-enrich FastAPI service built (§4.2, #32)**               | —  | —    | —    | —          | 🔧  | —   |
 
 Legend: ✅ closed/verified · ⏳ open · ⏸️ deferred (maintainer decision) · 🔴 open
 (decision needed) · 🔧 fix prepared, pending review/merge · n/a not applicable · — out of
@@ -252,13 +262,13 @@ will drive it once the compose file lands.
 repo carries a ~12-line caller. Scope boundary per §5.H / §5.M.
 
 ## 📍 10. Exact change locations (this review)
-| Item                | Path                                                                    |
-|---------------------|-------------------------------------------------------------------------|
-| R release-gate      | `{pc,alto,nlp,translator,llm}/.github/workflows/release.yml` (+`needs`)  |
-| R para_config path  | pc,alto → `setup/para_config.txt`; nlp,translator,llm → `para_config.txt`|
-| I1 C4               | `nlp/tests/test_teitok_integraion.py` (subprocess `--help` → `build_parser().format_help()`) |
-| M governance        | `nlp/{llm_utils,vocab_manager,llm_run}.py` ↔ `llm/{…}.py` (decision)     |
-| DOC forward-merge   | hub `test` → `main` (digests, project_state_2207, this file)            |
+| Item               | Path                                                                                         |
+|--------------------|----------------------------------------------------------------------------------------------|
+| R release-gate     | `{pc,alto,nlp,translator,llm}/.github/workflows/release.yml` (+`needs`)                      |
+| R para_config path | pc,alto → `setup/para_config.txt`; nlp,translator,llm → `para_config.txt`                    |
+| I1 C4              | `nlp/tests/test_teitok_integraion.py` (subprocess `--help` → `build_parser().format_help()`) |
+| M governance       | `nlp/{llm_utils,vocab_manager,llm_run}.py` ↔ `llm/{…}.py` (decision)                         |
+| DOC forward-merge  | hub `test` → `main` (digests, project_state_2207, this file)                                 |
 
 ---
 

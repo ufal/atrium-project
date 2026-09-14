@@ -1,0 +1,190 @@
+{
+  "_comment": [
+    "The single list of canonical shared files (atrium-project#59). Every file under",
+    "docs/templates/shared/ that para-drift.reusable.yml holds byte-identical across",
+    "the five tool repos has exactly one row here. Adding a file to this directory",
+    "means adding one row here -- not editing scripts/revendor_shared.sh, tools/",
+    "skill_drift_check.py, para-drift.reusable.yml and docs/templates/ruff.toml by",
+    "hand in four places that used to drift independently. tests/test_shared_manifest.py",
+    "enforces that every file in this directory has a row, and every row has a file.",
+    "",
+    "Fields:",
+    "  canonical           filename under docs/templates/shared/ (the source of truth)",
+    "  dest                path RELATIVE TO A TOOL REPO ROOT where the vendored copy lives",
+    "  selftest            true if `python3 <dest> --selftest` is a meaningful check",
+    "                      (revendor_shared.sh's SELFTESTS array; para-drift.reusable.yml's",
+    "                      selftest steps) -- the module must support --selftest itself",
+    "  ruff_format_exclude true if docs/templates/ruff.toml's [format] exclude (and each",
+    "                      tool repo's own copy of that list) must name `dest` -- i.e. this",
+    "                      is a .py file at all; the two .schema.json entries are not",
+    "  isort_first_party   the module name for docs/templates/ruff.toml's", "                      [lint.isort] known-first-party, or null if `dest` is not an",
+    "                      importable top-level module (a test file, a .schema.json)",
+    "  preconditions       repo-relative paths this file's OWN tests need that are NOT",
+    "                      vendored alongside it (revendor_shared.sh's PRECONDITIONS map)",
+    "  issue               the atrium-project issue this file's canonicalization landed",
+    "                      under, or null",
+    "  note                a short reason for anything non-obvious about this entry, or null"
+  ],
+  "files": [
+    {
+      "canonical": "atrium_paradata.py",
+      "dest": "atrium_paradata.py",
+      "selftest": false,
+      "ruff_format_exclude": true,
+      "isort_first_party": "atrium_paradata",
+      "preconditions": [],
+      "issue": null,
+      "note": null
+    },
+    {
+      "canonical": "para_licenses.py",
+      "dest": "para_licenses.py",
+      "selftest": false,
+      "ruff_format_exclude": true,
+      "isort_first_party": "para_licenses",
+      "preconditions": [],
+      "issue": null,
+      "note": null
+    },
+    {
+      "canonical": "test_para_licenses.py",
+      "dest": "tests/test_para_licenses.py",
+      "selftest": false,
+      "ruff_format_exclude": true,
+      "isort_first_party": null,
+      "preconditions": [],
+      "issue": null,
+      "note": null
+    },
+    {
+      "canonical": "test_document_originators.py",
+      "dest": "tests/test_document_originators.py",
+      "selftest": false,
+      "ruff_format_exclude": true,
+      "isort_first_party": null,
+      "preconditions": [],
+      "issue": 10,
+      "note": "issue #10, D9"
+    },
+    {
+      "canonical": "atrium_service.py",
+      "dest": "service/atrium_service.py",
+      "selftest": false,
+      "ruff_format_exclude": true,
+      "isort_first_party": "atrium_service",
+      "preconditions": [],
+      "issue": 32,
+      "note": "issue #32, strategy §4"
+    },
+    {
+      "canonical": "healthcheck.py",
+      "dest": "service/healthcheck.py",
+      "selftest": false,
+      "ruff_format_exclude": true,
+      "isort_first_party": null,
+      "preconditions": [],
+      "issue": 55,
+      "note": null
+    },
+    {
+      "canonical": "atrium_document.py",
+      "dest": "atrium_document.py",
+      "selftest": false,
+      "ruff_format_exclude": true,
+      "isort_first_party": "atrium_document",
+      "preconditions": [],
+      "issue": null,
+      "note": null
+    },
+    {
+      "canonical": "atrium_document.schema.json",
+      "dest": "atrium_document.schema.json",
+      "selftest": false,
+      "ruff_format_exclude": false,
+      "isort_first_party": null,
+      "preconditions": [],
+      "issue": null,
+      "note": "not Python -- ruff format/isort do not apply"
+    },
+    {
+      "canonical": "atrium_vocab.py",
+      "dest": "atrium_vocab.py",
+      "selftest": true,
+      "ruff_format_exclude": true,
+      "isort_first_party": "atrium_vocab",
+      "preconditions": [],
+      "issue": 51,
+      "note": null
+    },
+    {
+      "canonical": "atrium_vocab.schema.json",
+      "dest": "atrium_vocab.schema.json",
+      "selftest": false,
+      "ruff_format_exclude": false,
+      "isort_first_party": null,
+      "preconditions": [],
+      "issue": 51,
+      "note": "not Python -- ruff format/isort do not apply"
+    },
+    {
+      "canonical": "test_atrium_vocab.py",
+      "dest": "tests/test_atrium_vocab.py",
+      "selftest": false,
+      "ruff_format_exclude": true,
+      "isort_first_party": null,
+      "preconditions": [],
+      "issue": 51,
+      "note": null
+    },
+    {
+      "canonical": "atrium_rocrate.py",
+      "dest": "atrium_rocrate.py",
+      "selftest": true,
+      "ruff_format_exclude": true,
+      "isort_first_party": "atrium_rocrate",
+      "preconditions": [],
+      "issue": 54,
+      "note": "sits at the repo root beside atrium_vocab.py, which it imports for concept URIs -- Python puts a script's own directory on sys.path, so --selftest resolves that import from the vendored copy with no PYTHONPATH, exactly as para-drift runs it"
+    },
+    {
+      "canonical": "test_atrium_rocrate.py",
+      "dest": "tests/test_atrium_rocrate.py",
+      "selftest": false,
+      "ruff_format_exclude": true,
+      "isort_first_party": null,
+      "preconditions": [],
+      "issue": 54,
+      "note": null
+    },
+    {
+      "canonical": "check_version.py",
+      "dest": "check_version.py",
+      "selftest": false,
+      "ruff_format_exclude": true,
+      "isort_first_party": "check_version",
+      "preconditions": [],
+      "issue": 18,
+      "note": null
+    },
+    {
+      "canonical": "test_logging_contract.py",
+      "dest": "tests/test_logging_contract.py",
+      "selftest": false,
+      "ruff_format_exclude": true,
+      "isort_first_party": null,
+      "preconditions": [],
+      "issue": 61,
+      "note": "itself a pytest file, run by each repo's ordinary fast lane -- no separate --selftest step"
+    },
+    {
+      "canonical": "test_env_contract.py",
+      "dest": "tests/test_env_contract.py",
+      "selftest": false,
+      "ruff_format_exclude": true,
+      "isort_first_party": null,
+      "preconditions": ["tests/env_contract_data.py"],
+      "issue": 60,
+      "note": "imports a repo-local declaration module that cannot be vendored alongside it -- see PRECONDITIONS' consumer in scripts/revendor_shared.sh"
+    }
+  ]
+}

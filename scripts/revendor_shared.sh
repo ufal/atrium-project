@@ -20,17 +20,20 @@
 # `cp -t`: the tests go to tests/, the service base class goes to service/, and
 # everything else sits at the repo root next to the code that imports it.
 #
-# ADDING A FILE TO docs/templates/shared/ TAKES THREE REGISTRATIONS, and missing
-# any one of them is silent:
-#   1. a row in SHARED_FILES below           — or it travels nowhere;
-#   2. a `diff -u` step in para-drift.reusable.yml — or it is enforced nowhere;
-#   3. a row in the `[format] exclude` list of docs/templates/ruff.toml — or
-#      `ruff format` reflows the vendored copy to the LOCAL line-length (120 in
-#      three repos, 100 in two) and para-drift goes red on the next commit. That
-#      is not hypothetical; it is what happened to test_document_originators.py
-#      on 2026-08-06, and the reason `force-exclude = true` exists.
-# Point 3 is invisible to this script, so it is written here rather than only in
-# the ruff config a maintainer adding a file has no reason to open.
+# ADDING A FILE TO docs/templates/shared/ TAKES ONE REGISTRATION (atrium-project#59):
+# a row in docs/templates/shared/MANIFEST.json. Before #59, it took FOUR separate
+# hand-edits — this script's own SHARED_FILES/PRECONDITIONS/SELFTESTS arrays,
+# para-drift.reusable.yml's `diff -u` steps, and docs/templates/ruff.toml's
+# `[format] exclude` list and `known-first-party` set — and each addition since
+# #51 had updated some but not all of them, which is exactly the drift #59 was
+# opened to close. `ruff format` reflowing a vendored copy to the LOCAL
+# line-length (120 in three repos, 100 in two) is not hypothetical; it is what
+# happened to test_document_originators.py on 2026-08-06 before `force-exclude`
+# and the `[format] exclude` registration existed, and the reason the manifest's
+# `ruff_format_exclude` field exists at all. tests/test_shared_manifest.py (hub)
+# checks the manifest against the directory listing, against ruff.toml, and
+# against para-drift.reusable.yml — the fourth registration is now a test, not a
+# fact someone has to remember.
 #
 # SOME CANONICAL FILES CARRY A --selftest, and para-drift runs it as a step of
 # its own, on the VENDORED copy. Byte-parity alone would not catch a canonical
@@ -69,59 +72,29 @@ ALL_REPOS=(
     atrium-llm-enrich
 )
 
-# canonical filename -> path RELATIVE TO THE TOOL REPO ROOT.
-# Keep in step with para-drift.reusable.yml's diff steps; the two lists are the
-# same contract read from opposite ends (this one writes it, that one enforces
-# it).
-declare -A SHARED_FILES=(
-    ["atrium_paradata.py"]="atrium_paradata.py"
-    ["para_licenses.py"]="para_licenses.py"
-    ["test_para_licenses.py"]="tests/test_para_licenses.py"
-    ["test_document_originators.py"]="tests/test_document_originators.py"
-    ["atrium_service.py"]="service/atrium_service.py"
-    ["healthcheck.py"]="service/healthcheck.py"
-    ["check_version.py"]="check_version.py"
-    ["atrium_document.py"]="atrium_document.py"
-    ["atrium_document.schema.json"]="atrium_document.schema.json"
-    ["atrium_vocab.py"]="atrium_vocab.py"
-    ["atrium_vocab.schema.json"]="atrium_vocab.schema.json"
-    ["test_atrium_vocab.py"]="tests/test_atrium_vocab.py"
-    # atrium-project#54. Sits at the repo root beside atrium_vocab.py, which it
-    # imports for concept URIs — Python puts a script's own directory on sys.path,
-    # so the selftest below resolves that import from the vendored copy without
-    # any PYTHONPATH, exactly as para-drift runs it.
-    ["atrium_rocrate.py"]="atrium_rocrate.py"
-    ["test_atrium_rocrate.py"]="tests/test_atrium_rocrate.py"
-    # atrium-project#61. No --selftest: it is itself a pytest file, run by the
-    # ordinary fast lane in every repo (`pytest -m "not slow"`), so there is no
-    # separate self-test step to register below.
-    ["test_logging_contract.py"]="tests/test_logging_contract.py"
-    # atrium-project#60. Also no --selftest, for the same reason. UNLIKE every other
-    # entry above, this one has a fourth registration — see PRECONDITIONS below — because
-    # it imports a repo-local declaration module that cannot be vendored alongside it.
-    ["test_env_contract.py"]="tests/test_env_contract.py"
-)
+MANIFEST_JSON="$SHARED_DIR/MANIFEST.json"
+MANIFEST_JSON="$SHARED_DIR/MANIFEST.json"
+[[ -f "$MANIFEST_JSON" ]] || {
+    echo "ERROR: manifest not found: $MANIFEST_JSON" >&2
+    exit 1
+}
 
-# Canonical files that import a REPO-LOCAL module this script cannot provide. Copying
-# such a file into a repo that lacks its precondition turns that repo's entire test
-# SUITE into a pytest collection error, which aborts the whole session — the failure
-# hub-self-check.yml's own history records for a missing transitive dependency
-# (:67-79 in that workflow). Checked before every copy, in both --check and write mode,
-# so this script's exit code stays true to its promise ("0 means para-drift would
-# pass") instead of landing a session-aborting import and discovering it five red CI
-# runs later. Keys are canonical filenames (SHARED_FILES keys); values are paths
-# relative to the TOOL REPO ROOT that must already exist.
-declare -A PRECONDITIONS=(
-    ["test_env_contract.py"]="tests/env_contract_data.py"
-)
-
-# Canonical files that carry a `--selftest`, as PATHS RELATIVE TO THE TOOL REPO
-# ROOT (i.e. values from SHARED_FILES, not keys). Mirrors the `--selftest` steps
-# in para-drift.reusable.yml; adding one there means adding it here.
-SELFTESTS=(
-    "atrium_vocab.py"
-    "atrium_rocrate.py"
-)
+# Load the manifest into the same three shapes the rest of this script already
+# used before #59 (SHARED_FILES: canonical -> dest; PRECONDITIONS: canonical ->
+# one repo-relative path; SELFTESTS: a list of dests) — everything below this
+# block is unchanged, only where these three now come FROM changed.
+# tools/shared_manifest.py is the one reader of MANIFEST.json (bash cannot import
+# a Python module, so its --tsv mode is the bridge); tools/skill_drift_check.py
+# and tests/test_shared_manifest.py import it directly instead of going through
+# this CLI.
+declare -A SHARED_FILES=()
+declare -A PRECONDITIONS=()
+SELFTESTS=()
+while IFS=$'\t' read -r canonical dest selftest precondition; do
+    SHARED_FILES["$canonical"]="$dest"
+    [[ "$selftest" == "1" ]] && SELFTESTS+=("$dest")
+    [[ -n "$precondition" ]] && PRECONDITIONS["$canonical"]="$precondition"
+done < <(python3 "$HUB_ROOT/tools/shared_manifest.py" --tsv "$MANIFEST_JSON")
 
 CHECK_ONLY=0
 REPOS=()

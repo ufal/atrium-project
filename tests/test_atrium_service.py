@@ -1,13 +1,20 @@
-"""test_atrium_service.py — unit tests for the canonical service meta-contract (issue #55).
+"""tests/test_atrium_service.py — unit tests for the canonical service meta-contract (issue #55).
 
-Canonical copy lives in the hub at ``docs/templates/shared/`` and is run in place by
-``hub-self-check.yml``'s ``shared-tests`` job (``working-directory:
-docs/templates/shared``), which is also why this file is **not** vendored into the five
-tool repos: `scripts/revendor_shared.sh`'s ``SHARED_FILES`` manifest deliberately excludes
-it, since each repo already exercises ``atrium_service.py`` indirectly through its own
-``tests/test_api_contract.py``. This is the first test any of the hub's four canonical
-shared modules (`atrium_document.py`, `atrium_paradata.py`, `atrium_service.py`,
-`check_version.py`) has had — see `docs/docker_gha_roadmap.md` finding **E9**.
+Lives in the hub's own ``tests/`` (moved here from ``docs/templates/shared/`` by
+atrium-project#59) and is run by the ordinary ``pytest tests/`` invocation in
+``hub-self-check.yml``'s ``shared-tests`` job — no separate working-directory step
+needed any more. It is **not** vendored into the five tool repos, and never was:
+``docs/templates/shared/MANIFEST.json`` — the single list `scripts/revendor_shared.sh`,
+`tools/skill_drift_check.py` and `para-drift.reusable.yml` all read (atrium-project#59)
+— has no entry for it, since each tool repo already exercises ``atrium_service.py``
+indirectly through its own ``tests/test_api_contract.py``. Before #59, that exclusion
+was merely implicit (nothing enumerated this file at all, canonical or not — a
+registered-nowhere state two other issues' plans flagged as an orphan); now it is a
+file that lives outside the vendored directory entirely, which is the more honest
+shape for something meant to be hub-only from the start. This is the first test any
+of the hub's four canonical shared modules (`atrium_document.py`, `atrium_paradata.py`,
+`atrium_service.py`, `check_version.py`) has had — see `docs/docker_gha_roadmap.md`
+finding **E9**.
 
 Every behavioural claim in ``atrium_service.py``'s new (issue #55) surface is covered here:
 readiness before/after warmup and during drain, liveness staying 200 throughout, the deep
@@ -26,7 +33,9 @@ from __future__ import annotations
 
 import asyncio
 import signal
+import sys
 import threading
+from pathlib import Path
 
 import pytest
 
@@ -34,6 +43,12 @@ pytest.importorskip("fastapi")
 
 from fastapi import FastAPI  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
+
+# atrium_service.py is the canonical copy under docs/templates/shared/, not a hub-root
+# module -- this file used to sit BESIDE it (before #59 moved this test into tests/),
+# which is how a bare `from atrium_service import ...` resolved with no path setup at
+# all. Same pattern tests/test_workflow_lint.py already uses for tools/ci/.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "docs" / "templates" / "shared"))
 
 from atrium_service import (  # noqa: E402
     ServiceState,

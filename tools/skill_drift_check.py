@@ -47,6 +47,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+# tools/ is this script's own directory when run as `python3 tools/skill_drift_check.py`
+# (Python puts a script's own directory at sys.path[0]) -- inserted explicitly too, so a
+# test importing this module from elsewhere still finds shared_manifest beside it.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from shared_manifest import load_manifest  # noqa: E402
+
 # Files a trimmed skill branch is *expected* to diverge on — the branch README documents
 # skill installation rather than development, and the container/ignore files are retargeted.
 # Everything else differing is drift worth a human's attention.
@@ -94,14 +100,17 @@ DOCUMENTED_DIVERGENCES = {
     ("atrium-llm-enrich", "service/api.py"): ("same guarded /frontend mount as atrium-translator (2026-09-09)"),
 }
 
-# Guarded byte-identical by the hub's para-drift.reusable.yml.
-SHARED_FILES = (
-    "atrium_paradata.py",
-    "atrium_document.py",
-    "atrium_document.schema.json",
-    "para_licenses.py",
-    "service/atrium_service.py",
-)
+# Guarded byte-identical by the hub's para-drift.reusable.yml. Read from the single
+# manifest (atrium-project#59) rather than a hand-maintained tuple -- the tuple this
+# replaced named 5 of what was, by the time #59 was filed, 16 guarded files: three
+# canonical modules (#51's atrium_vocab.py, #54's atrium_rocrate.py, #18's
+# check_version.py) and six tests/test_*.py files had landed in para-drift.reusable.yml
+# and scripts/revendor_shared.sh without this tuple ever being told. Loading the same
+# manifest those two now also read makes that specific omission structurally
+# impossible: the next file added lands here for free, or the addition is incomplete
+# everywhere at once rather than silently in just this one place.
+_MANIFEST_PATH = Path(__file__).resolve().parent.parent / "docs" / "templates" / "shared" / "MANIFEST.json"
+SHARED_FILES = tuple(entry["dest"] for entry in load_manifest(_MANIFEST_PATH))
 
 REPOS = (
     "atrium-page-classification",
@@ -319,12 +328,33 @@ def check_repo(repo: Path, test_ref: str, skill_ref: str, quiet: bool) -> list:
     # Present on both: must be byte-identical, since para-drift guards them on the default
     # branch. Absent from the skill branch: only a defect when the service actually needs it
     # — dev-only members of the set (para_licenses.py) are legitimately trimmed by §5.
+    #
+    # Going from 5 entries to 16 (atrium-project#59) walked in two shapes the original
+    # `removesuffix(".py") in port_closure or path.startswith("service/")` test cannot
+    # see, and would silently have called both "needed" and "absent" for:
+    #   - a `.schema.json` file: `.removesuffix(".py")` is a no-op on it and it is never
+    #     under `service/`, so the absence branch could NEVER fire -- its owning module
+    #     (atrium_document.schema.json -> atrium_document) is what determines whether the
+    #     service needs it, checked against port_closure the same way a .py module is.
+    #   - a `tests/test_*.py` entry: skill_ify.py's own TRIM_DIRS trims `tests/` from
+    #     EVERY skill branch by design (§5), so its absence must never be a finding --
+    #     unlike the .py/.schema.json cases above, there is no "needed" test for these,
+    #     only the parity check when a copy happens to exist on both refs.
     for path in SHARED_FILES:
         on_test, on_skill = path in test_files, path in skill_files
         if on_test and on_skill:
             if test_tree[path][1] != skill_tree[path][1]:
                 findings.append(f"para-drift-guarded file out of parity: {path}")
-        elif on_test and (path.removesuffix(".py") in port_closure or path.startswith("service/")):
+            continue
+        if not on_test:
+            continue
+        if path.startswith("tests/"):
+            continue
+        if path.endswith(".schema.json"):
+            needed = path[: -len(".schema.json")] in port_closure
+        else:
+            needed = path.removesuffix(".py") in port_closure or path.startswith("service/")
+        if needed:
             findings.append(f"para-drift-guarded file needed by the service but absent: {path}")
 
     return findings, notes

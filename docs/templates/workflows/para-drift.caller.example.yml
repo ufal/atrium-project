@@ -3,16 +3,13 @@
 # Copy to <tool-repo>/.github/workflows/para-drift.yml. No inputs are required.
 #
 # The reusable checks out this repo AND the hub, then `diff -u`s every canonical
-# shared file against docs/templates/shared/. It is what keeps the ecosystem's
-# copies genuinely identical rather than nominally shared:
-#
-#     atrium_paradata.py            para_licenses.py
-#     tests/test_para_licenses.py   service/atrium_service.py
-#     atrium_document.py            atrium_document.schema.json
-#     check_version.py              (added 2026-07-30, #18)
+# shared file against docs/templates/shared/ — reading the single list at
+# docs/templates/shared/MANIFEST.json (atrium-project#59), currently 16 files, not
+# a fixed list hand-copied into this comment. That list grows independently of
+# this template; see MANIFEST.json itself for what it holds today.
 #
 # A failure here means someone edited a vendored copy. Fix it by editing the HUB
-# copy and re-vendoring — never the other way round.
+# copy and re-vendoring (scripts/revendor_shared.sh) — never the other way round.
 
 name: Paradata Canonical Drift
 

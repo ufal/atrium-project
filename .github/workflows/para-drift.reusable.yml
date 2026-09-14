@@ -41,116 +41,50 @@ jobs:
           ref: ${{ inputs.hub-ref }}
           path: hub-repo
 
-      - name: Verify atrium_paradata.py parity
-        run: diff -u tool-repo/atrium_paradata.py hub-repo/docs/templates/shared/atrium_paradata.py
 
-      - name: Verify para_licenses.py parity
-        run: diff -u tool-repo/para_licenses.py hub-repo/docs/templates/shared/para_licenses.py
-
-      - name: Verify test_para_licenses.py parity
-        run: diff -u tool-repo/tests/test_para_licenses.py hub-repo/docs/templates/shared/test_para_licenses.py
-
-      - name: Verify tests/test_document_originators.py parity (issue #10, D9)
-        # The §1a origin contract's only substantive test. It lived in ONE repo
-        # (llm-enrich) while docs/document_schema.md and atrium_document.py both
-        # cited it as what "pins" the contract — so the hub could not run the test
-        # guarding the standard it authors, and the other four repos had no origin
-        # coverage at all. Promoted to the canonical set and enforced here, exactly
-        # like test_para_licenses.py above. Edit the hub copy, never a vendored one;
-        # scripts/revendor_shared.sh does the copy.
-        run: diff -u tool-repo/tests/test_document_originators.py hub-repo/docs/templates/shared/test_document_originators.py
-
-      - name: Verify service/atrium_service.py parity (issue #32, strategy §4)
-        run: diff -u tool-repo/service/atrium_service.py hub-repo/docs/templates/shared/atrium_service.py
-
-      - name: Verify service/healthcheck.py parity (issue #55)
-        # The Docker HEALTHCHECK probe body. Kept canonical for the same reason as
-        # atrium_service.py above: a hand-rolled per-repo probe is exactly the kind of
-        # near-identical drift this mechanism exists to prevent. Edit the hub copy,
-        # never a vendored one; scripts/revendor_shared.sh does the copy.
-        run: diff -u tool-repo/service/healthcheck.py hub-repo/docs/templates/shared/healthcheck.py
-
-      - name: Verify atrium_document.py parity
-        run: diff -u tool-repo/atrium_document.py hub-repo/docs/templates/shared/atrium_document.py
-
-      - name: Verify atrium_document.schema.json parity
-        run: diff -u tool-repo/atrium_document.schema.json hub-repo/docs/templates/shared/atrium_document.schema.json
-
-      - name: Verify atrium_vocab.py parity (issue #51)
-        # The controlled-label registry. Byte-parity matters more here than for most
-        # canonical files: the module IS the declaration of which label values are
-        # legal in `lines[].categ`, `pages[].category` and friends, so a repo running a
-        # stale copy would validate its output against a label set nobody else agrees
-        # with -- the exact drift the registry was written to end. Edit the hub copy,
-        # never a vendored one; scripts/revendor_shared.sh does the copy.
-        run: diff -u tool-repo/atrium_vocab.py hub-repo/docs/templates/shared/atrium_vocab.py
-
-      - name: Verify atrium_vocab.schema.json parity (issue #51)
-        run: diff -u tool-repo/atrium_vocab.schema.json hub-repo/docs/templates/shared/atrium_vocab.schema.json
-
-      - name: Verify tests/test_atrium_vocab.py parity (issue #51)
-        # Canonical for the same reason as test_document_originators.py: the registry is
-        # a cross-repo contract, so the test pinning it has to run everywhere the
-        # contract is relied on, not only in the repo that authored it.
-        run: diff -u tool-repo/tests/test_atrium_vocab.py hub-repo/docs/templates/shared/test_atrium_vocab.py
-
-      - name: Registry self-test (issue #51)
-        # Cheap, hermetic, stdlib-only: proves the vendored registry's own tables are
-        # internally consistent and that both serialisations still render. A parity
-        # diff proves the bytes match; this proves the bytes are not matching garbage.
-        run: python3 tool-repo/atrium_vocab.py --selftest
-
-      - name: Verify atrium_rocrate.py parity (issue #54)
-        # Registered in revendor_shared.sh's SHARED_FILES and SELFTESTS from the start,
-        # but never here or in the ruff `[format] exclude` list — two of the three
-        # registrations that script's header warns are "silent" if missed. Both went
-        # missing at once, and the result was the failure mode the header predicts:
-        # nlp-enrich's copy was reflowed to its local line-length (100 against 120 in
-        # three other repos) and sat 92 lines from canonical with nothing looking.
-        run: diff -u tool-repo/atrium_rocrate.py hub-repo/docs/templates/shared/atrium_rocrate.py
-
-      - name: RO-Crate exporter self-test (issue #54)
-        # SELFTESTS in revendor_shared.sh has listed this since the file was added; the
-        # step it mirrors did not exist. Same reasoning as the registry self-test above.
-        run: python3 tool-repo/atrium_rocrate.py --selftest
-
-      - name: Verify tests/test_atrium_rocrate.py parity (issue #54)
-        # The exporter shipped with no test anywhere in the ecosystem — 319 statements
-        # vendored into five repos, and atrium-translator's coverage ratchet (81, the
-        # strictest) was the only thing that noticed, failing at 72.90%. Enforced here
-        # like test_document_originators.py above, so the module and the test that
-        # covers it travel together. Edit the hub copy, never a vendored one;
-        # scripts/revendor_shared.sh does the copy.
-        run: diff -u tool-repo/tests/test_atrium_rocrate.py hub-repo/docs/templates/shared/test_atrium_rocrate.py
-
-      - name: Verify check_version.py parity (issue #18)
-        # The release gate and security.reusable.yml's version-check both run this
-        # vendored script. It replaced ~360 lines of copy-pasted inline python that
-        # had already drifted between call sites; this step is what stops it
-        # drifting again. Edit the hub copy, never a vendored one.
-        run: diff -u tool-repo/check_version.py hub-repo/docs/templates/shared/check_version.py
-
-      - name: Verify tests/test_logging_contract.py parity (issue #61)
-        # Static regression guard for factor XI (logs as an event stream): no
-        # basicConfig() outside a __main__ block, no print() in a service library
-        # module, LOG_LEVEL actually read, LOG_LEVEL actually controlling something.
-        # Registered in revendor_shared.sh's SHARED_FILES and in the ruff `[format]
-        # exclude` list too -- see the atrium_rocrate.py step above for what happens
-        # when one of the three registrations is missed instead of all together.
-        # Edit the hub copy, never a vendored one; scripts/revendor_shared.sh does
-        # the copy.
-        run: diff -u tool-repo/tests/test_logging_contract.py hub-repo/docs/templates/shared/test_logging_contract.py
-
-      - name: Verify tests/test_env_contract.py parity (issue #60)
-        # The env-var contract guard: .env.example names are a superset of the
-        # service-layer reads, defaults match the code, service/README.md agrees, and
-        # a fixed set of names read via the three para-drift-canonical modules above
-        # (atrium_paradata.py, service/atrium_service.py, service/healthcheck.py) plus
-        # the entrypoint's __main__ block is always found -- so a scanner that has
-        # stopped scanning cannot pass. Registered in revendor_shared.sh's
-        # SHARED_FILES and in the ruff `[format] exclude` list, same as every entry
-        # above. UNLIKE those, this file also has a PRECONDITIONS entry in
-        # revendor_shared.sh, because it imports a repo-local tests/env_contract_data.py
-        # this workflow cannot provide -- see that script's own comment for why. Edit
-        # the hub copy, never a vendored one.
-        run: diff -u tool-repo/tests/test_env_contract.py hub-repo/docs/templates/shared/test_env_contract.py
+      - name: Verify canonical shared files (atrium-project#59)
+        # One loop over docs/templates/shared/MANIFEST.json instead of sixteen
+        # near-identical `diff -u` steps hand-written one per file (roadmap D5:
+        # "seven near-identical diff -u steps ... over a hardcoded file list").
+        # tools/shared_manifest.py is the manifest's one reader -- scripts/
+        # revendor_shared.sh and tools/skill_drift_check.py both use it too, via
+        # the same --tsv CLI shape this step uses, so this step, that script and
+        # that tool cannot drift relative to each other the way the sixteen
+        # hand-written steps below this comment (in every commit before this one)
+        # drifted from tools/skill_drift_check.py's SHARED_FILES tuple for weeks
+        # (atrium-project#59). Every entry the manifest names -- byte-parity
+        # always, and a `--selftest` run on the VENDORED copy for the two entries
+        # (atrium_vocab.py, atrium_rocrate.py) the manifest marks selftest: true,
+        # exactly as scripts/revendor_shared.sh runs them.
+        #
+        # Adding a canonical file is now one row in the manifest -- see that
+        # file's own header comment for what used to be four hand-edits instead.
+        run: |
+          set -euo pipefail
+          fail=0
+          while IFS=$'\t' read -r canonical dest selftest _precondition; do
+            src="hub-repo/docs/templates/shared/$canonical"
+            dst="tool-repo/$dest"
+            echo "::group::$dest"
+            if [ ! -f "$dst" ]; then
+              echo "MISSING: tool-repo has no $dest"
+              fail=1
+              echo "::endgroup::"
+              continue
+            fi
+            if ! diff -u "$dst" "$src"; then
+              echo "MISMATCH: $dest differs from the canonical $canonical"
+              fail=1
+            else
+              echo "ok: $dest matches the canonical $canonical"
+            fi
+            if [ "$selftest" = "1" ]; then
+              echo "-- self-test: python3 $dst --selftest"
+              if ! python3 "$dst" --selftest; then
+                echo "SELFTEST FAILED: $dest"
+                fail=1
+              fi
+            fi
+            echo "::endgroup::"
+          done < <(python3 hub-repo/tools/shared_manifest.py --tsv hub-repo/docs/templates/shared/MANIFEST.json)
+          exit "$fail"
