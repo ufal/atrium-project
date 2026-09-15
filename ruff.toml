@@ -19,12 +19,11 @@ extend-exclude = [
     ".ruff_cache/",
 ]
 
-# Hub-only, same reasoning as the four tool repos that already declare this as a
-# superset of the (unset) template floor: pins the syntax Ruff lints against to
-# python:3.11-slim, which every image in the ecosystem ships and every CI lane
-# now runs (atrium-project#64). Not in docs/templates/ruff.toml itself -- that
-# file is a FLOOR every tool repo copies, and raising the floor is a bigger
-# change than this issue asks for.
+# Same reasoning as the five tool repos, all of which declare this: pins the syntax
+# Ruff lints against to python:3.11-slim, which every image in the ecosystem ships
+# and every CI lane now runs (atrium-project#64). docs/templates/ruff.toml now
+# declares it too, as the floor every tool repo copies -- this repeats it here
+# because the hub root config does not extend that template.
 target-version = "py311"
 
 # NOTE: the isort `known-first-party` declaration for the canonical shared modules

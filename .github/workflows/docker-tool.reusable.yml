@@ -345,7 +345,7 @@ jobs:
       - name: Smoke Build
         # SHA-pinned (#18): build actions execute arbitrary build logic and, in the
         # publishing job below, hold registry push credentials.
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a  # v7
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a  # v7.3.0
         with:
           context: .
           # Every ATRIUM Dockerfile names its first stage `AS base`, so the
@@ -550,6 +550,56 @@ jobs:
           echo
           echo "non-default port honoured end to end"
 
+      - name: Run container bound to HOST=127.0.0.1 (issue #58)
+        # $PORT's sibling knob. HOST is proved the same way PORT was above: bind the
+        # listener to the loopback interface only, and show the effect from both sides —
+        # the in-container HEALTHCHECK (which probes 127.0.0.1 regardless, per
+        # service/healthcheck.py's own comment) must still report healthy, while the
+        # PUBLISHED interface, which is what a misconfigured HOST is supposed to close
+        # off, must stop answering. Reversing either half would prove nothing: healthy
+        # alone doesn't show HOST took effect (the in-container probe never used the
+        # public interface anyway), and an unreachable curl alone doesn't rule out the
+        # container simply failing to start.
+        if: contains(fromJSON(inputs.probe-targets), matrix.target)
+        env:
+          IMAGE: atrium-smoke/${{ inputs.image-name }}:${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          cid=$(docker run -d -e HOST=127.0.0.1 -p 18081:8000 "$IMAGE")
+          echo "container: $cid (HOST=127.0.0.1)"
+          trap 'docker logs "$cid" || true; docker rm -f "$cid" >/dev/null 2>&1 || true' EXIT
+
+          echo "Waiting for HEALTHCHECK to report healthy with HOST=127.0.0.1..."
+          # Same 330s budget as the PORT step above, same reasoning.
+          deadline=$((SECONDS + 330))
+          status="starting"
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            status=$(docker inspect --format='{{.State.Health.Status}}' "$cid" 2>/dev/null || echo starting)
+            [ "$status" = "healthy" ] && break
+            if [ "$status" = "unhealthy" ]; then
+              echo "container reported unhealthy at HOST=127.0.0.1: the in-container probe" >&2
+              echo "could not reach the listener even on loopback, which HOST=127.0.0.1" >&2
+              echo "should never break" >&2
+              exit 1
+            fi
+            sleep 5
+          done
+          if [ "$status" != "healthy" ]; then
+            echo "container did not report healthy with HOST=127.0.0.1 within the timeout" >&2
+            echo "(last status: $status)." >&2
+            exit 1
+          fi
+          echo "container is healthy with HOST=127.0.0.1"
+
+          # The negative half: the published interface must NOT answer. --max-time bounds
+          # the curl so a hang reads as a fast, clear failure rather than a timed-out job.
+          if curl -sf --max-time 5 http://127.0.0.1:18081/health >/dev/null 2>&1; then
+            echo "container answered on the published interface with HOST=127.0.0.1 set —" >&2
+            echo "the listener is still bound to all interfaces, i.e. HOST is not honoured" >&2
+            exit 1
+          fi
+          echo "published interface correctly unreachable; HOST=127.0.0.1 honoured end to end"
+
       - name: Run container with LOG_LEVEL=WARNING and assert INFO is suppressed (issue #61)
         # The end-to-end half of #61's second acceptance criterion: "LOG_LEVEL=DEBUG
         # docker run … visibly changes output volume". This is the WARNING direction —
@@ -738,7 +788,7 @@ jobs:
       - name: Build and push
         id: build
         # SHA-pinned (#18) — this invocation pushes to GHCR with packages:write.
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a  # v7
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a  # v7.3.0
         with:
           context: .
           target: ${{ matrix.target }}

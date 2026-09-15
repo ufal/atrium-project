@@ -1,6 +1,16 @@
 # Base Ruff configuration for ATRIUM tools
 line-length = 120
 
+# target-version pins the syntax Ruff lints against to python:3.11-slim, the base image
+# every repo in the ecosystem ships and every CI lane now runs (atrium-project#64). This was
+# left unset here on the theory that the template is a FLOOR the five repos exceed as a
+# superset -- all five already declare "py311" themselves, each saying so in a comment next
+# to it. But the template is also what a NEW repo copies on day one, and an unset floor means
+# a sixth repo starts with no pin at all until someone remembers to add one by hand -- the
+# same class of gap #64's Python-version sweep found and fixed everywhere else. Declared here
+# now so the floor actually floors; still a value a repo is free to raise.
+target-version = "py311"
+
 # Apply exclude/extend-exclude even to paths passed EXPLICITLY on the command line.
 #
 # Without this the [format] exclude below is inert in the one place it has to work:

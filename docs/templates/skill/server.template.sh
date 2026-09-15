@@ -54,6 +54,37 @@ start_docker() {
     docker compose "$@" --profile api up -d      # <or: docker compose up -d api>
 }
 
+# Resolve the GPU overlay flags at runtime instead of hardcoding an extension: three of
+# the five ATRIUM repos use docker-compose.yml/.gpu.yml, two use .yaml/.gpu.yaml, and a
+# copy of this template that assumes one extension silently fails --gpu in the other two
+# (atrium-project docker_gha_roadmap.md B7). Never globs recursively, so a subdirectory
+# compose file for an unrelated deployment (e.g. an annotation/ campaign stack) is never
+# picked up here -- only the repo-root files this script itself cd'd into (see cd
+# "$REPO_ROOT" above) are candidates.
+gpu_compose_args() {
+    # Populates the global GPU_COMPOSE_ARGS array in-process (not via a
+    # < <(...) process substitution) so that the `exit 1` below actually stops
+    # this script instead of only killing a subshell and silently falling
+    # through to `docker compose up` with no -f flags at all.
+    local base="" ext overlay
+    for ext in yml yaml; do
+        if [ -f "docker-compose.${ext}" ]; then
+            base="docker-compose.${ext}"
+            break
+        fi
+    done
+    if [ -z "$base" ]; then
+        echo "No docker-compose.yml or docker-compose.yaml at the repo root; cannot start." >&2
+        exit 1
+    fi
+    overlay="docker-compose.gpu.${base##*.}"
+    if [ ! -f "$overlay" ]; then
+        echo "No GPU overlay (${overlay}) in this repo -- --gpu is not available here." >&2
+        exit 1
+    fi
+    GPU_COMPOSE_ARGS=(-f "$base" -f "$overlay")
+}
+
 start_local() {
     echo "🐍 Starting local uvicorn server..."
     if [ ! -d "<venv-dir>" ]; then
@@ -67,7 +98,10 @@ start_local() {
 }
 
 case "$MODE" in
-    gpu)   start_docker -f docker-compose.yml -f docker-compose.gpu.yml ;;
+    gpu)
+        gpu_compose_args
+        start_docker "${GPU_COMPOSE_ARGS[@]}"
+        ;;
     local) start_local ;;
     auto)
         if command -v docker > /dev/null 2>&1 && docker info > /dev/null 2>&1; then

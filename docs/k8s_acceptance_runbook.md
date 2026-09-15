@@ -29,6 +29,15 @@ Kubernetes," so validating it is necessarily out-of-band.
 3. **`ALLOWED_ORIGINS` defaults to `*`.** If the acceptance cluster is reachable from a
    browser on a network where that matters, set it in the manifest before applying, not
    after.
+4. **`replicas: 1` is the template default, and it is not safe to raise for every repo.**
+   Raising it is fine for translator, page-classification, alto-postprocess and
+   llm-enrich once your own load-balancing is in place. **Not for nlp-enrich**: its job
+   registry (`service/jobs.py`) is in-memory and per-replica, so a client polling
+   `GET /jobs/<id>` (the smoke request below) can land on a *different* replica than the
+   one that ran the job — which reads as 404, not "still running." Keep nlp-enrich at
+   one replica, or expect that smoke request to fail intermittently for a reason that has
+   nothing to do with the image. See `k8s_deployment.md` §"Known limits" for the full
+   note.
 
 ## Shared procedure (every repo)
 
@@ -124,13 +133,13 @@ restart proves nothing about draining.
 
 ## Results log (fill in)
 
-| Repo                | Deploys clean | Probes behave | Rolling restart drops nothing | Non-default `PORT` | Env contract honoured | Notes |
-|---------------------|---------------|---------------|-------------------------------|--------------------|-----------------------|-------|
-| page-classification | ☐             | ☐             | ☐                             | ☐                  | ☐                     |       |
-| alto-postprocess    | ☐             | ☐             | ☐                             | ☐                  | ☐                     |       |
-| translator          | ☐             | ☐             | ☐                             | ☐                  | ☐                     |       |
-| nlp-enrich          | ☐             | ☐             | ☐                             | ☐                  | ☐                     |       |
-| llm-enrich          | ☐             | ☐             | ☐                             | ☐                  | ☐                     |       |
+| Repo                | Deploys clean | Probes behave | Rolling restart drops nothing | Non-default `PORT` | Env contract honoured | Notes        |
+|---------------------|---------------|---------------|-------------------------------|--------------------|-----------------------|--------------|
+| page-classification | ☐             | ☐             | ☐                             | ☐                  | ☐                     |              |
+| alto-postprocess    | ☐             | ☐             | ☐                             | ☐                  | ☐                     |              |
+| translator          | ☐             | ☐             | ☐                             | ☐                  | ☐                     |              |
+| nlp-enrich          | ☐             | ☐             | ☐                             | ☐                  | ☐                     | replicas: 1? |
+| llm-enrich          | ☐             | ☐             | ☐                             | ☐                  | ☐                     |              |
 
 > Record in Notes the values you set for criterion 4, and for llm-enrich the backend you used.
 

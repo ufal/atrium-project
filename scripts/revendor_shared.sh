@@ -73,7 +73,6 @@ ALL_REPOS=(
 )
 
 MANIFEST_JSON="$SHARED_DIR/MANIFEST.json"
-MANIFEST_JSON="$SHARED_DIR/MANIFEST.json"
 [[ -f "$MANIFEST_JSON" ]] || {
     echo "ERROR: manifest not found: $MANIFEST_JSON" >&2
     exit 1
