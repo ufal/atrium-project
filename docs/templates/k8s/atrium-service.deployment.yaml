@@ -18,9 +18,23 @@ metadata:
     app.kubernetes.io/name: atrium-<tool>-api
     app.kubernetes.io/part-of: atrium
 spec:
-  replicas: 1                        # raise once a repo's job/state model is verified
-                                      # safe under >1 replica — see the nlp-enrich note
-                                      # in docs/k8s_deployment.md §"Known limits".
+  # SAFE TO RAISE for translator, page-classification, alto-postprocess and llm-enrich:
+  # all four are stateless per request (each uses a tempfile.TemporaryDirectory that dies
+  # with the request), so any replica can serve any request.
+  #
+  # NOT SAFE TO RAISE for atrium-nlp-enrich, which is the one stateful service in the set.
+  # Its job registry is a process-local dict (service/jobs.py) and its workspaces are on
+  # container-local disk under API_JOBS_ROOT (service/enrichment.py), so `GET /jobs/<id>`
+  # only resolves on the replica that accepted the `POST`. A second replica answers 404
+  # for a job that is running fine next door — which reads as a broken service rather than
+  # as a replica-count problem, and is untraceable from the response alone.
+  #
+  # This file is ONE manifest handed over for all five services, so the constraint has to
+  # travel with it: a reader who only ever sees this file would otherwise conclude all five
+  # scale identically. Full note in docs/k8s_deployment.md §"Known limits"; the acceptance
+  # runbook repeats it at docs/k8s_acceptance_runbook.md §"Before you start" item 4.
+  # (atrium-project#53 factors VI/VIII, ufal/atrium-nlp-enrich#35)
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:

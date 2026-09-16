@@ -17,7 +17,8 @@
     "  ruff_format_exclude true if docs/templates/ruff.toml's [format] exclude (and each",
     "                      tool repo's own copy of that list) must name `dest` -- i.e. this",
     "                      is a .py file at all; the two .schema.json entries are not",
-    "  isort_first_party   the module name for docs/templates/ruff.toml's", "                      [lint.isort] known-first-party, or null if `dest` is not an",
+    "  isort_first_party   the module name for docs/templates/ruff.toml's",
+    "                      [lint.isort] known-first-party, or null if `dest` is not an",
     "                      importable top-level module (a test file, a .schema.json)",
     "  preconditions       repo-relative paths this file's OWN tests need that are NOT",
     "                      vendored alongside it (revendor_shared.sh's PRECONDITIONS map)",
@@ -182,9 +183,21 @@
       "selftest": false,
       "ruff_format_exclude": true,
       "isort_first_party": null,
-      "preconditions": ["tests/env_contract_data.py"],
+      "preconditions": [
+        "tests/env_contract_data.py"
+      ],
       "issue": 60,
       "note": "imports a repo-local declaration module that cannot be vendored alongside it -- see PRECONDITIONS' consumer in scripts/revendor_shared.sh"
+    },
+    {
+      "canonical": "test_dockerfile_security_layer.py",
+      "dest": "tests/test_dockerfile_security_layer.py",
+      "selftest": false,
+      "ruff_format_exclude": true,
+      "isort_first_party": null,
+      "preconditions": [],
+      "issue": 53,
+      "note": "pins the apt-get upgrade layer that keeps the release gate passable -- the perl-base CRITICALs that blocked translator v1.0.0-beta and nlp-enrich v0.20.2 published both by digest with no :latest tag"
     }
   ]
 }

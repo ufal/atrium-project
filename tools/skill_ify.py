@@ -33,9 +33,32 @@ import subprocess
 import sys
 from pathlib import Path
 
+# tools/ is this script's own directory when run as `python3 tools/skill_ify.py`; inserted
+# explicitly too, so importing this module from elsewhere still finds its neighbour. The
+# reachability answer has exactly one implementation, in skill_drift_check.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from shared_manifest import load_manifest  # noqa: E402
+from skill_drift_check import runtime_closure  # noqa: E402
+
+_MANIFEST_PATH = Path(__file__).resolve().parent.parent / "docs" / "templates" / "shared" / "MANIFEST.json"
+
+
+def _canonical_dests() -> set:
+    """Tool-repo paths of the para-drift canonical files, from the single manifest (#59)."""
+    try:
+        return {entry["dest"] for entry in load_manifest(_MANIFEST_PATH)}
+    except (OSError, ValueError):  # running against a checkout without the manifest
+        return set()
+
+
 # §5 "Removed relative to the default branch" — anything a *running* skill does not need.
 TRIM_DIRS = (
     "tests/",
+    # §5 names "dev-only frontends" for removal. The LINDAT frontend is the deployment-
+    # specific one; service/frontend/ is the skill's own and is overlay-protected above.
+    # It survived on three branches only because OVERLAY_DIRS' bare "service/frontend"
+    # prefix matched it -- see the note there.
+    "service/frontend-lindat/",
     "data_samples/",
     "agent_dev_logs/",
     "tools/",
@@ -63,7 +86,10 @@ KEEP_WORKFLOW = ".github/workflows/skill-validate.yml"
 
 # Paths authored on the skill branch — never derived from the default branch, always
 # carried across as-is even when the default branch has a file of the same name.
-OVERLAY_DIRS = ("scripts/", "small_data_samples/", "service/frontend")
+# The trailing slash on service/frontend/ is load-bearing. As a bare prefix it also matched
+# `service/frontend-lindat/`, so the dev-only LINDAT frontends were treated as protected
+# overlay and survived on three branches despite §5 naming "dev-only frontends" for removal.
+OVERLAY_DIRS = ("scripts/", "small_data_samples/", "service/frontend/")
 OVERLAY_FILES = ("SKILL.md", "README.md", "service/README.md", KEEP_WORKFLOW)
 
 
@@ -107,12 +133,46 @@ def derive(repo: Path, test_ref: str, skill_ref: str) -> dict:
     one of those is a human decision (§12.2), so the transform proposes deleting only what
     the §5 trim list names.
     """
-    derived = {path: sha for path, sha in tree(repo, test_ref).items() if not is_trimmed(path) and not is_overlay(path)}
+    test_tree = tree(repo, test_ref)
+    derived = {path: sha for path, sha in test_tree.items() if not is_trimmed(path) and not is_overlay(path)}
+
+    # ALLOWLIST pass (2026-09-16). Everything above is a DENYLIST: it starts from the whole
+    # default-branch tree and subtracts TRIM_DIRS/TRIM_FILES, so any file nobody thought to
+    # name survives -- which is why `run.py` (46 KB) and `parallel_best.py` (24 KB, imported
+    # only by run.py) sat on the page-classification skill branch, and why `plan` reported
+    # "0 to delete" for every repo. skill_drift_check.runtime_closure already computed the
+    # answer; the two tools sat in the same directory and did not talk.
+    #
+    # A .py file is kept only if the service, the §6 client, or the branch's own docs
+    # reference it, transitively. That last clause is what keeps `run.py`: README.md and
+    # service/README.md document `python3 run.py --hf -rev vX.3` in backticks, so it IS
+    # reachable and the two tools agree. Delete those doc lines and both agree it should go
+    # -- which is the honest order of operations, since dropping a documented file would
+    # otherwise turn skill-validate's referenced-path step red.
+    keep = runtime_closure(repo, test_ref, set(test_tree), universe=set(test_tree))
+    # para-drift's canonical files are held for ECOSYSTEM parity, not because this service
+    # imports them -- `atrium_vocab.py` is reached only through a try/except ImportError in
+    # model_registry.py, so the closure correctly calls it unreachable. Trimming it anyway
+    # would set this tool against docs/templates/shared/MANIFEST.json, and
+    # skill_drift_check's shared-files block already tolerates a canonical file being absent
+    # from a skill branch when the service does not need it. Leave that call to a human.
+    canonical = _canonical_dests()
+    derived = {
+        path: sha
+        for path, sha in derived.items()
+        if not path.endswith(".py") or path in keep or path in canonical or path.startswith(("service/", "scripts/"))
+    }
+
     for path, sha in tree(repo, skill_ref).items():
         if is_trimmed(path):
             continue
-        # Overlay wins outright; anything else skill-only is carried across untouched.
-        if is_overlay(path) or path not in derived:
+        # Overlay wins outright; anything else SKILL-AUTHORED is carried across untouched.
+        # The test is `not in test_tree` (skill-authored), not `not in derived`: the latter
+        # also resurrected every file the allowlist had just trimmed, which is why `plan`
+        # still said "0 to delete" after the allowlist landed. This matches what this
+        # function's docstring always claimed -- "files the skill branch carries that the
+        # DEFAULT BRANCH does not are kept".
+        if is_overlay(path) or path not in test_tree:
             derived[path] = sha
     return derived
 

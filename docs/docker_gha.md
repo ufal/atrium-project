@@ -177,6 +177,18 @@ linter has no rule for it (roadmap **E3**).
 
 ## 3. Container and image conventions
 
+> 📎 **Reference Dockerfile: [`docs/templates/Dockerfile`](templates/Dockerfile).** The shape every tool
+> repo's `Dockerfile` follows — provenance ARGs, the build-time security-patch layer, the non-root
+> `atrium` user at uid 10001, and the `api` stage's `EXPOSE`/`STOPSIGNAL`/`ENV PORT`/`ENTRYPOINT`/
+> `HEALTHCHECK` block. It is a template, **not** a para-drift canonical file: the five real Dockerfiles
+> differ in stage count, apt packages and torch index, so holding them byte-identical would be a lie.
+>
+> It is still a *tested* template, which is the point. `docs/templates/shared/test_dockerfile_security_layer.py`
+> (canonical file #17) is vendored into all five repos' `tests/` and also runs against this template from
+> `hub-self-check.yml`'s "Run canonical shared-module tests" step — where its `REPO_ROOT` resolves to
+> `docs/templates/`. So the same five assertions guard the template and the five real files, and a change
+> here that a tool repo could not copy fails in the hub first.
+
 ### 3.1 Image names
 
 `docker-tool.reusable.yml` publishes with a **repo-name suffix** per build target:
