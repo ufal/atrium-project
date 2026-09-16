@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 21 open issues. `test`==`main` HEAD `bbcdf58` (2026-09-09) · tag `v1` moving with it._
+> _Hub/planning repo. 21 open issues. `test`==`main` HEAD `5315455` (2026-09-15) · tag `v1` moving with it — **note the pending retag window**: #59's and #60's changes to what `para-drift.reusable.yml` enforces, plus 2026-09-16's canonical file #17, must land in the hub and all five tool repos before `v1` moves._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0709.md` (prior: `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -717,3 +717,81 @@ derived reading aid in `agent_dev_logs/`._
   supply; a deliberate `ENTRYPOINT` break to confirm the lane is now sensitive to what it claims to
   test; and closing alto#50 (🟢 since 2026-09-11) on GitHub. Full detail:
   `digests/62.digest.md` · `plans/62.plan.md` · `docs/docker_gha_roadmap.md` §9.
+
+## 2026-09-16
+
+- **The release gate blocked a second repo, for the same three CVEs, and the fix had never been ported.**
+  `atrium-nlp-enrich` `v0.20.2` (run 34970419474) failed *"Fail the release on fixable CRITICAL
+  vulnerabilities"* on **all three** matrix targets — `perl-base` 5.40.1-6 carrying CVE-2026-13221,
+  CVE-2026-42496 and CVE-2026-8376, all fixed upstream in 5.40.1-6+deb13u1. Promotion is
+  `if: success()`, so the release published **by digest only**: `:0.20.2` and `:latest` were never
+  applied.
+
+  The gate is `if: startsWith(github.ref, 'refs/tags/')`, which is why the identical commit `0aaff7e`
+  passed on `master` and on `test` and failed only on the tag — the failure is invisible right up until
+  a release. `atrium-translator` had hit this on 2026-09-13 with `v1.0.0-beta`, fixed it with a
+  cache-bust-anchored `apt-get upgrade` (`Dockerfile:15-42`, naming these exact CVEs), and released
+  `v1.1.0-beta` green on 09-14. `grep -rn "apt-get upgrade" atrium-*/Dockerfile` matched **translator
+  alone**: the remaining four repos were each one tag away from the identical failure.
+
+  Ported to nlp-enrich, llm-enrich, page-classification and alto-postprocess, merged into the existing
+  apt layer so there is one `apt-get update` per image. `tests/test_dockerfile_security_layer.py` pins
+  the two invisible properties — the layer sits below the `ATRIUM_RUNNER_REF` `ENV` (or `cache-from:
+  type=gha` serves it forever and it silently stops patching) and above `USER atrium` (apt needs root)
+  — and was **verified by breaking it**, twice, per this ecosystem's standard.
+
+  Promoted to **para-drift canonical file #17** (`docs/templates/shared/MANIFEST.json`), which is #59's
+  machinery doing exactly what it was built for: one manifest row plus one `ruff.toml` entry, and all
+  three consumers pick it up. Made a ruff-format fixed point at line-length **100 and 120** so a missing
+  exclude cannot split it into two variants the way it split `test_document_originators.py` on 08-05.
+  nlp-enrich bumped `0.20.2` → `0.20.3`; the `v0.20.2` tag is left where it is.
+
+- **`--best` cannot move to `v*.4` yet, and the reason is upstream.** All five `v*.4` revisions of
+  `ufal/vit-historical-page` serve the **same** `regnety_160` checkpoint — identical 322,925,148-byte
+  `model.safetensors`, `"architecture": "regnety_160"` in every `config.json` — against a correctly
+  heterogeneous `v*.3` control (v1.3 `tf_efficientnetv2_m`; v2.3 ViT `hidden_size` 768; v5.3 ViT 1024,
+  1,214,854,652 B). A bogus `@v9.9` is rejected, so the refs exist; they just do not hold what
+  `REVISION_TO_BASE_MODEL` declares. Only `v4.4` is what its name says.
+
+  This would have failed **silently**: `run.py --best` and the API's `version="all"` would average one
+  model with itself five times, return well-formed Top-N predictions, and report "Ensemble (Average of
+  5 Models)". `tests/test_best_ensemble_distinct.py` is the standing guard (static half offline, Hub
+  half skipping on any transport error so it cannot flake);
+  `data_scripts/unix/hf_reupload_v4_revisions.sh` is the repair — dry-run by default, and it refuses to
+  push a checkpoint whose `config.json` disagrees with the registry, which is the check that was missing
+  the first time.
+
+  Also settled while here: `model_accuracies_new.csv` is **not** stale. It records a different
+  namespace — the per-candidate sweep (`v7.3.1` = regnety_160) — while the published ensemble renumbered
+  the five winners (`v4.3` = regnety_160). The two collide on `v1.3` and `v4.3`, and exact-key-first
+  resolution is what keeps it correct. Documented in `model_registry.py` rather than "fixed".
+
+- **The `agent-skill` branches were fetched for the first time, and three are broken as shipped.**
+  `skill_drift_check.py` had never run against them (no clone had `origin/agent-skill`), which is
+  #59's last unchecked box. It reports **0/5 aligned** — and once its two blind spots were closed
+  (relative imports were skipped outright; package submodules and `subprocess`/shell invocations were
+  unrepresentable), **seven genuinely missing files**, each verified by hand:
+  nlp-enrich lacks `api_util/{document_hook,teitok_read,validate_teitok_xml}.py`; llm-enrich lacks
+  `api_util/{doc_to_visual_md,layout_md}.py` — and its own `SKILL.md:130` tells the agent to run
+  `api_util/xml_to_md.py`, which imports `layout_md`; page-classification's `run.py` imports
+  `atrium_paradata` and `yolo_classifier`, neither on the branch.
+
+  The mirror-image problem is now fixable too. `skill_ify.py`'s `derive()` was a pure **denylist** —
+  it subtracted `TRIM_DIRS` from the whole default tree, so anything nobody named survived, and `plan`
+  reported **"0 to delete" for every repo**. It now intersects against the same reachability closure,
+  and `OVERLAY_DIRS`' bare `"service/frontend"` prefix (which had been protecting the dev-only
+  `service/frontend-lindat/` on three branches, against §5) carries its trailing slash. Canonical
+  para-drift files are deliberately exempt: they are held for ecosystem parity, not because a service
+  imports them. Report: `skill_branch_report.md`.
+
+- **Records corrected against the trees, not the logs.** `53.plan.md`'s three §A "false claims" and its
+  §C amber all verify as fixed. `58.plan.md`/`58.digest.md` said `HOST` has no CI probe;
+  `docker-tool.reusable.yml:553` is one. `59.plan.md` said "Closed" of an issue that is open on GitHub.
+  `35.plan.md` was stale in every bullet but one, and its last acceptance gap — *the manifest carries
+  it* — closed when `docs/templates/k8s/atrium-service.deployment.yaml` gained the per-repo constraint.
+  translator's DEVLOG cited two files that were never written; page-classification's claimed it had no
+  digests/plans/issues while all three existed.
+
+  Still open and **not** closable by a file change: #58's deliberate-breakage run, #62's `image-tag:
+  test` dispatch and entrypoint break, the `-w /workspace` successor issue, and #55's partner
+  acceptance. Drafted comments: `issue_closure_notes.md`.
