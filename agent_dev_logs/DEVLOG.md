@@ -795,3 +795,105 @@ derived reading aid in `agent_dev_logs/`._
   Still open and **not** closable by a file change: #58's deliberate-breakage run, #62's `image-tag:
   test` dispatch and entrypoint break, the `-w /workspace` successor issue, and #55's partner
   acceptance. Drafted comments: `issue_closure_notes.md`.
+
+- **#54 FREEZE + #51 SKOS — the follow-through, and a record that had been wrong for a week.**
+  `bbc8fde` landed §A (the tightened `required`/`anyOf`/`allOf`) and §B (`atrium_rocrate.py`,
+  `docs/rocrate_export.md`) at **18:56** on 2026-09-09. `54.plan.md` and `54.digest.md` were
+  committed at **18:57**, still reading 🔴 NOT DONE for every row, and `DEVLOG.md` has never
+  mentioned RO-Crate at all. The five tool repos followed that night, `v1` was moved, and the issue
+  still carries a comment saying "nothing pushed". Everything below is what that record said was
+  outstanding — plus three things it did not know.
+
+  **The fixture pass was the live defect, and it was bigger than the list.** An invalid *baseline*
+  latches and demotes each stage's own-output gate from `raise` to `warn`, so for a week the freeze
+  was weakening the exact gate it exists to strengthen. §A.4 enumerated ten baselines by hand; an
+  AST sweep validating **every dict literal carrying a `schema_version` key in every `test_*.py`
+  across all six repos** found **twelve**, and the four extras were the interesting ones:
+  `nlp-enrich/tests/test_api_service.py`'s goes through a service endpoint, and two of them
+  (`alto/tests/test_document_hook.py`, `translator/tests/test_atrium_document.py`) are
+  *deliberately*-invalid fixtures that were invalid for **more reasons than the one they test** —
+  an inherited-defect test that passes whether or not its check still works.
+  `nlp-enrich/tests/test_document_hook.py` had already named that discipline in a comment; the
+  other two now follow it.
+
+  **`atrium_rocrate.py` had zero callers.** Vendored byte-identical in six repos, registered in
+  `MANIFEST.json`, drift-gated, selftested — and not imported by any pipeline, service or CLI
+  entrypoint, in no `Dockerfile`, in no release bundle. §B.3 chose hub-canonical distribution and
+  got it; "distributed" turned out not to mean "reachable", and the DMP's WP3 RO-Crate commitment
+  was a module nothing could invoke. `run_pipeline.py --rocrate-out DIR` (alto) is the first caller,
+  after the fact over records already on disk so it stays off the hot path — which is what keeps it
+  from quietly reversing the PROV-O/CIDOC-CRM rejection at 1.2M-page scale. Three release bundles
+  now ship it.
+
+  **F3 was not cosmetic.** The example fixture carried four values `atrium_vocab` does not know, and
+  the exporter mints a `DefinedTerm` per controlled value — so each was a published identifier for a
+  concept nobody declared. Fixed, with a test that fails on the old values.
+
+  **F5.** `derived_from` widened to string-OR-`{ref, sha256, bytes}` so a crate can name a `hasPart`
+  it can verify. Additive under versioning rule 1: `add_derived_from()` still writes a bare string
+  unless given a checksum, and `derived_from_ref()` is the single reader both shapes go through —
+  `str()` on the object form would have named a file that does not exist. Paradata now records the
+  exact commit (`GITHUB_SHA`) beside the moving `runner_ref`; it is platform-supplied, so it joins
+  `_NOT_OPERATOR_KNOBS` rather than being advertised in `.env` as a knob that does nothing off-CI.
+  **F6**: the hub was the only repo without a `CITATION.cff`.
+
+  **#51's behaviour fixes, both taken.** **V-1**: `DROP_CATEGORIES` was `digital-convert`'s two
+  labels only, and alto-postprocess emits a disjoint set — so on the OCR path the filter matched
+  *nothing* and every garbage line reached the model. It now filters on
+  `UNTRUSTWORTHY_LINE_CATEGORIES`. **This changes what the model is shown**, which is why it waited
+  for an owner. The suite never caught it because every fixture used the digital-born labels;
+  `"Trash"` is the one label only alto emits, so the new tests discriminate.
+  **V-2**: `collect_images()` took every `os.listdir` entry, so it raised `NotADirectoryError` on
+  this repo's own `small_data_samples/` — and a stray *directory* would not have raised at all, it
+  would have shifted every class index out of step with `model_registry.CATEGORIES`. Silently
+  mislabelled training data is the worse half. `_advise_category_drift`'s docstring had prescribed
+  the exact fix and said it was not applied; it now records that it was.
+
+  **#51 F6, and the defect it surfaced.** `enrichment.items[].teater_category_uri` carries the source
+  concept's own URI, populated through `vocab_manager.concept_index()` and **never** through
+  `_settings.nested_keep` — that path serialises into the model's system prompt, and a provenance
+  field must not change model behaviour. Wiring it exposed **V-5**: `teater_category` holds a
+  *source* label (`kostel`), not one of the eleven ATRIUM themes, and both `validate_labels` and the
+  crate read it as a theme — so the exporter was minting `w3id.org/atrium/theme/kostel`, an
+  ATRIUM-authored identifier for an **AMCR** concept, against `skos_strategy.md` §3. The crate now
+  prefers the source URI as a term's `@id` and mints nothing. The contract question — which of the
+  two the field should hold — is recorded, not decided.
+
+  **F3 (translator), half taken.** `load_vocab.py --from-flat` rebuilds the vocabulary from
+  nlp-enrich's committed artifacts instead of harvesting: the duplicate harvester stays, but
+  reproducing the shipped CSV no longer requires running it. The regenerated file is the five-column
+  provenance form its own writer had supported for weeks without ever being rebuilt — and is **159
+  terms lighter** (24 gained, 11 retranslated), the reproducibility-vs-coverage trade V-3 names.
+  Worth a second look if those terms matter; the lever is the pinned TEATER snapshot ref, not this
+  path. **F8**: deleted the orphaned `fixtures/e2e/VOCAB/teater_nested_vocab.json`, which the README
+  had described as removed since 2026-08-19 while the file sat on disk.
+
+  Also: `atrium-llm-enrich/scripts/revendor_shared.sh` deleted — a hand-written 9-entry list
+  omitting `atrium_rocrate.py`, `atrium_vocab.*` and three contract tests, so a clean run of it did
+  not mean para-drift would pass. Exactly the drift class `MANIFEST.json` (#59) exists to kill, and
+  the only local copy in the ecosystem. page-classification's `CONTRIBUTING.md` called the schema
+  tightening a "breaking change" while `document_schema.md` argues at length that it is not;
+  reworded to "stricter validation", which is what it is.
+
+  `docs/templates/workflows/update_issues.sh` exported a **placeholder** token (52 bytes, with a
+  literal `...` in it) that shadowed the `-z` guard four lines below, so the guard could never fire
+  and a missing token surfaced as an opaque API failure. Removed. `skos_strategy.md` §7's "it should
+  be revoked" **overstates it**: the file has one commit in history and the value was elided in that
+  commit too — no live credential was ever committed, and there is nothing to revoke.
+
+  Verified: hub 174 + 139; alto and page-classification green; nlp-enrich 881, llm-enrich 884,
+  translator 606. `revendor_shared.sh --check` in parity across all five repos, all six committed in
+  one window. `atrium_rocrate.py --selftest` clean and byte-identical across processes.
+  **Still open on #54: the freeze tag** — distinct from `v1`, and a remote action.
+
+- **#57 GH PAGES — design refreshed, nothing built** (by decision). Every premise re-verified:
+  `has_pages` false on all six, no site scaffolding anywhere, corpus **223 files / ~50,900 lines /
+  ~2.9 MB**. Five corrections folded into `57.plan.md` (marked ⚡): reuse **#59's `MANIFEST.json`
+  pattern** for `docs/site.yml` rather than inventing a second registration convention — it landed
+  after this plan was written and already solves the same problem; the **`vit` default branch is a
+  prerequisite, not a footnote**, since Pages publishes from the default branch; permissions are
+  tighter than recorded (`admin: false` on **all six**, `maintain: false` on the hub and llm-enrich),
+  so the `actions/configure-pages` path is the only path for every repo; **the hub has no
+  `CONTRIBUTING.md` of its own**, only the template the five vendor, which changes what its
+  Contributing page renders; and `atrium-page-classification/README.html` (178 KB, stale, at repo
+  root) needs a decision before a generator emits a competing HTML tree.

@@ -283,6 +283,34 @@ Also found and **not** fixed, since both predate this work and are out of scope:
 `_download_and_parse_export()` is a stub returning `{}`, and the `main()`/CLI that
 `atrium-translator/README.md:341-369` documents does not exist in the file.
 
+### V-5 — `teater_category` is a source label, and two consumers read it as a theme ⚠️ mitigated
+
+Found on 2026-09-16 while wiring F6. `CONCEPT_SCHEMES["theme"]` declares its field as
+`enrichment.items[].teater_category` **"(indirectly, via the facet)"** — the eleven themes are
+ATRIUM's own editorial grouping, and the parenthesis is doing load-bearing work. Production drops
+it: `llm_client_shared.py:269` writes the model's raw **source** label (`kostel`), never a theme.
+
+Two consumers then read the field as if it held a theme directly:
+
+* `atrium_vocab.validate_labels("theme", …)` reports every real value as unknown — an advisory
+  that cries wolf on correct data, which is how it came to be ignored;
+* `atrium_rocrate.CONTROLLED_TERMS` mapped it to the `theme` scheme, so the crate minted
+  `https://w3id.org/atrium/theme/kostel`: an ATRIUM-authored identifier for an **AMCR** concept,
+  against §3's rule that ATRIUM mints nothing for a harvested concept, and one that resolves to
+  nothing beside the real URI.
+
+**Mitigated, not closed.** `document_crate()` now prefers the source URI as a term's `@id`
+wherever the record carries one, so with F6 populated the crate identifies `kostel` as
+`https://api.aiscr.cz/id/HES-000021` and mints nothing. That removes the false claim and the
+dangling URI on the path that matters.
+
+What is NOT decided, and needs an owner: whether `teater_category` should carry the source label
+(and the theme be derived through `HESLAR_TO_THEME` / `TEATER_BRANCH_TO_THEME` when wanted), or
+whether the field should hold the theme and the source label move to a sibling. Today the schema's
+own description says "Single most relevant TEATER/AMCR vocabulary category", which agrees with
+production — so the registry's `fields` entry and `validate_labels`' scheme choice are the two
+things out of step, not the pipeline. Either way it is a contract change, not a freeze.
+
 ### V-4 — schema examples contradicted the label set ✅ fixed
 
 `atrium_document.schema.json`'s `page_categories` examples were `{"1": "Text", "2": "Plate"}`.
@@ -290,16 +318,40 @@ Neither is in `CATEGORIES`.
 
 ## 🗂️ 7. Follow-ups (not done here, deliberately)
 
-| #  | Item                                                                                      | Why not now                                                           |
-|----|-------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
-| F1 | Take the V-1 fix                                                                          | Changes what reaches the model; needs an owner's call                 |
-| F2 | Fix V-2 by filtering to directories                                                       | Behaviour change in the training path                                 |
-| F3 | Retire the translator's duplicate harvester in favour of nlp-enrich's artifacts           | Cross-repo dependency change; needs a release plan                    |
-| F4 | Add verified CNEC 2.0 glosses as `skos:definition`                                        | Needs the CNEC reference; inventing them would be worse than omitting |
-| F5 | Register the `w3id.org/atrium` redirect                                                   | Optional; blocks nothing                                              |
-| F6 | Add `*_uri` fields to the document schema and populate `teater_category_uri`              | Additive, but wants the enrichment path in scope                      |
-| F7 | Re-harvest so `close_match`/`broad_match`/`citation_uri` populate the committed artifacts | Needs network; the parser is ready and tested                         |
-| F8 | Delete the orphaned `fixtures/e2e/VOCAB/teater_nested_vocab.json`                         | Unreferenced since 2026-08-19; unrelated cleanup                      |
+| #      | Item                                                                                        | Why not now                                                                                                                                                                                                                          |
+|--------|---------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ~~F1~~ | ~~Take the V-1 fix~~ ✅ **done 2026-09-16**                                                  | Taken. `DROP_CATEGORIES` now filters on `UNTRUSTWORTHY_LINE_CATEGORIES`, so `Trash` is dropped on the OCR path. **This changes what the model is shown.** Pinned by `test_convert_drops_trash_lines_on_the_ocr_path`.                |
+| ~~F2~~ | ~~Fix V-2 by filtering to directories~~ ✅ **done 2026-09-16**                               | Taken. `collect_images()` filters to directories, so the shipped `small_data_samples/` no longer raises and class indices cannot silently shift. Three tests in `TestCollectImages`.                                                 |
+| F3     | Retire the translator's duplicate harvester in favour of nlp-enrich's artifacts             | ⚠️ **partly taken 2026-09-16** — see below. Full retirement still needs a release plan.                                                                                                                                              |
+| F4     | Add verified CNEC 2.0 glosses as `skos:definition`                                          | Needs the CNEC reference; inventing them would be worse than omitting                                                                                                                                                                |
+| F5     | Register the `w3id.org/atrium` redirect                                                     | Optional; blocks nothing                                                                                                                                                                                                             |
+| ~~F6~~ | ~~Add `*_uri` fields and populate `teater_category_uri`~~ ✅ **done 2026-09-16**             | `enrichment.items[].teater_category_uri` added (additive, no bump) and populated from `vocab_manager.concept_index()` — never through `nested_keep`, so the prompt is untouched. The crate now uses it as the term's `@id`; see V-5. |
+| F7     | Re-harvest so `close_match`/`broad_match`/`citation_uri` populate the committed artifacts   | Needs network; the parser is ready and tested                                                                                                                                                                                        |
+| ~~F8~~ | ~~Delete the orphaned `fixtures/e2e/VOCAB/teater_nested_vocab.json`~~ ✅ **done 2026-09-16** | Deleted. `fixtures/e2e/README.md` had described it as removed since 2026-08-19 while the file was still on disk.                                                                                                                     |
+
+### F3, the half that was taken (2026-09-16)
+
+`load_vocab.py` gained **`--from-flat DIR`**: it rebuilds `data_samples/vocabulary.csv` from
+nlp-enrich's committed `amcr_flat.csv` / `teater_flat.csv` instead of harvesting. The two formats
+were already prefix-compatible by construction, so this reads rather than converts. The harvester
+is untouched and still the default — what changed is that reproducing the shipped vocabulary no
+longer *requires* running it, which is the part of V-3 that was costing us two different answers.
+
+The committed CSV was regenerated with it, and is now the five-column provenance form it had
+supported for weeks without ever being rebuilt:
+
+|         | before                                | after                        |
+|---------|---------------------------------------|------------------------------|
+| columns | 2 (`source_lemma,target_translation`) | 5 (`…,source,source_id,uri`) |
+| rows    | 5,087                                 | 4,952                        |
+
+⚠️ **This is a vocabulary content change, not just a format change.** Against the previous file:
+**159 terms lost, 24 gained, 11 retranslated** (e.g. `cesta` "roads" → "path/road"; `dožínky`
+"Dozhinki" → "harvest festival"). The losses are TEATER ethnology terms — `akulturace`, `bajka`,
+`diaspora` and similar — that the live GraphQL API returns and the **pinned** snapshot
+(`TEATER_SNAPSHOT_REF = 2106c59…`) does not. That is the trade V-3 names: one reproducible source
+of truth instead of two that disagree. If the 159 matter more than reproducibility, the snapshot
+ref is the thing to move, not this path.
 
 > ⚠️ Unrelated but found in passing, and worth someone's attention:
 > `docs/templates/workflows/update_issues.sh:92` contains a hardcoded GitHub PAT. It is committed.
