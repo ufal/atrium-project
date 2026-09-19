@@ -16,7 +16,6 @@ import pathlib
 
 from headings import headings, phantom_count  # noqa: E402
 from hub_spec import EXTRA_DOCS, EXTRA_SECTIONS, ROLE_PURPOSE, route  # noqa: E402
-
 from repos import REPOS  # noqa: E402
 
 TREE = pathlib.Path("/home/user")
