@@ -24,7 +24,7 @@ from repos import REPOS  # noqa: E402
 TREE = pathlib.Path("/home/user")
 OUT = pathlib.Path(__file__).parent.parent / "hub"
 SITE = OUT / "docs_site"
-GENERATED = "2026-09-18"
+GENERATED = "2026-09-19"
 HUB = "atrium-project"
 
 DRAFT_BANNER = """!!! warning "Draft shell — issue #57, round 2 ({generated})"
