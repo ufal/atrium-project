@@ -17,8 +17,7 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
-        # The caller-example templates are valid YAML; workflow_lint.py parses
-        # them too, so a break here is caught twice.
+        args: [ --unsafe ]
       - id: check-added-large-files
         args: ["--maxkb=1024"]
 
