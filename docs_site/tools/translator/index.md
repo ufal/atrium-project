@@ -25,12 +25,12 @@ Land here from the pipeline strip or the repository map and leave knowing what t
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-translator/README.md` | `## ✨ Features` | 3 | split at depth 3 (4,477 B) |
-| `atrium-translator/README.md` | `## 📄 License & Citation` | 3 | split at depth 3 (1,173 B) |
-| `atrium-translator/README.md` | `## 🙏 Acknowledgements` | 3 | split at depth 3 (903 B) |
-| `atrium-translator/README.md` | `## 📚 Table of Contents` | — | **suppressed** — hand-written TOC; MkDocs generates nav + per-page TOC |
+| Source                        | Section                    | Depth | Treatment                                                              |
+|-------------------------------|----------------------------|-------|------------------------------------------------------------------------|
+| `atrium-translator/README.md` | `## ✨ Features`            | 3     | split at depth 3 (4,477 B)                                             |
+| `atrium-translator/README.md` | `## 📄 License & Citation` | 3     | split at depth 3 (1,173 B)                                             |
+| `atrium-translator/README.md` | `## 🙏 Acknowledgements`   | 3     | split at depth 3 (903 B)                                               |
+| `atrium-translator/README.md` | `## 📚 Table of Contents`  | —     | **suppressed** — hand-written TOC; MkDocs generates nav + per-page TOC |
 
 
 ## Outline

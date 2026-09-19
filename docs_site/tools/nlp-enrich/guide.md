@@ -25,14 +25,14 @@ Get nlp-enrich running — install, configure, invoke — without reading the co
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-nlp-enrich/README.md` | `## ⚙️ Setup` | 3 | split at depth 3 (1,298 B) |
-| `atrium-nlp-enrich/README.md` | `## Workflow Stages` | 3 | split at depth 3 (22,820 B) |
-| `atrium-nlp-enrich/README.md` | `## EXTRA: Extract Keywords (KER / YAKE / KeyBERT)` | 3 | split at depth 3 (7,655 B) |
-| `atrium-nlp-enrich/README.md` | `## EXTRA: Converting Other Input Formats with flexiconv` | 3 | split at depth 3 (3,014 B) |
-| `atrium-nlp-enrich/README.md` | `## EXTRA: LLM Semantic Enrichment (Vocabulary Mapping)` | 3 | split at depth 3 (29,473 B) |
-| `atrium-nlp-enrich/README.md` | `## EXTRA: REST API Service` | 3 | split at depth 3 (764 B) |
+| Source                        | Section                                                   | Depth | Treatment                   |
+|-------------------------------|-----------------------------------------------------------|-------|-----------------------------|
+| `atrium-nlp-enrich/README.md` | `## ⚙️ Setup`                                             | 3     | split at depth 3 (1,298 B)  |
+| `atrium-nlp-enrich/README.md` | `## Workflow Stages`                                      | 3     | split at depth 3 (22,820 B) |
+| `atrium-nlp-enrich/README.md` | `## EXTRA: Extract Keywords (KER / YAKE / KeyBERT)`       | 3     | split at depth 3 (7,655 B)  |
+| `atrium-nlp-enrich/README.md` | `## EXTRA: Converting Other Input Formats with flexiconv` | 3     | split at depth 3 (3,014 B)  |
+| `atrium-nlp-enrich/README.md` | `## EXTRA: LLM Semantic Enrichment (Vocabulary Mapping)`  | 3     | split at depth 3 (29,473 B) |
+| `atrium-nlp-enrich/README.md` | `## EXTRA: REST API Service`                              | 3     | split at depth 3 (764 B)    |
 
 
 ## Outline

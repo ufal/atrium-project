@@ -25,10 +25,10 @@ Land here from the pipeline strip or the repository map and leave knowing what a
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-alto-postprocess/README.md` | `## Acknowledgements 🙏` | 3 | split at depth 3 (1,511 B) |
-| `atrium-alto-postprocess/README.md` | `## 📖 Table of Contents` | — | **suppressed** — hand-written TOC; MkDocs generates nav + per-page TOC |
+| Source                              | Section                   | Depth | Treatment                                                              |
+|-------------------------------------|---------------------------|-------|------------------------------------------------------------------------|
+| `atrium-alto-postprocess/README.md` | `## Acknowledgements 🙏`  | 3     | split at depth 3 (1,511 B)                                             |
+| `atrium-alto-postprocess/README.md` | `## 📖 Table of Contents` | —     | **suppressed** — hand-written TOC; MkDocs generates nav + per-page TOC |
 
 
 ## Outline

@@ -25,9 +25,9 @@ Find what changed in llm-enrich between two versions, and link to a single relea
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-llm-enrich/CONTRIBUTING.md` | `## 📦 Release History` | 3 | **transposed** — one anchored `###` per version, newest first (section is 32,455 B file total) |
+| Source                              | Section                 | Depth | Treatment                                                                                      |
+|-------------------------------------|-------------------------|-------|------------------------------------------------------------------------------------------------|
+| `atrium-llm-enrich/CONTRIBUTING.md` | `## 📦 Release History` | 3     | **transposed** — one anchored `###` per version, newest first (section is 32,455 B file total) |
 
 
 ## Outline

@@ -23,9 +23,9 @@ Learn what ATRIUM publishes as an RO-Crate, how the accretion record maps into i
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-project/docs/rocrate_export.md` | all `## ` sections (28,413 B, 11 h2) | 2 | split at depth 2 |
+| Source                                  | Section                              | Depth | Treatment        |
+|-----------------------------------------|--------------------------------------|-------|------------------|
+| `atrium-project/docs/rocrate_export.md` | all `## ` sections (28,413 B, 11 h2) | 2     | split at depth 2 |
 
 
 ## Outline

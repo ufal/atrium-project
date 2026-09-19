@@ -25,17 +25,17 @@ Get llm-enrich running — install, configure, invoke — without reading the co
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-llm-enrich/README.md` | `## ⚙️ Setup` | 3 | split at depth 3 (1,368 B) |
-| `atrium-llm-enrich/README.md` | `## Configuration (`llm_config.txt`)` | 3 | split at depth 3 (2,075 B) |
-| `atrium-llm-enrich/README.md` | `## Vocabulary Harvesting (`vocab_build.py`)` | 3 | split at depth 3 (4,103 B) |
-| `atrium-llm-enrich/README.md` | `## Local Inference — `transformers` / `vLLM` (`llm_run.py`)` | 3 | split at depth 3 (896 B) |
-| `atrium-llm-enrich/README.md` | `## Remote Inference — OpenRouter (`openrouter_client.py`)` | 3 | split at depth 3 (2,167 B) |
-| `atrium-llm-enrich/README.md` | `## Lightweight Local — Ollama (`ollama_client.py`)` | 3 | split at depth 3 (823 B) |
-| `atrium-llm-enrich/README.md` | `## Document-Level Input (`api_util/xml_to_md.py`)` | 3 | split at depth 3 (866 B) |
-| `atrium-llm-enrich/README.md` | `## Visually-Rich Document Input (`api_util/doc_to_visual_md.py`)` | 3 | split at depth 3 (2,240 B) |
-| `atrium-llm-enrich/README.md` | `## 🐳 Docker` | 3 | split at depth 3 (1,073 B) |
+| Source                        | Section                                                            | Depth | Treatment                  |
+|-------------------------------|--------------------------------------------------------------------|-------|----------------------------|
+| `atrium-llm-enrich/README.md` | `## ⚙️ Setup`                                                      | 3     | split at depth 3 (1,368 B) |
+| `atrium-llm-enrich/README.md` | `## Configuration (`llm_config.txt`)`                              | 3     | split at depth 3 (2,075 B) |
+| `atrium-llm-enrich/README.md` | `## Vocabulary Harvesting (`vocab_build.py`)`                      | 3     | split at depth 3 (4,103 B) |
+| `atrium-llm-enrich/README.md` | `## Local Inference — `transformers` / `vLLM` (`llm_run.py`)`      | 3     | split at depth 3 (896 B)   |
+| `atrium-llm-enrich/README.md` | `## Remote Inference — OpenRouter (`openrouter_client.py`)`        | 3     | split at depth 3 (2,167 B) |
+| `atrium-llm-enrich/README.md` | `## Lightweight Local — Ollama (`ollama_client.py`)`               | 3     | split at depth 3 (823 B)   |
+| `atrium-llm-enrich/README.md` | `## Document-Level Input (`api_util/xml_to_md.py`)`                | 3     | split at depth 3 (866 B)   |
+| `atrium-llm-enrich/README.md` | `## Visually-Rich Document Input (`api_util/doc_to_visual_md.py`)` | 3     | split at depth 3 (2,240 B) |
+| `atrium-llm-enrich/README.md` | `## 🐳 Docker`                                                     | 3     | split at depth 3 (1,073 B) |
 
 
 ## Outline

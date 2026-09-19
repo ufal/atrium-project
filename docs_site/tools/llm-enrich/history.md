@@ -25,10 +25,10 @@ Understand why llm-enrich is shaped the way it is, in the order it happened.
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-llm-enrich/agent_dev_logs/DEVLOG.md` | the whole timeline | 2 | **derived**, never hand-written (15,233 B) |
-| `atrium-llm-enrich/agent_dev_logs/` | 5 digests · 5 plans | — | **not published** — linked to GitHub only |
+| Source                                       | Section             | Depth | Treatment                                  |
+|----------------------------------------------|---------------------|-------|--------------------------------------------|
+| `atrium-llm-enrich/agent_dev_logs/DEVLOG.md` | the whole timeline  | 2     | **derived**, never hand-written (15,233 B) |
+| `atrium-llm-enrich/agent_dev_logs/`          | 5 digests · 5 plans | —     | **not published** — linked to GitHub only  |
 
 
 ## Outline

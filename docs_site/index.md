@@ -23,10 +23,10 @@ The portal. A reader arriving cold leaves knowing what ATRIUM is, which six repo
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-project/README.md` | whole file (1,094 B) | — | render — the hub README is short enough to render whole |
-| — | portal copy, the six-card grid, the pipeline strip | — | **AUTHORED** |
+| Source                     | Section                                            | Depth | Treatment                                               |
+|----------------------------|----------------------------------------------------|-------|---------------------------------------------------------|
+| `atrium-project/README.md` | whole file (1,094 B)                               | —     | render — the hub README is short enough to render whole |
+| —                          | portal copy, the six-card grid, the pipeline strip | —     | **AUTHORED**                                            |
 
 
 ## Outline

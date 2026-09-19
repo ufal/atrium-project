@@ -23,9 +23,9 @@ Find the right repository in one look: what each of the six owns, which document
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| _none_ | — | — | **AUTHORED** — no existing source; written in round 3 |
+| Source | Section | Depth | Treatment                                             |
+|--------|---------|-------|-------------------------------------------------------|
+| _none_ | —       | —     | **AUTHORED** — no existing source; written in round 3 |
 
 
 ## Outline

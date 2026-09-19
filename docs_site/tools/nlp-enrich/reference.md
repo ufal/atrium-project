@@ -25,17 +25,17 @@ Look up a flag, an environment variable, an endpoint or an output field for nlp-
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-nlp-enrich/README.md` | `## Paradata Logs` | 3 | split at depth 3 (13,215 B) |
-| `atrium-nlp-enrich/service/README.md` | whole file | 3 | render — REST service contract |
-| `atrium-nlp-enrich/schemas/teitok/README.md` | whole file | 3 | render — TEITOK schema notes |
-| `atrium-nlp-enrich/annotation/README.md` | whole file | 3 | render — Annotation section |
-| `atrium-nlp-enrich/annotation/GUIDELINES.md` | whole file | 3 | render — Annotation section |
-| `atrium-nlp-enrich/prompts/RUNBOOK.md` | whole file | 3 | render — OWNER of this file; llm-enrich transcludes it |
-| `atrium-nlp-enrich/data_samples/vocab/RUNBOOK.md` | whole file | 3 | render — OWNER of this file; llm-enrich transcludes it |
-| `atrium-nlp-enrich/data_samples/vocab/6.D-eval.decision-package.md` | — | — | **EXCLUDED** — open memo addressed to named individuals |
-| `atrium-nlp-enrich/data_samples/vocab/6.O3O4.decision-package.md` | — | — | **EXCLUDED** — open memo addressed to named individuals |
+| Source                                                              | Section            | Depth | Treatment                                               |
+|---------------------------------------------------------------------|--------------------|-------|---------------------------------------------------------|
+| `atrium-nlp-enrich/README.md`                                       | `## Paradata Logs` | 3     | split at depth 3 (13,215 B)                             |
+| `atrium-nlp-enrich/service/README.md`                               | whole file         | 3     | render — REST service contract                          |
+| `atrium-nlp-enrich/schemas/teitok/README.md`                        | whole file         | 3     | render — TEITOK schema notes                            |
+| `atrium-nlp-enrich/annotation/README.md`                            | whole file         | 3     | render — Annotation section                             |
+| `atrium-nlp-enrich/annotation/GUIDELINES.md`                        | whole file         | 3     | render — Annotation section                             |
+| `atrium-nlp-enrich/prompts/RUNBOOK.md`                              | whole file         | 3     | render — OWNER of this file; llm-enrich transcludes it  |
+| `atrium-nlp-enrich/data_samples/vocab/RUNBOOK.md`                   | whole file         | 3     | render — OWNER of this file; llm-enrich transcludes it  |
+| `atrium-nlp-enrich/data_samples/vocab/6.D-eval.decision-package.md` | —                  | —     | **EXCLUDED** — open memo addressed to named individuals |
+| `atrium-nlp-enrich/data_samples/vocab/6.O3O4.decision-package.md`   | —                  | —     | **EXCLUDED** — open memo addressed to named individuals |
 
 
 ## Outline

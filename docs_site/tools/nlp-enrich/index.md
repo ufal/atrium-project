@@ -25,11 +25,11 @@ Land here from the pipeline strip or the repository map and leave knowing what n
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-nlp-enrich/README.md` | `## TEITOK XML — Unified Output Format` | 3 | split at depth 3 (4,628 B) |
-| `atrium-nlp-enrich/README.md` | `## Acknowledgements 🙏` | 3 | split at depth 3 (2,320 B) |
-| `atrium-nlp-enrich/README.md` | `## Table of contents` | — | **suppressed** — hand-written TOC; MkDocs generates nav + per-page TOC |
+| Source                        | Section                                 | Depth | Treatment                                                              |
+|-------------------------------|-----------------------------------------|-------|------------------------------------------------------------------------|
+| `atrium-nlp-enrich/README.md` | `## TEITOK XML — Unified Output Format` | 3     | split at depth 3 (4,628 B)                                             |
+| `atrium-nlp-enrich/README.md` | `## Acknowledgements 🙏`                | 3     | split at depth 3 (2,320 B)                                             |
+| `atrium-nlp-enrich/README.md` | `## Table of contents`                  | —     | **suppressed** — hand-written TOC; MkDocs generates nav + per-page TOC |
 
 
 ## Outline

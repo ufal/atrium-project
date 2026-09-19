@@ -25,9 +25,9 @@ Find what changed in nlp-enrich between two versions, and link to a single relea
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-nlp-enrich/CONTRIBUTING.md` | `## 📦 Release History` | 3 | **transposed** — one anchored `###` per version, newest first (section is 55,575 B file total) |
+| Source                              | Section                 | Depth | Treatment                                                                                      |
+|-------------------------------------|-------------------------|-------|------------------------------------------------------------------------------------------------|
+| `atrium-nlp-enrich/CONTRIBUTING.md` | `## 📦 Release History` | 3     | **transposed** — one anchored `###` per version, newest first (section is 55,575 B file total) |
 
 
 ## Outline

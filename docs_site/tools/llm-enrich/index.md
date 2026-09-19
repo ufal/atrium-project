@@ -25,11 +25,11 @@ Land here from the pipeline strip or the repository map and leave knowing what l
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-llm-enrich/README.md` | `## Backends at a glance` | 3 | split at depth 3 (1,598 B) |
-| `atrium-llm-enrich/README.md` | `## Acknowledgements 🙏` | 3 | split at depth 3 (996 B) |
-| `atrium-llm-enrich/README.md` | `## Table of contents` | — | **suppressed** — hand-written TOC; MkDocs generates nav + per-page TOC |
+| Source                        | Section                   | Depth | Treatment                                                              |
+|-------------------------------|---------------------------|-------|------------------------------------------------------------------------|
+| `atrium-llm-enrich/README.md` | `## Backends at a glance` | 3     | split at depth 3 (1,598 B)                                             |
+| `atrium-llm-enrich/README.md` | `## Acknowledgements 🙏`  | 3     | split at depth 3 (996 B)                                               |
+| `atrium-llm-enrich/README.md` | `## Table of contents`    | —     | **suppressed** — hand-written TOC; MkDocs generates nav + per-page TOC |
 
 
 ## Outline

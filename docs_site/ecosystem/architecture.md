@@ -23,11 +23,11 @@ See how the six repositories fit together as one system: what is shared, what is
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-project/agent_dev_logs/digests/project_state_2706.md` | §2 | — | **INTERNAL — rewritten from, never published raw** |
-| `atrium-project/agent_dev_logs/digests/project_state_1307.md` | §2 "The Meaning-Making Pipeline" | — | **INTERNAL — rewritten from** |
-| `atrium-project/docs/templates/shared/MANIFEST.json` | the 17 canonical files | — | reference |
+| Source                                                        | Section                          | Depth | Treatment                                          |
+|---------------------------------------------------------------|----------------------------------|-------|----------------------------------------------------|
+| `atrium-project/agent_dev_logs/digests/project_state_2706.md` | §2                               | —     | **INTERNAL — rewritten from, never published raw** |
+| `atrium-project/agent_dev_logs/digests/project_state_1307.md` | §2 "The Meaning-Making Pipeline" | —     | **INTERNAL — rewritten from**                      |
+| `atrium-project/docs/templates/shared/MANIFEST.json`          | the 17 canonical files           | —     | reference                                          |
 
 
 ## Outline

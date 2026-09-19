@@ -25,10 +25,10 @@ Get alto-postprocess running — install, configure, invoke — without reading 
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-alto-postprocess/README.md` | `## ⚙️ Setup` | 3 | split at depth 3 (1,134 B) |
-| `atrium-alto-postprocess/README.md` | `## 🛤️ Workflow Stages` | 3 | split at depth 3 (41,607 B) |
+| Source                              | Section                  | Depth | Treatment                   |
+|-------------------------------------|--------------------------|-------|-----------------------------|
+| `atrium-alto-postprocess/README.md` | `## ⚙️ Setup`            | 3     | split at depth 3 (1,134 B)  |
+| `atrium-alto-postprocess/README.md` | `## 🛤️ Workflow Stages` | 3     | split at depth 3 (41,607 B) |
 
 
 ## Outline

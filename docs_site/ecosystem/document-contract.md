@@ -23,11 +23,11 @@ Understand the `atrium_document` record that travels through the pipeline: what 
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-project/docs/document_schema.md` | all `## ` sections (45,746 B) | 2 | split at depth 2 |
-| `atrium-project/docs/paradata_schema.md` | whole file (1,560 B) | — | render whole — it is 19 lines |
-| `atrium-project/fixtures/atrium_document.example.json` | — | — | render as a worked example |
+| Source                                                 | Section                       | Depth | Treatment                     |
+|--------------------------------------------------------|-------------------------------|-------|-------------------------------|
+| `atrium-project/docs/document_schema.md`               | all `## ` sections (45,746 B) | 2     | split at depth 2              |
+| `atrium-project/docs/paradata_schema.md`               | whole file (1,560 B)          | —     | render whole — it is 19 lines |
+| `atrium-project/fixtures/atrium_document.example.json` | —                             | —     | render as a worked example    |
 
 
 ## Outline

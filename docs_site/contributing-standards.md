@@ -23,14 +23,14 @@ Read the family contribution standard once — the branch model, the commit conv
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-project/docs/templates/CONTRIBUTING.md` | the 9,288 B skeleton | 2 | render as the family standard — **and say plainly that the five copies are unenforced** |
-| `<5 tool repos>/CONTRIBUTING.md` | `## 🔁 Contributor Workflow` (413 B, byte-identical ×4) | 2 | **render once**, link from 4 |
-| `<5 tool repos>/CONTRIBUTING.md` | `## 📋 Pull Request Format` (688 B, byte-identical ×4) | 2 | **render once**, link from 4 |
-| `<5 tool repos>/CONTRIBUTING.md` | `## ✏️ Commit Messages` (the 659 B type table is identical in all six) | 2 | **render once**, link from 5 |
-| `<5 tool repos>/CONTRIBUTING.md` | `## 🌿 Branches & Environments` (970–998 B, similarity 0.75–0.91) | 2 | render once + a 3-row per-repo delta table |
-| `atrium-llm-enrich/CONTRIBUTING.md` | `## 🔗 Shared ("drop-in") code` (720 B) | 2 | **render once** — the only repo that documents the shared-code mechanism at all |
+| Source                                          | Section                                                                | Depth | Treatment                                                                               |
+|-------------------------------------------------|------------------------------------------------------------------------|-------|-----------------------------------------------------------------------------------------|
+| `atrium-project/docs/templates/CONTRIBUTING.md` | the 9,288 B skeleton                                                   | 2     | render as the family standard — **and say plainly that the five copies are unenforced** |
+| `<5 tool repos>/CONTRIBUTING.md`                | `## 🔁 Contributor Workflow` (413 B, byte-identical ×4)                | 2     | **render once**, link from 4                                                            |
+| `<5 tool repos>/CONTRIBUTING.md`                | `## 📋 Pull Request Format` (688 B, byte-identical ×4)                 | 2     | **render once**, link from 4                                                            |
+| `<5 tool repos>/CONTRIBUTING.md`                | `## ✏️ Commit Messages` (the 659 B type table is identical in all six) | 2     | **render once**, link from 5                                                            |
+| `<5 tool repos>/CONTRIBUTING.md`                | `## 🌿 Branches & Environments` (970–998 B, similarity 0.75–0.91)      | 2     | render once + a 3-row per-repo delta table                                              |
+| `atrium-llm-enrich/CONTRIBUTING.md`             | `## 🔗 Shared ("drop-in") code` (720 B)                                | 2     | **render once** — the only repo that documents the shared-code mechanism at all         |
 
 
 ## Outline

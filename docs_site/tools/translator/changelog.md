@@ -25,9 +25,9 @@ Find what changed in translator between two versions, and link to a single relea
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-translator/CONTRIBUTING.md` | `## 📦 Release History` | 3 | **transposed** — one anchored `###` per version, newest first (section is 37,561 B file total) |
+| Source                              | Section                 | Depth | Treatment                                                                                      |
+|-------------------------------------|-------------------------|-------|------------------------------------------------------------------------------------------------|
+| `atrium-translator/CONTRIBUTING.md` | `## 📦 Release History` | 3     | **transposed** — one anchored `###` per version, newest first (section is 37,561 B file total) |
 
 
 ## Outline

@@ -25,10 +25,10 @@ Understand why nlp-enrich is shaped the way it is, in the order it happened.
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-nlp-enrich/agent_dev_logs/DEVLOG.md` | the whole timeline | 2 | **derived**, never hand-written (17,532 B) |
-| `atrium-nlp-enrich/agent_dev_logs/` | 8 digests · 8 plans | — | **not published** — linked to GitHub only |
+| Source                                       | Section             | Depth | Treatment                                  |
+|----------------------------------------------|---------------------|-------|--------------------------------------------|
+| `atrium-nlp-enrich/agent_dev_logs/DEVLOG.md` | the whole timeline  | 2     | **derived**, never hand-written (17,532 B) |
+| `atrium-nlp-enrich/agent_dev_logs/`          | 8 digests · 8 plans | —     | **not published** — linked to GitHub only  |
 
 
 ## Outline

@@ -23,12 +23,12 @@ Build, ship and run the ATRIUM services: images, CI, Kubernetes, and the accepta
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-project/docs/docker_gha.md` | 7 `## ` sections (31,838 B) | 2 | split at depth 2 |
-| `atrium-project/docs/k8s_deployment.md` | 7 `## ` sections (31,806 B) | 2 | split at depth 2 |
-| `atrium-project/docs/k8s_acceptance_runbook.md` | 4 `## ` sections | 2 | render, minus the "Results log (fill in)" table |
-| `atrium-project/docs/docker_gha_roadmap.md` | — | — | **EXCLUDED** — internal roadmap (97,253 B) |
+| Source                                          | Section                     | Depth | Treatment                                       |
+|-------------------------------------------------|-----------------------------|-------|-------------------------------------------------|
+| `atrium-project/docs/docker_gha.md`             | 7 `## ` sections (31,838 B) | 2     | split at depth 2                                |
+| `atrium-project/docs/k8s_deployment.md`         | 7 `## ` sections (31,806 B) | 2     | split at depth 2                                |
+| `atrium-project/docs/k8s_acceptance_runbook.md` | 4 `## ` sections            | 2     | render, minus the "Results log (fill in)" table |
+| `atrium-project/docs/docker_gha_roadmap.md`     | —                           | —     | **EXCLUDED** — internal roadmap (97,253 B)      |
 
 
 ## Outline

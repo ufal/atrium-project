@@ -25,12 +25,12 @@ Get translator running — install, configure, invoke — without reading the co
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-translator/README.md` | `## 🛠️ Prerequisites` | 3 | split at depth 3 (609 B) |
-| `atrium-translator/README.md` | `## 🐳 Docker & Compose` | 3 | split at depth 3 (1,812 B) |
-| `atrium-translator/README.md` | `## 💻 Usage` | 3 | split at depth 3 (16,496 B) |
-| `atrium-translator/README.md` | `## ☸️ Deployment` | 3 | split at depth 3 (1,556 B) |
+| Source                        | Section                  | Depth | Treatment                   |
+|-------------------------------|--------------------------|-------|-----------------------------|
+| `atrium-translator/README.md` | `## 🛠️ Prerequisites`   | 3     | split at depth 3 (609 B)    |
+| `atrium-translator/README.md` | `## 🐳 Docker & Compose` | 3     | split at depth 3 (1,812 B)  |
+| `atrium-translator/README.md` | `## 💻 Usage`            | 3     | split at depth 3 (16,496 B) |
+| `atrium-translator/README.md` | `## ☸️ Deployment`       | 3     | split at depth 3 (1,556 B)  |
 
 
 ## Outline

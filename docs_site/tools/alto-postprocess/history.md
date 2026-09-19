@@ -25,10 +25,10 @@ Understand why alto-postprocess is shaped the way it is, in the order it happene
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-alto-postprocess/agent_dev_logs/DEVLOG.md` | the whole timeline | 2 | **derived**, never hand-written (29,384 B) |
-| `atrium-alto-postprocess/agent_dev_logs/` | 7 digests · 7 plans | — | **not published** — linked to GitHub only |
+| Source                                             | Section             | Depth | Treatment                                  |
+|----------------------------------------------------|---------------------|-------|--------------------------------------------|
+| `atrium-alto-postprocess/agent_dev_logs/DEVLOG.md` | the whole timeline  | 2     | **derived**, never hand-written (29,384 B) |
+| `atrium-alto-postprocess/agent_dev_logs/`          | 7 digests · 7 plans | —     | **not published** — linked to GitHub only  |
 
 
 ## Outline

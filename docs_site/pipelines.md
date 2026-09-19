@@ -24,15 +24,15 @@ Understand every ATRIUM workflow from beginning to end — what goes in, what ea
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| — | the two-layer model and all 13 workflows | — | **AUTHORED** — see note below |
-| `atrium-project/docs/document_schema.md` | `## ` the accretion rules | 2 | reference, not copied |
-| `atrium-alto-postprocess/README.md` | `## 🛤️ Workflow Stages` (42,775 B) | 3 | reference |
-| `atrium-translator/README.md` | `## 🧠 Logic Overview` | 3 | reference |
-| `atrium-nlp-enrich/README.md` | `## Workflow Stages` | 3 | reference |
-| `atrium-project/.github/workflows/e2e-pipeline-smoke.yml` | header + stage steps | — | reference (the real integration contract) |
-| `atrium-project/.github/workflows/e2e-digital-smoke.yml` | header | — | reference (born-digital path) |
+| Source                                                    | Section                                  | Depth | Treatment                                 |
+|-----------------------------------------------------------|------------------------------------------|-------|-------------------------------------------|
+| —                                                         | the two-layer model and all 13 workflows | —     | **AUTHORED** — see note below             |
+| `atrium-project/docs/document_schema.md`                  | `## ` the accretion rules                | 2     | reference, not copied                     |
+| `atrium-alto-postprocess/README.md`                       | `## 🛤️ Workflow Stages` (42,775 B)      | 3     | reference                                 |
+| `atrium-translator/README.md`                             | `## 🧠 Logic Overview`                   | 3     | reference                                 |
+| `atrium-nlp-enrich/README.md`                             | `## Workflow Stages`                     | 3     | reference                                 |
+| `atrium-project/.github/workflows/e2e-pipeline-smoke.yml` | header + stage steps                     | —     | reference (the real integration contract) |
+| `atrium-project/.github/workflows/e2e-digital-smoke.yml`  | header                                   | —     | reference (born-digital path)             |
 
 
 ## Outline

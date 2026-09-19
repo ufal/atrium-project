@@ -23,10 +23,10 @@ Read the two JSON Schemas directly, with the fields annotated.
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-project/docs/templates/shared/atrium_document.schema.json` | — | — | render as annotated reference |
-| `atrium-project/docs/templates/shared/atrium_vocab.schema.json` | — | — | render as annotated reference |
+| Source                                                             | Section | Depth | Treatment                     |
+|--------------------------------------------------------------------|---------|-------|-------------------------------|
+| `atrium-project/docs/templates/shared/atrium_document.schema.json` | —       | —     | render as annotated reference |
+| `atrium-project/docs/templates/shared/atrium_vocab.schema.json`    | —       | —     | render as annotated reference |
 
 
 ## Outline

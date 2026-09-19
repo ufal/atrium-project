@@ -24,13 +24,13 @@ Meet every external standard, service, model and piece of infrastructure ATRIUM 
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| — | ~60 entries in 7 categories | — | **AUTHORED**, but ~60 % lifts existing prose |
-| `atrium-project/docs/skos_strategy.md` | §1 §3 §5 | — | lift — written for exactly this reader |
-| `atrium-project/docs/rocrate_export.md` | §2 "RO-Crate from zero" | — | lift — an explicit from-scratch tutorial |
-| `atrium-translator/docs/translation-backends.md` | comparison table | — | lift |
-| `atrium-project/docs/k8s_deployment.md` | probe table | — | lift |
+| Source                                           | Section                     | Depth | Treatment                                    |
+|--------------------------------------------------|-----------------------------|-------|----------------------------------------------|
+| —                                                | ~60 entries in 7 categories | —     | **AUTHORED**, but ~60 % lifts existing prose |
+| `atrium-project/docs/skos_strategy.md`           | §1 §3 §5                    | —     | lift — written for exactly this reader       |
+| `atrium-project/docs/rocrate_export.md`          | §2 "RO-Crate from zero"     | —     | lift — an explicit from-scratch tutorial     |
+| `atrium-translator/docs/translation-backends.md` | comparison table            | —     | lift                                         |
+| `atrium-project/docs/k8s_deployment.md`          | probe table                 | —     | lift                                         |
 
 
 ## Outline
@@ -72,14 +72,14 @@ Meet every external standard, service, model and piece of infrastructure ATRIUM 
 
 ### Entries with no existing prose anywhere (write fresh)
 
-| Gap | Why it matters |
-|---|---|
-| Handle System / PID | `hdl.handle.net/20.500.12800/1-6184` is the project's primary dataset citation |
-| LINDAT/CLARIAH-CZ as an institution | four live API services plus the dataset repository depend on it |
-| OAI-PMH | the AMCR harvest protocol, never named as a protocol |
-| Dublin Core | `dcterms:` is emitted; the string "Dublin Core" appears in **zero** files |
-| Korektor | a live LINDAT call in `tools/quality_model/correct.py:55`, absent from every Acknowledgements section |
-| ARÚP / ARÚB / AISCR | **the acronyms are never expanded anywhere in the ecosystem** |
-| Work packages & the DMP | cited as the authority for RO-Crate, SKOS and DOG; no WP table exists |
-| Trivy / CodeQL / SARIF / Codecov | gate every release; named only as action refs |
-| DOG / CLARIN Switchboard | DMP-mandated, zero code, planned under #56 |
+| Gap                                 | Why it matters                                                                                        |
+|-------------------------------------|-------------------------------------------------------------------------------------------------------|
+| Handle System / PID                 | `hdl.handle.net/20.500.12800/1-6184` is the project's primary dataset citation                        |
+| LINDAT/CLARIAH-CZ as an institution | four live API services plus the dataset repository depend on it                                       |
+| OAI-PMH                             | the AMCR harvest protocol, never named as a protocol                                                  |
+| Dublin Core                         | `dcterms:` is emitted; the string "Dublin Core" appears in **zero** files                             |
+| Korektor                            | a live LINDAT call in `tools/quality_model/correct.py:55`, absent from every Acknowledgements section |
+| ARÚP / ARÚB / AISCR                 | **the acronyms are never expanded anywhere in the ecosystem**                                         |
+| Work packages & the DMP             | cited as the authority for RO-Crate, SKOS and DOG; no WP table exists                                 |
+| Trivy / CodeQL / SARIF / Codecov    | gate every release; named only as action refs                                                         |
+| DOG / CLARIN Switchboard            | DMP-mandated, zero code, planned under #56                                                            |

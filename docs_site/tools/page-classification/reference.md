@@ -25,11 +25,11 @@ Look up a flag, an environment variable, an endpoint or an output field for page
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-page-classification/README.md` | `## For developers 🪛` | 3 | split at depth 3 (21,937 B) |
-| `atrium-page-classification/README.md` | `## Paradata logging` | 3 | split at depth 3 (2,653 B) |
-| `atrium-page-classification/service/README.md` | whole file | 3 | render — REST service contract |
+| Source                                         | Section                | Depth | Treatment                      |
+|------------------------------------------------|------------------------|-------|--------------------------------|
+| `atrium-page-classification/README.md`         | `## For developers 🪛` | 3     | split at depth 3 (21,937 B)    |
+| `atrium-page-classification/README.md`         | `## Paradata logging`  | 3     | split at depth 3 (2,653 B)     |
+| `atrium-page-classification/service/README.md` | whole file             | 3     | render — REST service contract |
 
 
 ## Outline

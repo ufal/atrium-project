@@ -25,11 +25,11 @@ Get page-classification running — install, configure, invoke — without readi
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-page-classification/README.md` | `## How to install 🔧` | 3 | split at depth 3 (8,344 B) |
-| `atrium-page-classification/README.md` | `## How to run prediction 🪄 modes` | 3 | split at depth 3 (6,461 B) |
-| `atrium-page-classification/README.md` | `## Data preparation 📦` | 3 | split at depth 3 (8,751 B) |
+| Source                                 | Section                             | Depth | Treatment                  |
+|----------------------------------------|-------------------------------------|-------|----------------------------|
+| `atrium-page-classification/README.md` | `## How to install 🔧`              | 3     | split at depth 3 (8,344 B) |
+| `atrium-page-classification/README.md` | `## How to run prediction 🪄 modes` | 3     | split at depth 3 (6,461 B) |
+| `atrium-page-classification/README.md` | `## Data preparation 📦`            | 3     | split at depth 3 (8,751 B) |
 
 
 ## Outline

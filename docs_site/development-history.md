@@ -23,10 +23,10 @@ Follow how the ecosystem got here, across all six repositories, in one chronolog
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-project/agent_dev_logs/DEVLOG.md` | the whole timeline (73,638 B) | 2 | **derived** — generated from the DEVLOG, never hand-written |
-| `atrium-project/agent_dev_logs/digests/` | 49 digests · 49 plans · 45 issue exports · 6 snapshots | — | **not published** — linked to GitHub only |
+| Source                                    | Section                                                | Depth | Treatment                                                   |
+|-------------------------------------------|--------------------------------------------------------|-------|-------------------------------------------------------------|
+| `atrium-project/agent_dev_logs/DEVLOG.md` | the whole timeline (73,638 B)                          | 2     | **derived** — generated from the DEVLOG, never hand-written |
+| `atrium-project/agent_dev_logs/digests/`  | 49 digests · 49 plans · 45 issue exports · 6 snapshots | —     | **not published** — linked to GitHub only                   |
 
 
 ## Outline

@@ -23,11 +23,11 @@ Install and use the five ATRIUM Agent Skills, and understand the contract they a
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-project/docs/skills_catalog.md` | all 6 `## ` sections | 2 | split at depth 2 |
-| `atrium-project/docs/agent_skill_strategy.md` | 18 real `## ` sections | 2 | ⚠️ **fence-aware split required** — a naive `^## ` regex finds 23 and shatters `## Appendix A` |
-| `atrium-project/docs/skill_acceptance_runbook.md` | all `## ` | 2 | render, minus the "Results log (fill in)" table |
+| Source                                            | Section                | Depth | Treatment                                                                                      |
+|---------------------------------------------------|------------------------|-------|------------------------------------------------------------------------------------------------|
+| `atrium-project/docs/skills_catalog.md`           | all 6 `## ` sections   | 2     | split at depth 2                                                                               |
+| `atrium-project/docs/agent_skill_strategy.md`     | 18 real `## ` sections | 2     | ⚠️ **fence-aware split required** — a naive `^## ` regex finds 23 and shatters `## Appendix A` |
+| `atrium-project/docs/skill_acceptance_runbook.md` | all `## `              | 2     | render, minus the "Results log (fill in)" table                                                |
 
 
 ## Outline

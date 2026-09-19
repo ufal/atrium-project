@@ -25,18 +25,18 @@ Look up a flag, an environment variable, an endpoint or an output field for tran
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-translator/README.md` | `## Project Structure & Architecture ![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)` | 3 | split at depth 3 (667 B) |
-| `atrium-translator/README.md` | `## 📂 Project Structure` | 3 | split at depth 3 (3,393 B) |
-| `atrium-translator/README.md` | `## 🌐 API Service` | 3 | split at depth 3 (1,635 B) |
-| `atrium-translator/README.md` | `## ⚙️ Environment Variables` | 3 | split at depth 3 (1,836 B) |
-| `atrium-translator/README.md` | `## 🧠 Logic Overview` | 3 | split at depth 3 (5,328 B) |
-| `atrium-translator/README.md` | `## 📊 Translation CSV Logs` | 3 | split at depth 3 (1,852 B) |
-| `atrium-translator/README.md` | `## 🗄️ Paradata JSON Logs` | 3 | split at depth 3 (6,135 B) |
-| `atrium-translator/docs/translation-backends.md` | whole file | 3 | render — Backend evaluation section |
-| `atrium-translator/service/README.md` | whole file | 3 | render — REST service contract |
-| `atrium-translator/data_samples/README.md` | whole file | 3 | render — sample corpus notes |
+| Source                                           | Section                                                                                                 | Depth | Treatment                           |
+|--------------------------------------------------|---------------------------------------------------------------------------------------------------------|-------|-------------------------------------|
+| `atrium-translator/README.md`                    | `## Project Structure & Architecture ![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)` | 3     | split at depth 3 (667 B)            |
+| `atrium-translator/README.md`                    | `## 📂 Project Structure`                                                                               | 3     | split at depth 3 (3,393 B)          |
+| `atrium-translator/README.md`                    | `## 🌐 API Service`                                                                                     | 3     | split at depth 3 (1,635 B)          |
+| `atrium-translator/README.md`                    | `## ⚙️ Environment Variables`                                                                           | 3     | split at depth 3 (1,836 B)          |
+| `atrium-translator/README.md`                    | `## 🧠 Logic Overview`                                                                                  | 3     | split at depth 3 (5,328 B)          |
+| `atrium-translator/README.md`                    | `## 📊 Translation CSV Logs`                                                                            | 3     | split at depth 3 (1,852 B)          |
+| `atrium-translator/README.md`                    | `## 🗄️ Paradata JSON Logs`                                                                             | 3     | split at depth 3 (6,135 B)          |
+| `atrium-translator/docs/translation-backends.md` | whole file                                                                                              | 3     | render — Backend evaluation section |
+| `atrium-translator/service/README.md`            | whole file                                                                                              | 3     | render — REST service contract      |
+| `atrium-translator/data_samples/README.md`       | whole file                                                                                              | 3     | render — sample corpus notes        |
 
 
 ## Outline

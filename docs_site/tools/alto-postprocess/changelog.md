@@ -25,9 +25,9 @@ Find what changed in alto-postprocess between two versions, and link to a single
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-alto-postprocess/CONTRIBUTING.md` | `## 📦 Release History` | 3 | **transposed** — one anchored `###` per version, newest first (section is 69,669 B file total) |
+| Source                                    | Section                 | Depth | Treatment                                                                                      |
+|-------------------------------------------|-------------------------|-------|------------------------------------------------------------------------------------------------|
+| `atrium-alto-postprocess/CONTRIBUTING.md` | `## 📦 Release History` | 3     | **transposed** — one anchored `###` per version, newest first (section is 69,669 B file total) |
 
 
 ## Outline

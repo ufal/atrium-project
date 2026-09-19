@@ -25,13 +25,13 @@ Land here from the pipeline strip or the repository map and leave knowing what p
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-page-classification/README.md` | `## Versions 🏁` | 3 | split at depth 3 (3,507 B) |
-| `atrium-page-classification/README.md` | `## Model description 📇` | 3 | split at depth 3 (12,338 B) |
-| `atrium-page-classification/README.md` | `## Results 📊` | 3 | split at depth 3 (15,938 B) |
-| `atrium-page-classification/README.md` | `## Contacts 📧` | 3 | split at depth 3 (1,110 B) |
-| `atrium-page-classification/README.md` | `## Appendix 🤓` | 3 | split at depth 3 (2,000 B) |
+| Source                                 | Section                   | Depth | Treatment                   |
+|----------------------------------------|---------------------------|-------|-----------------------------|
+| `atrium-page-classification/README.md` | `## Versions 🏁`          | 3     | split at depth 3 (3,507 B)  |
+| `atrium-page-classification/README.md` | `## Model description 📇` | 3     | split at depth 3 (12,338 B) |
+| `atrium-page-classification/README.md` | `## Results 📊`           | 3     | split at depth 3 (15,938 B) |
+| `atrium-page-classification/README.md` | `## Contacts 📧`          | 3     | split at depth 3 (1,110 B)  |
+| `atrium-page-classification/README.md` | `## Appendix 🤓`          | 3     | split at depth 3 (2,000 B)  |
 
 
 ## Outline

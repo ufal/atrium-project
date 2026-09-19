@@ -23,9 +23,9 @@ Learn how ATRIUM mints concept URIs, what the vocabulary contains, and why `broa
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-project/docs/skos_strategy.md` | all `## ` sections (34,047 B, 9 h2) | 2 | split at depth 2 |
+| Source                                 | Section                             | Depth | Treatment        |
+|----------------------------------------|-------------------------------------|-------|------------------|
+| `atrium-project/docs/skos_strategy.md` | all `## ` sections (34,047 B, 9 h2) | 2     | split at depth 2 |
 
 
 ## Outline

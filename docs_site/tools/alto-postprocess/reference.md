@@ -25,21 +25,21 @@ Look up a flag, an environment variable, an endpoint or an output field for alto
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-alto-postprocess/README.md` | `## API Service Integration` | 3 | split at depth 3 (904 B) |
-| `atrium-alto-postprocess/README.md` | `## Paradata logging` | 3 | split at depth 3 (5,234 B) |
-| `atrium-alto-postprocess/README.md` | `## Vendored code 📦` | 3 | split at depth 3 (4,537 B) |
-| `atrium-alto-postprocess/docs/categorization_logic.md` | whole file | 3 | render — the composite quality score, in full |
-| `atrium-alto-postprocess/docs/issue30_gold_ab_findings.md` | whole file | 3 | render — Research section — gold-scored parameter-run findings (issue #30) |
-| `atrium-alto-postprocess/service/README.md` | whole file | 3 | render — REST service contract |
-| `atrium-alto-postprocess/tools/RULE_COVERAGE.md` | whole file | 3 | render — Research section |
-| `atrium-alto-postprocess/tools/SWEEP_NOTES.md` | whole file | 3 | render — Research section |
-| `atrium-alto-postprocess/tools/gold/GOLD.md` | whole file | 3 | render — Research section |
-| `atrium-alto-postprocess/tools/quality_model/README.md` | whole file | 3 | render — Research section |
-| `atrium-alto-postprocess/data_samples/README.md` | whole file | 3 | render — sample corpus notes |
-| `atrium-alto-postprocess/LICENSES/README.md` | whole file | 3 | render — vendored-component licences |
-| `atrium-alto-postprocess/tools/quality_model/EXPERIMENTS.md` | — | — | **EXCLUDED** — unfilled results table |
+| Source                                                       | Section                      | Depth | Treatment                                                                  |
+|--------------------------------------------------------------|------------------------------|-------|----------------------------------------------------------------------------|
+| `atrium-alto-postprocess/README.md`                          | `## API Service Integration` | 3     | split at depth 3 (904 B)                                                   |
+| `atrium-alto-postprocess/README.md`                          | `## Paradata logging`        | 3     | split at depth 3 (5,234 B)                                                 |
+| `atrium-alto-postprocess/README.md`                          | `## Vendored code 📦`        | 3     | split at depth 3 (4,537 B)                                                 |
+| `atrium-alto-postprocess/docs/categorization_logic.md`       | whole file                   | 3     | render — the composite quality score, in full                              |
+| `atrium-alto-postprocess/docs/issue30_gold_ab_findings.md`   | whole file                   | 3     | render — Research section — gold-scored parameter-run findings (issue #30) |
+| `atrium-alto-postprocess/service/README.md`                  | whole file                   | 3     | render — REST service contract                                             |
+| `atrium-alto-postprocess/tools/RULE_COVERAGE.md`             | whole file                   | 3     | render — Research section                                                  |
+| `atrium-alto-postprocess/tools/SWEEP_NOTES.md`               | whole file                   | 3     | render — Research section                                                  |
+| `atrium-alto-postprocess/tools/gold/GOLD.md`                 | whole file                   | 3     | render — Research section                                                  |
+| `atrium-alto-postprocess/tools/quality_model/README.md`      | whole file                   | 3     | render — Research section                                                  |
+| `atrium-alto-postprocess/data_samples/README.md`             | whole file                   | 3     | render — sample corpus notes                                               |
+| `atrium-alto-postprocess/LICENSES/README.md`                 | whole file                   | 3     | render — vendored-component licences                                       |
+| `atrium-alto-postprocess/tools/quality_model/EXPERIMENTS.md` | —                            | —     | **EXCLUDED** — unfilled results table                                      |
 
 
 ## Outline

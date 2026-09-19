@@ -25,18 +25,18 @@ Look up a flag, an environment variable, an endpoint or an output field for llm-
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-llm-enrich/README.md` | `## 🖥 Model Registry` | 3 | split at depth 3 (7,282 B) |
-| `atrium-llm-enrich/README.md` | `## 📁 Inputs and Outputs` | 3 | split at depth 3 (1,887 B) |
-| `atrium-llm-enrich/README.md` | `## 📐 Document Understanding benchmark (`sample_stratify.py` + `bench_compare.py`)` | 3 | split at depth 3 (4,233 B) |
-| `atrium-llm-enrich/README.md` | `## Paradata Logs` | 3 | split at depth 3 (1,027 B) |
-| `atrium-llm-enrich/service/README.md` | whole file | 3 | render — REST service contract |
-| `atrium-llm-enrich/prompts/RUNBOOK.md` | whole file | — | **transclude** from `atrium-nlp-enrich` — byte-identical, 19,948 B — rendered once, linked here |
-| `atrium-llm-enrich/data_samples/vocab/RUNBOOK.md` | whole file | — | **transclude** from `atrium-nlp-enrich` — byte-identical, 28,939 B — rendered once, linked here |
-| `atrium-llm-enrich/digital_born/README.md` | — | — | **EXCLUDED** — self-declared Phase 0 scratch space |
-| `atrium-llm-enrich/data_samples/vocab/6.D-eval.decision-package.md` | — | — | **EXCLUDED** — open memo addressed to named individuals |
-| `atrium-llm-enrich/data_samples/vocab/6.O3O4.decision-package.md` | — | — | **EXCLUDED** — open memo addressed to named individuals |
+| Source                                                              | Section                                                                              | Depth | Treatment                                                                                       |
+|---------------------------------------------------------------------|--------------------------------------------------------------------------------------|-------|-------------------------------------------------------------------------------------------------|
+| `atrium-llm-enrich/README.md`                                       | `## 🖥 Model Registry`                                                               | 3     | split at depth 3 (7,282 B)                                                                      |
+| `atrium-llm-enrich/README.md`                                       | `## 📁 Inputs and Outputs`                                                           | 3     | split at depth 3 (1,887 B)                                                                      |
+| `atrium-llm-enrich/README.md`                                       | `## 📐 Document Understanding benchmark (`sample_stratify.py` + `bench_compare.py`)` | 3     | split at depth 3 (4,233 B)                                                                      |
+| `atrium-llm-enrich/README.md`                                       | `## Paradata Logs`                                                                   | 3     | split at depth 3 (1,027 B)                                                                      |
+| `atrium-llm-enrich/service/README.md`                               | whole file                                                                           | 3     | render — REST service contract                                                                  |
+| `atrium-llm-enrich/prompts/RUNBOOK.md`                              | whole file                                                                           | —     | **transclude** from `atrium-nlp-enrich` — byte-identical, 19,948 B — rendered once, linked here |
+| `atrium-llm-enrich/data_samples/vocab/RUNBOOK.md`                   | whole file                                                                           | —     | **transclude** from `atrium-nlp-enrich` — byte-identical, 28,939 B — rendered once, linked here |
+| `atrium-llm-enrich/digital_born/README.md`                          | —                                                                                    | —     | **EXCLUDED** — self-declared Phase 0 scratch space                                              |
+| `atrium-llm-enrich/data_samples/vocab/6.D-eval.decision-package.md` | —                                                                                    | —     | **EXCLUDED** — open memo addressed to named individuals                                         |
+| `atrium-llm-enrich/data_samples/vocab/6.O3O4.decision-package.md`   | —                                                                                    | —     | **EXCLUDED** — open memo addressed to named individuals                                         |
 
 
 ## Outline

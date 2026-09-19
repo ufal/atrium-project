@@ -25,9 +25,9 @@ Find what changed in page-classification between two versions, and link to a sin
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-page-classification/CONTRIBUTING.md` | `## 📦 Release History` | 3 | **transposed** — one anchored `###` per version, newest first (section is 62,223 B file total) |
+| Source                                       | Section                 | Depth | Treatment                                                                                      |
+|----------------------------------------------|-------------------------|-------|------------------------------------------------------------------------------------------------|
+| `atrium-page-classification/CONTRIBUTING.md` | `## 📦 Release History` | 3     | **transposed** — one anchored `###` per version, newest first (section is 62,223 B file total) |
 
 
 ## Outline

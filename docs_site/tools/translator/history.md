@@ -25,10 +25,10 @@ Understand why translator is shaped the way it is, in the order it happened.
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-translator/agent_dev_logs/DEVLOG.md` | the whole timeline | 2 | **derived**, never hand-written (16,358 B) |
-| `atrium-translator/agent_dev_logs/` | 2 digests · 2 plans | — | **not published** — linked to GitHub only |
+| Source                                       | Section             | Depth | Treatment                                  |
+|----------------------------------------------|---------------------|-------|--------------------------------------------|
+| `atrium-translator/agent_dev_logs/DEVLOG.md` | the whole timeline  | 2     | **derived**, never hand-written (16,358 B) |
+| `atrium-translator/agent_dev_logs/`          | 2 digests · 2 plans | —     | **not published** — linked to GitHub only  |
 
 
 ## Outline

@@ -25,10 +25,10 @@ Understand why page-classification is shaped the way it is, in the order it happ
 
 ## Sources
 
-| Source | Section | Depth | Treatment |
-|---|---|---|---|
-| `atrium-page-classification/agent_dev_logs/DEVLOG.md` | the whole timeline | 2 | **derived**, never hand-written (8,876 B) |
-| `atrium-page-classification/agent_dev_logs/` | 1 digests · 1 plans | — | **not published** — linked to GitHub only |
+| Source                                                | Section             | Depth | Treatment                                 |
+|-------------------------------------------------------|---------------------|-------|-------------------------------------------|
+| `atrium-page-classification/agent_dev_logs/DEVLOG.md` | the whole timeline  | 2     | **derived**, never hand-written (8,876 B) |
+| `atrium-page-classification/agent_dev_logs/`          | 1 digests · 1 plans | —     | **not published** — linked to GitHub only |
 
 
 ## Outline
