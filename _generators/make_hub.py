@@ -13,9 +13,7 @@ not exist.
 from __future__ import annotations
 
 import pathlib
-import sys
 
-sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from headings import headings, phantom_count  # noqa: E402
 from hub_spec import EXTRA_DOCS, EXTRA_SECTIONS, ROLE_PURPOSE, route  # noqa: E402
 
