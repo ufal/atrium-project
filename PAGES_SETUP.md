@@ -43,14 +43,14 @@ A `gh-pages` branch changes **zero** references.
 
 ## What lands on `gh-pages`
 
-| Repository | Branch content | URL |
-|---|---|---|
-| `atrium-project` | the built MkDocs site | <https://ufal.github.io/atrium-project/> |
+| Repository                   | Branch content                     | URL                                                  |
+|------------------------------|------------------------------------|------------------------------------------------------|
+| `atrium-project`             | the built MkDocs site              | <https://ufal.github.io/atrium-project/>             |
 | `atrium-page-classification` | orphan branch, static landing card | <https://ufal.github.io/atrium-page-classification/> |
-| `atrium-alto-postprocess` | orphan branch, static landing card | <https://ufal.github.io/atrium-alto-postprocess/> |
-| `atrium-translator` | orphan branch, static landing card | <https://ufal.github.io/atrium-translator/> |
-| `atrium-nlp-enrich` | orphan branch, static landing card | <https://ufal.github.io/atrium-nlp-enrich/> |
-| `atrium-llm-enrich` | orphan branch, static landing card | <https://ufal.github.io/atrium-llm-enrich/> |
+| `atrium-alto-postprocess`    | orphan branch, static landing card | <https://ufal.github.io/atrium-alto-postprocess/>    |
+| `atrium-translator`          | orphan branch, static landing card | <https://ufal.github.io/atrium-translator/>          |
+| `atrium-nlp-enrich`          | orphan branch, static landing card | <https://ufal.github.io/atrium-nlp-enrich/>          |
+| `atrium-llm-enrich`          | orphan branch, static landing card | <https://ufal.github.io/atrium-llm-enrich/>          |
 
 The five tool-repo branches are **orphan** branches holding a static landing card.
 They share no history with `test`/`master`/`main`/`vit` and never need regenerating —

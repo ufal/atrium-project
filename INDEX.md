@@ -12,14 +12,14 @@ it cannot drift.
 
 ## Layout
 
-| Path | What it is |
-|---|---|
-| `mkdocs.yml` | site config draft. `docs_dir: docs_site`, `site_dir: site`, `strict: true` |
-| `PAGES_SETUP.md` | the one-time Pages enablement step, per repository |
-| `docs/site.yml` | the assembler manifest **draft** — a shape, not a working file |
-| `docs_site/**` | 38 page drafts (13 hub pages + 5 repos × 5 tool-section pages) |
-| `docs_site/assets/extra.css` | thin styling hook for the pipeline strip and switcher |
-| `_generators/` | **scaffolding, not repo files** — see below |
+| Path                         | What it is                                                                 |
+|------------------------------|----------------------------------------------------------------------------|
+| `mkdocs.yml`                 | site config draft. `docs_dir: docs_site`, `site_dir: site`, `strict: true` |
+| `PAGES_SETUP.md`             | the one-time Pages enablement step, per repository                         |
+| `docs/site.yml`              | the assembler manifest **draft** — a shape, not a working file             |
+| `docs_site/**`               | 38 page drafts (13 hub pages + 5 repos × 5 tool-section pages)             |
+| `docs_site/assets/extra.css` | thin styling hook for the pipeline strip and switcher                      |
+| `_generators/`               | **scaffolding, not repo files** — see below                                |
 
 Also needed, and not included as a file because it is a one-line edit: add `site/`
 to the hub's `.gitignore`, which currently has no build-output rule (it was written
