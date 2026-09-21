@@ -6,37 +6,55 @@ that enablement "may already be automatic"; both were overtaken within a day._
 
 All six repositories publish from a **`gh-pages` branch, folder `/ (root)`**. Five of them already do.
 
-## Where each repository actually stands
+> **What publishes, and why, is decided in [`PAGES_STRATEGY.md`](PAGES_STRATEGY.md)** (2026-09-21).
+> This file remains the mechanics and live-state record. The owner-level steps below are restated
+> there as a checklist, together with two that are not here: checking Actions' workflow permissions
+> before the first deploy, and the order in which the `_config.yml` fences may be removed.
 
-Measured 2026-09-21 from the `pages build and deployment` runs in each repository's Actions tab.
+## Where each repository actually stands — ✅ all six, 2026-09-21
 
-| Repository                   | `gh-pages` branch | Pages     | Source                     | Last build                    |
-|------------------------------|-------------------|-----------|----------------------------|-------------------------------|
-| `atrium-project` (hub)       | ⚠️ not yet         | on 09-21  | **`main` / `/ (root)`** ⚠️  | ✅ green, *fenced* — see below |
-| `atrium-page-classification` | ✅ 09-19          | on 09-19  | `gh-pages` / `/ (root)`    | ✅ success                    |
-| `atrium-alto-postprocess`    | ✅ 09-19          | ❌ **off** | —                          | — **never built**             |
-| `atrium-translator`          | ✅ 09-19          | on 09-19  | `gh-pages` / `/ (root)`    | ✅ success                    |
-| `atrium-nlp-enrich`          | ✅ 09-19          | on 09-19  | `gh-pages` / `/ (root)`    | ✅ success                    |
-| `atrium-llm-enrich`          | ✅ 09-19          | on 09-21  | `gh-pages` / `/ (root)`    | ✅ success                    |
+Re-measured from each repository's `pages build and deployment` runs via the Actions API.
 
-So two things are outstanding, and they are the same dropdown.
+| Repository                   | `gh-pages` | Pages source            | Last build (UTC)      | Runs |
+|------------------------------|------------|-------------------------|-----------------------|-----:|
+| `atrium-project` (hub)       | ✅          | `gh-pages` / `/ (root)` | ✅ 09-21 14:50 success |    5 |
+| `atrium-page-classification` | ✅          | `gh-pages` / `/ (root)` | ✅ 09-21 12:08 success |    3 |
+| `atrium-alto-postprocess`    | ✅          | `gh-pages` / `/ (root)` | ✅ 09-21 12:03 success |    3 |
+| `atrium-translator`          | ✅          | `gh-pages` / `/ (root)` | ✅ 09-21 12:09 success |    3 |
+| `atrium-nlp-enrich`          | ✅          | `gh-pages` / `/ (root)` | ✅ 09-21 12:06 success |    3 |
+| `atrium-llm-enrich`          | ✅          | `gh-pages` / `/ (root)` | ✅ 09-21 12:07 success |    2 |
 
-## Outstanding step 1 — point the hub at `gh-pages`
+**Nothing is outstanding.** Both owner-level dropdowns this file used to list are done.
 
-**`ufal/atrium-project` → Settings → Pages → Build and deployment → Source: _Deploy from a branch_ →
-Branch: `gh-pages` / `/ (root)` → Save.**
+### ✏️ Two claims in the previous edition of this file were wrong
 
-Do this **after** `.github/workflows/pages.yml` has run once on `main`, which is what creates the
-branch. Before that the dropdown has nothing to offer.
+* **`atrium-alto-postprocess` was never "off / never built".** Its `pages-build-deployment` workflow
+  dates from **2026-09-19 08:22 UTC** and has three successful runs — it was enabled at the same time
+  as its four siblings. The claim was wrong when written, not overtaken.
+* **The hub's `gh-pages` is no longer absent.** `.github/workflows/pages.yml` created it and deployed
+  `ec06086` as `f9d77d1` (*"Deployed ec06086 with MkDocs version: 1.6.1"*, 87 files), and
+  [run 35614832294](https://github.com/ufal/atrium-project/actions/runs/35614832294) builds from
+  `head_branch: gh-pages`.
 
-The hub is currently set to **`main` / `/ (root)`** — changed from `/docs` on 2026-09-21. Both are
-wrong, and the second is worse than the first; see below.
+**This file should stop carrying a state table at all.** Three editions running, it has gone stale
+within hours of being written, because the Pages source is a repository *setting* that changes with no
+commit, no review and no notification. Read the state from the Actions API when it is needed; keep
+this file for the mechanics, which do not move.
 
-## Outstanding step 2 — switch Pages on for `atrium-alto-postprocess`
+### ⚠️ What that green build is publishing
 
-Same dropdown. Its `gh-pages` branch has been sitting there since 2026-09-19 with the landing card on
-it and Pages never switched on, so <https://ufal.github.io/atrium-alto-postprocess/> 404s while its
-four siblings serve. There has never been a `pages build and deployment` run in that repository.
+All **38 draft shells**, including the **25 `tools/<name>/…` mirror pages**, each carrying *"Draft
+shell — issue #57, round 2 (2026-09-18) — This page carries its outline and source pointers only"* and
+shipping its `<!-- ASSEMBLER: source=… -->` markers in the delivered HTML. The 20 deep links on the
+five landing cards now resolve, to pages with no prose. See
+[`PAGES_STRATEGY.md`](PAGES_STRATEGY.md) §§1–4 and the removal pass in §8.1.
+
+### The fences are now inert — remove them
+
+With the source on `gh-pages`, the legacy Jekyll builder no longer runs over `main`, so everything
+below about `_config.yml`, `docs/_config.yml` and `tests/test_pages_exclude.py` is **history, not
+instruction**. It is kept because it records why those files existed and what a green build from
+`main` would have published. `PAGES_STRATEGY.md` §8.1 has the removal commands.
 
 ## Why an owner has to do it
 
@@ -106,11 +124,11 @@ the two documents that explain the ecosystem's Docker and CI story.
 the moment that dropdown changed. The fence was bypassed, not broken — and the blast radius went from
 two files to the entire repository:
 
-| Under `/docs`                   | Under `/ (root)`                                                        |
-|---------------------------------|-------------------------------------------------------------------------|
-| 13 markdown files + `templates/` | **every tracked file**, including all 79 of `agent_dev_logs/`            |
-| 2 files carrying addresses      | **5** — three more in `agent_dev_logs/` the docs fence never covered     |
-| 2 files carrying Liquid         | **9**                                                                    |
+| Under `/docs`                    | Under `/ (root)`                                                     |
+|----------------------------------|----------------------------------------------------------------------|
+| 13 markdown files + `templates/` | **every tracked file**, including all 79 of `agent_dev_logs/`        |
+| 2 files carrying addresses       | **5** — three more in `agent_dev_logs/` the docs fence never covered |
+| 2 files carrying Liquid          | **9**                                                                |
 
 The three the docs-scoped fence never reached:
 
@@ -118,7 +136,7 @@ The three the docs-scoped fence never reached:
 * `agent_dev_logs/digests/project_state_2706.md` — a personal address
 * `agent_dev_logs/issues/2026-06-12.21.issue.open.md` — a partner address
 
-…on top of 49 issue exports, several of which are open memos addressed to named individuals, which
+…on top of 23 issue exports, several of which are open memos addressed to named individuals, which
 `57.plan.md` §E says are not published at all.
 
 And the nine files that now crash the build include **`PAGES_SETUP.md` — this file, at line 66**,
@@ -150,13 +168,13 @@ the **20 hub-root links** on the five stub cards resolve (the eyebrow and "ATRIU
 
 ### `docs/_config.yml` — inert now, the fence again if the folder goes back to `/docs`
 
-| Excluded                 | Why                                                                         |
-|--------------------------|-----------------------------------------------------------------------------|
-| `arub-p_contacts.md`     | five ARÚP/ARÚB partner email addresses                                      |
-| `plan_repo_review.md`    | a personal email address; self-declares as stale                            |
-| `docker_gha_roadmap.md`  | 97 KB internal roadmap — and the fatal Liquid at `:79`                      |
-| `docker_gha.md`          | one `{{version}}` at `:213` resolves to the empty string, not an error — the page would ship silently claiming `type=semver,pattern=`. Wrong is worse than absent. |
-| `templates/`             | vendored canonical code, caller examples and «placeholder» skeletons — not documentation. Jekyll would render its four `.md` files and copy every `.py`/`.yml`/`.sh` into the site verbatim. |
+| Excluded                | Why                                                                                                                                                                                          |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `arub-p_contacts.md`    | five ARÚP/ARÚB partner email addresses                                                                                                                                                       |
+| `plan_repo_review.md`   | a personal email address; self-declares as stale                                                                                                                                             |
+| `docker_gha_roadmap.md` | 97 KB internal roadmap — and the fatal Liquid at `:79`                                                                                                                                       |
+| `docker_gha.md`         | one `{{version}}` at `:213` resolves to the empty string, not an error — the page would ship silently claiming `type=semver,pattern=`. Wrong is worse than absent.                           |
+| `templates/`            | vendored canonical code, caller examples and «placeholder» skeletons — not documentation. Jekyll would render its four `.md` files and copy every `.py`/`.yml`/`.sh` into the site verbatim. |
 
 Nine files still publish: `agent_skill_strategy` · `document_schema` · `k8s_acceptance_runbook` ·
 `k8s_deployment` · `paradata_schema` · `rocrate_export` · `skill_acceptance_runbook` ·
@@ -204,14 +222,14 @@ A `gh-pages` branch changes **zero** references.
 
 ## What lands on `gh-pages`
 
-| Repository                   | Branch content                     | Written by                              | URL                                                  |
-|------------------------------|------------------------------------|-----------------------------------------|------------------------------------------------------|
+| Repository                   | Branch content                     | Written by                                            | URL                                                  |
+|------------------------------|------------------------------------|-------------------------------------------------------|------------------------------------------------------|
 | `atrium-project`             | the built MkDocs site              | `.github/workflows/pages.yml` on every push to `main` | <https://ufal.github.io/atrium-project/>             |
-| `atrium-page-classification` | orphan branch, static landing card | `_generators/make_stubs.py`, by hand     | <https://ufal.github.io/atrium-page-classification/> |
-| `atrium-alto-postprocess`    | orphan branch, static landing card | `_generators/make_stubs.py`, by hand     | <https://ufal.github.io/atrium-alto-postprocess/>    |
-| `atrium-translator`          | orphan branch, static landing card | `_generators/make_stubs.py`, by hand     | <https://ufal.github.io/atrium-translator/>          |
-| `atrium-nlp-enrich`          | orphan branch, static landing card | `_generators/make_stubs.py`, by hand     | <https://ufal.github.io/atrium-nlp-enrich/>          |
-| `atrium-llm-enrich`          | orphan branch, static landing card | `_generators/make_stubs.py`, by hand     | <https://ufal.github.io/atrium-llm-enrich/>          |
+| `atrium-page-classification` | orphan branch, static landing card | `_generators/make_stubs.py`, by hand                  | <https://ufal.github.io/atrium-page-classification/> |
+| `atrium-alto-postprocess`    | orphan branch, static landing card | `_generators/make_stubs.py`, by hand                  | <https://ufal.github.io/atrium-alto-postprocess/>    |
+| `atrium-translator`          | orphan branch, static landing card | `_generators/make_stubs.py`, by hand                  | <https://ufal.github.io/atrium-translator/>          |
+| `atrium-nlp-enrich`          | orphan branch, static landing card | `_generators/make_stubs.py`, by hand                  | <https://ufal.github.io/atrium-nlp-enrich/>          |
+| `atrium-llm-enrich`          | orphan branch, static landing card | `_generators/make_stubs.py`, by hand                  | <https://ufal.github.io/atrium-llm-enrich/>          |
 
 The five tool-repo branches are **orphan** branches holding a static landing card. They share no
 history with `test`/`master`/`main`/`vit` and never need regenerating — which is the main

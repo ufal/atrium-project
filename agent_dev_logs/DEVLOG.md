@@ -1023,3 +1023,68 @@ derived reading aid in `agent_dev_logs/`._
   zero `agent_dev_logs/`, zero `docs/`, zero vendored code. Five deliberate breaks of the new guard
   (drop `agent_dev_logs` from the list, add a tracked top-level file, put Liquid in `README.md`, put a
   partner address in `README.md`, delete the fence) each fail as designed.
+
+## 2026-09-21 (later)
+- **#57 GH Pages — the infrastructure finished, and the content became the problem.** Re-measured from
+  every repository's `pages build and deployment` runs rather than from prose: **all six sites serve,
+  all six sources are `gh-pages` / `/ (root)`, every build green.** The hub's
+  [run 35614832294](https://github.com/ufal/atrium-project/actions/runs/35614832294) (14:50 UTC,
+  `head_branch: gh-pages`) publishes `f9d77d1`, *"Deployed ec06086 with MkDocs version: 1.6.1"*, 87
+  files, written by `pages.yml` exactly as designed. Both owner-level dropdowns the plan listed as
+  outstanding are done.
+
+  **Two records were wrong and are corrected rather than overwritten.** `atrium-alto-postprocess` was
+  never "off, never built" — its `pages-build-deployment` workflow dates from 2026-09-19 08:22 UTC
+  with three successful runs, i.e. it was enabled alongside its siblings and the claim was wrong when
+  written. And `agent_dev_logs/` holds **23** issue exports, not 49; the full count is 24 digests, 24
+  plans, 23 exports, 6 `project_state_*` snapshots, `DEVLOG.md` and `agent_skill_branch_plan.md` = 79.
+
+  That is three editions running in which a hand-written per-repository state table went stale within
+  hours. The lesson is the same shape as the fence lesson above: **stop asserting live infrastructure
+  state in prose.** Read it from the Actions API at the moment it is needed.
+
+- **#57 — the maintainer's verdict on what shipped: "no new information available."** Correct, and
+  structural rather than a gap round 3 would have closed. Counted against the 38 shells' own
+  `## Sources` tables: **34 of 38 pages are a second copy of something already published** — 25
+  re-slice a tool `README.md`, 6 re-slice a hub `docs/*.md` that is already public on `main`, 3
+  re-slice `CONTRIBUTING.md` / `DEVLOG.md` / the hub `README.md`. Four carry new writing.
+
+  A mirror rebuilt on a cron can only tie its source or lag it; there is no state in which the reader
+  is better off on the mirror. And the split makes the big manuals worse — the five READMEs are
+  36–90 KB operator documents whose value is that one Ctrl-F covers the tool.
+
+  Noted before it shipped: `docs_site/ecosystem/architecture.md` declared its sources as
+  `digests/project_state_2706.md` and `project_state_1307.md` — **two of the files the fence exists to
+  exclude**, both carrying a personal address. The aggregate design was arranged, by its own source
+  table, to route content around the fence.
+
+- **`PAGES_STRATEGY.md` added** — the replacement design. One rule: *the hub publishes what is true
+  across repositories; anything true within one stays there and is linked to.* Site goes **38 pages →
+  12**, eleven of which are writing that exists nowhere today. `pipelines.md` leads: the end-to-end
+  narrative for both branches, including why the born-digital branch is two stages and not six
+  (origin-consistency refusing `pages`/`lines` writes; `needs_ocr: true` as the single re-authorisation
+  that lets two originators coexist) — reasoning that currently lives **only in the header comment of
+  `e2e-digital-smoke.yml`**. Then `external-tools.md`, ~40 entries scoped by measured reference counts
+  (Hugging Face 54, LINDAT 14, `w3id.org` 10, AMCR 8). §B (the assembler) and §G
+  (`pages-stub.reusable.yml`) of `57.plan.md` are retired; the assembler existed only to manufacture
+  the mirror.
+
+  **De-duplication, measured before it was designed:** `CONTRIBUTING.md` is *not* duplicated — five
+  files, five distinct checksums, 32,455–112,176 B, sharing a ~9 KB skeleton and four short identical
+  sections and then diverging into real per-repo content. Collapsing them into one shared page would
+  delete information. What is genuinely shared is `docs/templates/shared/`, whose concepts the hub now
+  documents once and transcludes with `pymdownx.snippets` rather than re-splitting.
+
+- **The fences are discharged.** With the Pages source on `gh-pages`, the legacy Jekyll builder no
+  longer runs over `main`, so `_config.yml`, `docs/_config.yml` and `tests/test_pages_exclude.py`
+  guard nothing. They were load-bearing exactly while they were needed — run 35612083327 is the proof
+  — and §H's ordering constraint ("never delete the fence before the dropdown moves") is satisfied by
+  the dropdown having moved. The removal is specified in `PAGES_STRATEGY.md` §8.1 with the caveat
+  stated once: if anyone points Pages back at `main`, the root publishes unguarded.
+
+  **The removal pass was verified in a scratch clone before being written down**, because deleting
+  `docs_site/tools/**` alone fails the build: `mkdocs.yml`'s `nav:` still names all 25 pages and
+  `strict: true` turns each into an error — *"Aborted with 25 warnings in strict mode!"* — which fails
+  `pages.yml` and stops the deploy entirely. With the `- Tools:` nav block removed in the same commit:
+  `mkdocs build --strict` green, `pytest tests/` **111 passed, 22 skipped**, and nothing under
+  `.github/` or `scripts/` referencing any deleted file.
