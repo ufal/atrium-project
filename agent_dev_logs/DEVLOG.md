@@ -953,8 +953,31 @@ derived reading aid in `agent_dev_logs/`._
   files are committed, contrary to `INDEX.md`'s claim they should not be. Corpus re-measured at the
   default branches: **252 markdown files, 4,581,156 B**.
 
+  **Then the legacy build itself was fixed, rather than merely worked around.**
+  `pages-build-deployment` is a built-in job, not a workflow file here, so the only two levers are
+  what lives under `docs/` and where the source points. `docs/_config.yml` takes the first:
+  it excludes the three sensitive/internal files, `docker_gha.md` (its one `{{version}}` resolves to
+  the empty string rather than raising — the page would ship silently claiming `type=semver,pattern=`)
+  and `templates/` (vendored code and «placeholder» skeletons, not documentation). Nine reviewed files
+  still publish, all clean of Liquid and of any address. **No source file was edited** — the markdown
+  is correct, and `{% raw %}` or entity-escaping would corrupt GitHub's own rendering of it.
+
+  This is §F's "explicit, tested step" arriving early. `tests/test_docs_pages_exclude.py` is
+  bidirectional in the #59 sense — every exclusion names a file that exists, every file under `docs/`
+  is excluded or reviewed — plus two assertions that would each have caught this incident: no
+  publishable file may carry a Liquid construct, none may carry a partner address. Scoped to the two
+  ARÚP/ARÚB domains, **not** "any email address", per §F's own warning. All six checks were
+  deliberately broken and confirmed to fail before being trusted.
+
+  Reproduced locally on `jekyll 3.10.0` / `liquid 4.0.4`, the versions the Pages image pins:
+  byte-identical error, and the fenced build exits 0 with the excluded files absent. The trap worth
+  recording: the reproduction needs `jekyll-optional-front-matter`, which GitHub Pages forces on —
+  without it, front-matter-less `.md` is copied as a static asset, Liquid never runs, and a plain
+  `jekyll build` **passes**.
+
   Verified: `mkdocs build --strict` exits 0 (mkdocs 1.6.1 / material 9.7.7 / pymdownx 12.0.1);
-  `workflow_lint.py` OK with `pages.yml` in scope; hub suite **141 passed, 4 skipped**; `ruff` clean;
-  `make_config.py` still regenerates `mkdocs.yml` byte-identically. **Not** verified: any live URL —
-  `ufal.github.io` is blocked by the authoring environment's egress proxy, so every claim about a
-  serving site is read from `pages build and deployment` run conclusions, not from the page.
+  `workflow_lint.py` OK with `pages.yml` in scope; hub suite **164 passed, 4 skipped** (141 + the 23
+  new); `ruff` clean; `make_config.py` still regenerates `mkdocs.yml` byte-identically. **Not**
+  verified: any live URL — `ufal.github.io` is blocked by the authoring environment's egress proxy, so
+  every claim about a serving site is read from `pages build and deployment` run conclusions, not from
+  the page.
