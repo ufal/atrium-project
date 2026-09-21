@@ -12,7 +12,7 @@ Measured 2026-09-21 from the `pages build and deployment` runs in each repositor
 
 | Repository                   | `gh-pages` branch | Pages     | Source                     | Last build                    |
 |------------------------------|-------------------|-----------|----------------------------|-------------------------------|
-| `atrium-project` (hub)       | ⚠️ not yet         | on 09-21  | **`main` / `/docs`** ⚠️     | ✅ green, *fenced* — see below |
+| `atrium-project` (hub)       | ⚠️ not yet         | on 09-21  | **`main` / `/ (root)`** ⚠️  | ✅ green, *fenced* — see below |
 | `atrium-page-classification` | ✅ 09-19          | on 09-19  | `gh-pages` / `/ (root)`    | ✅ success                    |
 | `atrium-alto-postprocess`    | ✅ 09-19          | ❌ **off** | —                          | — **never built**             |
 | `atrium-translator`          | ✅ 09-19          | on 09-19  | `gh-pages` / `/ (root)`    | ✅ success                    |
@@ -29,8 +29,8 @@ Branch: `gh-pages` / `/ (root)` → Save.**
 Do this **after** `.github/workflows/pages.yml` has run once on `main`, which is what creates the
 branch. Before that the dropdown has nothing to offer.
 
-The hub is currently set to **`main` / `/docs`**, which is wrong twice over — see
-[Why the hub must not publish from `/docs`](#why-the-hub-must-not-publish-from-docs).
+The hub is currently set to **`main` / `/ (root)`** — changed from `/docs` on 2026-09-21. Both are
+wrong, and the second is worse than the first; see below.
 
 ## Outstanding step 2 — switch Pages on for `atrium-alto-postprocess`
 
@@ -96,11 +96,59 @@ the two documents that explain the ecosystem's Docker and CI story.
 > markdown is correct; it is Jekyll that is wrong for this corpus, and escaping `{{` would have
 > corrupted how GitHub renders those files in the repository browser.
 
-## The fence: `docs/_config.yml`
+## ⚠️ The folder moved on 2026-09-21, and the fence had to move with it
+
+[Run 35612083327](https://github.com/ufal/atrium-project/actions/runs/35612083327) reports
+`Source: /github/workspace/.` and **`Configuration file: none`**. The Pages folder was changed from
+`/docs` to `/ (root)`.
+
+**Jekyll reads the `_config.yml` beside its source**, so `docs/_config.yml` stopped being consulted
+the moment that dropdown changed. The fence was bypassed, not broken — and the blast radius went from
+two files to the entire repository:
+
+| Under `/docs`                   | Under `/ (root)`                                                        |
+|---------------------------------|-------------------------------------------------------------------------|
+| 13 markdown files + `templates/` | **every tracked file**, including all 79 of `agent_dev_logs/`            |
+| 2 files carrying addresses      | **5** — three more in `agent_dev_logs/` the docs fence never covered     |
+| 2 files carrying Liquid         | **9**                                                                    |
+
+The three the docs-scoped fence never reached:
+
+* `agent_dev_logs/digests/project_state_1307.md` — a personal address
+* `agent_dev_logs/digests/project_state_2706.md` — a personal address
+* `agent_dev_logs/issues/2026-06-12.21.issue.open.md` — a partner address
+
+…on top of 49 issue exports, several of which are open memos addressed to named individuals, which
+`57.plan.md` §E says are not published at all.
+
+And the nine files that now crash the build include **`PAGES_SETUP.md` — this file, at line 66**,
+which quotes the failing Liquid expression verbatim in a fenced block. Documenting the error
+reproduced it. The full set: `PAGES_SETUP.md`, `agent_dev_logs/DEVLOG.md`,
+`agent_dev_logs/digests/10.digest.md`, `agent_dev_logs/digests/57.digest.md`,
+`agent_dev_logs/digests/project_state_0709.md`, `agent_dev_logs/issues/2026-05-27.18.issue.open.md`,
+`agent_dev_logs/plans/57.plan.md`, `docs/docker_gha.md`, `docs/docker_gha_roadmap.md`.
+
+## The fences: `_config.yml` and `docs/_config.yml`
 
 GitHub's `pages-build-deployment` job is not a workflow file in this repository and cannot be edited.
-The only two levers over it are **what lives under `docs/`** and **where the Pages source points**.
-`docs/_config.yml` is the first lever.
+The only two levers over it are **what lives in the source folder** and **where the source points**.
+
+**Both fences are kept**, because the dropdown has been set both ways within one day and neither
+config depends on the other. Whichever way it is set, one is the fence and the other is inert.
+
+### `_config.yml` (repo root) — the active one
+
+It excludes `agent_dev_logs`, `docs`, `docs_site`, `INDEX.md`, `PAGES_SETUP.md`, `fixtures`, `tests`,
+`tools`, `scripts`, `mkdocs.yml` and `ruff.toml`. Jekyll already skips anything beginning with `.` or
+`_`, so `.github/`, `.gitignore` and `_generators/` need no entry.
+
+**What publishes: `README.md`, and nothing else.** `jekyll-readme-index` makes it the site index, so
+<https://ufal.github.io/atrium-project/> finally serves something true — the project README, already
+public on the repository page. Checked: zero Liquid constructs, zero email addresses. That also makes
+the **20 hub-root links** on the five stub cards resolve (the eyebrow and "ATRIUM docs home", ×2 pages
+×5 repos); the 40 deep `…/tools/<name>/` links still need the real site.
+
+### `docs/_config.yml` — inert now, the fence again if the folder goes back to `/docs`
 
 | Excluded                 | Why                                                                         |
 |--------------------------|-----------------------------------------------------------------------------|
@@ -116,9 +164,12 @@ Nine files still publish: `agent_skill_strategy` · `document_schema` · `k8s_ac
 addresses of any kind.** Their URLs (`…/skos_strategy.html`) are temporary and disappear when the
 source moves — nothing links to them.
 
-`tests/test_docs_pages_exclude.py` holds the list honest in both directions: every exclusion must
-name a file that exists, and every file under `docs/` must be either excluded or on a reviewed
-allow-list. It also fails if a publishable file grows a Liquid construct or a partner address. Each
+`tests/test_pages_exclude.py` holds **both** lists honest in both directions: every exclusion must
+name a path that exists, and every tracked entry in each source folder must be either excluded or on a
+reviewed allow-list. It also fails if a publishable file grows a Liquid construct or a partner address,
+and it asserts by name that `agent_dev_logs/` and `docs/` stay excluded at the root. It compares
+against `git ls-files`, not the filesystem — the Pages builder sees a fresh clone, so a gitignored
+build artifact like `site/` is not there. Each
 of its six checks was deliberately broken and confirmed to fail before being trusted.
 
 **Both files are stopgaps. Delete them when the Pages source moves** — the legacy builder stops

@@ -981,3 +981,45 @@ derived reading aid in `agent_dev_logs/`._
   verified: any live URL — `ufal.github.io` is blocked by the authoring environment's egress proxy, so
   every claim about a serving site is read from `pages build and deployment` run conclusions, not from
   the page.
+
+- **#57 GH PAGES — the Pages folder moved from `/docs` to `/ (root)`, and the fence went inert.**
+  Run `35612083327` reports `Source: /github/workspace/.` and **`Configuration file: none`**. Jekyll
+  reads the `_config.yml` beside its source, so `docs/_config.yml` — merged that morning — stopped
+  being consulted the instant the dropdown changed. Bypassed, not broken.
+
+  **The blast radius went from 13 files plus `templates/` to every tracked file**, including all 79 of
+  `agent_dev_logs/`, which `57.plan.md` §E says are never published and which hold 49 issue exports,
+  several of them open memos to named individuals. Files carrying an email address went from 2 to
+  **5** — `digests/project_state_1307.md`, `digests/project_state_2706.md` and
+  `issues/2026-06-12.21.issue.open.md` were never in the docs-scoped fence's reach. Files carrying a
+  Liquid construct went from 2 to **9**.
+
+  **One of those nine is `PAGES_SETUP.md:66`, written earlier the same day**, which quotes the failing
+  Liquid expression verbatim in a fenced block. Documenting the error reproduced it. Recorded plainly
+  rather than quietly fixed: the corpus is *about* CI, so it is full of `${{ … }}`, and under a Jekyll
+  build every markdown file in it is a loaded gun.
+
+  **The real lesson is about scope, not about one more exclusion.** A fence pinned to one folder is a
+  fence only while that folder is the source, and the source is a repository setting that changes
+  without a commit, a review or a notification. So: `_config.yml` at the repository root is written to
+  be correct under the wider setting; `docs/_config.yml` is kept for the narrower one; neither depends
+  on the other; and `tests/test_pages_exclude.py` (renamed from `test_docs_pages_exclude.py`) checks
+  both, because the next move of that dropdown will not announce itself either.
+
+  The root fence excludes `agent_dev_logs`, `docs`, `docs_site`, `INDEX.md`, `PAGES_SETUP.md`,
+  `fixtures`, `tests`, `tools`, `scripts`, `mkdocs.yml`, `ruff.toml` — Jekyll skips `.`/`_` entries on
+  its own. **`README.md` is the only file published**, and `jekyll-readme-index` makes it the site
+  index, so <https://ufal.github.io/atrium-project/> serves something true at last and the **20
+  hub-root links** on the five stub cards resolve. The 40 deep `…/tools/<name>/` links still need the
+  real site.
+
+  The guard now compares against `git ls-files` rather than the filesystem — the Pages builder sees a
+  fresh clone, so gitignored build output (`site/`, `stubs/`) is not there. It caught that itself on
+  its first run, which is the cheapest possible evidence that a bidirectional check earns its keep.
+
+  Verified against `main` at `ffa3053` by `git archive` into a scratch tree: `jekyll 3.10.0` /
+  `liquid 4.0.4` with the plugin set github-pages forces reproduces the failure, and the same build
+  with the root fence exits 0 with `README.md` → `index.html` as the *entire* output — zero addresses,
+  zero `agent_dev_logs/`, zero `docs/`, zero vendored code. Five deliberate breaks of the new guard
+  (drop `agent_dev_logs` from the list, add a tracked top-level file, put Liquid in `README.md`, put a
+  partner address in `README.md`, delete the fence) each fail as designed.

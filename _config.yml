@@ -1,0 +1,86 @@
+# _config.yml — a fence around GitHub's built-in Pages build. NOT a site config.
+#
+# WHY THIS FILE EXISTS, AND WHY IT IS AT THE REPOSITORY ROOT
+#
+# GitHub Pages for this repository is set to "Deploy from a branch", and on
+# 2026-09-21 the folder was changed from `/docs` to `/ (root)`. That moved the
+# Jekyll source from `docs/` to the WHOLE REPOSITORY, and with it the config Jekyll
+# reads: it looks for `_config.yml` beside the source, so `docs/_config.yml` stopped
+# being consulted the moment the dropdown changed. Run 35612083327 shows it plainly --
+# `Source: /github/workspace/.` and `Configuration file: none`.
+#
+# The blast radius went up with it. Under `/docs` the exposure was two files; under
+# `/ (root)` it is the entire repository, including all 79 files of `agent_dev_logs/`
+# -- issue exports, open memos addressed to named individuals, and three more files
+# carrying email addresses that the docs-scoped fence never covered:
+#
+#   docs/arub-p_contacts.md                        five ARUP/ARUB partner addresses
+#   docs/plan_repo_review.md                       a personal address
+#   agent_dev_logs/digests/project_state_1307.md   a personal address
+#   agent_dev_logs/digests/project_state_2706.md   a personal address
+#   agent_dev_logs/issues/2026-06-12.21.issue.open.md   a partner address
+#
+# The build is red rather than leaking, for the same accidental reason as last time:
+# github-pages enables `jekyll-optional-front-matter`, which makes every
+# front-matter-less `.md` a rendered page, and Jekyll runs Liquid over ALL markdown --
+# inside fenced code blocks and inline code spans too. NINE markdown files in this
+# repository quote a GitHub Actions expression and would be parsed as templates:
+# PAGES_SETUP.md, agent_dev_logs/DEVLOG.md, agent_dev_logs/digests/{10,57}.digest.md,
+# agent_dev_logs/digests/project_state_0709.md,
+# agent_dev_logs/issues/2026-05-27.18.issue.open.md,
+# agent_dev_logs/plans/57.plan.md, docs/docker_gha.md and docs/docker_gha_roadmap.md.
+#
+# WHAT THIS PUBLISHES: README.md, AND NOTHING ELSE.
+#
+# `jekyll-readme-index` turns it into the site's index, so
+# https://ufal.github.io/atrium-project/ finally serves something true -- the project
+# README, which is already public on the repository page. Checked 2026-09-21: it
+# carries zero Liquid constructs and zero email addresses. Everything else is either
+# internal, a draft, vendored code, or test fixtures.
+#
+# Jekyll skips entries beginning with `.` or `_` on its own, so `.github/`,
+# `.gitignore`, `.pre-commit-config.yaml` and `_generators/` never reach the site and
+# are not listed below. Everything else at the root is listed explicitly, and
+# tests/test_pages_exclude.py fails if a new top-level entry appears that is neither
+# excluded here nor on its reviewed allow-list.
+#
+# THIS FILE IS A STOPGAP AND SHOULD BE DELETED, not maintained. The real site is built
+# from docs_site/ by .github/workflows/pages.yml and published to the `gh-pages`
+# branch; the moment an owner points Settings -> Pages at `gh-pages` / `/ (root)`, the
+# legacy builder stops running and nothing reads this file again. See PAGES_SETUP.md.
+#
+# `docs/_config.yml` is kept alongside this one deliberately: it is inert while the
+# folder is `/ (root)`, and becomes the fence again if anyone flips it back to
+# `/docs`. Two settings, two fences, neither depending on the other.
+
+exclude:
+  # Internal chronology: 79 files. Per 57.plan.md section E the raw records are not
+  # published at all -- one derived history page per repo instead. Three of them carry
+  # email addresses, and several issue exports are open memos to named individuals.
+  - agent_dev_logs
+
+  # The hub's canonical internal tree, not a docs site. Also fenced independently by
+  # docs/_config.yml for the case where the Pages folder is set back to /docs.
+  - docs
+
+  # The MkDocs source. These 38 pages are DRAFT SHELLS with front matter; rendered by
+  # Jekyll they would be a broken pseudo-site at URLs that conflict with the real one.
+  # They are published by .github/workflows/pages.yml, built, to the gh-pages branch.
+  - docs_site
+
+  # Round-2 working notes about this very issue. PAGES_SETUP.md is itself one of the
+  # nine files that crash the build: it quotes the failing Liquid expression verbatim
+  # in a fenced block, at :66. Quoting the error is the same bug as causing it.
+  - INDEX.md
+  - PAGES_SETUP.md
+
+  # Test fixtures, test suite, tooling, build config. Not documentation.
+  - fixtures
+  - tests
+  - tools
+  - scripts
+  - mkdocs.yml
+  - ruff.toml
+
+# No `theme:`, no `plugins:`, no `title:`. Adding them would make this look like a
+# site configuration someone should tend. It is a fence; the site lives elsewhere.
