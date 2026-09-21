@@ -1,7 +1,10 @@
-# ATRIUM hub site tree — drafts, issue #57 round 2
+# ATRIUM hub site tree — drafts, issue #57 round 2 (+ the 2026-09-21 Pages repair)
 
 Everything here lands on **`atrium-project`'s default branch (`main`)**, not on
-`gh-pages`. `gh-pages` receives the *built* site; this is its source.
+`gh-pages`. `gh-pages` receives the *built* site; this is its source, and as of
+2026-09-21 `.github/workflows/pages.yml` is what does the building. See
+[`PAGES_SETUP.md`](PAGES_SETUP.md) for the live per-repository state and the one
+owner-level dropdown still outstanding on the hub.
 
 **These are shells.** Every page carries frontmatter, a one-sentence purpose, a
 `## Sources` table and an outline whose sections carry `<!-- ASSEMBLER: -->` markers.
@@ -12,18 +15,23 @@ it cannot drift.
 
 ## Layout
 
-| Path                         | What it is                                                                 |
-|------------------------------|----------------------------------------------------------------------------|
-| `mkdocs.yml`                 | site config draft. `docs_dir: docs_site`, `site_dir: site`, `strict: true` |
-| `PAGES_SETUP.md`             | the one-time Pages enablement step, per repository                         |
-| `docs/site.yml`              | the assembler manifest **draft** — a shape, not a working file             |
-| `docs_site/**`               | 38 page drafts (13 hub pages + 5 repos × 5 tool-section pages)             |
-| `docs_site/assets/extra.css` | thin styling hook for the pipeline strip and switcher                      |
-| `_generators/`               | **scaffolding, not repo files** — see below                                |
+| Path                           | What it is                                                                       |
+|--------------------------------|----------------------------------------------------------------------------------|
+| `mkdocs.yml`                   | site config. `docs_dir: docs_site`, `site_dir: site`, `strict: true`             |
+| `PAGES_SETUP.md`               | live Pages state per repository + the outstanding owner steps. Hand-maintained   |
+| `docs_site/**`                 | 38 page drafts (13 hub pages + 5 repos × 5 tool-section pages)                   |
+| `docs_site/assets/extra.css`   | thin styling hook for the pipeline strip and switcher                            |
+| `.github/workflows/pages.yml`  | builds `docs_site/` with `--strict`; publishes to `gh-pages` on push to `main`   |
+| `tools/docs/requirements.txt`  | the pinned documentation toolchain the workflow installs                         |
+| `_generators/`                 | the scripts that produced the drafts — committed; see below                      |
 
-Also needed, and not included as a file because it is a one-line edit: add `site/`
-to the hub's `.gitignore`, which currently has no build-output rule (it was written
-for tool caches only).
+Two things the 2026-09-18 edition of this file listed and got wrong, corrected here:
+
+* **`docs/site.yml` is not in the repository.** `_generators/make_config.py` emits it into its
+  scratch `hub/` output directory, but it was never committed and nothing reads it. It is still the
+  right shape for round 3's manifest (§B.1) — it is simply not a file that exists yet.
+* **`site/` is now gitignored.** This file previously flagged that as an outstanding one-line edit;
+  it landed on 2026-09-21 alongside the Pages workflow.
 
 ## Why `docs_site/` and not `docs/`
 
@@ -50,8 +58,11 @@ in five repositories at once. `docs_site/` costs nothing.
 They were **read out of the repositories**, not written from memory, using a
 fence-aware heading parser — the same rule `57.plan.md` §B.2 specifies for the
 assembler. **208 source paths were checked and all 208 resolve.** `nav` ↔ `docs_site/`
-↔ `docs/site.yml` agree in both directions, 38 = 38 = 38; round 3 turns that into a
-test, the way `tests/test_shared_manifest.py` does for `MANIFEST.json`.
+agree in both directions, **38 = 38** — re-verified 2026-09-21 by a green
+`mkdocs build --strict`. (The 2026-09-18 edition wrote "38 = 38 = 38", counting
+`docs/site.yml` as the third term; that file is not in the repository, so there were
+only ever two terms.) Round 3 turns the agreement into a test, the way
+`tests/test_shared_manifest.py` does for `MANIFEST.json`.
 
 The parser matters: a naive `^## ` regex finds **23** `##` headings in
 `docs/agent_skill_strategy.md` where only **18** are real — the other five are inside
@@ -60,25 +71,39 @@ pointers to sections that do not exist, in the hub's own pilot page.
 
 ## `_generators/`
 
-The scripts that produced these drafts. **They are not repository files** and should
-not be committed as-is. Two are worth keeping for round 3:
+The scripts that produced these drafts. The 2026-09-18 edition of this file said they
+"are not repository files and should not be committed as-is" — **all seven are
+committed**, and on reflection that is the right call: the drafts are 38 generated
+files, and a correction has to be a one-line edit plus a re-run rather than 38 hand
+edits. Two are load-bearing for round 3:
 
 - `headings.py` — the fence-aware parser above; the assembler needs exactly this
 - `hub_spec.py` — the README-section → page routing table, which encodes where each
   of the five tool repos' sections belongs
 
-`make_stubs.py`, `make_hub.py` and `make_config.py` regenerate everything in both
-archives from scratch, so a correction is a one-line edit plus a re-run rather than
-38 hand edits.
+`make_stubs.py`, `make_hub.py` and `make_config.py` regenerate everything from
+scratch into scratch directories (`hub/`, `stubs/`), which are not committed.
+
+⚠️ **`make_stubs.py` also emits `README.md` for each `gh-pages` branch, and the five
+deployed copies carry hand formatting the generator does not reproduce** (aligned
+tables; four of the five dropped the trailing `_Generated …_` line). When copying a
+regenerated stub tree onto a branch, take `index.html` and `404.html` only.
 
 ## What this round deliberately does not do
 
-No assembler, no `site_manifest.py`, no tests, no build/deploy workflow, no prose, no
-change to any README, and no docs-site link added anywhere. All of that is round 3.
+No assembler, no `site_manifest.py`, no tests, no prose, no change to any README, and
+no docs-site link added anywhere. All of that is round 3.
+
+**Amended 2026-09-21:** "no build/deploy workflow" no longer holds. The hub's Pages
+was switched on pointed at `main` / `/docs` and failed, so `.github/workflows/pages.yml`
+landed early — out of the round-3 order, because 90 links on the five deployed stub
+cards were 404ing on a hub site that had no way to exist. Nothing else moved forward
+with it.
 
 ## Contents
 
 ```
+  .github/workflows/pages.yml
   PAGES_SETUP.md
   _generators/headings.py
   _generators/hub_spec.py
@@ -87,7 +112,6 @@ change to any README, and no docs-site link added anywhere. All of that is round
   _generators/make_stubs.py
   _generators/repos.py
   _generators/style.css
-  docs/site.yml
   docs_site/agent-skills.md
   docs_site/assets/extra.css
   docs_site/contracts/rocrate.md
@@ -128,4 +152,5 @@ change to any README, and no docs-site link added anywhere. All of that is round
   docs_site/tools/translator/index.md
   docs_site/tools/translator/reference.md
   mkdocs.yml
+  tools/docs/requirements.txt
 ```

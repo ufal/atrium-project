@@ -94,6 +94,14 @@ plugins:
 #  whose only real heading is docs/categorization_logic.md:214).
 strict: true
 
+# `strict: true` alone does NOT make the anchor above a build failure: MkDocs
+# defaults `validation.links.anchors` to `info`, and `--strict` promotes warnings,
+# not info. Without these three lines the comment above describes an intention
+# rather than a check. Measured on mkdocs 1.6.1 / mkdocs-material 9.7.7.
+validation:
+  links:
+    anchors: warn
+
 nav:
   - Home: index.md
   - Pipelines: pipelines.md

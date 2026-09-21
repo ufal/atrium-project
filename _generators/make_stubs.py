@@ -22,7 +22,7 @@ from repos import HUB_SITE, ORG, REPOS  # noqa: E402
 OUT = pathlib.Path(__file__).parent.parent / "stubs"
 CSS = (pathlib.Path(__file__).parent / "style.css").read_text()
 
-GENERATED = "2026-09-18"
+GENERATED = "2026-09-21"
 
 
 def esc(s: str) -> str:
@@ -40,6 +40,20 @@ def chips_html(repo: dict) -> str:
 
 
 def pipeline_html(current: dict) -> str:
+    """The sibling strip. Each neighbour links to ITS OWN published page.
+
+    It used to link to `{HUB_SITE}/tools/<short>/`. Those are hub sections, and the
+    hub site did not exist -- 40 of the 90 hub links across the five gh-pages
+    branches were sibling links, every one of them a 404, and they would stay 404 for
+    as long as the hub's own Pages stayed broken. `https://ufal.github.io/<slug>/` is
+    the neighbour's real page: four of the five have been serving since 2026-09-19,
+    and each one carries its own "Documentation ->" button into the hub section, so
+    nothing is lost by going one hop through it.
+
+    The card's OWN hub links -- the eyebrow, "Documentation ->", "ATRIUM docs home"
+    and the footer -- deliberately still point at the hub. They are the reason the hub
+    site has to come up, not a workaround for it being down.
+    """
     items = []
     for i, r in enumerate(REPOS):
         if i:
@@ -48,7 +62,7 @@ def pipeline_html(current: dict) -> str:
         if r["slug"] == current["slug"]:
             items.append(f'      <li><span class="here">{label}</span></li>')
         else:
-            items.append(f'      <li><a href="{HUB_SITE}/tools/{r["short"]}/">{label}</a></li>')
+            items.append(f'      <li><a href="https://ufal.github.io/{r["slug"]}/">{label}</a></li>')
     return "\n".join(items)
 
 

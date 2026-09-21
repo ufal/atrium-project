@@ -1,0 +1,18 @@
+# Documentation toolchain for the ATRIUM aggregate site (issue #57).
+#
+# Installed by .github/workflows/pages.yml and by anyone running `mkdocs build
+# --strict` locally from the repository root. It lives under tools/docs/ because
+# that is where 57.plan.md B puts the assembler the site will grow into
+# (tools/docs/assemble_docs.py, tools/docs/site_manifest.py).
+#
+# The ceilings are not guesswork. The Material for MkDocs team prints a warning on
+# every build that MkDocs 2.0 removes the plugin system and rewrites theming, with
+# no migration path -- mkdocs.yml relies on both (`plugins: [search]`, `theme:
+# material`), so an unbounded install would break this site the day 2.0 lands.
+#
+# Verified green together on 2026-09-21: mkdocs 1.6.1, mkdocs-material 9.7.7,
+# pymdown-extensions 12.0.1 -- `mkdocs build --strict` exits 0 over the 38-page
+# docs_site/ tree.
+mkdocs>=1.6,<2
+mkdocs-material>=9.7,<10
+pymdown-extensions>=12.0,<13

@@ -23,3 +23,17 @@ venv/
 # Editor/OS noise
 .DS_Store
 *.swp
+
+# MkDocs build output. mkdocs.yml sets `site_dir: site`; a local `mkdocs build`
+# otherwise leaves the whole rendered site untracked in the working tree. The
+# published copy lives on the `gh-pages` branch, written by
+# .github/workflows/pages.yml -- never committed here. (issue #57)
+/site/
+
+# _generators/ scratch output. make_config.py and make_hub.py write into hub/;
+# make_stubs.py writes into stubs/. Both are regenerated from scratch on every run
+# and neither is a repository file: the hub tree is committed at its real paths
+# (mkdocs.yml, docs_site/), and the stub trees are copied onto the tool repos'
+# gh-pages branches. (issue #57)
+/hub/
+/stubs/

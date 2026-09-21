@@ -16,7 +16,6 @@ from repos import REPOS  # noqa: E402
 
 OUT = pathlib.Path(__file__).parent.parent / "hub"
 SITE = OUT / "docs_site"
-GENERATED = "2026-09-18"
 
 MKDOCS = """# mkdocs.yml — ATRIUM aggregate documentation site (atrium-project#57)
 #
@@ -114,6 +113,14 @@ plugins:
 #  whose only real heading is docs/categorization_logic.md:214).
 strict: true
 
+# `strict: true` alone does NOT make the anchor above a build failure: MkDocs
+# defaults `validation.links.anchors` to `info`, and `--strict` promotes warnings,
+# not info. Without these three lines the comment above describes an intention
+# rather than a check. Measured on mkdocs 1.6.1 / mkdocs-material 9.7.7.
+validation:
+  links:
+    anchors: warn
+
 nav:
 {nav}
 """
@@ -145,66 +152,18 @@ EXTRA_CSS = """/* docs_site/assets/extra.css — ATRIUM site styling hook (DRAFT
 .md-typeset table:not([class]) td { word-break: break-word; }
 """
 
-PAGES_SETUP = """# Enabling GitHub Pages for the ATRIUM repositories
-
-_Generated {generated} for [issue #57](https://github.com/ufal/atrium-project/issues/57)._
-
-All six repositories publish from a **`gh-pages` branch, folder `/ (root)`**.
-
-## The one-time step, per repository
-
-**Settings → Pages → Build and deployment → Source: _Deploy from a branch_ →
-Branch: `gh-pages` / `/ (root)` → Save.**
-
-That setting is **admin-level**. The maintainer token is `admin: false` on all six
-repositories (and additionally `maintain: false` on `atrium-project` and
-`atrium-llm-enrich`), so an organisation owner has to do it, or it has to happen
-automatically.
-
-## It may already be automatic — verify on one repo first
-
-GitHub has long auto-configured Pages the first time a `gh-pages` branch appears;
-that behaviour is what `mkdocs gh-deploy` and `peaceiris/actions-gh-pages` rely on.
-**This was not re-verified while writing this file** — `docs.github.com` was
-unreachable from the authoring environment — so treat it as likely, not certain.
-
-**Do this:** push `gh-pages` to **one** repository, wait a minute, and check
-`https://ufal.github.io/<repo>/`. If it serves, the other five need nothing. If it
-404s, the manual step above is required and an owner should do all six at once.
-
-Pushing the branch is safe either way: the content simply sits there until Pages is
-pointed at it.
-
-## Why a branch and not a folder
-
-Pages' branch source offers exactly two folder choices, `/ (root)` and `/docs`.
-There is no arbitrary-folder option. `/docs` is unavailable in `atrium-project`
-because `docs/` already holds the hub's 13 canonical markdown files plus
-`docs/templates/` — and `docs/templates/shared/` is enforced byte-identical across
-all five tool repositories by `para-drift.reusable.yml`. Moving it would touch
-**363 references across the six repos**, with the paths baked into the docstrings of
-the vendored files themselves, requiring all 17 canonical files to be re-vendored
-inside one atomic window or CI goes red in five repositories at once.
-
-A `gh-pages` branch changes **zero** references.
-
-## What lands on `gh-pages`
-
-| Repository | Branch content | URL |
-|---|---|---|
-| `atrium-project` | the built MkDocs site | <https://ufal.github.io/atrium-project/> |
-{stub_rows}
-
-The five tool-repo branches are **orphan** branches holding a static landing card.
-They share no history with `test`/`master`/`main`/`vit` and never need regenerating —
-which is the main simplification the branch source buys over an Actions source.
-
-## The markdown stays readable regardless
-
-The site's markdown source lives on the hub's default branch at `docs_site/`, where
-GitHub renders it as markdown in the normal repository browser. Nothing is hidden
-behind a Pages build, whether or not the switch is ever flipped.
-"""
+# PAGES_SETUP.md IS NO LONGER GENERATED HERE.
+#
+# It used to be a template with a {stub_rows} placeholder. As of 2026-09-21 that
+# document records the LIVE state of six repositories -- which repository has Pages
+# on, pointed at which source, when it last built and whether that build was green --
+# and a generator that reads only the checked-out tree cannot know any of it. It is
+# now hand-maintained at the repository root, and the two facts a generator could
+# still have supplied (the six URLs, the five orphan branches) are three lines of it.
+#
+# The docstring at the top of this file still holds for mkdocs.yml and extra.css:
+# those ARE derived, and `nav` is derived from the tree rather than typed so the
+# bidirectional invariant holds by construction.
 
 SITE_YML = """# docs/site.yml — the assembler manifest for the ATRIUM documentation site.
 #
@@ -325,11 +284,6 @@ def main() -> int:
     (SITE / "assets").mkdir(parents=True, exist_ok=True)
     (SITE / "assets" / "extra.css").write_text(EXTRA_CSS)
 
-    stub_rows = "\n".join(
-        f"| `{r['slug']}` | orphan branch, static landing card | <https://ufal.github.io/{r['slug']}/> |" for r in REPOS
-    )
-    (OUT / "PAGES_SETUP.md").write_text(PAGES_SETUP.format(generated=GENERATED, stub_rows=stub_rows))
-
     excludes = "\n".join(
         [
             "  - path: atrium-project/docs/arub-p_contacts.md",
@@ -415,7 +369,8 @@ def main() -> int:
 
     print(f"  mkdocs.yml ({len(nav_lines().splitlines())} nav lines)")
     print(f"  docs/site.yml ({len(md)} pages registered)")
-    print("  PAGES_SETUP.md, docs_site/assets/extra.css")
+    print("  docs_site/assets/extra.css")
+    print("  (PAGES_SETUP.md is hand-maintained now -- see the note above SITE_YML)")
     return 0
 
 

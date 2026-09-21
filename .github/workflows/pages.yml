@@ -1,0 +1,118 @@
+# atrium-project — build the aggregate documentation site and publish it (issue #57).
+#
+# WHY THIS FILE EXISTS. On 2026-09-21 Pages was switched on for this repository
+# with the source set to `main` / `/docs` and the legacy Jekyll builder. That build
+# fails (run 35582651532):
+#
+#   Liquid Exception: Liquid syntax error (line 79): Variable
+#   '{{ matrix.target != 'base' && format('-{0}'  was not properly terminated
+#   with regexp: /\}\}/  in docker_gha_roadmap.md
+#
+# Jekyll runs Liquid over ALL markdown -- inside fenced blocks and code spans too --
+# so the GitHub Actions expression quoted at docs/docker_gha_roadmap.md:79 is read as
+# a template variable. There are nine such occurrences across two hub files.
+#
+# ⚠️ THE RED BUILD IS CURRENTLY LOAD-BEARING. `/docs` is the hub's canonical internal
+# tree, and a GREEN Jekyll build from it would publish docs/arub-p_contacts.md (five
+# ARUP/ARUB partner email addresses), docs/plan_repo_review.md and the 97 KB internal
+# docker_gha_roadmap.md. Do not escape those Liquid strings until the Pages source has
+# been moved off `/docs`. See PAGES_SETUP.md.
+#
+# WHAT THIS WORKFLOW DOES INSTEAD. It builds docs_site/ with MkDocs Material and
+# publishes the RESULT to `gh-pages`, which is where the other five repositories
+# already publish from and what mkdocs.yml and PAGES_SETUP.md settled on. The branch
+# carries only built HTML, so nothing under docs/ can reach the site by accident.
+#
+# `actions/configure-pages` is deliberately NOT used. Its `findOrCreatePagesSite`
+# GETs the existing site first and returns it, so on a repository where Pages is
+# already enabled as a branch source it never POSTs `build_type: workflow`. It cannot
+# repoint this repository; one owner-level dropdown change does. PAGES_SETUP.md has
+# the exact step.
+#
+# Every event builds with `--strict`; only a push to `main` deploys. The daily cron
+# is the 07:00 slot 57.plan.md A.4 reserved, staggered off the existing 02:00 /
+# 04:00 / 05:15 / 05:30 / 05:45 / 06:00 slots -- a tool repo's docs change cannot
+# notify the hub (no cross-repo token exists here), so the hub re-reads on a timer.
+
+name: Documentation Site
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, test]
+  pull_request:
+    branches: [main, test]
+  schedule:
+    # 07:00 daily. Staggered off every other scheduled slot in this repository.
+    - cron: "0 7 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  # `github.event_name` keeps a push from cancelling the scheduled run -- the same
+  # reasoning as pre-commit.yml. `cancel-in-progress: false` additionally keeps two
+  # deploys from racing for the gh-pages ref.
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build the aggregate site
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      # Read to build. Write only because `mkdocs gh-deploy` pushes the built tree to
+      # the gh-pages branch with this job's GITHUB_TOKEN; the deploy step itself is
+      # gated to push-to-main below.
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          # gh-deploy needs the gh-pages ref to exist locally when it already exists
+          # remotely; a shallow clone makes the first push after a branch reset fail.
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: tools/docs/requirements.txt
+
+      - name: Install the documentation toolchain
+        run: pip install -r tools/docs/requirements.txt
+
+      - name: Build the site
+        # mkdocs.yml sets `strict: true` and `validation.links.anchors: warn`, so an
+        # unresolved cross-repo link or a dead anchor fails here rather than shipping.
+        run: mkdocs build --strict
+
+      - name: Publish to gh-pages
+        # Only a push to the default branch deploys. PRs, pushes to `test`, the cron
+        # and manual dispatches on other refs build and stop -- which is what makes
+        # the build a gate rather than a deploy trigger.
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # --force: the branch is derived output, never merged into.
+          # --no-history: one commit per deploy keeps the branch from growing without
+          # bound; nothing reads gh-pages' history. ghp-import writes .nojekyll itself,
+          # so Pages serves the built tree as-is instead of re-running Jekyll over it.
+          mkdocs gh-deploy --force --no-history
+
+      - name: Where the site went
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          {
+            echo "### Documentation site"
+            echo
+            echo "Built from \`docs_site/\` and pushed to \`gh-pages\`."
+            echo
+            echo "It serves at <https://ufal.github.io/atrium-project/> **once an owner"
+            echo "points Settings → Pages at \`gh-pages\` / \`/ (root)\`** -- until then this"
+            echo "repository still builds \`main\` / \`/docs\` with Jekyll, and still fails."
+            echo "See \`PAGES_SETUP.md\`."
+          } >> "$GITHUB_STEP_SUMMARY"
