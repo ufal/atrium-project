@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 21 open issues. `test`==`main` HEAD `5315455` (2026-09-15) · tag `v1` moving with it — **note the pending retag window**: #59's and #60's changes to what `para-drift.reusable.yml` enforces, plus 2026-09-16's canonical file #17, must land in the hub and all five tool repos before `v1` moves._
+> _Hub/planning repo. 21 open issues. As of 2026-09-21 `test` (`05f3a8b`) and `main` (`3990a6c`) have **diverged** — `test` carries `docs fixed tables`, `main` does not · tag `v1` moving with `main` — **note the pending retag window**: #59's and #60's changes to what `para-drift.reusable.yml` enforces, plus 2026-09-16's canonical file #17, must land in the hub and all five tool repos before `v1` moves._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0709.md` (prior: `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -897,3 +897,64 @@ derived reading aid in `agent_dev_logs/`._
   `CONTRIBUTING.md` of its own**, only the template the five vendor, which changes what its
   Contributing page renders; and `atrium-page-classification/README.html` (178 KB, stale, at repo
   root) needs a decision before a generator emits a competing HTML tree.
+
+## 2026-09-18 → 2026-09-19
+- **#57 GH PAGES — the first thing actually built, after two design-only rounds.** `8bdc5b4 docs:
+  added GH pages` (then `05f3a8b docs fixed tables`) put `mkdocs.yml`, `PAGES_SETUP.md`, `INDEX.md`,
+  **38 `docs_site/` draft shells** and seven `_generators/` scripts on the hub. Five orphan
+  `gh-pages` branches were pushed, one per tool repo, each holding a static landing card
+  (`index.html`, `404.html`, `assets/style.css`, `.nojekyll`, `README.md`). Pages was switched on for
+  page-classification, translator and nlp-enrich the same day; **alto-postprocess got the branch but
+  not the setting**, and is still dark.
+
+## 2026-09-21
+- **#57 GH PAGES — the hub's Pages was switched on against the wrong source and broke.** stranak
+  enabled Pages on `atrium-llm-enrich` (`gh-pages`, green) and on `atrium-project` — the latter
+  pointed at **`main` / `/docs`** with the legacy Jekyll builder. Run `35582651532` fails on a
+  **Liquid syntax error** at `docs/docker_gha_roadmap.md:79`.
+
+  The root cause is a defect class the #57 survey missed: **Jekyll renders Liquid over all markdown,
+  inside fenced code blocks and inline code spans too**, so every quoted GitHub Actions expression is
+  read as a template variable. Nine occurrences in two hub files (`docker_gha.md:213`;
+  `docker_gha_roadmap.md:79,80,92,99,190,252,414,437`); only `:79` hard-fails, the other eight would
+  render empty.
+
+  **The red build is load-bearing and must not be "fixed" in place.** `/docs` is the hub's canonical
+  internal tree; a *green* Jekyll build from it publishes `docs/arub-p_contacts.md` — five ARÚP/ARÚB
+  partner email addresses — plus `plan_repo_review.md` and the 97 KB internal roadmap. The failing log
+  already reaches `Rendering: arub-p_contacts.md` and dies four files later. Nothing leaked, by
+  accident rather than by design. **Order: move the source off `/docs` first, escape the Liquid
+  second.**
+
+  Landed: `.github/workflows/pages.yml` (`mkdocs build --strict` on every event; `mkdocs gh-deploy
+  --force --no-history` to `gh-pages` only on push to `main`; 07:00 cron), `tools/docs/requirements.txt`
+  (mkdocs <2 / material <10 / pymdownx <13 — Material warns on every build that MkDocs 2.0 removes the
+  plugin system this site uses), `/site/` in `.gitignore`, and
+  `validation: links: anchors: warn` in `mkdocs.yml` — **without which `strict: true` never checked the
+  broken anchor its own header comment cites as the reason for it**, because MkDocs defaults anchor
+  validation to `info` and `--strict` promotes warnings, not info.
+
+  **`actions/configure-pages` was ruled out on evidence.** §A.3/§G's claim that it is "the only path —
+  for every repo including the hub" was **wrong when written**: its `findOrCreatePagesSite` GETs the
+  existing site first and returns it, POSTing `build_type: workflow` only when that GET fails. On a
+  repository already enabled as a *branch* source it is a no-op. One owner-level dropdown is what is
+  needed, on the hub and on alto-postprocess.
+
+  Also: the **40 sibling links** on the five landing cards (4 per page × `index.html` + `404.html` × 5)
+  pointed at `atrium-project/tools/<short>/`, a site that did not exist — 90 hub links across the five
+  branches, all 404. The sibling four now point at `https://ufal.github.io/<slug>/`, the neighbour's
+  own published page. The card's own four hub links stay on the hub deliberately. `make_stubs.py`
+  `pipeline_html()` is the single place this is decided.
+
+  Corrections folded into `digests/57.digest.md` and `plans/57.plan.md`: ten claims, one wrong on its
+  own terms (above), the rest overtaken. §G's `pages-stub.reusable.yml` + per-repo caller is **struck**
+  — the stubs shipped as static files and a reusable has nothing to build. `docs/site.yml` is listed by
+  `INDEX.md` but **has never existed**, so its "38 = 38 = 38" had two terms. All seven `_generators/`
+  files are committed, contrary to `INDEX.md`'s claim they should not be. Corpus re-measured at the
+  default branches: **252 markdown files, 4,581,156 B**.
+
+  Verified: `mkdocs build --strict` exits 0 (mkdocs 1.6.1 / material 9.7.7 / pymdownx 12.0.1);
+  `workflow_lint.py` OK with `pages.yml` in scope; hub suite **141 passed, 4 skipped**; `ruff` clean;
+  `make_config.py` still regenerates `mkdocs.yml` byte-identically. **Not** verified: any live URL —
+  `ufal.github.io` is blocked by the authoring environment's egress proxy, so every claim about a
+  serving site is read from `pages build and deployment` run conclusions, not from the page.
