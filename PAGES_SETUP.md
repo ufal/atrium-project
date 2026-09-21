@@ -12,7 +12,7 @@ Measured 2026-09-21 from the `pages build and deployment` runs in each repositor
 
 | Repository                   | `gh-pages` branch | Pages     | Source                     | Last build                    |
 |------------------------------|-------------------|-----------|----------------------------|-------------------------------|
-| `atrium-project` (hub)       | ⚠️ not yet         | on 09-21  | **`main` / `/docs`** ⚠️     | ❌ **failure** — see below     |
+| `atrium-project` (hub)       | ⚠️ not yet         | on 09-21  | **`main` / `/docs`** ⚠️     | ✅ green, *fenced* — see below |
 | `atrium-page-classification` | ✅ 09-19          | on 09-19  | `gh-pages` / `/ (root)`    | ✅ success                    |
 | `atrium-alto-postprocess`    | ✅ 09-19          | ❌ **off** | —                          | — **never built**             |
 | `atrium-translator`          | ✅ 09-19          | on 09-19  | `gh-pages` / `/ (root)`    | ✅ success                    |
@@ -58,8 +58,8 @@ CI on the strength of an unverified guess is worse than one dropdown.
 
 Two reasons. The first is that it does not work; the second is why you should be glad it does not.
 
-**It does not build.** Run
-[35582651532](https://github.com/ufal/atrium-project/actions/runs/35582651532) fails with:
+**It did not build — fixed 2026-09-21 by `docs/_config.yml`.** Run
+[35582651532](https://github.com/ufal/atrium-project/actions/runs/35582651532) failed with:
 
 ```text
 Liquid Exception: Liquid syntax error (line 79): Variable
@@ -79,7 +79,7 @@ a template variable and the parse dies. There are **nine such occurrences across
 Line 79 is the only hard failure; the other eight would render as empty strings, silently corrupting
 the two documents that explain the ecosystem's Docker and CI story.
 
-> ### ⚠️ The red build is load-bearing. Do not "fix" it in place.
+> ### ⚠️ Why this could not simply be "fixed in place"
 >
 > `docs/` is the hub's **canonical internal tree**. A *green* Jekyll build from it would publish:
 >
@@ -87,12 +87,59 @@ the two documents that explain the ecosystem's Docker and CI story.
 > * `docs/plan_repo_review.md` — the maintainer's personal address, and self-declared stale;
 > * `docs/docker_gha_roadmap.md` — a 97 KB internal roadmap.
 >
-> The failing build log already shows `Rendering: arub-p_contacts.md`; it only dies four files later.
-> Nothing is leaked today **by accident, not by design**.
+> The failing build log already shows `Rendering: arub-p_contacts.md`; it only died four files later.
+> Nothing was leaked **by accident, not by design** — so escaping the Liquid on its own would have
+> turned the build green and put the contact list on the public web.
 >
-> **So: escape those Liquid strings only after the source has moved off `/docs`.** Doing it first
-> turns the build green and publishes the partner contact list. Issue #57 §F makes exclusion a tested
-> step; until that exists, the ordering above is the whole guard.
+> **What landed instead: `docs/_config.yml`.** It excludes those three, plus `docker_gha.md` and
+> `templates/`, so the build is green *and* cannot publish them. No source file was edited — the
+> markdown is correct; it is Jekyll that is wrong for this corpus, and escaping `{{` would have
+> corrupted how GitHub renders those files in the repository browser.
+
+## The fence: `docs/_config.yml`
+
+GitHub's `pages-build-deployment` job is not a workflow file in this repository and cannot be edited.
+The only two levers over it are **what lives under `docs/`** and **where the Pages source points**.
+`docs/_config.yml` is the first lever.
+
+| Excluded                 | Why                                                                         |
+|--------------------------|-----------------------------------------------------------------------------|
+| `arub-p_contacts.md`     | five ARÚP/ARÚB partner email addresses                                      |
+| `plan_repo_review.md`    | a personal email address; self-declares as stale                            |
+| `docker_gha_roadmap.md`  | 97 KB internal roadmap — and the fatal Liquid at `:79`                      |
+| `docker_gha.md`          | one `{{version}}` at `:213` resolves to the empty string, not an error — the page would ship silently claiming `type=semver,pattern=`. Wrong is worse than absent. |
+| `templates/`             | vendored canonical code, caller examples and «placeholder» skeletons — not documentation. Jekyll would render its four `.md` files and copy every `.py`/`.yml`/`.sh` into the site verbatim. |
+
+Nine files still publish: `agent_skill_strategy` · `document_schema` · `k8s_acceptance_runbook` ·
+`k8s_deployment` · `paradata_schema` · `rocrate_export` · `skill_acceptance_runbook` ·
+`skills_catalog` · `skos_strategy`. All nine were checked: **zero Liquid constructs, zero email
+addresses of any kind.** Their URLs (`…/skos_strategy.html`) are temporary and disappear when the
+source moves — nothing links to them.
+
+`tests/test_docs_pages_exclude.py` holds the list honest in both directions: every exclusion must
+name a file that exists, and every file under `docs/` must be either excluded or on a reviewed
+allow-list. It also fails if a publishable file grows a Liquid construct or a partner address. Each
+of its six checks was deliberately broken and confirmed to fail before being trusted.
+
+**Both files are stopgaps. Delete them when the Pages source moves** — the legacy builder stops
+running and nothing reads them again.
+
+### Reproducing the build locally
+
+Verified on `jekyll 3.10.0` / `liquid 4.0.4`, the versions the GitHub Pages image pins:
+
+```bash
+gem install --no-document 'jekyll:3.10.0' kramdown-parser-gfm \
+  jekyll-optional-front-matter jekyll-relative-links jekyll-readme-index \
+  jekyll-default-layout jekyll-titles-from-headings
+
+printf 'plugins:\n  - jekyll-optional-front-matter\n  - jekyll-relative-links\n  - jekyll-readme-index\n  - jekyll-default-layout\n  - jekyll-titles-from-headings\n' > /tmp/ghp.yml
+jekyll build -s docs -d /tmp/jk --config docs/_config.yml,/tmp/ghp.yml
+```
+
+`jekyll-optional-front-matter` is the one that matters: without it, front-matter-less `.md` files are
+copied as static assets and Liquid never runs, so a plain `jekyll build` passes and hides the bug.
+GitHub Pages forces that plugin on.
 
 **And `/docs` is not the designed source anyway.** Pages' branch source offers exactly two folder
 choices, `/ (root)` and `/docs`. `/docs` already holds the hub's 13 canonical markdown files plus
@@ -106,14 +153,14 @@ A `gh-pages` branch changes **zero** references.
 
 ## What lands on `gh-pages`
 
-| Repository                   | Branch content                     | Written by                                            | URL                                                  |
-|------------------------------|------------------------------------|-------------------------------------------------------|------------------------------------------------------|
+| Repository                   | Branch content                     | Written by                              | URL                                                  |
+|------------------------------|------------------------------------|-----------------------------------------|------------------------------------------------------|
 | `atrium-project`             | the built MkDocs site              | `.github/workflows/pages.yml` on every push to `main` | <https://ufal.github.io/atrium-project/>             |
-| `atrium-page-classification` | orphan branch, static landing card | `_generators/make_stubs.py`, by hand                  | <https://ufal.github.io/atrium-page-classification/> |
-| `atrium-alto-postprocess`    | orphan branch, static landing card | `_generators/make_stubs.py`, by hand                  | <https://ufal.github.io/atrium-alto-postprocess/>    |
-| `atrium-translator`          | orphan branch, static landing card | `_generators/make_stubs.py`, by hand                  | <https://ufal.github.io/atrium-translator/>          |
-| `atrium-nlp-enrich`          | orphan branch, static landing card | `_generators/make_stubs.py`, by hand                  | <https://ufal.github.io/atrium-nlp-enrich/>          |
-| `atrium-llm-enrich`          | orphan branch, static landing card | `_generators/make_stubs.py`, by hand                  | <https://ufal.github.io/atrium-llm-enrich/>          |
+| `atrium-page-classification` | orphan branch, static landing card | `_generators/make_stubs.py`, by hand     | <https://ufal.github.io/atrium-page-classification/> |
+| `atrium-alto-postprocess`    | orphan branch, static landing card | `_generators/make_stubs.py`, by hand     | <https://ufal.github.io/atrium-alto-postprocess/>    |
+| `atrium-translator`          | orphan branch, static landing card | `_generators/make_stubs.py`, by hand     | <https://ufal.github.io/atrium-translator/>          |
+| `atrium-nlp-enrich`          | orphan branch, static landing card | `_generators/make_stubs.py`, by hand     | <https://ufal.github.io/atrium-nlp-enrich/>          |
+| `atrium-llm-enrich`          | orphan branch, static landing card | `_generators/make_stubs.py`, by hand     | <https://ufal.github.io/atrium-llm-enrich/>          |
 
 The five tool-repo branches are **orphan** branches holding a static landing card. They share no
 history with `test`/`master`/`main`/`vit` and never need regenerating — which is the main

@@ -23,6 +23,8 @@ it cannot drift.
 | `docs_site/assets/extra.css`   | thin styling hook for the pipeline strip and switcher                            |
 | `.github/workflows/pages.yml`  | builds `docs_site/` with `--strict`; publishes to `gh-pages` on push to `main`   |
 | `tools/docs/requirements.txt`  | the pinned documentation toolchain the workflow installs                         |
+| `docs/_config.yml`             | **stopgap** — fences the legacy `/docs` Jekyll build; delete when Pages moves    |
+| `tests/test_docs_pages_exclude.py` | **stopgap** — holds that exclusion list honest in both directions            |
 | `_generators/`                 | the scripts that produced the drafts — committed; see below                      |
 
 Two things the 2026-09-18 edition of this file listed and got wrong, corrected here:
@@ -153,4 +155,6 @@ with it.
   docs_site/tools/translator/reference.md
   mkdocs.yml
   tools/docs/requirements.txt
+  docs/_config.yml
+  tests/test_docs_pages_exclude.py
 ```

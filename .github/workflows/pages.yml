@@ -12,11 +12,19 @@
 # so the GitHub Actions expression quoted at docs/docker_gha_roadmap.md:79 is read as
 # a template variable. There are nine such occurrences across two hub files.
 #
-# ⚠️ THE RED BUILD IS CURRENTLY LOAD-BEARING. `/docs` is the hub's canonical internal
-# tree, and a GREEN Jekyll build from it would publish docs/arub-p_contacts.md (five
-# ARUP/ARUB partner email addresses), docs/plan_repo_review.md and the 97 KB internal
-# docker_gha_roadmap.md. Do not escape those Liquid strings until the Pages source has
-# been moved off `/docs`. See PAGES_SETUP.md.
+# ⚠️ THAT FAILURE WAS LOAD-BEARING, AND IS NO LONGER. `/docs` is the hub's canonical
+# internal tree, so a GREEN Jekyll build from it would have published
+# docs/arub-p_contacts.md (five ARUP/ARUB partner email addresses),
+# docs/plan_repo_review.md and the 97 KB internal docker_gha_roadmap.md -- the build
+# log reaches `Rendering: arub-p_contacts.md` and dies four files later. Nothing was
+# published only because it crashed, which is an accident, not a safeguard.
+#
+# `docs/_config.yml` now excludes those three plus docker_gha.md (whose one `{{version}}`
+# resolves to the empty string rather than raising, shipping a silently wrong line) and
+# `templates/` (vendored code, not documentation). The legacy build is green and
+# publishes nine reviewed files; `tests/test_docs_pages_exclude.py` fails if anything
+# new appears under docs/ that is neither excluded nor reviewed. Both are stopgaps and
+# should be deleted once the Pages source moves. See PAGES_SETUP.md.
 #
 # WHAT THIS WORKFLOW DOES INSTEAD. It builds docs_site/ with MkDocs Material and
 # publishes the RESULT to `gh-pages`, which is where the other five repositories
@@ -113,6 +121,7 @@ jobs:
             echo
             echo "It serves at <https://ufal.github.io/atrium-project/> **once an owner"
             echo "points Settings → Pages at \`gh-pages\` / \`/ (root)\`** -- until then this"
-            echo "repository still builds \`main\` / \`/docs\` with Jekyll, and still fails."
+            echo "repository still builds \`main\` / \`/docs\` with Jekyll, which now serves"
+            echo "nine reviewed files from \`docs/\` and none of the internal ones."
             echo "See \`PAGES_SETUP.md\`."
           } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,61 @@
+# docs/_config.yml — a fence around GitHub's built-in Pages build. NOT a site config.
+#
+# WHY THIS FILE EXISTS
+#
+# GitHub Pages for this repository is set to "Deploy from a branch: main / /docs",
+# which runs GitHub's built-in `pages-build-deployment` job (the legacy Jekyll
+# builder, github-pages v232 / jekyll 3.10.0). That job is not a workflow file in
+# this repository and cannot be edited -- the only two levers over it are what lives
+# under docs/ and where the Pages source points. This file is the first lever.
+#
+# It does two things, and both matter:
+#
+#   1. IT STOPS THE BUILD FAILING. github-pages enables `jekyll-optional-front-matter`
+#      by default, which makes every front-matter-less .md file a rendered page, and
+#      Jekyll runs Liquid over ALL markdown -- inside fenced code blocks and inline
+#      code spans too. docker_gha_roadmap.md:79 quotes a GitHub Actions expression,
+#      `${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}`, and
+#      Liquid's tokenizer stops at the `}` inside `{0}`, never finds the closing `}}`,
+#      and raises. Reproduced locally on jekyll 3.10.0 / liquid 4.0.4, byte-identical
+#      to run 35582651532.
+#
+#   2. IT STOPS THE BUILD PUBLISHING THINGS IT MUST NOT. docs/ is this repository's
+#      CANONICAL INTERNAL TREE, not a docs site. Before this file existed, the only
+#      reason docs/arub-p_contacts.md -- five ARUP/ARUB partner email addresses --
+#      was not on the public web is that the build crashed four files after reaching
+#      it. That is an accident, not a safeguard. Escaping the Liquid without this
+#      file would have turned the build green and published the contact list.
+#
+# The exclusion list below is enforced by tests/test_docs_pages_exclude.py, which
+# fails if a new file appears under docs/ that is neither excluded here nor on its
+# reviewed allow-list. A guardrail cannot see what it is not told to hold (issue #59).
+#
+# THIS FILE IS A STOPGAP AND SHOULD BE DELETED, not maintained. The real site is
+# built from docs_site/ by .github/workflows/pages.yml and published to the
+# `gh-pages` branch; the moment an owner points Settings -> Pages at
+# `gh-pages` / `/ (root)`, the legacy builder stops running and nothing reads this
+# file again. See PAGES_SETUP.md.
+#
+# Paths are relative to this directory (the Jekyll source), per Jekyll's `exclude`.
+
+exclude:
+  # --- must never be published -------------------------------------------------
+  - arub-p_contacts.md        # five ARUP/ARUB partner email addresses
+  - plan_repo_review.md       # a personal email address; self-declares as stale
+  - docker_gha_roadmap.md     # 97 KB internal roadmap -- and the fatal Liquid above
+
+  # --- would publish, but wrongly ----------------------------------------------
+  # One `{{version}}` at :213, inside a code span documenting a docker/metadata-action
+  # pattern. Liquid resolves it to the empty string rather than raising, so the page
+  # would ship silently claiming `type=semver,pattern=`. Wrong is worse than absent.
+  - docker_gha.md
+
+  # --- not documentation at all ------------------------------------------------
+  # Vendored canonical code (17 files held byte-identical across five repositories by
+  # para-drift.reusable.yml), caller examples and «placeholder» skeletons. Jekyll
+  # would render the four .md files here and copy every .py/.yml/.sh into the
+  # published site verbatim.
+  - templates
+
+# No `theme:`, no `plugins:`, no `title:`. Adding them would make this look like a
+# site configuration someone should tend. It is a fence; the site lives elsewhere.
