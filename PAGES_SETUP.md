@@ -6,10 +6,14 @@ that enablement "may already be automatic"; both were overtaken within a day._
 
 All six repositories publish from a **`gh-pages` branch, folder `/ (root)`**. Five of them already do.
 
-> **What publishes, and why, is decided in [`PAGES_STRATEGY.md`](PAGES_STRATEGY.md)** (2026-09-21).
-> This file remains the mechanics and live-state record. The owner-level steps below are restated
-> there as a checklist, together with two that are not here: checking Actions' workflow permissions
-> before the first deploy, and the order in which the `_config.yml` fences may be removed.
+> **What publishes, and why, is decided in [`INDEX.md`](INDEX.md)** (round 3, 2026-09-21).
+> This file remains the mechanics and live-state record.
+>
+> ⚠️ Every reference in this file to `PAGES_STRATEGY.md` names **a document that has never
+> existed in this repository** — not in the working tree and not in any commit. It is cited here,
+> in `agent_dev_logs/DEVLOG.md`, in `digests/57.digest.md` and in `plans/57.plan.md`, and every
+> `§`-reference to it points nowhere. Its 12-page design survives only as a DEVLOG summary. Treat
+> those citations as unresolved, not as a file you have not found yet.
 
 ## Where each repository actually stands — ✅ all six, 2026-09-21
 
@@ -41,20 +45,29 @@ within hours of being written, because the Pages source is a repository *setting
 commit, no review and no notification. Read the state from the Actions API when it is needed; keep
 this file for the mechanics, which do not move.
 
-### ⚠️ What that green build is publishing
+### What the build publishes — corrected 2026-09-21 (round 3)
 
-All **38 draft shells**, including the **25 `tools/<name>/…` mirror pages**, each carrying *"Draft
-shell — issue #57, round 2 (2026-09-18) — This page carries its outline and source pointers only"* and
-shipping its `<!-- ASSEMBLER: source=… -->` markers in the delivered HTML. The 20 deep links on the
-five landing cards now resolve, to pages with no prose. See
-[`PAGES_STRATEGY.md`](PAGES_STRATEGY.md) §§1–4 and the removal pass in §8.1.
+It published all **38 draft shells**, including the **25 `tools/<name>/…` mirror pages**, each
+carrying *"Draft shell — issue #57, round 2 (2026-09-18)"* and shipping its
+`<!-- ASSEMBLER: source=… -->` markers in the delivered HTML. That is the state the maintainer
+called *"no new information available"*.
 
-### The fences are now inert — remove them
+Since then: `f47bf54` removed the 25 mirror pages and the `- Tools:` nav block, and round 3
+wrote ten real tool pages in their place. The site is now **23 pages** — 13 hub pages plus five
+each for `page-classification` and `translator` — and the built `site/` carries no `ASSEMBLER`
+marker and no draft-shell admonition under `tools/`. See [`INDEX.md`](INDEX.md) for the
+page-by-page state.
 
-With the source on `gh-pages`, the legacy Jekyll builder no longer runs over `main`, so everything
-below about `_config.yml`, `docs/_config.yml` and `tests/test_pages_exclude.py` is **history, not
-instruction**. It is kept because it records why those files existed and what a green build from
-`main` would have published. `PAGES_STRATEGY.md` §8.1 has the removal commands.
+### The fences are gone — this section is history
+
+With the source on `gh-pages`, the legacy Jekyll builder no longer runs over `main`, so
+`_config.yml`, `docs/_config.yml` and `tests/test_pages_exclude.py` guarded nothing. **All three
+were removed in `f47bf54`.** Everything below about them is **history, not instruction**; it is
+kept because it records why they existed and what a green Jekyll build from `main` would have
+published.
+
+One caveat, stated once: if anyone ever points Settings → Pages back at `main`, the root
+publishes unguarded — `agent_dev_logs/` included.
 
 ## Why an owner has to do it
 

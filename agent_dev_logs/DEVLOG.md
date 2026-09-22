@@ -1088,3 +1088,77 @@ derived reading aid in `agent_dev_logs/`._
   `pages.yml` and stops the deploy entirely. With the `- Tools:` nav block removed in the same commit:
   `mkdocs build --strict` green, `pytest tests/` **111 passed, 22 skipped**, and nothing under
   `.github/` or `scripts/` referencing any deleted file.
+
+## 2026-09-21 (round 3) — the site gets its first real content
+
+- **#57 — ten written tool pages replace the mirror.** `docs_site/tools/page-classification/**`
+  and `docs_site/tools/translator/**`, five pages each (`index · guide · reference · changelog ·
+  history`), plus the `- Tools:` nav block restored in `mkdocs.yml` for **those two repositories
+  only** — under `strict: true` a nav entry with no file is a build failure, so a section may not
+  be listed before its pages exist. `nav_order` keeps the round-2 scheme (30–34 and 50–54), which
+  leaves 40–44 and 60–74 reserved.
+
+  **The assembler is retired, not deferred.** §B of `57.plan.md` existed to slice each tool
+  `README.md` into site pages at build time; that is precisely the mirror the maintainer rejected.
+  Every `<!-- ASSEMBLER: -->` marker is gone from the pages that were written, and each page's
+  `## Sources` table now records **provenance** — what was read, at which commit — rather than a
+  build instruction.
+
+- **The bar each page had to clear, and how it was met.** *A reader is better off here than on the
+  README.* Three things earn that, and the shells had none: cross-repository facts the tool
+  repository cannot state about itself (block ownership, what reads its output and what does not),
+  values read out of the code rather than the prose, and named drift where the two disagree.
+
+  The drift is the strongest evidence these are not mirrors: **30 items for page-classification,
+  23 for the translator**, each verified against the source at a named commit and each reported on
+  the page as a "Known drift" section. Among them — `v4.2`/`v5.2` accuracies swapped between a
+  README table and the prose discussing it; `--file_format` documented as `jpeg` while the config
+  ships `png`; `service/README.md`'s `/predict_image` example showing two fields that
+  `response_model` filters out and never returns; the translator's README defaulting
+  `--source_lang` to `cs` while the shipped `config.txt` says `auto`; a paradata example three
+  versions stale, resolving to the wrong licence, with two markdown links pasted inside JSON
+  string literals.
+
+- **Two facts the tool repositories cannot publish about themselves, now stated once.**
+  `page-classification → alto-postprocess is a human routing decision, not a file handoff` — alto
+  never reads `page_categories`. And **no repository reads `TRANSLATED/`**: the translator is a
+  terminal branch whose output persists as `derived_from.translated_xml` and is read by nothing.
+  `docs_site/pipelines.md` draws both layers — the file DAG that fans out from alto and stops at
+  the translator, and the linear record-accretion chain — as the corpus's **first two Mermaid
+  diagrams**.
+
+- **Two honest absences, stated rather than papered over.** There are **no published accuracy
+  figures for the `v*.4` ensemble** that `--best` has averaged since v1.8.0-beta; every number in
+  page-classification's README describes `v*.3`, and the only `v*.4` measurement is a 24-of-229
+  prediction diff (#48). And **no BLEU, chrF or COMET number exists anywhere in the translator
+  repository** — `eval/bakeoff.py` is a complete harness that has never been run (#4). Both are on
+  the page, in an admonition, rather than left for a reader to infer from silence.
+
+- **`fixtures/e2e/README.md`'s truncated section reconstructed.** The file stops mid-sentence at
+  "`langID_classify.py` hard-requires CUDA". The explanation, recovered from the workflow itself:
+  the E2E alto config sets `SKIP_CLASSIFY = true` because GitHub-hosted runners have no GPU, and
+  the hub commits that stage's real output as `DOC_LINE_CATEG/CTX000000003.csv` so stages 4 and 5
+  have something to read. It is now written out in `pipelines.md` §W6, with the reconstruction
+  labelled as such.
+
+- **`PAGES_STRATEGY.md` has never existed.** It is cited as the authoritative replacement design by
+  `PAGES_SETUP.md`, by this file, by `digests/57.digest.md` and by `plans/57.plan.md` — with
+  `§`-references (§§1–4, §7 A6, §8.1, §3) that point nowhere. It is in no commit. The 12-page
+  design survives only as the entry above it in this log. `PAGES_SETUP.md` now says so at the top
+  instead of deferring to it; writing the file is not this round's work, but pretending the
+  citations resolve was making three documents wrong at once.
+
+- **`INDEX.md` rewritten and `PAGES_SETUP.md` corrected.** Both still described 38 shells, live
+  `_config.yml` fences and a `tests/test_pages_exclude.py` that `f47bf54` had already deleted. The
+  same lesson as the three stale state tables before them: a hand-maintained inventory goes stale
+  within hours of the commit that invalidates it, so `INDEX.md` now states the check
+  (`nav` ↔ `docs_site/`, **23 ↔ 23**, enforced by the build) rather than a count that has to be
+  re-typed.
+
+- **Verified.** `mkdocs build --strict` **exits 0** over 23 pages on mkdocs 1.6.1 /
+  mkdocs-material 9.7.7 / pymdown-extensions 12.0.1 — and it earned its keep immediately, catching
+  **eight** cross-page anchor links whose slugs were guessed rather than computed (`·` and `—`
+  each collapse to a doubled hyphen under `pymdownx.slugs.slugify`, which no amount of careful
+  typing gets right). `pytest tests/` **111 passed, 22 skipped**, unchanged.
+  `workflow_lint.py --offline` **OK**. The built `site/` carries no `ASSEMBLER` marker and no
+  draft-shell admonition under `tools/`, and no reference to `arub-p_contacts`.

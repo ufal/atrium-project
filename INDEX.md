@@ -1,160 +1,142 @@
-# ATRIUM hub site tree — drafts, issue #57 round 2 (+ the 2026-09-21 Pages repair)
+# ATRIUM hub site tree — issue #57, round 3 (content)
 
-Everything here lands on **`atrium-project`'s default branch (`main`)**, not on
-`gh-pages`. `gh-pages` receives the *built* site; this is its source, and as of
-2026-09-21 `.github/workflows/pages.yml` is what does the building. See
-[`PAGES_SETUP.md`](PAGES_SETUP.md) for the live per-repository state and the one
-owner-level dropdown still outstanding on the hub.
+Everything here lands on **`atrium-project`'s default branch (`main`)**, not on `gh-pages`.
+`gh-pages` receives the *built* site; this is its source, and `.github/workflows/pages.yml`
+is what does the building. See [`PAGES_SETUP.md`](PAGES_SETUP.md) for the publishing
+mechanics.
 
-**These are shells.** Every page carries frontmatter, a one-sentence purpose, a
-`## Sources` table and an outline whose sections carry `<!-- ASSEMBLER: -->` markers.
-**No prose is copied from any source file** — round 3 fills them, and "nothing moves"
-forbids copying regardless: `README.md` and `CONTRIBUTING.md` stay canonical and
-full-length in their own repositories, and the split is regenerated on every build so
-it cannot drift.
+## What round 3 changed, and why
+
+Round 2 shipped **38 draft shells** — frontmatter, a `## Sources` table and an outline of
+`<!-- ASSEMBLER: -->` markers — to be filled at build time by an assembler that would slice
+each tool's `README.md` into site pages. The maintainer's verdict on what that published was
+*"no new information available"*, and it was correct: **34 of the 38 pages were a second copy
+of something already public.** A mirror rebuilt on a cron can only tie its source or lag it.
+
+`f47bf54` then removed the 25 `docs_site/tools/**` mirror pages and the `- Tools:` nav block,
+leaving 13 hub shells and no tool sections at all.
+
+**Round 3 writes pages instead of generating them.** The assembler (`57.plan.md` §B) is
+retired along with `_generators/{make_hub,make_config,headings,hub_spec}.py`. Ten tool pages
+are written — five for `page-classification`, five for `translator`, the two repositories
+whose documentation is furthest along — and every claim in them was verified against the
+tool's code at a named commit, not taken from its prose.
+
+Each page keeps a `## Sources` table, but its job has changed: it is now a **provenance
+record** naming what was read and at which ref, not a build instruction.
 
 ## Layout
 
-| Path                           | What it is                                                                       |
-|--------------------------------|----------------------------------------------------------------------------------|
-| `mkdocs.yml`                   | site config. `docs_dir: docs_site`, `site_dir: site`, `strict: true`             |
-| `PAGES_SETUP.md`               | live Pages state per repository + the outstanding owner steps. Hand-maintained   |
-| `docs_site/**`                 | 38 page drafts (13 hub pages + 5 repos × 5 tool-section pages)                   |
-| `docs_site/assets/extra.css`   | thin styling hook for the pipeline strip and switcher                            |
-| `.github/workflows/pages.yml`  | builds `docs_site/` with `--strict`; publishes to `gh-pages` on push to `main`   |
-| `tools/docs/requirements.txt`  | the pinned documentation toolchain the workflow installs                         |
-| `docs/_config.yml`             | **stopgap** — fences the legacy `/docs` Jekyll build; delete when Pages moves    |
-| `tests/test_docs_pages_exclude.py` | **stopgap** — holds that exclusion list honest in both directions            |
-| `_generators/`                 | the scripts that produced the drafts — committed; see below                      |
+| Path                          | What it is                                                                                                               |
+|-------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| `mkdocs.yml`                  | site config. `docs_dir: docs_site`, `site_dir: site`, `strict: true`, `validation.links.anchors: warn`                   |
+| `PAGES_SETUP.md`              | the publishing mechanics: why a branch source, how Pages is enabled, what the legacy Jekyll builder would have published |
+| `docs_site/**`                | **23 pages** — 13 hub pages + 2 repos × 5 tool-section pages                                                             |
+| `docs_site/assets/extra.css`  | styling hook; the `.atrium-pipeline` strip on each tool index uses it                                                    |
+| `.github/workflows/pages.yml` | builds `docs_site/` with `--strict`; publishes to `gh-pages` on push to `main`                                           |
+| `tools/docs/requirements.txt` | the pinned toolchain — mkdocs 1.6.1, mkdocs-material 9.7.7, pymdown-extensions 12.0.1                                    |
+| `_generators/`                | what is left of the round-2 generators: `make_stubs.py`, `repos.py`, `style.css`                                         |
 
-Two things the 2026-09-18 edition of this file listed and got wrong, corrected here:
+## Page status
 
-* **`docs/site.yml` is not in the repository.** `_generators/make_config.py` emits it into its
-  scratch `hub/` output directory, but it was never committed and nothing reads it. It is still the
-  right shape for round 3's manifest (§B.1) — it is simply not a file that exists yet.
-* **`site/` is now gitignored.** This file previously flagged that as an outstanding one-line edit;
-  it landed on 2026-09-21 alongside the Pages workflow.
+| Page                                                                                          | State                                                                               |
+|-----------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| `index.md`                                                                                    | outline — portal copy pending; "Start here" points at the written sections          |
+| `pipelines.md`                                                                                | **partial** — both layer diagrams and W1, W4, W6, W8 written; nine workflows listed |
+| `external-tools.md`                                                                           | **partial** — the entries these two tools need, written; the rest outlined          |
+| `development-history.md`                                                                      | **partial** — per-repo index written; hub chronology pending                        |
+| `tools/page-classification/*`                                                                 | **written** — 5 pages, from `vit` @ `8415ce7`                                       |
+| `tools/translator/*`                                                                          | **written** — 5 pages, from `master` @ `88242fe`                                    |
+| `ecosystem/*`, `contracts/*`, `agent-skills.md`, `operations.md`, `contributing-standards.md` | still round-2 shells                                                                |
+
+`mkdocs.yml`'s `nav` and `docs_site/` agree in both directions, **23 ↔ 23**, checked by a
+green `mkdocs build --strict`. Under `strict: true` a nav entry with no file and a file with
+no nav entry are both build failures, which is why a tool section may only be added to the
+nav in the same commit as its pages.
 
 ## Why `docs_site/` and not `docs/`
 
-The hub's `docs/` already holds 13 canonical markdown files plus `docs/templates/` —
-and `docs/templates/shared/` is enforced byte-identical across all five tool
-repositories by `para-drift.reusable.yml`. Publishing from `docs/` would mean moving
-that tree, and `docs/templates` is referenced **363 times across the six repos**,
-with the paths baked into the docstrings of the vendored files themselves. All 17
-canonical files would have to be re-vendored inside one atomic window or CI goes red
-in five repositories at once. `docs_site/` costs nothing.
+The hub's `docs/` already holds 13 canonical markdown files plus `docs/templates/` — and
+`docs/templates/shared/` is enforced byte-identical across all five tool repositories by
+`para-drift.reusable.yml`. Publishing from `docs/` would mean moving that tree, and
+`docs/templates` is referenced **363 times across the six repos**, with the paths baked into
+the docstrings of the vendored files themselves. All 17 canonical files would have to be
+re-vendored inside one atomic window or CI goes red in five repositories at once.
+`docs_site/` costs nothing.
 
-## The five-part shape every page draft uses
+## The shape a written tool page uses
 
-1. **frontmatter** — `title`, `nav_order`, `status: draft`, plus `repo`/`role` on tool pages
-2. **Purpose** — one sentence: who the page is for, what they leave knowing
-3. **Sources** — a table of exact repo paths, `##` sections, split depth and treatment
-   (`render` · `split at depth N` · `transposed` · `derived` · `transclude` ·
-   `suppressed` · `EXCLUDED` · `AUTHORED`)
-4. **Outline** — the headings the assembled page will have
-5. **`<!-- ASSEMBLER: source="…" section="…" depth=N -->`** markers, one per section
+1. **frontmatter** — `title`, `nav_order`, `status`, `round`, `issue`, plus `repo`/`role` on
+   tool pages. `nav_order` is `20 + stage*10 + role_index`: page-classification 30–34,
+   translator 50–54, with 40–44 and 60–74 reserved for the three sections not yet written.
+2. **The page.** Written prose, tables and diagrams — no markers, no admonition claiming the
+   page will be filled later.
+3. **`## Sources`** — a provenance table: what was read, at which ref, and what was taken
+   from it.
 
-## What the source pointers are worth
+The bar every page has to clear: **a reader is better off here than on the README.** Three
+things earn that, and the round-2 shells had none of them — cross-repository facts the tool
+repository cannot state about itself, values verified against code rather than prose, and
+named drift where the two disagree.
 
-They were **read out of the repositories**, not written from memory, using a
-fence-aware heading parser — the same rule `57.plan.md` §B.2 specifies for the
-assembler. **208 source paths were checked and all 208 resolve.** `nav` ↔ `docs_site/`
-agree in both directions, **38 = 38** — re-verified 2026-09-21 by a green
-`mkdocs build --strict`. (The 2026-09-18 edition wrote "38 = 38 = 38", counting
-`docs/site.yml` as the third term; that file is not in the repository, so there were
-only ever two terms.) Round 3 turns the agreement into a test, the way
-`tests/test_shared_manifest.py` does for `MANIFEST.json`.
+## Verified
 
-The parser matters: a naive `^## ` regex finds **23** `##` headings in
-`docs/agent_skill_strategy.md` where only **18** are real — the other five are inside
-the SKILL.md skeleton quoted in `## Appendix A`. It would have written five source
-pointers to sections that do not exist, in the hub's own pilot page.
-
-## `_generators/`
-
-The scripts that produced these drafts. The 2026-09-18 edition of this file said they
-"are not repository files and should not be committed as-is" — **all seven are
-committed**, and on reflection that is the right call: the drafts are 38 generated
-files, and a correction has to be a one-line edit plus a re-run rather than 38 hand
-edits. Two are load-bearing for round 3:
-
-- `headings.py` — the fence-aware parser above; the assembler needs exactly this
-- `hub_spec.py` — the README-section → page routing table, which encodes where each
-  of the five tool repos' sections belongs
-
-`make_stubs.py`, `make_hub.py` and `make_config.py` regenerate everything from
-scratch into scratch directories (`hub/`, `stubs/`), which are not committed.
-
-⚠️ **`make_stubs.py` also emits `README.md` for each `gh-pages` branch, and the five
-deployed copies carry hand formatting the generator does not reproduce** (aligned
-tables; four of the five dropped the trailing `_Generated …_` line). When copying a
-regenerated stub tree onto a branch, take `index.html` and `404.html` only.
-
-## What this round deliberately does not do
-
-No assembler, no `site_manifest.py`, no tests, no prose, no change to any README, and
-no docs-site link added anywhere. All of that is round 3.
-
-**Amended 2026-09-21:** "no build/deploy workflow" no longer holds. The hub's Pages
-was switched on pointed at `main` / `/docs` and failed, so `.github/workflows/pages.yml`
-landed early — out of the round-3 order, because 90 links on the five deployed stub
-cards were 404ing on a hub site that had no way to exist. Nothing else moved forward
-with it.
+- `mkdocs build --strict` → **exits 0**, 23 pages, on mkdocs 1.6.1 / mkdocs-material 9.7.7 /
+  pymdown-extensions 12.0.1. Every internal cross-page link and anchor resolves.
+- `python3 -m pytest tests/ -q` → **111 passed, 22 skipped** — unchanged from the baseline.
+- `python3 tools/ci/workflow_lint.py --repo-root . --hub-root . --offline` → **OK**.
+- The built `site/` contains **no** `ASSEMBLER` marker and **no** "Draft shell" admonition
+  under `tools/`, and no reference to `arub-p_contacts` anywhere.
+- Both Mermaid diagrams on `pipelines.md` render as `class="mermaid"` elements — the corpus's
+  first two.
 
 ## Contents
 
 ```
   .github/workflows/pages.yml
+  INDEX.md
   PAGES_SETUP.md
-  _generators/headings.py
-  _generators/hub_spec.py
-  _generators/make_config.py
-  _generators/make_hub.py
+  mkdocs.yml
+  tools/docs/requirements.txt
   _generators/make_stubs.py
   _generators/repos.py
   _generators/style.css
+  docs_site/index.md
+  docs_site/pipelines.md
+  docs_site/external-tools.md
+  docs_site/development-history.md
   docs_site/agent-skills.md
+  docs_site/operations.md
+  docs_site/contributing-standards.md
   docs_site/assets/extra.css
   docs_site/contracts/rocrate.md
   docs_site/contracts/schemas.md
   docs_site/contracts/skos.md
-  docs_site/contributing-standards.md
-  docs_site/development-history.md
   docs_site/ecosystem/architecture.md
   docs_site/ecosystem/document-contract.md
   docs_site/ecosystem/repository-map.md
-  docs_site/external-tools.md
-  docs_site/index.md
-  docs_site/operations.md
-  docs_site/pipelines.md
-  docs_site/tools/alto-postprocess/changelog.md
-  docs_site/tools/alto-postprocess/guide.md
-  docs_site/tools/alto-postprocess/history.md
-  docs_site/tools/alto-postprocess/index.md
-  docs_site/tools/alto-postprocess/reference.md
-  docs_site/tools/llm-enrich/changelog.md
-  docs_site/tools/llm-enrich/guide.md
-  docs_site/tools/llm-enrich/history.md
-  docs_site/tools/llm-enrich/index.md
-  docs_site/tools/llm-enrich/reference.md
-  docs_site/tools/nlp-enrich/changelog.md
-  docs_site/tools/nlp-enrich/guide.md
-  docs_site/tools/nlp-enrich/history.md
-  docs_site/tools/nlp-enrich/index.md
-  docs_site/tools/nlp-enrich/reference.md
-  docs_site/tools/page-classification/changelog.md
-  docs_site/tools/page-classification/guide.md
-  docs_site/tools/page-classification/history.md
   docs_site/tools/page-classification/index.md
+  docs_site/tools/page-classification/guide.md
   docs_site/tools/page-classification/reference.md
-  docs_site/tools/translator/changelog.md
-  docs_site/tools/translator/guide.md
-  docs_site/tools/translator/history.md
+  docs_site/tools/page-classification/changelog.md
+  docs_site/tools/page-classification/history.md
   docs_site/tools/translator/index.md
+  docs_site/tools/translator/guide.md
   docs_site/tools/translator/reference.md
-  mkdocs.yml
-  tools/docs/requirements.txt
-  docs/_config.yml
-  tests/test_docs_pages_exclude.py
+  docs_site/tools/translator/changelog.md
+  docs_site/tools/translator/history.md
 ```
+
+## What this round deliberately does not do
+
+- **The other three tool sections.** alto-postprocess, nlp-enrich and llm-enrich keep their
+  reserved `nav_order` ranges and nothing else.
+- **Any change to a tool repository.** The drift these pages document is reported, not fixed
+  at source; each item is a candidate issue in its own repository.
+- **Repointing the landing cards' deep links.** `_generators/make_stubs.py` still generates
+  cards linking to `…/atrium-project/tools/<short>/` for all five repos. Two of those paths
+  now exist; the other three resolve when their sections are written.
+- **`PAGES_STRATEGY.md`.** It is referenced by `PAGES_SETUP.md`, `DEVLOG.md`,
+  `57.digest.md` and `57.plan.md`, and **has never existed in this repository** — every
+  `§`-reference to it points nowhere. Its 12-page design survives only as a DEVLOG summary.
+  Flagged here, not written.

@@ -1,8 +1,20 @@
 # mkdocs.yml — ATRIUM aggregate documentation site (atrium-project#57)
 #
-# DRAFT, round 2. The nav below is complete and matches docs_site/ exactly; the
-# pages it names are shells. Round 3 adds tools/docs/assemble_docs.py, which fills
-# them from the sources each shell's `## Sources` table names.
+# ROUND 3. The nav below matches docs_site/ exactly, in both directions.
+#
+# The `- Tools:` block carries the two sections that are WRITTEN --
+# page-classification and translator. The other three tool repositories
+# (alto-postprocess, nlp-enrich, llm-enrich) are deliberately absent: under
+# `strict: true` a nav entry with no file is a build failure, so a section
+# appears here only once its pages exist. nav_order reserves 40-44 and 60-74
+# for them.
+#
+# The round-2 assembler (57.plan.md B) is RETIRED. It existed to slice each tool
+# README into site pages, which is exactly the mirror the maintainer rejected
+# ("no new information available" -- 34 of 38 pages were a second copy of
+# something already published). These pages are written, and each one's
+# `## Sources` table is a provenance record of what it was written from, not a
+# build instruction.
 #
 # WHY docs_dir IS NOT `docs`: the hub's `docs/` already holds 13 canonical markdown
 # files plus `docs/templates/` -- including `docs/templates/shared/`, which
@@ -117,4 +129,17 @@ nav:
   - Agent skills: agent-skills.md
   - Operations: operations.md
   - Contributing standards: contributing-standards.md
+  - Tools:
+      - page-classification:
+          - Overview: tools/page-classification/index.md
+          - Guide: tools/page-classification/guide.md
+          - Reference: tools/page-classification/reference.md
+          - Changelog: tools/page-classification/changelog.md
+          - History: tools/page-classification/history.md
+      - translator:
+          - Overview: tools/translator/index.md
+          - Guide: tools/translator/guide.md
+          - Reference: tools/translator/reference.md
+          - Changelog: tools/translator/changelog.md
+          - History: tools/translator/history.md
   - Development history: development-history.md
