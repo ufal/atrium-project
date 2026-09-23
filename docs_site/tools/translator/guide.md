@@ -153,9 +153,10 @@ input is `…-1.alto.xml`, a page, not the document. See [Pipelines](../../pipel
 
 With a vocabulary CSV loaded (`source_lemma,target_translation`), the **Tag-and-Protect**
 strategy runs before every translation call: multi-word phrases are matched longest-first,
-single words are matched by lemma through UDPipe with a singular/plural agreement guard,
-matches are replaced by NMT-safe sentinels, translated, and restored with the controlled
-translation.
+as whole words, at every occurrence; single words are matched by lemma through UDPipe with a
+singular/plural agreement guard (for the eight languages with a UDPipe model; any other
+language skips the lemma pass); matches are replaced by NMT-safe sentinels,
+translated, and restored with the controlled translation.
 
 ```bash
 python main.py /data/amcr --vocabulary data_samples/vocabulary.csv -o /data/translated

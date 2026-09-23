@@ -24,7 +24,10 @@
 # Related: docs/docker_gha.md · docs/k8s_deployment.md · atrium-project#53 (12-factor),
 # #55 (HEALTHCHECK/SIGTERM), #58 ($PORT).
 
-FROM python:3.11-slim AS base
+# Pinned by tag AND digest — see the note under the ENV block. Dependabot's `docker`
+# ecosystem bumps the digest; refresh it by hand with
+# `docker buildx imagetools inspect python:3.11-slim`.
+FROM python:3.11-slim@sha256:da047cb8f9d1d98e5c070f5300ba9f7274e33b8fc0e5be5ed88740aed1b95ba9 AS base
 
 # ── Provenance: build-time ARGs -> ENV, read by atrium_paradata.py ───────────────────
 # CI passes ATRIUM_RUNNER_REF as `github.ref_name`. That makes this ENV layer unique per
@@ -42,20 +45,29 @@ ENV ATRIUM_RUNNER_IMAGE=${ATRIUM_RUNNER_IMAGE} \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     HF_HOME=/cache/huggingface
 
-# ── Distro security patches, applied at build time ───────────────────────────────────
-# `python:3.11-slim` is a floating TAG, and nothing in this ecosystem bumps it: no repo
-# declares a `docker` dependabot ecosystem (docker_gha_roadmap.md, H6), so the base layer
-# is whatever Docker Hub last rebuilt. On 2026-09-13 that layer carried perl-base 5.40.1-6
-# with three FIXABLE CRITICAL CVEs — CVE-2026-13221, CVE-2026-42496 and CVE-2026-8376,
-# all fixed in 5.40.1-6+deb13u1. The release gate in docker-tool.reusable.yml ("Fail the
-# release on fixable CRITICAL vulnerabilities") blocks exactly that class, and because the
-# promotion step is `if: success()`, a blocked release publishes by DIGEST ONLY: the
-# `:<version>` and `:latest` tags are never applied.
+# ── Base pin + distro security patches, applied at build time ─────────────────────────
+# The base is pinned by DIGEST as well as tag. `python:3.11-slim` alone is a tag whose name
+# never changes, and Dependabot only proposes an update when the reference in FROM would
+# change, so even a configured `docker` ecosystem had nothing to bump. Pinned as
+# `tag@sha256:…`, the `docker` entry in dependabot.example.yml opens a PR with the new
+# digest whenever Docker Hub rebuilds the tag (its ignore rule holds the tag on 3.11).
+#
+# Before the pin the base layer was whatever Docker Hub last rebuilt, with nothing in this
+# ecosystem bumping it (docker_gha_roadmap.md, H6). On 2026-09-13 that layer carried
+# perl-base 5.40.1-6 with three FIXABLE CRITICAL CVEs — CVE-2026-13221, CVE-2026-42496 and
+# CVE-2026-8376, all fixed in 5.40.1-6+deb13u1. The release gate in docker-tool.reusable.yml
+# ("Fail the release on fixable CRITICAL vulnerabilities") blocks exactly that class, and
+# because the promotion step is `if: success()`, a blocked release publishes by DIGEST
+# ONLY: the `:<version>` and `:latest` tags are never applied.
 #
 # It cost two releases before the layer existed everywhere: translator v1.0.0-beta
 # (2026-09-13, both targets) and nlp-enrich v0.20.2 (2026-09-15, run 34970419474, all
 # three targets). The gate is `if: startsWith(github.ref, 'refs/tags/')`, so day-to-day
 # `test` pushes never surface it — the failure appears only at a release.
+#
+# The digest pin does not replace the upgrade below: a pinned base is only as fresh as the
+# last merged Dependabot PR, and the release gate blocks on fixable CRITICALs that Debian
+# ships in between.
 #
 # `upgrade` rather than `install --only-upgrade <package>`, deliberately. The gate blocks
 # on *fixable* CRITICALs — precisely those the distro already ships a patch for — so the

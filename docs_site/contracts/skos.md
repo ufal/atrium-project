@@ -146,19 +146,20 @@ it. Records carry bare labels, not URIs; a consumer that wants the URI builds it
 
 The translator does **not** import `atrium_vocab` and writes no field that carries a scheme. Its
 controlled vocabulary is something else: a **translation glossary**,
-`data_samples/vocabulary.csv`, with two columns — `source_lemma,target_translation` — and 5,087
-rows, harvested by `load_vocab.py` from AMCR (over OAI-PMH) and TEATER (over GraphQL). The glossary
+`data_samples/vocabulary.csv`, with five columns — `source_lemma,target_translation,source,source_id,uri`
+— and 5,087 rows (1,266 AMCR, 3,821 TEATER), harvested by `load_vocab.py` from AMCR (over OAI-PMH)
+and TEATER (its GraphQL `exportAll` JSON export). The glossary
 protects terms during translation; it does not label anything in the record. See
 [translator → Guide](../tools/translator/guide.md#6--use-the-vocabulary).
 
 `skos_strategy.md` records work on that harvester which the code at `master` @ `88242fe` does not
 contain:
 
-| `skos_strategy.md` says                                                   | At `master` @ `88242fe`                                                           |
-|---------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
-| F3: `load_vocab.py` gained a `--from-flat DIR` option                     | no such option — the flags are `--out`, `--delay`, `--skip-amcr`, `--skip-teater` |
-| F3: the committed CSV was regenerated as 5 columns and 4,952 rows         | 2 columns, 5,087 rows                                                             |
-| V-3: the `main()` / CLI the README documents "does not exist in the file" | it exists — `main()` with an `argparse` interface                                 |
+| `skos_strategy.md` says                                                   | At `master` @ `88242fe`                                                                            |
+|---------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| F3: `load_vocab.py` gained a `--from-flat DIR` option                     | no such option — the flags are `--out`, `--delay`, `--skip-amcr`, `--skip-teater`                  |
+| F3: the committed CSV was regenerated as 5 columns and 4,952 rows         | 2 columns, 5,087 rows (regenerated 2026-09-23: 5 columns, still 5,087 rows, from the live sources) |
+| V-3: the `main()` / CLI the README documents "does not exist in the file" | it exists — `main()` with an `argparse` interface                                                  |
 
 ## "`broader` means two things"
 

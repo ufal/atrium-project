@@ -8,8 +8,10 @@
 # security.reusable.yml sat on @v5 and api-contract.reusable.yml on
 # setup-python@v5 (issue #18, 2026-07-29 audit).
 #
-# github-actions only: this repo ships no Python package manifest — tools/e2e/
-# installs each tool repo's own requirements at runtime inside
+# github-actions, plus `docker` for the Dockerfile TEMPLATE: docs/templates/Dockerfile
+# pins python:3.11-slim by digest, the digest tool repos copy, so it is kept current
+# here rather than only in each tool repo. No `pip`: this repo ships no Python package
+# manifest — tools/e2e/ installs each tool repo's own requirements at runtime inside
 # e2e-pipeline-smoke.yml, and those are covered by the tool repos' Dependabot.
 #
 # Grouped into a single PR and targeted at `test`, matching the convention in
@@ -27,10 +29,22 @@ updates:
         patterns:
           - "*"
 
+  - package-ecosystem: "docker"
+    # The template's FROM is `python:3.11-slim@sha256:…`; without the digest there is
+    # nothing for this entry to bump (the tag name never changes).
+    directory: "/docs/templates"
+    schedule:
+      interval: "weekly"
+    target-branch: "test"
+    ignore:
+      # Python 3.11 parity across every image and CI lane: digest bumps only.
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+
 # NOTE (issue atrium-project#10): two `pip` entries for /setup and /service were added
 # here on 2026-08-19 and removed again the same day. They were copied from
 # atrium-alto-postprocess -- the numpy comment they carried still described *that* repo's
 # python:3.11-slim base and its PR #39 -- and neither directory exists in this repo, so
 # Dependabot's update jobs failed on every run (runs #7 and #8 on 42ceab9). The header
-# above already states the correct shape: github-actions only. The numpy >= 2.5.0 ignore
-# is real and belongs in the tool repos, where it now lives.
+# above already states the correct shape: no pip entries. The numpy >= 2.5.0 ignore is
+# real and belongs in the tool repos, where it now lives.

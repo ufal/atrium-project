@@ -58,38 +58,42 @@ This is the fact most likely to surprise someone reading a pipeline diagram.
     So the file topology fans out from `alto-postprocess` and stops here. What is linear is
     the *record*. [Pipelines](../../pipelines.md) draws both layers.
 
-## The two backends — and the third one that is not registered
+## The three backends
 
-| Name                     | Class              | Glossary support                      | Configured by                                                                                                                                |
-|--------------------------|--------------------|---------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| **`lindat`** *(default)* | `LindatTranslator` | ✗                                     | `TRANSLATION_URL`, defaulting to LINDAT's CUBBITT API. Model names are fetched **live** from the API and composed as `<src>-<tgt>`           |
-| `openai_compatible`      | `LLMTranslator`    | ✓ — glossary injected into the prompt | `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`, optional `LLM_PROVIDER` / `LLM_LANGUAGES`. Raw REST, no vendor SDK. **No model id is hardcoded** |
-| ~~`ct2`~~                | `CT2Translator`    | depends on family                     | **Not registered.** See below                                                                                                                |
+| Name                     | Class              | Glossary support                             | Configured by                                                                                                                                                                 |
+|--------------------------|--------------------|----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **`lindat`** *(default)* | `LindatTranslator` | ✗                                            | `TRANSLATION_URL`, defaulting to LINDAT's CUBBITT API. Model names are fetched **live** from the API and composed as `<src>-<tgt>`                                            |
+| `openai_compatible`      | `LLMTranslator`    | ✓ — glossary injected into the prompt        | `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`, optional `LLM_PROVIDER` / `LLM_LANGUAGES`. Raw REST, no vendor SDK. **No model id is hardcoded**                                  |
+| `ct2`                    | `CT2Translator`    | ✓ for `eurollm` (prompt); ✗ for NMT families | `CT2_MODEL_DIR`, `CT2_MODEL_FAMILY` (`eurollm` / `madlad` / `nllb` / `opus`), `CT2_SP_MODEL`, `CT2_DEVICE`, `CT2_COMPUTE_TYPE` (default `int8`). Needs `requirements-ct2.txt` |
 
 Selection order: `--backend` → `config.txt` `translation_backend` → `TRANSLATION_BACKEND`
 → `lindat`. An unknown name raises with the available list.
 
-!!! danger "`ct2` is a scaffold, and the licence advice depends on it"
-    A CTranslate2 self-hosting backend exists in `processors/ct2_translator.py`, targeting
-    EuroLLM and MADLAD-400. It is **deliberately not registered** so that importing the
-    backend module never pulls in `ctranslate2` and `sentencepiece`. Enabling it means
-    installing `requirements-ct2.txt` and **uncommenting two lines** in
-    `processors/backend.py`.
+!!! note "`ct2` is registered; its dependencies stay optional"
+    The CTranslate2 self-hosting backend in `processors/ct2_translator.py` runs EuroLLM,
+    MADLAD-400, NLLB-200 or Opus-MT. It is registered, but importing it never pulls in
+    `ctranslate2` or `sentencepiece`: those load on the first translation, which fails with
+    an install hint when `requirements-ct2.txt` is missing. Before the model loads,
+    `CT2_COMPUTE_TYPE` is checked against what `CT2_DEVICE` supports, and a bad value names
+    the valid ones. (The default used to be `int4`, which CTranslate2 does not have, so
+    every load without an explicit setting failed.)
 
-    That matters because the repository's own licensing section tells commercial users to
-    "select a self-hosted CTranslate2 model" — without saying it must first be switched on
-    in code. [Reference → Licence](reference.md#licence-is-computed-not-declared) gives the
-    full permissive recipe.
+    The licence follows the model family: EuroLLM and MADLAD-400 are Apache-2.0, Opus-MT is
+    recorded as CC BY 4.0, and NLLB-200 is **CC BY-NC 4.0**. The repository's licensing
+    section tells commercial users to "select a self-hosted CTranslate2 model", which is
+    true only for the permissive families. [Reference → Licence](reference.md#licence-is-computed-not-declared)
+    gives the full permissive recipe.
 
 ## How well it translates: unknown, and that is the honest answer
 
 !!! danger "No translation-quality metric has ever been produced for this tool"
     `eval/bakeoff.py` is a complete harness — reference-based chrF and BLEU through
-    `sacrebleu` when `--refs` is supplied, reference-less quality estimation otherwise
-    (number and date preservation, empty-output rate, length ratio, terminology hit rate).
-    It has **never been run**: its own test file says so, the issue plan lists "execute
-    `eval/bakeoff.py`" as pending, no `bakeoff.csv` is committed, and COMET is left
-    commented out in the evaluation requirements.
+    `sacrebleu` and COMET through `unbabel-comet` when `--refs` is supplied, opt-in COMET-QE,
+    reference-less quality estimation otherwise (number and date preservation, empty-output
+    rate, length ratio, terminology hit rate), and a per-backend summary CSV. It has
+    **never been run**: the issue plan lists "execute `eval/bakeoff.py`" as pending, no
+    `bakeoff.csv` is committed, and `unbabel-comet` stays an opt-in install in the
+    evaluation requirements.
 
     There is no BLEU, chrF or COMET number anywhere in the repository. Any figure quoted
     for this tool's translation quality did not come from here.

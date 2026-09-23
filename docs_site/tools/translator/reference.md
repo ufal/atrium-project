@@ -230,27 +230,31 @@ input is a page (`<doc>-1.alto.xml`), not the document. The output is validated 
 `para_config.txt` declares each component, its licence and whether it is `always` or
 `conditional`; `para_licenses` resolves the run.
 
-| Component               | Licence              | Counts when                              |
-|-------------------------|----------------------|------------------------------------------|
-| `fasttext`              | CC BY-NC 4.0         | language auto-detection actually ran     |
-| `lindat_cubbitt`        | CC BY-NC-SA 4.0      | the `lindat` backend was used            |
-| `udpipe2_engine`        | MPL 2.0              | vocabulary lemma matching ran            |
-| `udpipe2_models`        | CC BY-NC-SA 4.0      | as above                                 |
-| `amcr_vocab`            | CC BY-NC 4.0         | the AMCR vocabulary was loaded           |
-| `teater_data`           | CC BY-NC 4.0         | the TEATER thesaurus was loaded          |
-| `llm_api`               | *"LLM provider ToS"* | the `openai_compatible` backend was used |
-| `ctranslate2`           | MIT                  | CT2 backend                              |
-| `eurollm` / `madlad400` | Apache-2.0           | CT2 models                               |
+| Component               | Licence              | Counts when                               |
+|-------------------------|----------------------|-------------------------------------------|
+| `fasttext`              | CC BY-NC 4.0         | language auto-detection actually ran      |
+| `lindat_cubbitt`        | CC BY-NC-SA 4.0      | the `lindat` backend was used             |
+| `udpipe2_engine`        | MPL 2.0              | vocabulary lemma matching ran             |
+| `udpipe2_models`        | CC BY-NC-SA 4.0      | as above                                  |
+| `amcr_vocab`            | CC BY-NC 4.0         | the AMCR vocabulary was loaded            |
+| `teater_data`           | CC BY-NC 4.0         | the TEATER thesaurus was loaded           |
+| `llm_api`               | *"LLM provider ToS"* | the `openai_compatible` backend was used  |
+| `ctranslate2`           | MIT                  | CT2 backend                               |
+| `eurollm` / `madlad400` | Apache-2.0           | CT2 models                                |
+| `opus_mt`               | CC BY 4.0            | CT2 model (tc-big line; older Apache-2.0) |
+| `nllb200`               | CC BY-NC 4.0         | CT2 model — **non-commercial**            |
 
 **A default run resolves to CC BY-NC-SA 4.0.** `llm_api` deliberately carries an
-unrecognised licence string, so `para_licenses` treats it as maximally restrictive and
-warns — the safe default for a prototype backend whose provider terms are not a CC or OSS
-licence.
+unrecognised licence string, so `para_licenses` treats it as maximally restrictive —
+ranked highest, with both the non-commercial and share-alike flags set — and warns: the
+safe default for a prototype backend whose provider terms are not a CC or OSS licence.
+Every `CT2_MODEL_FAMILY` maps to one of the model rows above; an undeclared component
+would be logged as `UNKNOWN`, which resolves the same way.
 
 **The permissive recipe** — all three parts are required:
 
-1. `--backend ct2` with an Apache-2.0 model (EuroLLM or MADLAD-400) — **which first
-   requires registering the backend**, see [Overview](index.md#the-two-backends--and-the-third-one-that-is-not-registered);
+1. `--backend ct2` with a permissive model — EuroLLM or MADLAD-400 (Apache-2.0) or
+   Opus-MT (CC BY 4.0), **not** NLLB-200 — see [Overview](index.md#the-three-backends);
 2. an explicit `--source_lang`, so FastText never loads and its CC BY-NC weights never count;
 3. a permissive or empty vocabulary, so AMCR and TEATER never count.
 
@@ -264,7 +268,10 @@ slv→sl · lav→lv · lit→lt · est→et · hun→hu · ron→ro · spa→es
 Detection model: `facebook/fasttext-language-identification`, confidence threshold **0.2**.
 UDPipe lemmatisation models are named per language — `czech-pdt-ud-2.15`,
 `slovak-snk-ud-2.15`, `polish-pdb-ud-2.15`, `german-gsd-ud-2.15`, `french-gsd-ud-2.15`,
-`russian-syntagrus-ud-2.15`, `ukrainian-iu-ud-2.15`, `english-ewt-ud-2.15`.
+`russian-syntagrus-ud-2.15`, `ukrainian-iu-ud-2.15`, `english-ewt-ud-2.15`. Any other source
+language is not lemmatised: the single-word vocabulary pass is skipped for it with one
+warning, instead of falling back to the Czech model as it once did. Multi-word vocabulary
+phrases are still protected.
 
 ## Known drift
 
@@ -289,8 +296,10 @@ here; each is a candidate issue in the tool's own repository.
 5. The language-ID **fallback is documented twice, differently**: the README says confidence
    below 0.2 falls back to Czech (true, in metadata mode), while a model that fails to load
    entirely makes `detect()` return `("en", 0.0)` for every document.
-6. `CT2_COMPUTE_TYPE` is documented as defaulting to `int8` in the module docstring and
-   `int4` in the class docstring and the code.
+6. ~~`CT2_COMPUTE_TYPE` is documented as defaulting to `int8` in the module docstring and
+   `int4` in the class docstring and the code.~~ **Fixed:** the default is `int8`
+   everywhere (CTranslate2 has no `int4`, so the old default failed every load), and a
+   value the device cannot run is refused with the list of valid ones.
 7. `--xsd` is **never applied to ALTO** — `process_alto_xml` takes no schema parameter. Stated
    in a digest, nowhere in the README.
 
@@ -305,7 +314,8 @@ here; each is a candidate issue in the tool's own repository.
 10. `LOG_LEVEL` does not govern the batch CLI: **43 `print()` calls remain** in runtime code.
 11. The `live-backend` integration job, whose own header says "run before a release", has
     **never been dispatched**.
-12. `ct2` cannot be selected without editing `processors/backend.py`.
+12. ~~`ct2` cannot be selected without editing `processors/backend.py`.~~ **Fixed:** `ct2`
+    is registered; `ctranslate2` / `sentencepiece` still load only on first use.
 
 **Repository hygiene a newcomer will trip on**
 

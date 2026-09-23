@@ -366,12 +366,16 @@ touched and reports the most restrictive one as the run's licence:
 
 **Worth knowing** — each of these was run, not read:
 
-* The keys mix SPDX identifiers with display names, and the alias table misses several **SPDX
-  spellings**: `CC0-1.0`, `cc-by-sa-4.0`, `bsd-3-clause` and `lgpl-3.0` are all unrecognised.
+* The keys mix SPDX identifiers with display names. **SPDX spellings** resolve through the alias
+  table (`CC0-1.0`, `CC-BY-SA-4.0`, the `-only` / `-or-later` GPL forms), and every catalogued key
+  also resolves in any casing (`bsd-3-clause`, `lgpl-3.0`). Until 2026-09 those four fell through
+  as unrecognised.
 * An unrecognised licence is treated as the most restrictive, and so **becomes the run's effective
-  licence** — as its raw string, with an empty URL and both the non-commercial and share-alike
-  flags false, plus a warning in the notes. The translator's `llm_api = LLM provider ToS` is
-  unrecognised on purpose, so a run on the LLM back-end resolves to that string.
+  licence**: its raw string, an empty URL, **both** the non-commercial and share-alike flags set,
+  and a warning in the notes. (The flags used to be false, so a consumer reading only them saw a
+  permissive licence.) The translator's `llm_api = LLM provider ToS` is unrecognised on purpose,
+  so a run on the LLM back-end resolves to that string; a component missing from
+  `para_config.txt` is logged as `UNKNOWN` and resolves the same way.
 * A run that logs no component at all falls back to CC BY-NC 4.0 (`atrium_paradata.py:25-26`),
   while the resolver on its own returns MIT for an empty list.
 
@@ -436,10 +440,12 @@ languages. CoNLL-U is its file format: one token per line, ten tab-separated col
 `Number=` feature from FEATS — which is what lets the vocabulary skip plural tokens
 ([W7](pipelines.md#w7--vocabulary-harvesting--review-the-translators-half)). Comment lines,
 multi-word token ranges and empty nodes are skipped. There are eight UD 2.15 models: cs, sk, pl,
-de, fr, en, ru, uk (`processors/lemmatizer.py:71-81`).
+de, fr, en, ru, uk (`processors/lemmatizer.py:82-94`).
 
-**Worth knowing.** A language outside those eight **silently gets the Czech model**. And every
-request asks UDPipe for a dependency parse that is never read.
+**Worth knowing.** A language outside those eight is **not lemmatised**: the single-word
+vocabulary pass is skipped for it, with one warning per language. It used to get the Czech model
+silently. Requests ask only for the tokenizer and tagger; the dependency parse, which was never
+read, is no longer requested.
 
 **Onward:** <https://universaldependencies.org/format.html>
 
@@ -508,17 +514,17 @@ different model.
 
 **Where ATRIUM uses it.**
 
-| Back-end                                                                                                                                  | Status                                                                                              | Licence component                                                                            |
-|-------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
-| `lindat` — [CUBBITT](#cubbitt)                                                                                                            | the default                                                                                         | `lindat_cubbitt`, CC BY-NC-SA 4.0                                                            |
-| `openai_compatible` — any OpenAI-style chat-completions API; the code's examples are OpenRouter, Gemini, Mistral, Groq and a local Ollama | registered; plain REST over `requests`, no SDK                                                      | `llm_api` = "LLM provider ToS", unrecognised on purpose                                      |
-| `ct2` — CTranslate2 running EuroLLM, MADLAD-400, NLLB or OPUS-MT                                                                          | **not registered**: a scaffold in `processors/ct2_translator.py`, enabled by uncommenting two lines | `ctranslate2` MIT, `eurollm` and `madlad400` Apache-2.0; `nllb` and `opus` have **no entry** |
+| Back-end                                                                                                                                  | Status                                                                                       | Licence component                                                                                     |
+|-------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| `lindat` — [CUBBITT](#cubbitt)                                                                                                            | the default                                                                                  | `lindat_cubbitt`, CC BY-NC-SA 4.0                                                                     |
+| `openai_compatible` — any OpenAI-style chat-completions API; the code's examples are OpenRouter, Gemini, Mistral, Groq and a local Ollama | registered; plain REST over `requests`, no SDK                                               | `llm_api` = "LLM provider ToS", unrecognised on purpose                                               |
+| `ct2` — CTranslate2 running EuroLLM, MADLAD-400, NLLB or OPUS-MT                                                                          | registered; `ctranslate2` and `sentencepiece` load on first use, from `requirements-ct2.txt` | `ctranslate2` MIT; `eurollm`, `madlad400` Apache-2.0; `opus_mt` CC BY 4.0; `nllb200` **CC BY-NC 4.0** |
 
-**Worth knowing.** The CT2 scaffold's default compute type is `int4` in the code
-(`ct2_translator.py:106`) and `int8` in two docstrings. CTranslate2 4.8.2 rejects `int4` outright —
-`ValueError: Invalid compute type: int4`, checked against a real install — so enabling the
-back-end without setting `CT2_COMPUTE_TYPE` fails on the first load. EuroLLM is named in the code
-and the README but missing from `docs/translation-backends.md`'s comparison. An LLM run's licence
+**Worth knowing.** CT2's default compute type is `int8`. It used to be `int4`, which CTranslate2
+4.8.2 rejects outright (`ValueError: Invalid compute type: int4`, checked against a real install),
+so the back-end failed on its first load unless `CT2_COMPUTE_TYPE` was set. A compute type the
+device cannot run is now refused before the model loads, with the list of valid ones. The model
+licence follows `CT2_MODEL_FAMILY`, so an NLLB run is non-commercial. An LLM run's licence
 resolves to the unrecognised provider-terms string; see [SPDX and Creative
 Commons](#spdx-and-creative-commons).
 
@@ -532,14 +538,14 @@ translations. COMET is a neural metric that tracks human judgement more closely.
 
 **Where ATRIUM uses it.** `eval/bakeoff.py`, the translator's planned comparison of back-ends. It
 always reports reference-less signals — length ratio, number preservation, glossary hit rate,
-empty outputs, and pairwise similarity when exactly two back-ends are compared — and, given
-`--refs` with sacreBLEU installed, sentence-level chrF and BLEU.
+empty outputs and failures (counted apart), and each back-end's similarity to the first one
+listed — and, given `--refs`, chrF and BLEU per segment and per corpus (sacreBLEU) plus COMET
+(`--comet-model`, default `Unbabel/wmt22-comet-da`). COMET-QE is opt-in with `--comet-qe-model`.
+Per-segment rows go to `--out`, one row per back-end to `--summary-out`.
 
-**Worth knowing.** COMET is advertised in the docstring and in the `--refs` help text and **is not
-implemented**: nothing imports it, and `unbabel-comet` is commented out of
-`eval/requirements-eval.txt`. The docstring promises a summary CSV; the summary is printed to the
-console. The bake-off **has never been run** — its own test file says so — and Dependabot does not
-watch `eval/`.
+**Worth knowing.** Both scorers are imported lazily: without sacreBLEU or `unbabel-comet` (still
+commented out of `eval/requirements-eval.txt`, since it pulls torch) the run warns and leaves those
+columns blank. The bake-off **has never been run**; no `bakeoff.csv` is committed.
 
 **Onward:** <https://github.com/mjpost/sacrebleu> · <https://unbabel.github.io/COMET/>
 
@@ -556,7 +562,8 @@ Korektor and the keyword extractors belong with the nlp-enrich and llm-enrich se
 how to run one or more containers from those images.
 
 **Where ATRIUM uses it.** One `Dockerfile` per tool with two targets: `base`, the batch image, and
-`api`, which runs `python -m service.api`. Both build on a floating `python:3.11-slim`, run as uid
+`api`, which runs `python -m service.api`. Both build on `python:3.11-slim` (the translator and
+the hub's template pin it by digest; page-classification still floats the tag), run as uid
 10001, and keep the Hugging Face cache at `/cache/huggingface`. Compose runs the batch service by
 default and the HTTP service under the `api` profile.
 
@@ -601,10 +608,9 @@ Third-party actions are pinned by commit SHA instead — `trivy-action`, `build-
 **What it is.** FastAPI is a Python web framework; uvicorn is the ASGI server that runs it.
 
 **Where ATRIUM uses it.** Both HTTP services are FastAPI applications started by `uvicorn.run()` in
-`service/api.py`. page-classification pins `fastapi>=0.141.1` and `uvicorn[standard]>=0.53.0`; the
-translator pins `fastapi>=0.141.1` and a plain `uvicorn>=0.52.4` — without the `[standard]` extras,
-and not bumped alongside page-classification's, because Dependabot does not watch the translator's
-`service/`.
+`service/api.py`. Both pin `fastapi>=0.141.1` and `uvicorn[standard]>=0.53.0`. The translator's
+used to be a plain `uvicorn>=0.52.4`, without the `[standard]` extras and never bumped, because
+Dependabot did not watch its `service/`; it now does.
 
 **Onward:** <https://fastapi.tiangolo.com/> · <https://www.uvicorn.org/>
 
@@ -617,13 +623,14 @@ commit and in CI; Dependabot opens pull requests when a pinned dependency has a 
 (page-classification adds shellcheck `v0.11.0`), with ruff at line length 120, Python 3.11, rules
 `E`, `F`, `W`, `I`. The hub's own `.pre-commit-config.yaml` is older — `v5.0.0`, `v0.9.0`,
 `v0.10.0`. Dependabot in page-classification watches GitHub Actions and pip in `/setup` and
-`/service`; in the translator it watches GitHub Actions and pip at `/` only — so neither
-`service/` nor `eval/` — and ignores `torch`, `torchvision` and `transformers`, which the
-translator does not use.
+`/service`; in the translator it watches GitHub Actions, pip in `/`, `/service` and `/eval`
+(ignoring numpy ≥ 2.0, which fasttext-wheel 0.9.2 cannot run on) and the `docker` base image.
 
-**Worth knowing.** **No repository has a `docker` ecosystem** — not the tools, not the hub, not the
-hub's example configuration — so a floating `python:3.11-slim` is never proposed for an update.
-That is the gap behind [the base image that blocked a
+**Worth knowing.** A `docker` ecosystem only helps with a **digest-pinned** base: a bare
+`python:3.11-slim` never changes name, so there is nothing to propose. The translator, the hub
+(for `docs/templates/Dockerfile`) and the hub's example configuration now pin by digest and
+declare the ecosystem, holding the tag on 3.11; the other tools still float the tag. That gap is
+what lay behind [the base image that blocked a
 release](tools/translator/history.md#the-base-image-that-blocked-a-release).
 
 **Onward:** <https://docs.astral.sh/ruff/> · <https://pre-commit.com/> ·

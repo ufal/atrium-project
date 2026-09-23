@@ -1,8 +1,10 @@
 # Canonical dependabot config for a tool repo. Copy to .github/dependabot.yml and
 # point `directory:` at wherever that repo actually keeps its manifests — a single
 # `directory: "/"` sees only the root, so a repo whose real pins live under setup/
-# or service/ needs one entry per manifest directory or its dependency surface goes
-# unmonitored entirely (atrium-page-classification, #18 audit).
+# or service/ needs one entry per manifest directory (or one entry with a
+# `directories:` list) or its dependency surface goes unmonitored entirely
+# (atrium-page-classification, #18 audit). The `docker` entry at the end keeps the
+# digest-pinned base image current; see the note there.
 #
 # ── The Requires-Python trap (read before trimming the `ignore` list) ────────────
 # Dependabot raises a requirement's FLOOR to the latest version using the version
@@ -56,3 +58,20 @@ updates:
       # the interpreter bump.
       - dependency-name: "numpy"
         versions: [">= 2.5.0"]
+
+  - package-ecosystem: "docker"
+    # Needs the Dockerfile's FROM pinned by DIGEST (`python:3.11-slim@sha256:…`, as in
+    # docs/templates/Dockerfile). A bare tag never changes name, so Dependabot has nothing
+    # to propose and the base layer silently stays whatever Docker Hub last built. With a
+    # digest it opens a PR each time the tag is rebuilt, which is how distro security
+    # patches reach the image between releases. Add one `directory:` per Dockerfile.
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "test"
+    ignore:
+      # Python version parity: every image and CI lane in the ecosystem is 3.11, and the
+      # Requires-Python guard above assumes it. Digest bumps only; move the tag by hand,
+      # together with the lanes and the numpy bound.
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
