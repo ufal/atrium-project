@@ -1,4 +1,4 @@
-# ATRIUM hub site tree — issue #57, rounds 3–5 (content)
+# ATRIUM hub site tree — issue #57, rounds 3–6 (content)
 
 Everything here lands on **`atrium-project`'s default branch (`main`)**, not on `gh-pages`.
 `gh-pages` receives the *built* site; this is its source, and `.github/workflows/pages.yml`
@@ -79,28 +79,69 @@ dataset record were unreachable, so those entries say only what the code relies 
 page-classification's overview and reference; `amcr-inputs.txt` holds 15 URLs, not 16; OAI-PMH *is*
 named by all three repositories that use it; UDPipe model names carry the `-241121` suffix.
 
+## What round 6 changed
+
+**The site now publishes only lasting facts.** Rounds 3–5 held every page to "values verified
+against code, and named drift where the two disagree" — which filled the pages with audit
+material that goes stale within days: "Known drift" lists (20+ items per tool), defect
+write-ups, README-versus-code asides, open-issue status, commit SHAs and `file:NN` references in
+prose. The maintainer's #57 TODO asks for static, unchangeable descriptions instead. Round 6
+rewrote all **23** pages to that bar, scoped as before to page-classification and the
+translator, and moved every removed finding — re-checked against the current heads, with a
+status each — into [`agent_dev_logs/digests/57.findings.md`](agent_dev_logs/digests/57.findings.md),
+which lives outside `docs_site/` and is never published.
+
+- **Stripped:** both tools' `## Known drift` sections; the agent-skills Known drift; the
+  contributing-standards "Contradictions" section; the schemas "What the schema says that the
+  code does not"; the rocrate "What a crate cannot yet say"; every "Written so far / round N"
+  admonition (replaced by one `!!! info "Scope"` form); dated measurements, counts that change
+  with each release or harvest, and SHAs / line references outside `## Sources`.
+- **Reframed, not lost:** each stripped section's lasting core is kept as plain description —
+  e.g. the terminal-branch warning became "the translator's output is an end product"; "Rule 5
+  in practice" became "How the record's licence is computed"; "Nobody runs it yet" became
+  "Running the exporter"; history pages became a settled narrative with no "still open".
+- **Added (lasting content the pages lacked):** page-classification — how a prediction is made,
+  label naming and what each category suggests doing next, preparing input, reading the output
+  (real rows from a committed result table), the `vX.Y` revision scheme, YOLO-cls and CLIP,
+  `curl` examples, how to cite. Translator — how a translation is made, metadata (AMCR) mode
+  step by step, vocabulary protection (Tag-and-Protect vs prompt glossary), language
+  identification and pair discovery, a dual-pass Mermaid diagram, a code map, design limits,
+  `CT2_*` / `LLM_*` environment rows. Hub — "How the ecosystem works" on the portal, a workflow
+  index on Pipelines, a glossary of terms on External tools, the deployment model and a
+  batch-image quick start on Operations, "Anatomy of a tool" on Architecture, the record's life
+  cycle on the document contract, release steps / shared-code rule / "Contributing to this site"
+  on Contributing standards, a Turtle concept and an RO-Crate excerpt from the real exporter.
+- **Corrected against the current heads** (pc `vit` @ `adee922`, translator `master` @
+  `71feaef`): `ct2` is a registered `--backend`; the dataset licence is CC BY-NC 4.0 everywhere
+  in page-classification; `checkpoint/` is *not* git-ignored; the upload variable is
+  `MAX_UPLOAD_MB`; ct2 NMT families apply no vocabulary protection (only `lindat` and the LLM
+  back-ends do); the round-5 data-script findings are fixed at `a95c6c6`.
+- **Site defect fixed:** the `atrium-pipeline` strips linked `../<tool>/index.md` inside raw
+  HTML, which MkDocs does not rewrite — those links 404'd on the built site. Now `../<tool>/`.
+
 ## Layout
 
-| Path                          | What it is                                                                                                               |
-|-------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| `mkdocs.yml`                  | site config. `docs_dir: docs_site`, `site_dir: site`, `strict: true`, `validation.links.anchors: warn`                   |
-| `PAGES_SETUP.md`              | the publishing mechanics: why a branch source, how Pages is enabled, what the legacy Jekyll builder would have published |
-| `docs_site/**`                | **23 pages** — 13 hub pages + 2 repos × 5 tool-section pages                                                             |
-| `docs_site/assets/extra.css`  | styling hook; the `.atrium-pipeline` strip on each tool index uses it                                                    |
-| `.github/workflows/pages.yml` | builds `docs_site/` with `--strict`; publishes to `gh-pages` on push to `main`                                           |
-| `tools/docs/requirements.txt` | the pinned toolchain — mkdocs 1.6.1, mkdocs-material 9.7.7, pymdown-extensions 12.0.1                                    |
-| `_generators/`                | what is left of the round-2 generators: `make_stubs.py`, `repos.py`, `style.css`                                         |
+| Path                                    | What it is                                                                                                               |
+|-----------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| `mkdocs.yml`                            | site config. `docs_dir: docs_site`, `site_dir: site`, `strict: true`, `validation.links.anchors: warn`                   |
+| `PAGES_SETUP.md`                        | the publishing mechanics: why a branch source, how Pages is enabled, what the legacy Jekyll builder would have published |
+| `docs_site/**`                          | **23 pages** — 13 hub pages + 2 repos × 5 tool-section pages                                                             |
+| `agent_dev_logs/digests/57.findings.md` | the unpublished findings register: everything round 6 removed from the pages, by owning repository, with a status        |
+| `docs_site/assets/extra.css`            | styling hook; the `.atrium-pipeline` strip on each tool index uses it                                                    |
+| `.github/workflows/pages.yml`           | builds `docs_site/` with `--strict`; publishes to `gh-pages` on push to `main`                                           |
+| `tools/docs/requirements.txt`           | the pinned toolchain — mkdocs 1.6.1, mkdocs-material 9.7.7, pymdown-extensions 12.0.1                                    |
+| `_generators/`                          | what is left of the round-2 generators: `make_stubs.py`, `repos.py`, `style.css`                                         |
 
 ## Page status
 
 | Page                                                                                   | State                                                                              |
 |----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|
-| `index.md`                                                                             | **written** — the portal: what ATRIUM is, the six repositories, where to start     |
-| `pipelines.md`                                                                         | **partial** — both layer diagrams and W1, W4–W8, W12, W13 written; five listed     |
-| `external-tools.md`                                                                    | **partial** — every entry the two tools depend on written; the rest marked pending |
-| `development-history.md`                                                               | **partial** — per-repo index and the cross-repository chronology written           |
-| `tools/page-classification/*`                                                          | **written** — 5 pages, from `vit` @ `8415ce7`                                      |
-| `tools/translator/*`                                                                   | **written** — 5 pages, from `master` @ `88242fe`                                   |
+| `index.md`                                                                             | **written** — the portal, and how the ecosystem works                              |
+| `pipelines.md`                                                                         | **partial** — workflow index; W1, W4–W8, W12, W13 in full; five listed             |
+| `external-tools.md`                                                                    | **partial** — glossary of terms; every entry the two tools depend on               |
+| `development-history.md`                                                               | **partial** — per-repo index and the cross-repository chronology                   |
+| `tools/page-classification/*`                                                          | **written** — 5 pages, from `vit` @ `adee922` (round 6)                            |
+| `tools/translator/*`                                                                   | **written** — 5 pages, from `master` @ `71feaef` (round 6)                         |
 | `ecosystem/repository-map.md`                                                          | **written** — six identity rows; depth for the two documented tools                |
 | `ecosystem/{architecture,document-contract}.md`, `contracts/{schemas,skos,rocrate}.md` | **partial** — written for page-classification and translator                       |
 | `agent-skills.md`, `operations.md`, `contributing-standards.md`                        | **partial** — written for page-classification and translator                       |
@@ -128,16 +169,36 @@ re-vendored inside one atomic window or CI goes red in five repositories at once
 2. **The page.** Written prose, tables and diagrams — no markers, no admonition claiming the
    page will be filled later.
 3. **`## Sources`** — a provenance table: what was read, at which ref, and what was taken
-   from it.
+   from it. The one place on a page where commit SHAs and `file:NN` references belong.
 
-The bar every page has to clear: **a reader is better off here than on the README.** Three
-things earn that, and the round-2 shells had none of them — cross-repository facts the tool
-repository cannot state about itself, values verified against code rather than prose, and
-named drift where the two disagree.
+The bar every page has to clear: **a reader is better off here than on the README, and the page
+stays true until the tool itself changes.** Two things earn the first — cross-repository facts
+the tool repository cannot state about itself, and values read from code rather than prose.
+The second rules out, since round 6, anything time-bound: drift between documents and code,
+defects, open-issue status, dated measurements. Those go to
+[`57.findings.md`](agent_dev_logs/digests/57.findings.md) as candidate issues for their owners.
 
 ## Verified
 
-As of round 5 (2026-09-23), on the maintainer's `88bc1a6` plus this round's files:
+**Round 6 (2026-09-23)**, on hub `main` @ `7b0b84e` plus this round's files, pages written
+against page-classification `vit` @ `adee922` and translator `master` @ `71feaef`:
+
+- `mkdocs build --strict` → **exits 0**, no warnings, 23 pages; `nav` ↔ `docs_site/` 23 ↔ 23.
+- Every markdown table renders as an HTML `<table>` — **128 of 128**, counted per page.
+- **Seven** Mermaid diagrams render as `class="mermaid"` — pipelines 2, architecture 2, portal 1,
+  agent skills 1, translator reference 1.
+- Both tool-index pipeline strips link to directory URLs that exist in the built site.
+- A sweep of every page body (outside `## Sources`) for *Known drift, so far, round N, never been
+  run, still open, used to, defect, pending, today, currently*, 7-hex SHAs and `file:NN`
+  references leaves only tool names (`para-drift`), settled history and behaviour descriptions.
+- The built site greps clean for e-mail addresses, the partner-contacts file, maintainer handles,
+  token prefixes, the grant number and CI run IDs; the RO-Crate excerpt elides author ORCIDs.
+- `python3 -m pytest tests/ -q` → **141 passed, 4 skipped** (unchanged — no code touched);
+  `workflow_lint.py --offline` → **OK**.
+- Tables follow the maintainer's formatter; the reproduction script leaves all 23 files
+  byte-stable on a second pass.
+
+As of round 5 (2026-09-23), on the maintainer's `88bc1a6` plus that round's files:
 
 - `mkdocs build --strict` → **exits 0**, 23 pages, on mkdocs 1.6.1 / mkdocs-material 9.7.7 /
   pymdown-extensions 12.0.1. Every internal cross-page link and anchor resolves.
@@ -159,6 +220,7 @@ As of round 5 (2026-09-23), on the maintainer's `88bc1a6` plus this round's file
   .github/workflows/pages.yml
   INDEX.md
   PAGES_SETUP.md
+  agent_dev_logs/digests/57.findings.md
   mkdocs.yml
   tools/docs/requirements.txt
   _generators/make_stubs.py

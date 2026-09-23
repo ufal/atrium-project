@@ -2,7 +2,7 @@
 title: ATRIUM — UFAL documentation
 nav_order: 1
 status: published
-round: 4
+round: 6
 issue: 57
 ---
 
@@ -21,7 +21,8 @@ bridges four European research infrastructures: **DARIAH** (arts and humanities)
 More at [atrium-research.eu](https://atrium-research.eu/), and in the
 [project presentation on Zenodo](https://zenodo.org/records/19500212).
 
-This site documents ÚFAL's part: five tool repositories and the hub that holds them together.
+This site documents ÚFAL's part: five tool repositories and the hub that holds them
+together — six repositories in all.
 
 ## The six repositories
 
@@ -43,7 +44,7 @@ This site documents ÚFAL's part: five tool repositories and the hub that holds 
     Turns OCR output into per-page ALTO, extracted text and a scored table of line quality — the
     point the whole pipeline fans out from.
 
-    [Landing page](https://ufal.github.io/atrium-alto-postprocess/) · *documentation section to come*
+    [Landing page](https://ufal.github.io/atrium-alto-postprocess/) · [Source](https://github.com/ufal/atrium-alto-postprocess)
 
 -   **[translator](tools/translator/index.md)**
 
@@ -61,7 +62,7 @@ This site documents ÚFAL's part: five tool repositories and the hub that holds 
     Morphology, syntax and named entities for every text line, and the TEITOK corpus format with
     bounding boxes kept.
 
-    [Landing page](https://ufal.github.io/atrium-nlp-enrich/) · *documentation section to come*
+    [Landing page](https://ufal.github.io/atrium-nlp-enrich/) · [Source](https://github.com/ufal/atrium-nlp-enrich)
 
 -   **llm-enrich**
 
@@ -70,7 +71,7 @@ This site documents ÚFAL's part: five tool repositories and the hub that holds 
     Keywords and vocabulary mapping against the ATRIUM controlled vocabulary, with local or remote
     LLMs — and the converter for born-digital documents.
 
-    [Landing page](https://ufal.github.io/atrium-llm-enrich/) · *documentation section to come*
+    [Landing page](https://ufal.github.io/atrium-llm-enrich/) · [Source](https://github.com/ufal/atrium-llm-enrich)
 
 -   **atrium-project** — the hub
 
@@ -82,17 +83,14 @@ This site documents ÚFAL's part: five tool repositories and the hub that holds 
 
 </div>
 
-The hub's own README lists llm-enrich among "experimental / auxiliary repositories"; the pipeline
-treats it as its fifth stage, and the end-to-end tests run it as one. Both are true of it today.
-
 ## Start here
 
 - **[page-classification](tools/page-classification/index.md)** — sort a scanned page into
   one of 11 structural categories, so you know what to do with it next
 - **[translator](tools/translator/index.md)** — translate ALTO and AMCR XML in place, every
   tag and coordinate preserved
-- **[Pipelines](pipelines.md)** — what the tools do, end to end, and the correction that
-  every existing diagram in this ecosystem needs
+- **[Pipelines](pipelines.md)** — what the tools do, end to end: what each stage reads and
+  writes, drawn as the file flow and the record flow
 - **[External tools & services](external-tools.md)** — the glossary, if a name is unfamiliar
 - **[Repository map](ecosystem/repository-map.md)** — which repo owns what
 
@@ -107,18 +105,46 @@ And by question:
 | publish results to a repository or catalogue         | [RO-Crate export](contracts/rocrate.md)                                                         |
 | change shared code, or contribute                    | [Architecture](ecosystem/architecture.md) · [Contributing standards](contributing-standards.md) |
 
-## How this site is built
+## How the ecosystem works
 
-Every page here is **written**, not generated: each one ends with a *Sources* table naming what it
-was written from and at which commit, and every value in it was read from the tools' code rather
-than copied from their prose — where the two disagree, the page says so. The tools' own `README.md`
-and `CONTRIBUTING.md` stay the canonical, full-length references; these pages are the map between
-them, and the parts no single repository can state about itself.
+```mermaid
+flowchart LR
+  SCAN[/"scanned pages"/] --> PC[page-classification]
+  PC -. "routing decision" .-> OCR["OCR<br/>(outside the pipeline)"]
+  OCR --> ALTO[alto-postprocess]
+  ALTO -- "PAGE_ALTO/" --> TR[translator]
+  ALTO -- "DOC_LINE_CATEG/" --> NLP[nlp-enrich]
+  ALTO -- "DOC_LINE_CATEG/" --> LLM[llm-enrich]
+  NLP -- "TEITOK/" --> LLM
+  TR --> EN[/"English editions"/]
+```
+
+**Five tools, each a separate repository.** Every tool is a command-line program and an HTTP
+service built from the same code, shipped as two container images. The tools need very
+different environments — a vision-model stack, CPU heuristics, remote translation services,
+GPU language models — so they are not combined into one program.
+
+**One record per document.** What ties the stages together is a JSON record,
+`<doc_id>.document.json`, that each stage reads, extends with the one block it owns, and passes
+on. By the end it holds the page categories, the text layer, the translation reference, the
+entities and the enrichment — and a provenance trail saying which program, at which version and
+under which licence, wrote each part. See [The document contract](ecosystem/document-contract.md).
+
+**One hub.** `atrium-project` holds the code every tool shares — the record, the run log, the
+licence rules, the vocabulary, the service contract — and hands out byte-identical copies of
+it; it runs the CI every tool calls, and the end-to-end test that runs them together. See
+[Architecture](ecosystem/architecture.md).
+
+**Built here, run by the partners.** ÚFAL builds, tests and publishes the container images;
+the partner institutes of archaeology run them on their own infrastructure, next to their own
+collections. See [Operations](operations.md).
+
+## About this site
+
+Every page here is **written**, not generated: it explains how the parts fit together, and ends
+with a *Sources* table naming what it was written from. The tools' own `README.md` and
+`CONTRIBUTING.md` stay the full-length references; these pages are the map between them.
 
 The site's source is `docs_site/` in the hub. A pull request builds it with
 `mkdocs build --strict`, which fails on any broken link or anchor between pages; a merge to `main`
-publishes it to the `gh-pages` branch. The work is tracked in
-[atrium-project#57](https://github.com/ufal/atrium-project/issues/57).
-
-Two of the five tool sections — page-classification and the translator, the two furthest along —
-are written; the other three follow.
+publishes it to the `gh-pages` branch.

@@ -2,7 +2,7 @@
 title: translator
 nav_order: 50
 status: published
-round: 3
+round: 6
 issue: 57
 repo: atrium-translator
 role: index
@@ -11,7 +11,7 @@ role: index
 # translator
 
 <div class="atrium-pipeline" markdown="0">
-<a href="../page-classification/index.md">page-classification</a>
+<a href="../page-classification/">page-classification</a>
 <a href="https://ufal.github.io/atrium-alto-postprocess/">alto-postprocess</a>
 <span class="here">translator</span>
 <a href="https://ufal.github.io/atrium-nlp-enrich/">nlp-enrich</a>
@@ -26,37 +26,60 @@ Two kinds of input, one core:
 
 * **ALTO OCR pages** — the positional text layer produced by
   [alto-postprocess](https://ufal.github.io/atrium-alto-postprocess/).
-* **AMCR metadata records**, including OAI-PMH envelopes — translated at XPath targets
-  named in `amcr-fields.txt`.
+* **[AMCR](../../external-tools.md#amcr-metadata-xml) metadata records**, bare or inside
+  [OAI-PMH](../../external-tools.md#oai-pmh) envelopes — translated at XPath targets named
+  in `amcr-fields.txt`.
+
+The default translation engine is LINDAT's CUBBITT service; an OpenAI-compatible LLM API
+or a self-hosted CTranslate2 model can be selected instead. Archaeological terms are kept
+consistent through a controlled Czech–English vocabulary.
 
 It runs as a batch CLI (`main.py`), as a containerised service (`POST /translate`), and as
-an Agent Skill.
+an [Agent Skill](../../agent-skills.md).
 
 ## What it takes in, what it hands on
 
-|                         |                                                                                                                                                       |
-|-------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **In**                  | One ALTO or AMCR XML file, or a directory of them, optionally with an ATRIUM document record to accrete onto                                          |
-| **Out**                 | `<name>_<target_lang>.<ext>` — the translated document; a `_log.csv` of every source/target text pair; a paradata JSON; optionally the updated record |
-| **Owns in the record**  | The `translations` block, and `entities[].translation_en`                                                                                             |
-| **Reads from upstream** | `PAGE_ALTO/<doc>/<doc>-N.alto.xml` from alto-postprocess                                                                                              |
+|                          |                                                                                                                                                       |
+|--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **In**                   | One ALTO or AMCR XML file, or a directory of them, optionally with an ATRIUM document record to accrete onto                                          |
+| **Out**                  | `<name>_<target_lang>.<ext>` — the translated document; a `_log.csv` of every source/target text pair; a paradata JSON; optionally the updated record |
+| **Writes in the record** | The `translations` block, and `derived_from.translated_xml` — the name of the translated file                                                         |
+| **Reads from upstream**  | `PAGE_ALTO/<doc>/<doc>-N.alto.xml` from alto-postprocess                                                                                              |
 
 ## Where it sits — the translator is a terminal branch
 
-This is the fact most likely to surprise someone reading a pipeline diagram.
+The translator reads the per-page ALTO that alto-postprocess writes, and its output is an
+**end product**: an English edition of the page or record, for readers and for
+publication. The later stages work on the original text — `nlp-enrich` reads
+`DOC_LINE_CATEG/` and the original `ALTO/` — so no stage reads `TRANSLATED/`.
 
-!!! warning "Nothing downstream reads the translated files"
-    **No repository in the ecosystem reads `TRANSLATED/`** — zero hits across all four
-    downstream repositories. `nlp-enrich` reads `DOC_LINE_CATEG/` and the *original*
-    `ALTO/`, never the translator's output.
+What persists in the pipeline is a **reference**: the translated document is recorded in
+the document record as `derived_from.translated_xml`, and the `translations` block records
+how it was made. So the file topology fans out from `alto-postprocess` and stops here,
+while the *record* runs on through every stage. [Pipelines](../../pipelines.md) draws both
+layers.
 
-    What persists is a **reference**: the translated document is recorded in the document
-    record as `derived_from.translated_xml`, and the `translations` block records how it
-    was made. The translation is a published artefact and a provenance entry, not an input
-    to a later stage.
+## How a translation is made
 
-    So the file topology fans out from `alto-postprocess` and stops here. What is linear is
-    the *record*. [Pipelines](../../pipelines.md) draws both layers.
+**ALTO pages** keep their geometry. Each text block is translated twice: once whole, for a
+fluent translation, and once line by line, only to learn how many words belong on each
+line. The fluent translation is then split across the original lines and written into the
+original word boxes, so every coordinate survives.
+[Reference → ALTO dual-pass reconstruction](reference.md#alto-dual-pass-reconstruction)
+draws it step by step.
+
+**Metadata records** are translated field by field: each XPath in `amcr-fields.txt` selects
+the free-text fields to translate, and only their text changes. With `--output-mode append`
+the Czech is kept and the English is added beside it, marked `xml:lang="en"`.
+[Reference → Metadata mode](reference.md#metadata-amcr-mode) has the detail.
+
+**The source language** is detected by FastText unless it is given — per text block in ALTO,
+per field in metadata — so a record that mixes languages is handled piece by piece.
+
+**Controlled terms** from the AMCR and TEATER thesauri keep their fixed English equivalent:
+they are masked before translation and restored afterwards (CUBBITT), or given to the model
+as a glossary (LLM backends). See
+[Reference → Vocabulary protection](reference.md#vocabulary-protection).
 
 ## The three backends
 
@@ -69,48 +92,36 @@ This is the fact most likely to surprise someone reading a pipeline diagram.
 Selection order: `--backend` → `config.txt` `translation_backend` → `TRANSLATION_BACKEND`
 → `lindat`. An unknown name raises with the available list.
 
-!!! note "`ct2` is registered; its dependencies stay optional"
+!!! note "The `ct2` backend"
     The CTranslate2 self-hosting backend in `processors/ct2_translator.py` runs EuroLLM,
-    MADLAD-400, NLLB-200 or Opus-MT. It is registered, but importing it never pulls in
-    `ctranslate2` or `sentencepiece`: those load on the first translation, which fails with
-    an install hint when `requirements-ct2.txt` is missing. Before the model loads,
-    `CT2_COMPUTE_TYPE` is checked against what `CT2_DEVICE` supports, and a bad value names
-    the valid ones. (The default used to be `int4`, which CTranslate2 does not have, so
-    every load without an explicit setting failed.)
+    MADLAD-400, NLLB-200 or Opus-MT from a converted model directory. Its dependencies are
+    optional: `ctranslate2` and `sentencepiece` load on the first translation, which fails
+    with an install hint when `requirements-ct2.txt` is missing. Before the model loads,
+    `CT2_COMPUTE_TYPE` (default `int8`) is checked against what `CT2_DEVICE` supports, and a
+    bad value names the valid ones.
 
     The licence follows the model family: EuroLLM and MADLAD-400 are Apache-2.0, Opus-MT is
-    recorded as CC BY 4.0, and NLLB-200 is **CC BY-NC 4.0**. The repository's licensing
-    section tells commercial users to "select a self-hosted CTranslate2 model", which is
-    true only for the permissive families. [Reference → Licence](reference.md#licence-is-computed-not-declared)
+    recorded as CC BY 4.0, and NLLB-200 is **CC BY-NC 4.0**. For commercial use, choose one
+    of the permissive families; [Reference → Licence](reference.md#licence-is-computed-not-declared)
     gives the full permissive recipe.
 
-## How well it translates: unknown, and that is the honest answer
+## Evaluating translation quality
 
-!!! danger "No translation-quality metric has ever been produced for this tool"
-    `eval/bakeoff.py` is a complete harness — reference-based chrF and BLEU through
-    `sacrebleu` and COMET through `unbabel-comet` when `--refs` is supplied, opt-in COMET-QE,
-    reference-less quality estimation otherwise (number and date preservation, empty-output
-    rate, length ratio, terminology hit rate), and a per-backend summary CSV. It has
-    **never been run**: the issue plan lists "execute `eval/bakeoff.py`" as pending, no
-    `bakeoff.csv` is committed, and `unbabel-comet` stays an opt-in install in the
-    evaluation requirements.
+Archival OCR text rarely comes with a reference translation, so the repository's
+evaluation harness, `eval/bakeoff.py`, measures backends in two ways and reports both side
+by side, one summary row per backend:
 
-    There is no BLEU, chrF or COMET number anywhere in the repository. Any figure quoted
-    for this tool's translation quality did not come from here.
+* **with references**, when a reference file is supplied: chrF and BLEU through sacreBLEU,
+  and COMET — the standard machine-translation metrics;
+* **without references**, always: whether numbers, dates and codes survive, how often the
+  output is empty, the output-to-input length ratio (a guard against truncation and
+  invented text), how many expected glossary terms appear, and how far each backend's
+  output diverges from the baseline's; reference-free COMET-QE can be switched on as well.
 
-What *has* been measured is structural, on a 79-page ALTO sample and 15 AMCR records:
-
-| Measurement                                                | Value                                                                |
-|------------------------------------------------------------|----------------------------------------------------------------------|
-| API calls for the 79-page sample, with page batching       | **~158**, against up to **~3,288** unbatched                         |
-| ALTO boxes in, boxes out                                   | 7,229 → 7,229 — **none resized**                                     |
-| Boxes no longer holding exactly one word after translation | **528 of 7,229 (7.3 %)** — 224 empty, 304 multi-word                 |
-| `xml:lang="cs"` attributes across the AMCR samples         | 426, on 23 element types — and **0** on translated free-text fields  |
-| Throughput on the 16-document sample                       | 16 files in 46.45 s ≈ 20.7 files/min, 113 protected vocabulary terms |
-
-That 7.3 % is not a defect to be fixed; it is a consequence of how the alignment works, and
-[Reference](reference.md#alto-dual-pass-reconstruction) explains why a per-`String`
-alternative reading would be meaningless.
+It calls the real backends over the network, so it is run by hand against a chosen sample
+rather than in CI. [Reference → Other entry points](reference.md#other-entry-points) lists
+its flags, and `docs/translation-backends.md` in the repository compares the candidate
+models it was built to choose between.
 
 ## Languages
 
@@ -119,8 +130,9 @@ Twenty, mapped ISO 639-3 → ISO 639-1 by the language identifier: `cs`, `en`, `
 `hi`. Detection uses `facebook/fasttext-language-identification`; in ALTO mode it runs
 **once per `TextBlock`** so every line in a block is translated consistently.
 
-Whether a given pair is actually served depends on the backend — CUBBITT is Czech-centric.
-The repository's backend evaluation document compares nine candidates on exactly this axis.
+Whether a given pair is actually served depends on the backend — CUBBITT is Czech-centric,
+and offers the pairs the LINDAT service lists. The repository's backend evaluation document
+compares nine candidates on exactly this axis.
 
 ## Licence — computed per run, not declared
 
@@ -132,26 +144,26 @@ assembled deliberately — see
 
 ## Where to go next
 
-* **[Guide](guide.md)** — install it, run it, and the failure modes nobody wrote down
-* **[Reference](reference.md)** — every flag, every endpoint, every output field
-* **[Changelog](changelog.md)** — 23 releases, grouped by what actually changed
+* **[Guide](guide.md)** — install it, run it, troubleshoot it
+* **[Reference](reference.md)** — every flag, every endpoint, every output field, and how each mode works
+* **[Changelog](changelog.md)** — the release history, grouped into arcs
 * **[History](history.md)** — why it is shaped the way it is
 * **[Pipelines](../../pipelines.md)** — where this stage sits, end to end
 * **[External tools & services](../../external-tools.md)** — LINDAT, CUBBITT, UDPipe, ALTO, AMCR
 
 ## Sources
 
-Read from `ufal/atrium-translator` at branch **`master`**, commit `88242fe` (2026-09-21),
+Read from `ufal/atrium-translator` at branch **`master`**, commit `71feaef` (2026-09-23),
 and from the hub's canonical documents. This table records **provenance**: what this page
 was written from, not a build instruction.
 
-| Source                                                            | What was taken from it                                             |
-|-------------------------------------------------------------------|--------------------------------------------------------------------|
-| `README.md` §§ Features, Logic Overview, Paradata                 | behaviour, language handling, output description                   |
-| `processors/backend.py:40-111`                                    | the registry, the protocol, the selection order, the `ct2` comment |
-| `processors/identifier.py:10-34`                                  | the 20 language codes                                              |
-| `para_config.txt`                                                 | the licence component table                                        |
-| `agent_dev_logs/digests/46.digest.md`                             | every structural measurement quoted above                          |
-| `tests/test_bakeoff.py`, `agent_dev_logs/plans/4.plan.md`         | that the bake-off has never been run                               |
-| `atrium-project/docs/templates/shared/atrium_document.py:108-118` | block ownership                                                    |
-| `atrium-project/docs/document_schema.md:130-142`                  | the write/read contract                                            |
+| Source                                                    | What was taken from it                                             |
+|-----------------------------------------------------------|--------------------------------------------------------------------|
+| `README.md` §§ Features, Logic Overview, Paradata         | behaviour, language handling, output description                   |
+| `processors/backend.py`, `processors/ct2_translator.py`   | the registry, the protocol, the selection order, the `ct2` backend |
+| `processors/identifier.py`                                | the 20 language codes                                              |
+| `utils.py`                                                | the ALTO and metadata processing summarised above                  |
+| `eval/bakeoff.py`                                         | the evaluation metrics                                             |
+| `para_config.txt`                                         | the licence component table                                        |
+| `atrium-project/docs/templates/shared/atrium_document.py` | block ownership                                                    |
+| `atrium-project/docs/document_schema.md`                  | the write/read contract                                            |

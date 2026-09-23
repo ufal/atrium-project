@@ -2,7 +2,7 @@
 title: page-classification
 nav_order: 30
 status: published
-round: 3
+round: 6
 issue: 57
 repo: atrium-page-classification
 role: index
@@ -13,7 +13,7 @@ role: index
 <div class="atrium-pipeline" markdown="0">
 <span class="here">page-classification</span>
 <a href="https://ufal.github.io/atrium-alto-postprocess/">alto-postprocess</a>
-<a href="../translator/index.md">translator</a>
+<a href="../translator/">translator</a>
 <a href="https://ufal.github.io/atrium-nlp-enrich/">nlp-enrich</a>
 <a href="https://ufal.github.io/atrium-llm-enrich/">llm-enrich</a>
 </div>
@@ -23,9 +23,14 @@ script — can decide what should happen to it next.** A page of handwritten pro
 photographic plate and a printed form all need different treatment; the classifier is
 what tells them apart before any of that treatment is chosen.
 
+It is an image classifier: fine-tuned vision models — Vision Transformers, RegNetY and
+EfficientNetV2 — look at the whole page at once and return a probability for each
+category. No text is read, so the language of the page does not matter.
+
 It runs three ways: a batch CLI (`run.py`), a containerised HTTP service
-(`POST /predict_image`, `POST /predict_document`), and an Agent Skill that wraps the
-service. All three read the same five-model ensemble.
+(`POST /predict_image`, `POST /predict_document`), and an [Agent Skill](../../agent-skills.md)
+that wraps the service. All three serve the same published models, one at a time or as a
+five-model ensemble.
 
 ## What it takes in, what it hands on
 
@@ -36,26 +41,23 @@ service. All three read the same five-model ensemble.
 | **Owns in the record**  | The whole `page_categories` block, plus `pages[].category` and `pages[].category_confidence`                                                          |
 | **Reads from upstream** | Nothing. It is the first stage; its input is the scan itself                                                                                          |
 
-## Where it sits in the pipeline — and the correction that matters
+## Where it sits in the pipeline
 
-Every diagram in this ecosystem draws five boxes with arrows between them. For this
-stage, that arrow does not exist as a file handoff.
+page-classification is the first stage, and its categories **inform a routing decision**
+rather than trigger one: which pages go to OCR, which to handwriting recognition, which
+to table extraction, which to image extraction. That decision is made by a person or a
+script reading the result tables. The next stage, `alto-postprocess`, works from OCR
+output and does not read `page_categories`.
 
-!!! warning "page-classification → alto-postprocess is a human routing decision"
-    `alto-postprocess` **never reads `page_categories`**. The only occurrences of that
-    key in its tree are in the vendored schema files, i.e. deep-copy pass-through. The
-    11 categories exist to *inform* the routing decision — which pages go to OCR, which
-    to HTR, which to table extraction, which to image extraction — not to trigger it.
+What travels between stages is the **record**. Each stage takes `--document-json` in,
+writes only the block it owns, deep-copies everything else, and stamps
+`assembled.blocks[<block>]` with its `program`, `run_id` and `paradata_ref`. See
+[Pipelines](../../pipelines.md) for the file flow and the record flow drawn side by side.
 
-    What does travel is the **record**: each stage takes `--document-json` in, writes
-    only the block it owns, deep-copies everything else, and stamps
-    `assembled.blocks[<block>]` with its `program`, `run_id` and `paradata_ref`. See
-    [Pipelines](../../pipelines.md) for both layers drawn out.
-
-`BLOCK_OWNERS` in the hub-canonical `atrium_document.py` authorises **writes** only. To
-find out who wrote a block in a *given* record, read
-`assembled.blocks[<block>].program` — code that hardcodes a program name off the
-ownership table is reading the wrong contract.
+!!! note "Who may write a block, and who did"
+    `BLOCK_OWNERS` in the hub-canonical `atrium_document.py` says which program **may**
+    write a block. To find out which program **did** write it in a given record, read
+    `assembled.blocks[<block>].program`.
 
 ## The 11 categories
 
@@ -77,61 +79,140 @@ The set is built from three orthogonal criteria: **presence of graphical element
 | `TEXT_P`  | Only printed text, in paragraph or block form (non-tabular)                              |
 | `TEXT_T`  | Only machine-typed text, in paragraph or block form (non-tabular)                        |
 
+**Reading a label.** The stem names the dominant content, the suffix qualifies it:
+
+| Stem    | Meaning                 | Suffixes                                                                  |
+|---------|-------------------------|---------------------------------------------------------------------------|
+| `TEXT`  | running text            | `_HW` handwritten · `_P` printed · `_T` typewritten · none = a mixture    |
+| `LINE`  | text in a table or form | `_HW` handwritten · `_P` printed · `_T` typewritten                       |
+| `DRAW`  | drawings, maps, plans   | `_L` inside a table-like layout or with a tabular legend · none = free    |
+| `PHOTO` | photographs             | `_L` inside a table-like layout or with tabular annotations · none = free |
+
+**What each category suggests doing next.** The reason the categories exist is that each
+calls for a different processing chain. The classifier does not route pages itself; this
+is the decision its output is designed to support:
+
+| Category            | Typical next step                                                           |
+|---------------------|-----------------------------------------------------------------------------|
+| `TEXT_P`, `TEXT_T`  | OCR for printed or typewritten text                                         |
+| `TEXT_HW`           | handwritten text recognition (HTR)                                          |
+| `TEXT`              | both — the page mixes printed, typed and handwritten text                   |
+| `LINE_P`, `LINE_T`  | table or form extraction, with OCR for the cells                            |
+| `LINE_HW`           | table or form extraction, with HTR for the cells                            |
+| `DRAW`, `PHOTO`     | image extraction; captions, if any, through OCR                             |
+| `DRAW_L`, `PHOTO_L` | image extraction plus table extraction for the surrounding layout or legend |
+
 !!! note "The order is load-bearing, and each label has a URI"
-    `model_registry.CATEGORIES` declares the labels in exactly the order above, and that
-    order **is the label→index binding** used at training time. The hub mirrors it in
-    `docs/templates/shared/atrium_vocab.py` as `PAGE_CATEGORIES`, which must stay in
-    step.
+    `model_registry.CATEGORIES` declares the labels in exactly the order of the first
+    table above, and that order **is the label→index binding** every checkpoint was
+    trained against: reordering it would silently relabel every prediction. The hub
+    mirrors it in `docs/templates/shared/atrium_vocab.py` as `PAGE_CATEGORIES`.
 
     Each label also has a stable SKOS identifier —
-    `https://w3id.org/atrium/page-category/TEXT_HW` and so on — minted through
-    `model_registry.category_uri()`. **The tool's own README never mentions this.** See
+    `https://w3id.org/atrium/page-category/TEXT_HW` and so on. Records carry the bare
+    label; `model_registry.category_uri()` turns it into the URI. See
     [SKOS & the ATRIUM vocabulary](../../contracts/skos.md).
 
 **There is deliberately no `enum` in the document schema for this field.**
 `validate_document()` is a live output gate that raises, so an enum would turn a single
-labelling slip into a stalled pipeline; the vocabulary registry is meant to report instead of
-refusing. (The hub's documents add that the tool reads its label list from the filesystem at
-run time. That is true only of `--train` and `--eval`; inference — the path that writes the
-record — uses the fixed `model_registry.CATEGORIES`. See
-[Schemas](../../contracts/schemas.md#what-the-schema-says-that-the-code-does-not).) Two
-consequences worth knowing: the schema's own
-`page_categories.examples` used to be `{"1": "Text", "2": "Plate"}` — *neither is a
-member of the set* — and `fixtures/atrium_document.example.json` still carries those
-values today.
+labelling slip into a stalled pipeline; the vocabulary registry reports an unknown label
+instead of refusing it. Inference always uses the fixed `CATEGORIES` list; training and
+evaluation read the category list from the folder names of the training tree.
+
+## How a prediction is made
+
+1. **Load and resize.** Each page image is resized to the model's square input — 224 or
+   384 pixels, depending on the base model — and normalised with that base model's own
+   mean and standard deviation. Nothing is cropped or rotated: page orientation and
+   margins are part of what the model sees. The service first renders each page of a
+   PDF at 300 dpi.
+2. **Score.** The model produces one value per category; a softmax turns them into
+   probabilities that sum to 1.
+3. **Rank.** The `N` highest (`-tn`, default 3) become `CLASS-1…N` and `SCORE-1…N`,
+   best first. `SCORE-1` is the model's confidence in its top answer.
+
+**One model or five.** By default one model runs — the revision chosen with `-rev`, or a
+local checkpoint. `--best` (and the service's `version=all`) runs all five models of the
+canonical ensemble on every page and averages their scores: each model's Top-N
+probabilities are summed per category and divided by five, and the result is re-ranked.
+The run also records each model's own Top-1 vote, so disagreement stays visible.
+`--average` is a different thing: it averages the **weights** of several fold checkpoints
+of one base model into a single model, before any page is seen.
+
+## The models
+
+The fine-tuned models are published on Hugging Face as **revisions of one repository**,
+[`ufal/vit-historical-page`](https://huggingface.co/ufal/vit-historical-page). A revision
+is named `vX.Y`:
+
+| `X` — model slot | Base model                               | Input  |
+|------------------|------------------------------------------|--------|
+| `v1.Y`           | `timm/tf_efficientnetv2_m.in21k_ft_in1k` | 384 px |
+| `v2.Y`           | `google/vit-base-patch16-224`            | 224 px |
+| `v3.Y`           | `google/vit-base-patch16-384`            | 384 px |
+| `v4.Y`           | `timm/regnety_160.swag_ft_in1k`          | 384 px |
+| `v5.Y`           | `google/vit-large-patch16-384`           | 384 px |
+
+`Y` is the **generation** — which annotated data the model was trained on. Generations
+`.0`–`.2` are the early, smaller annotation rounds (up to 14,270 pages), in which slots 1
+and 4 held EfficientNetV2-S and EfficientNetV2-L; `.3` is the full 48,499-page dataset
+with five-fold cross-validation; `.4` is the same five base models retrained on the
+subset whose licence is CC BY-NC 4.0 (38,307 pages from 37,316 documents, against
+`v*.3`'s 38,625 training pages from 37,328). **The canonical ensemble is `v1.4`–`v5.4`**,
+and `v4.4` is the recommended single model: small, fast and the most accurate of its
+generation.
+
+Two alternatives sit beside the main line:
+
+* **YOLO-cls** — `--yolo` swaps the Hugging Face models for an Ultralytics YOLO
+  classification model (`--yolo_base`, e.g. `yv8s`). It is an option for training and
+  inference with a different speed/accuracy trade-off, and it brings the AGPL-3.0 licence
+  of Ultralytics into the run (see [Licence](#licence-and-how-it-is-computed)).
+* **CLIP** — a separate, CLIP-based classifier for the same categories lives on the
+  repository's `clip` branch, with its own Hugging Face repository.
 
 ## How well it works
 
-Measured on the held-out evaluation split, published in the tool's README:
+Measured on the held-out evaluation split of the full dataset (4,823 pages), for the
+`v*.3` generation:
 
-| Base model                               | Revision | Top-1       | Top-3       | Note                                           |
-|------------------------------------------|----------|-------------|-------------|------------------------------------------------|
-| `timm/regnety_160.swag_ft_in1k`          | `v4.3`   | **99.16 %** | **100.0 %** | best and small — what `main` still resolves to |
-| `google/vit-large-patch16-384`           | `v5.3`   | 99.12 %     | 99.94 %     | best of the large models                       |
-| `google/vit-base-patch16-384`            | `v3.3`   | 98.92 %     | 99.98 %     |                                                |
-| `timm/tf_efficientnetv2_m.in21k_ft_in1k` | `v1.3`   | 98.83 %     | 99.78 %     |                                                |
-| `google/vit-base-patch16-224`            | `v2.3`   | 98.79 %     | 99.96 %     | smallest of the five                           |
+| Base model                               | Revision | Top-1       | Top-3       | Note                     |
+|------------------------------------------|----------|-------------|-------------|--------------------------|
+| `timm/regnety_160.swag_ft_in1k`          | `v4.3`   | **99.16 %** | **100.0 %** | best, and small          |
+| `google/vit-large-patch16-384`           | `v5.3`   | 99.12 %     | 99.94 %     | best of the large models |
+| `google/vit-base-patch16-384`            | `v3.3`   | 98.92 %     | 99.98 %     |                          |
+| `timm/tf_efficientnetv2_m.in21k_ft_in1k` | `v1.3`   | 98.83 %     | 99.78 %     |                          |
+| `google/vit-base-patch16-224`            | `v2.3`   | 98.79 %     | 99.96 %     | smallest of the five     |
 
-!!! danger "These figures describe `v*.3`. The default ensemble is now `v*.4`."
-    Since **v1.8.0-beta** `--best` and the service's `version=all` average the `v*.4`
-    generation — the same five base models retrained on the CC BY-NC 4.0-only subset
-    (38,307 pages / 37,316 PDFs, against `v*.3`'s 38,625 / 37,328). **No accuracy figures
-    have been published for `v*.4`.** The one measurement that exists is a prediction
-    diff: `v*.4` against `v*.3` disagreed on **24 of 229 samples**, all of them cases the
-    `v*.3` ensemble was already ambiguous about. This is tracked as issue #48 in the tool
-    repository, and until it closes the numbers above are the best available guide rather
-    than a description of what you will run.
+These five were chosen from a sweep of twelve base models — including the DiT family,
+RegNetY-120 and -640, and EfficientNetV2-S and -L — all trained and tested on the same data.
+
+!!! note "The `v*.4` generation"
+    The figures above describe `v*.3`. The `v*.4` models — what `--best` and
+    `version=all` use — are the same five base models trained the same way on the
+    CC BY-NC 4.0 subset described above; [History](history.md#2026-06--08--retraining-on-the-licensed-dataset-15)
+    records how the two generations compare.
+
+Where the models do go wrong, it is mostly between neighbouring categories — `TEXT`
+against `TEXT_T` above all, whose pages often look alike. Averaging fold models or
+ensembling tends to raise overall accuracy, but can lower it on exactly those ambiguous
+pairs.
 
 ## The data
 
 **48,499 page images from 37,328 archival documents**, spanning 1920–2020 — archaeological
-reports and related material. Published on LINDAT under CC BY-NC-SA 4.0 at
-[`hdl.handle.net/20.500.12800/1-6184`](http://hdl.handle.net/20.500.12800/1-6184).
+reports and related material from Czech archives, so drawings of pottery, arrowheads and
+stones are common among the `DRAW` pages. The dataset and its annotation are published on
+LINDAT under **CC BY-NC 4.0** at
+[`hdl.handle.net/20.500.12800/1-6184`](http://hdl.handle.net/20.500.12800/1-6184);
+`small_data_samples/` in the repository holds a few example pages per category.
 
-The split is deterministic periodic sampling with a randomised offset, not a shuffle;
-10 % test, five cross-validation folds with the seed incremented per fold
-(`splitN ↔ foldN ↔ seed 420+(N−1)`). The `TEXT` category was capped at `max_categ = 14000`
-because it otherwise dominates.
+The split is deterministic periodic sampling with a randomised offset, not a shuffle,
+because pages of one kind arrive in clusters: per category, every *S*-th page — shifted by
+a random amount within a quarter period — goes to the development and test sets, 10 %
+each, and the rest to training. Five cross-validation folds repeat this with the seed
+incremented per fold (`splitN ↔ foldN ↔ seed 420+(N−1)`). The `TEXT` category was capped
+at `max_categ = 14000` pages because it otherwise dominates.
 
 Peer-reviewed description: **[Page image classification for content-specific data
 processing](https://arxiv.org/abs/2507.21114)** (arXiv 2507.21114).
@@ -142,31 +223,44 @@ Repository code is **MIT**. The licence of a *run*, though, is resolved from the
 components that run actually touched, and recorded in the paradata:
 
 * an inference or evaluation run resolves to **MIT**;
-* `--train` pulls in the LINDAT dataset and resolves to **CC BY-NC 4.0** — the value
-  `setup/para_config.txt` declares for it (the README says CC BY-NC-SA 4.0; see
-  [Reference → Licence resolution](reference.md#licence-resolution)).
+* `--train` pulls in the LINDAT dataset and resolves to **CC BY-NC 4.0**;
+* `--yolo` adds Ultralytics, and an inference run with it resolves to **AGPL-3.0**.
+
+See [Reference → Licence resolution](reference.md#licence-resolution).
+
+## How to cite
+
+Cite the paper for the method and the LINDAT record for the data:
+
+* *Page image classification for content-specific data processing* —
+  [arXiv:2507.21114](https://arxiv.org/abs/2507.21114)
+* the training dataset — [`hdl.handle.net/20.500.12800/1-6184`](http://hdl.handle.net/20.500.12800/1-6184)
+* the software — `CITATION.cff` in the repository, which GitHub renders as
+  *Cite this repository*
 
 ## Where to go next
 
-* **[Guide](guide.md)** — install it, run it, and the failure modes nobody wrote down
+* **[Guide](guide.md)** — install it, prepare input, run it, read the output
 * **[Reference](reference.md)** — every flag, every endpoint, every output column
-* **[Changelog](changelog.md)** — 27 releases, grouped by what actually changed
+* **[Changelog](changelog.md)** — the release history, grouped into arcs
 * **[History](history.md)** — why it is shaped the way it is
 * **[Pipelines](../../pipelines.md)** — where this stage sits, end to end
 * **[External tools & services](../../external-tools.md)** — Hugging Face, LINDAT, ALTO, and the rest
 
 ## Sources
 
-Read from `ufal/atrium-page-classification` at branch **`vit`**, commit `8415ce7`
-(2026-09-21), and from the hub's canonical documents. This table records **provenance**:
+Read from `ufal/atrium-page-classification` at branch **`vit`**, commit `adee922`
+(2026-09-23), and from the hub's canonical documents. This table records **provenance**:
 what this page was written from, not a build instruction.
 
-| Source                                                              | What was taken from it                                                |
-|---------------------------------------------------------------------|-----------------------------------------------------------------------|
-| `README.md` §§ Versions, Model description, Categories, Results     | category definitions, accuracy figures, dataset description           |
-| `model_registry.py:36-48, 150-200`                                  | the canonical label order, the `v*.4` ensemble, the fold rule         |
-| `setup/para_config.txt`                                             | the licence component table                                           |
-| `atrium-project/docs/templates/shared/atrium_document.py:108-118`   | block ownership                                                       |
-| `atrium-project/docs/document_schema.md:130-142, 438-452, 610-620`  | the write/read contract, the no-`enum` decision, the two live defects |
-| `atrium-project/docs/templates/shared/atrium_vocab.py:187, 283-295` | `PAGE_CATEGORIES` and the registry authority                          |
-| `agent_dev_logs/digests/48.digest.md`                               | the open `v*.3` vs `v*.4` question                                    |
+| Source                                                                      | What was taken from it                                                        |
+|-----------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+| `README.md` §§ Goal, Versions, Model description, Data, Categories, Results | category definitions, generations, accuracy figures, dataset and split        |
+| `model_registry.py`                                                         | the canonical label order, the revision → base-model map, the `v*.4` ensemble |
+| `classifier.py`, `parallel_best.py`                                         | preprocessing, softmax scoring, ensemble averaging, fold-weight averaging     |
+| `service/api.py`                                                            | the 300 dpi PDF rendering and the upload limits                               |
+| `setup/para_config.txt`                                                     | the licence component table                                                   |
+| `atrium-project/docs/templates/shared/atrium_document.py`                   | block ownership                                                               |
+| `atrium-project/docs/document_schema.md`                                    | the write/read contract, the no-`enum` decision                               |
+| `atrium-project/docs/templates/shared/atrium_vocab.py`                      | `PAGE_CATEGORIES` and the concept URIs                                        |
+| `result/stats/model_accuracies_top1.csv`, `model_accuracies_top3.csv`       | the per-revision accuracy figures                                             |

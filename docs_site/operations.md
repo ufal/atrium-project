@@ -2,7 +2,7 @@
 title: Operations
 nav_order: 11
 status: partial
-round: 4
+round: 6
 issue: 57
 ---
 
@@ -11,9 +11,19 @@ issue: 57
 Build, ship and run the services: the images and their tags, the gate a release has to pass,
 what the container proves before it is published, and how to run it on Kubernetes.
 
-!!! info "Written for page-classification and translator"
+!!! info "Scope"
     The build and deployment machinery is shared by all five tools. The image, probe and
-    environment facts below are verified for the two documented so far.
+    environment details below are those of page-classification and the translator.
+
+## The deployment model
+
+ÚFAL **builds, gates and publishes** the container images; the partner institutions **run**
+them, on their own infrastructure — typically Kubernetes — next to their own data. Nothing in
+the hub's CI reaches into a partner's environment: what crosses the boundary is a published
+image, pulled by tag, plus the configuration each deployment sets through environment
+variables. Every tool therefore behaves the same way wherever it runs, and every
+deployment-specific value — endpoints, limits, allowed origins — is an environment variable
+with a documented default.
 
 ## Images and tags
 
@@ -30,44 +40,56 @@ The `-api` suffix is part of the **image name**, not the tag: the hub's build wo
 
 **Which tags exist, and when they move:**
 
-| Tag                            | Published when                                                                                                                  |
-|--------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
-| `sha-<short>`                  | every publishing build — immutable, the audit trail                                                                             |
-| `<version>`, e.g. `1.8.0-beta` | a `v*` git tag, **after** the release gate passes. The leading `v` is stripped                                                  |
-| `latest`                       | the same moment, the same condition. `-beta` tags count — every release to date has been a beta, so `latest` is the latest beta |
-| `test`                         | a push to the `test` branch — the moving pre-release channel the end-to-end tests can run against                               |
+| Tag                            | Published when                                                                                              |
+|--------------------------------|-------------------------------------------------------------------------------------------------------------|
+| `sha-<short>`                  | every publishing build — immutable, the audit trail                                                         |
+| `<version>`, e.g. `1.8.0-beta` | a `v*` git tag, **after** the release gate passes. The leading `v` is stripped                              |
+| `latest`                       | the same moment, the same condition. `-beta` versions count, so `latest` is the newest release, beta or not |
+| `test`                         | a push to the `test` branch — the moving pre-release channel the end-to-end tests can run against           |
 
 **A push to `vit` or `master` publishes nothing.** Only a push to `test`, a version tag, or a
 published GitHub release triggers the build-and-push job.
 
-So the service images are pulled as, for example:
+So a service image is always `atrium-<tool>-api:<version>`, and a batch image
+`atrium-<tool>:<version>`:
 
 ```bash
-docker pull ghcr.io/ufal/atrium-page-classification-api:1.8.0-beta
+docker pull ghcr.io/ufal/atrium-page-classification-api:<version>
 docker pull ghcr.io/ufal/atrium-translator-api:latest
 ```
 
-!!! warning "`:<version>-api` is not a published tag"
-    The two repositories' compose files tag the image they build **locally** as
-    `atrium-<tool>:${ATRIUM_VERSION}-api`, and the hub's Kubernetes template, `k8s_deployment.md`
-    and both service READMEs write `ghcr.io/ufal/atrium-<tool>:<version>-api`. That form names a
-    tag the registry never receives. For a pulled image, use `atrium-<tool>-api:<version>`.
+### Running the batch image
+
+The batch images read from `/data/input` by default, so one mounted directory is enough:
+
+```bash
+# classify every page image under ./data/input; result tables land in ./data/output
+docker run --rm -v "$PWD/data:/data" -v "$PWD/data/output:/app/result" \
+    ghcr.io/ufal/atrium-page-classification:<version>
+
+# translate every ALTO file under ./data/input into ./data/output
+docker run --rm -v "$PWD/data:/data" ghcr.io/ufal/atrium-translator:<version>
+```
+
+Arguments after the image name replace the defaults listed below — any `run.py` or
+`main.py` flag works. Add `-v hf-cache:/cache/huggingface` to keep downloaded models between
+runs.
 
 ### What is inside each image
 
 === "page-classification"
 
-    |                     | `base`                                                                                                                                          | `api`                                                                          |
-    |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
-    | From                | `python:3.11-slim`                                                                                                                              | `base`                                                                         |
-    | System packages     | `build-essential`, `g++`, `libgl1`, `libglib2.0-0`, `ca-certificates`                                                                           | —                                                                              |
-    | PyTorch             | `torch==2.7.1`, `torchvision==0.22.1` from `TORCH_INDEX_URL` (CPU wheels by default; pass `…/whl/cu126` for CUDA)                               | —                                                                              |
-    | Python requirements | `setup/requirements.txt`, `service/requirements.txt` **and** `setup/requirements-test.txt` — the test dependencies ship in the production image | —                                                                              |
-    | User                | `atrium`, uid **10001**, owning `/app`, `/cache`, `/data`                                                                                       | same                                                                           |
-    | Entry point         | `python3 /app/entrypoint.py` — a GPU probe that `exec`s `run.py`, so the process receives signals directly                                      | `python -m service.api`                                                        |
-    | Default arguments   | `-d /data/input --hf -rev v4.3`                                                                                                                 | —                                                                              |
-    | Port, signal, drain | —                                                                                                                                               | `EXPOSE 8000` · `STOPSIGNAL SIGTERM` · `GRACEFUL_SHUTDOWN_S=20`                |
-    | Healthcheck         | —                                                                                                                                               | `python /app/service/healthcheck.py` every 30 s, 180 s start period, 3 retries |
+    |                     | `base`                                                                                                            | `api`                                                                          |
+    |---------------------|-------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
+    | From                | `python:3.11-slim`                                                                                                | `base`                                                                         |
+    | System packages     | `build-essential`, `g++`, `libgl1`, `libglib2.0-0`, `ca-certificates`                                             | —                                                                              |
+    | PyTorch             | `torch==2.7.1`, `torchvision==0.22.1` from `TORCH_INDEX_URL` (CPU wheels by default; pass `…/whl/cu126` for CUDA) | —                                                                              |
+    | Python requirements | `setup/requirements.txt`, `service/requirements.txt` and `setup/requirements-test.txt`                            | —                                                                              |
+    | User                | `atrium`, uid **10001**, owning `/app`, `/cache`, `/data`                                                         | same                                                                           |
+    | Entry point         | `python3 /app/entrypoint.py` — a GPU probe that `exec`s `run.py`, so the process receives signals directly        | `python -m service.api`                                                        |
+    | Default arguments   | `-d /data/input --hf -rev <revision>` — classify `/data/input` with a published model                             | —                                                                              |
+    | Port, signal, drain | —                                                                                                                 | `EXPOSE 8000` · `STOPSIGNAL SIGTERM` · `GRACEFUL_SHUTDOWN_S=20`                |
+    | Healthcheck         | —                                                                                                                 | `python /app/service/healthcheck.py` every 30 s, 180 s start period, 3 retries |
 
 === "translator"
 
@@ -104,7 +126,7 @@ base carried three fixable CRITICAL CVEs in `perl-base`, and the gate held the r
 rebuilt image passed. The story is told in full on
 [translator → History](tools/translator/history.md#the-base-image-that-blocked-a-release).
 
-The same incident produced the rule every Dockerfile now follows and a vendored test enforces: the
+The same incident produced the rule every Dockerfile follows and a vendored test enforces: the
 `apt-get upgrade` layer must sit **below** the `ENV` line that embeds `ATRIUM_RUNNER_REF` (unique
 per release tag, so it busts the layer cache on every release) and **above** `USER atrium`. With
 the build cache enabled, an upgrade layer in the wrong place is served from cache, looks correct,
@@ -163,9 +185,9 @@ classifier, or a large ALTO file through the translator's per-chunk LINDAT calls
     * **Memory.** The service warms all five ensemble models at start — about **2.44 GB of
       weights** (`v1.4`–`v5.4`, from 213 MB to 1.21 GB each). The template's `limits.memory: 4Gi` is
       a floor, not a comfortable fit.
-    * **Storage.** Weights are saved under `/app/model`, which the template **does not mount** —
-      so every new pod downloads them again. Compose mounts a `page-model` volume there; on
-      Kubernetes, add a volume at `/app/model` as well as the `/cache/huggingface` one.
+    * **Storage.** Weights are saved under `/app/model`. Compose mounts a `page-model` volume
+      there; on Kubernetes, mount a volume at `/app/model` as well as the `/cache/huggingface`
+      one, or every new pod downloads the weights again.
     * **Egress.** `huggingface.co` only — the `ufal/vit-historical-page` revisions and the base
       model configurations. No LINDAT call.
     * **Limits.** `MAX_UPLOAD_MB` defaults to **10**; a PDF is further capped at **50 pages**, which is
@@ -179,9 +201,8 @@ classifier, or a large ALTO file through the translator's per-chunk LINDAT calls
       `LLM_BASE_URL` when the `openai_compatible` backend is selected. In an egress-restricted
       cluster, expect `/ready` to answer 200 while `/health?deep=true` reports the FastText download
       failure.
-    * **Limits.** `MAX_UPLOAD_MB` defaults to **50** — the highest of the five services, because ALTO
-      goes in and ALTO comes out. The template's commented example value of `10` would cut it
-      five-fold.
+    * **Limits.** `MAX_UPLOAD_MB` defaults to **50**, because ALTO goes in and ALTO comes out;
+      set it explicitly when deploying from the shared template, whose example value is lower.
 
 Both services are stateless per request — each works inside its own temporary directory — so
 raising `replicas` is safe. Each page-classification replica loads its own copy of the five models.
@@ -192,18 +213,16 @@ Beyond the variables every service shares — `PORT`, `HOST`, `GRACEFUL_SHUTDOWN
 `ALLOWED_ORIGINS`, `MAX_UPLOAD_MB`, `LOG_LEVEL` — **page-classification reads none**: its service
 layer is configured entirely by those. The translator reads:
 
-| Variable                                                                 | Default              | Effect                                                                              |
-|--------------------------------------------------------------------------|----------------------|-------------------------------------------------------------------------------------|
-| `TRANSLATION_BACKEND`                                                    | `lindat`             | `lindat` (CUBBITT) or `openai_compatible`                                           |
-| `TRANSLATION_URL`                                                        | LINDAT's public host | attach a self-hosted translation service; `LINDAT_BASE_URL` is accepted as an alias |
-| `UDPIPE_URL`                                                             | LINDAT's public host | lemma matching for the vocabulary                                                   |
-| `LINDAT_MIN_INTERVAL_S` / `LINDAT_MAX_RETRIES` / `LINDAT_BACKOFF_BASE_S` | `0.0` / `4` / `1.0`  | rate-limits this deployment against a shared public service                         |
-| `OUTPUT_MODE`                                                            | `replace`            | the default `replace` / `append` mode for `/translate`                              |
-| `AMCR_FIELDS_PATH`                                                       | `amcr-fields.txt`    | the XPath targets for metadata mode — unreadable means a 422                        |
-| `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`                               | —                    | required by `openai_compatible`; the key belongs in a Secret                        |
-
-`docs/k8s_deployment.md`'s per-service table lists the first five rows and the `LLM_*` trio, and
-omits `OUTPUT_MODE` and `AMCR_FIELDS_PATH`.
+| Variable                                                                 | Default              | Effect                                                                                     |
+|--------------------------------------------------------------------------|----------------------|--------------------------------------------------------------------------------------------|
+| `TRANSLATION_BACKEND`                                                    | `lindat`             | `lindat` (CUBBITT), `openai_compatible` or `ct2`                                           |
+| `TRANSLATION_URL`                                                        | LINDAT's public host | attach a self-hosted translation service; `LINDAT_BASE_URL` is accepted as an alias        |
+| `UDPIPE_URL`                                                             | LINDAT's public host | lemma matching for the vocabulary                                                          |
+| `LINDAT_MIN_INTERVAL_S` / `LINDAT_MAX_RETRIES` / `LINDAT_BACKOFF_BASE_S` | `0.0` / `4` / `1.0`  | rate-limits this deployment against a shared public service                                |
+| `OUTPUT_MODE`                                                            | `replace`            | the default `replace` / `append` mode for `/translate`                                     |
+| `AMCR_FIELDS_PATH`                                                       | `amcr-fields.txt`    | the XPath targets for metadata mode — unreadable means a 422                               |
+| `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`                               | —                    | required by `openai_compatible`; the key belongs in a Secret                               |
+| `CT2_MODEL_DIR`, `CT2_MODEL_FAMILY`, `CT2_DEVICE`, …                     | —                    | required by `ct2`; see [translator → Reference](tools/translator/reference.md#environment) |
 
 Three settings behave in ways worth knowing before the first deployment:
 
@@ -215,21 +234,16 @@ Three settings behave in ways worth knowing before the first deployment:
 * An **empty** `PORT`, `GRACEFUL_SHUTDOWN_S` or `LOG_LEVEL` fails at start-up rather than falling
   back to the default.
 
-### What the health endpoints actually report
+### What the health endpoints report
 
-Read from each service's code — the contract says more than the implementations currently check:
+|                     | page-classification               | translator                                                                                    |
+|---------------------|-----------------------------------|-----------------------------------------------------------------------------------------------|
+| `/health`           | 200 while the process lives       | 200 while the process lives                                                                   |
+| `/health?deep=true` | 503 while draining                | 503 when the backend is not warmed, when the FastText model failed to load, or while draining |
+| `/ready`            | 200 once the five models are warm | 200 once the backend is warm                                                                  |
 
-|                           | page-classification                                                                                                                                          | translator                                                                    |
-|---------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
-| `/health`                 | 200 while the process lives                                                                                                                                  | 200 while the process lives                                                   |
-| `/health?deep=true`       | **200 unless draining** — it checks a static list of version names, which is never empty; and warm-up marks the service ready even if a model failed to load | 503 when the backend is not warmed, or when the FastText model failed to load |
-| `/ready` `starting` state | *inferred:* not observable — see below                                                                                                                       | *inferred:* not observable                                                    |
-
-Both services set their ready flag at the end of the start-up hook, and uvicorn runs that hook
-**before** it binds the port. So during warm-up a client sees *connection refused*, not a `503
-starting`. A `startupProbe` still works — it fails on the refused connection instead of the 503 —
-but a client written to wait for `503` will never see one. This is inferred from the start-up
-order in the code and uvicorn's documented lifecycle, not from a run.
+Warm-up happens before the service accepts connections, so a client waiting for a service to
+come up should treat a refused connection the same as `503 starting`, and keep polling.
 
 ## Acceptance
 
@@ -253,11 +267,11 @@ session only the task, with no instructions, and see it succeed. See [Agent skil
 
 This table records **provenance**: what this page was written from, not a build instruction.
 
-| Source                                                                                                                                                                            | What was taken from it                                                           |
-|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
-| `atrium-project/.github/workflows/docker-tool.reusable.yml`                                                                                                                       | image names, tag rules, the gate, the container smoke                            |
-| `atrium-page-classification@vit` `8c98a3d` and `atrium-translator@master` `88242fe` — `Dockerfile`, `docker-compose*.yml`, `docker.yml`, `service/api.py`, `service/inference.py` | image contents, limits, health checks, weights path                              |
-| `atrium-project/docs/templates/k8s/atrium-service.deployment.yaml`                                                                                                                | probes, grace period, resources                                                  |
-| `atrium-project/docs/k8s_deployment.md`, `docs/k8s_acceptance_runbook.md`, `docs/skill_acceptance_runbook.md`                                                                     | the deployment guide and the acceptance procedures, without their results tables |
-| `atrium-project/docs/templates/shared/atrium_service.py`, `healthcheck.py`                                                                                                        | the shared lifecycle and probe                                                   |
-| `atrium-page-classification/model_registry.py`                                                                                                                                    | the checkpoint sizes behind the memory figure                                    |
+| Source                                                                                                                                                                            | What was taken from it                                        |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------|
+| `atrium-project/.github/workflows/docker-tool.reusable.yml`                                                                                                                       | image names, tag rules, the gate, the container smoke         |
+| `atrium-page-classification@vit` `adee922` and `atrium-translator@master` `71feaef` — `Dockerfile`, `docker-compose*.yml`, `docker.yml`, `service/api.py`, `service/inference.py` | image contents, defaults, limits, health checks, weights path |
+| `atrium-project/docs/templates/k8s/atrium-service.deployment.yaml`                                                                                                                | probes, grace period, resources                               |
+| `atrium-project/docs/k8s_deployment.md`, `docs/k8s_acceptance_runbook.md`, `docs/skill_acceptance_runbook.md`                                                                     | the deployment guide and the acceptance procedures            |
+| `atrium-project/docs/templates/shared/atrium_service.py`, `healthcheck.py`                                                                                                        | the shared lifecycle and probe                                |
+| `atrium-page-classification/model_registry.py`                                                                                                                                    | the checkpoint sizes behind the memory figure                 |

@@ -2,18 +2,18 @@
 title: SKOS & the ATRIUM vocabulary
 nav_order: 8
 status: partial
-round: 4
+round: 6
 issue: 57
 ---
 
 # SKOS & the ATRIUM vocabulary
 
 How ATRIUM names its controlled labels with stable identifiers, what the `page-category`
-vocabulary contains in full, and what page-classification and the translator actually do with it.
+vocabulary contains in full, and how page-classification and the translator use it.
 
-!!! info "Written for page-classification and translator"
+!!! info "Scope"
     The registry holds six vocabularies; one of them belongs to page-classification, and the
-    translator uses none. The other five are described with their owners' sections.
+    translator uses none. The other five belong to alto-postprocess and nlp-enrich.
     [`docs/skos_strategy.md`](https://github.com/ufal/atrium-project/blob/main/docs/skos_strategy.md)
     is the normative text.
 
@@ -57,10 +57,21 @@ characters becomes one `-`. So:
 | one concept    | `https://w3id.org/atrium/page-category/TEXT_HW`            |
 | one collection | `https://w3id.org/atrium/page-category/collection/tabular` |
 
-!!! note "These URIs do not resolve yet"
-    `w3id.org/atrium` has not been registered — it is an optional follow-up that blocks nothing.
-    The URIs are stable **identifiers** today; they become resolvable **locators** only once the
-    redirect exists.
+!!! note "Identifiers first, locators second"
+    An ATRIUM URI is a stable **identifier**: records and crates can use it whether or not
+    anything answers at that address. Making it a resolvable **locator** is a matter of a
+    `w3id.org` redirect to a published copy of the registry, which changes no data and no
+    code.
+
+In Turtle, as `python atrium_vocab.py --turtle` writes it, one concept reads:
+
+```turtle
+a-page-category:TEXT_HW rdf:type skos:Concept ;
+    skos:definition "only handwritten text in paragraph or block form (non-tabular)"@en ;
+    skos:inScheme atrium-scheme:page-category ;
+    skos:notation "TEXT_HW" ;
+    skos:prefLabel "TEXT_HW"@en .
+```
 
 ## The six vocabularies at a glance
 
@@ -73,8 +84,7 @@ characters becomes one `-`. So:
 | `cnec`              | 28       | nlp-enrich (CNEC 2.0)                                  | `entities[].type_cnec`                              |
 | `theme`             | 11       | nlp-enrich's taxonomy                                  | `enrichment.items[].teater_category`, via the facet |
 
-64 concepts in all; the module's own docstring says "~90". **The translator appears in none of
-them** — see [below](#the-translator-and-its-glossary).
+**The translator appears in none of them** — see [below](#the-translator-and-its-glossary).
 
 ## `page-category`, in full
 
@@ -116,54 +126,43 @@ another:
 There is no `skos:broader` anywhere in the scheme and no top concept. `TEXT` belongs to four
 collections — it is the one mixed category — and `PHOTO` and `DRAW` belong to `graphical` only.
 
-## What page-classification actually does with it
+## How page-classification uses it
 
-Less than the design suggests. Read from the code at `vit` @ `8c98a3d`:
+`model_registry.CATEGORIES` is the authority: the tool writes exactly those eleven strings.
+When `model_registry.py` is imported, it compares `CATEGORIES` with the registry's
+`page-category` labels and prints a note if the two sets ever differ; it never changes
+`CATEGORIES` and never stops a run. Training and evaluation, which read the category list from
+the folder names of the training tree, do the same comparison for that tree.
 
-| Mechanism                                                                              | Status                                                           |
-|----------------------------------------------------------------------------------------|------------------------------------------------------------------|
-| `model_registry.category_uri(label)` — turns a label into its concept URI              | **defined, never called**                                        |
-| `atrium_vocab.validate_labels()` — reports unknown or mis-cased labels without raising | **never called** on the labels the tool emits                    |
-| an import-time comparison of `CATEGORIES` against the scheme's labels                  | runs — the one live check                                        |
-| a drift warning in `collect_images()`                                                  | runs, but only for `--train` and `--eval`, which write no record |
+Records carry the bare label. To get from a label to its concept:
 
-So an unknown label would reach a record unreported. The registry *would* catch it — run by hand,
-`validate_labels("page-category", ["TEXT", "Text", "Plate"])` answers that `Text` differs from
-`TEXT` only in case and that `Plate` is not in the scheme — but nothing on the inference path calls
-it. Records carry bare labels, not URIs; a consumer that wants the URI builds it with
-`concept_uri("page-category", label)`.
+```python
+from atrium_vocab import concept_uri, validate_labels
+concept_uri("page-category", "TEXT_HW")
+# 'https://w3id.org/atrium/page-category/TEXT_HW'
+validate_labels("page-category", ["TEXT", "Text", "Plate"])
+# reports that "Text" differs from TEXT only in case, and that "Plate" is not in the scheme
+```
 
-!!! note "Defect V-2 is fixed"
-    `skos_strategy.md`'s defect **V-2** — `collect_images()` derived its categories with
-    `sorted(os.listdir(directory))`, so a stray file in a training tree shifted every class index,
-    and the shipped `small_data_samples/LICENSE` stopped a run with `NotADirectoryError` — is fixed,
-    and follow-up **F2** records it. The function now keeps only sub-directories, hidden ones
-    excluded, and three tests in `TestCollectImages` pin it, one of them on the shipped sample tree.
-    The drift warning in the table above still runs, for the case a filter cannot catch: a stray or
-    missing category *directory*.
+`validate_labels()` reports rather than raises — the same advisory stance as the missing
+`enum` in the [schema](schemas.md#page_categories--written-by-page-classification).
+`model_registry.category_uri(label)` is the tool's own shortcut for `concept_uri`.
 
 ## The translator and its glossary
 
 The translator does **not** import `atrium_vocab` and writes no field that carries a scheme. Its
 controlled vocabulary is something else: a **translation glossary**,
 `data_samples/vocabulary.csv`, with five columns — `source_lemma,target_translation,source,source_id,uri`
-— and 5,087 rows (1,266 AMCR, 3,821 TEATER), harvested by `load_vocab.py` from AMCR (over OAI-PMH)
-and TEATER (its GraphQL `exportAll` JSON export). The glossary
-protects terms during translation; it does not label anything in the record. See
+— harvested by `load_vocab.py` from AMCR (over OAI-PMH) and TEATER (over GraphQL). The
+`source_id` and `uri` columns point back at the source vocabulary's own concept — for example
+`https://api.aiscr.cz/id/HES-000497` for AMCR's *(polo)zemnice*, "pit house" — so a protected
+term stays traceable without ATRIUM minting a URI for it. The glossary protects terms during
+translation; it does not label anything in the record. See
 [translator → Guide](../tools/translator/guide.md#6--use-the-vocabulary).
-
-`skos_strategy.md` records work on that harvester which the code at `master` @ `88242fe` does not
-contain:
-
-| `skos_strategy.md` says                                                   | At `master` @ `88242fe`                                                                            |
-|---------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
-| F3: `load_vocab.py` gained a `--from-flat DIR` option                     | no such option — the flags are `--out`, `--delay`, `--skip-amcr`, `--skip-teater`                  |
-| F3: the committed CSV was regenerated as 5 columns and 4,952 rows         | 2 columns, 5,087 rows (regenerated 2026-09-23: 5 columns, still 5,087 rows, from the live sources) |
-| V-3: the `main()` / CLI the README documents "does not exist in the file" | it exists — `main()` with an `argparse` interface                                                  |
 
 ## "`broader` means two things"
 
-`skos_strategy.md` §5.2 is its best-known finding: in the **source** vocabularies, AMCR's
+`skos_strategy.md` §5.2 records a modelling decision about the **source** vocabularies: AMCR's
 `hierarchie_vyse` edges all cross from one scheme to another and so become `skos:related`, while
 TEATER's `broader` edges stay within one scheme and become real `skos:broader`. That concerns the
 vocabularies nlp-enrich builds from AMCR and TEATER. **It does not touch `page-category`**, which
@@ -185,9 +184,9 @@ what [`atrium_vocab.schema.json`](schemas.md#atrium_vocabschemajson) describes.
 
 This table records **provenance**: what this page was written from, not a build instruction.
 
-| Source                                                                                                       | What was taken from it                                                                                                  |
-|--------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
-| `atrium-project/docs/templates/shared/atrium_vocab.py` — run, not only read                                  | `SKOS_BASE`, the minting rules, the six schemes, the page-category concepts and collections, `validate_labels()` output |
-| `atrium-project/docs/skos_strategy.md` §§0, 5.2, 6, 7                                                        | the design decisions and the defect / follow-up status, compared against the code                                       |
-| `atrium-page-classification@vit` `8c98a3d` — `model_registry.py`, `utils.py:126-215`, `run.py:385-413`       | what page-classification calls and does not call                                                                        |
-| `atrium-translator@master` `88242fe` — `load_vocab.py`, `data_samples/vocabulary.csv`, `processors/vocab.py` | the glossary and its harvester                                                                                          |
+| Source                                                                                                       | What was taken from it                                                                                                        |
+|--------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| `atrium-project/docs/templates/shared/atrium_vocab.py` — run, not only read                                  | `SKOS_BASE`, the minting rules, the six schemes, the concepts and collections, the Turtle excerpt, `validate_labels()` output |
+| `atrium-project/docs/skos_strategy.md` §§0, 5.2, 6, 7                                                        | the design decisions                                                                                                          |
+| `atrium-page-classification@vit` `adee922` — `model_registry.py`, `utils.py`                                 | the authority list, the advisory comparison, `category_uri`                                                                   |
+| `atrium-translator@master` `71feaef` — `load_vocab.py`, `data_samples/vocabulary.csv`, `processors/vocab.py` | the glossary, its columns and its harvester                                                                                   |

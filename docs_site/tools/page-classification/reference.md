@@ -2,7 +2,7 @@
 title: page-classification — Reference
 nav_order: 32
 status: published
-round: 3
+round: 6
 issue: 57
 repo: atrium-page-classification
 role: reference
@@ -10,9 +10,9 @@ role: reference
 
 # page-classification — Reference
 
-Look something up and stop reading. Every value here was read out of the code at
-`vit` / `8415ce7`, not out of the prose — where the two disagree, the disagreement is
-recorded under [Known drift](#known-drift--read-this-before-trusting-a-number).
+Look something up and stop reading. Every value here is taken from the code; the files
+it was read from are listed under [Sources](#sources). For what the tool is and how a
+prediction is made, start at the [Overview](index.md).
 
 ## CLI — `run.py`
 
@@ -22,16 +22,16 @@ in the config file, which a bare `store_true` could not do.
 
 ### Input and output
 
-| Flag                   | Default                        | What it does                                                                  |
-|------------------------|--------------------------------|-------------------------------------------------------------------------------|
-| `-f`, `--file`         | —                              | A single page image                                                           |
-| `-d`, `--directory`    | —                              | A folder of unprocessed pages                                                 |
-| `--dir`                | off                            | Process the folder named in `[INPUT] FOLDER_INPUT` instead of passing `-d`    |
-| `-ff`, `--file_format` | `png` (`[SETUP] files_format`) | Extension to collect from a directory                                         |
-| `--inner / --no-inner` | `True` (`[SETUP] inner`)       | Recurse into nested folders                                                   |
-| `--chunk / --no-chunk` | `False` (`[INPUT] chunking`)   | Write predictions in chunks of `[INPUT] chunk_size` (100) as the run proceeds |
-| `-tn`, `--topn`        | `3` (`[SETUP] top_N`)          | How many categories to report. Validated at start-up: must be 1–11            |
-| `--raw / --no-raw`     | `False` (`[SETUP] raw`)        | Also emit per-class scores for all 11 categories                              |
+| Flag                   | Default                        | What it does                                                                                                |
+|------------------------|--------------------------------|-------------------------------------------------------------------------------------------------------------|
+| `-f`, `--file`         | —                              | A single page image                                                                                         |
+| `-d`, `--directory`    | —                              | A folder of unprocessed pages                                                                               |
+| `--dir`                | off                            | Process the folder named in `[INPUT] FOLDER_INPUT` instead of passing `-d`                                  |
+| `-ff`, `--file_format` | `png` (`[SETUP] files_format`) | Extension to collect from a directory                                                                       |
+| `--inner / --no-inner` | `True` (`[SETUP] inner`)       | Recurse into nested folders                                                                                 |
+| `--chunk / --no-chunk` | `False` (`[INPUT] chunking`)   | Write predictions in chunks of `[INPUT] chunk_size` (100), appending to the output file as the run proceeds |
+| `-tn`, `--topn`        | `3` (`[SETUP] top_N`)          | How many categories to report. Validated at start-up: must be 1–11                                          |
+| `--raw / --no-raw`     | `False` (`[SETUP] raw`)        | Also emit per-class scores for all 11 categories                                                            |
 
 ### Model selection
 
@@ -67,8 +67,6 @@ in the config file, which a bare `store_true` could not do.
 
 ### Document-record integration
 
-None of these five appear in the tool's README.
-
 | Flag                              | Default                            | What it does                                                |
 |-----------------------------------|------------------------------------|-------------------------------------------------------------|
 | `--document-json`                 | `[DOCUMENT] document_json`         | Baseline record, for a single-file run                      |
@@ -93,29 +91,38 @@ CLI or in the config.
 | `[HF]`       | `repo_name=ufal/vit-historical-page` · `token=` (read from `$HF_TOKEN`) · `use_hf=False` · `revision=main` · `latest=v4.4`                                                               |
 | `[DOCUMENT]` | all four paths blank · `strict=False`                                                                                                                                                    |
 
-The `[YOLO]` and `[DOCUMENT]` sections are documented **nowhere** in the repository's own
-prose. `[HF] token` is deliberately blank in version control; the token is read from the
-environment at run time.
+`[HF] token` is deliberately blank in version control; the token is read from `$HF_TOKEN`
+at run time. `[HF] latest` names the newest published single-model revision; `--best`
+does not read it, because the ensemble is fixed in code (see
+[The canonical ensemble](#the-canonical-ensemble)). `[YOLO]` configures the optional YOLO-cls
+path (`yolo_imgsz`, the Ultralytics training schedule); `[DOCUMENT]` holds the defaults for
+the five document-record flags above.
 
 ## HTTP service
 
 Started by `python -m service.api`. Environment: `HOST` (`0.0.0.0`), `PORT` (`8000`),
 `RELOAD` (`false`), `GRACEFUL_SHUTDOWN_S` (`20`), `LOG_LEVEL` (`INFO`), `ALLOWED_ORIGINS`,
-`MAX_UPLOAD_MB`, `HF_HOME`, `HF_TOKEN`. Beyond that shared table the service layer reads
-**no** environment at all — few deployment knobs, which is a fact rather than a gap.
+`MAX_UPLOAD_MB` (`10`; the older `MAX_UPLOAD_BYTES` is still honoured as a fallback),
+`HF_HOME`, `HF_TOKEN`. These are the ecosystem's shared service variables; the service
+defines none of its own.
+
+At start-up the service loads and warms the five models of the canonical ensemble
+(`v1.4`–`v5.4`), off the event loop, before `/ready` reports `ready`. Any other revision
+passed as `version` is resolved and downloaded on its first request.
 
 | Method | Path                     | Returns                                                                                                                                                      |
 |--------|--------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `GET`  | `/`                      | `{"message": "Welcome to the ATRIUM Page Classification API. Use /info for available models."}`                                                              |
+| `GET`  | `/`                      | a short JSON welcome message pointing at `/info`                                                                                                             |
 | `GET`  | `/info`                  | `service`, `version`, `endpoints`, `limits` (`max_upload_mb: 10`, `max_pdf_pages: 50`), `categories` (all 11), `available_models` (`v1.4`…`v5.4` plus `all`) |
-| `GET`  | `/health`                | `{"status":"ok"}`, always 200                                                                                                                                |
+| `GET`  | `/health`                | `{"status":"ok"}`, always 200 — liveness, including while draining                                                                                           |
 | `GET`  | `/health?deep=true`      | 503 with `status`, `detail`, `in_flight`, `draining` when degraded or draining                                                                               |
-| `GET`  | `/ready`                 | 503 `starting` → 200 `ready` → 503 `draining` on SIGTERM                                                                                                     |
+| `GET`  | `/ready`                 | 503 `starting` until warm-up completes → 200 `ready` → 503 `draining` after SIGTERM                                                                          |
 | `POST` | `/predict_image`         | `ImageResponse`                                                                                                                                              |
 | `POST` | `/predict_document`      | per-page predictions for a PDF                                                                                                                               |
 | `GET`  | `/docs`, `/openapi.json` | FastAPI built-ins                                                                                                                                            |
 
-The browser frontend is mounted at **`/frontend`**, not at `/`.
+A static browser interface is served at **`/frontend`**: upload an image or a PDF, pick a
+model or the ensemble, and read the Top-N back.
 
 ### Request fields
 
@@ -131,17 +138,33 @@ Both prediction endpoints take the same multipart form:
 
 ### Response shapes
 
+`POST /predict_image`:
+
 ```json
-// POST /predict_image
 { "type": "image",
   "predictions": [{"label": "TEXT_P", "score": 0.981}],
   "document_json": null,
   "document_json_schema_error": null }
+```
 
-// POST /predict_document
+`POST /predict_document` — one entry per PDF page, numbered from 1; `document_json` is
+added only when a record was asked for:
+
+```json
 { "type": "document",
   "pages": [{"page": 1, "predictions": [{"label": "DRAW", "score": 0.94}]}] }
 ```
+
+From the command line:
+
+```bash
+curl -F file=@page.png -F version=v4.4 -F topn=3 http://localhost:8000/predict_image
+curl -F file=@report.pdf -F version=all http://localhost:8000/predict_document
+curl -F file=@page.png -F document_json=@record.json -F document_json_out=true \
+     http://localhost:8000/predict_image         # accrete onto a baseline record
+```
+
+`service/api_client.py` wraps the same calls: `python3 service/api_client.py -f page.png -v v4.4 --top 3`.
 
 `document_json_schema_error` is non-null only when an uploaded baseline failed to
 validate and the record was emitted with a warning rather than refused — a field an
@@ -152,7 +175,7 @@ automated caller can test instead of grepping the service log.
 | Code  | When                                                                               |
 |-------|------------------------------------------------------------------------------------|
 | `400` | Wrong content type for the endpoint                                                |
-| `413` | Over `MAX_UPLOAD_BYTES`, or a PDF with more than 50 pages                          |
+| `413` | Over `MAX_UPLOAD_MB`, or a PDF with more than 50 pages                             |
 | `422` | The uploaded `document_json` baseline is unparseable, or written by a newer schema |
 | `500` | Inference failure, or the service's own output failed schema validation            |
 | `503` | Draining after SIGTERM                                                             |
@@ -170,17 +193,14 @@ dict, `REVISION_BEST_MODELS`. Since **v1.8.0-beta** it names the `v*.4` generati
 | `v4.4`   | `timm/regnety_160.swag_ft_in1k`          | `fold1` | 384        | 322,393,660    |
 | `v5.4`   | `google/vit-large-patch16-384`           | `fold2` | 384        | 1,214,808,108  |
 
-The fold rule is `splitN ↔ foldN column ↔ seed = 420 + (N−1)`.
+The fold rule is `splitN ↔ foldN column ↔ seed = 420 + (N−1)`. Resolution and parameter
+size come from `MODEL_STATIC`, which `--parallel` reads to group models by memory before
+running them.
 
-!!! note "`MODEL_STATIC` states the contract, not what the Hub serves"
-    Those `params_bytes` mirror the `v*.3` row of the same base model. Between
-    2026-09-13 and 2026-09-16 **all five `v*.4` revisions served the same
-    `regnety_160` checkpoint** — 322,925,148 bytes on every one of them. `--best` would
-    have averaged one model with itself five times, returned well-formed predictions and
-    still reported "Ensemble (Average of 5 Models)". Nothing would have raised.
-    `tests/test_best_ensemble_distinct.py` is the standing guard; its `-m slow` half reads
-    each revision's `config.json` from the Hub, and it is the half to run before ever
-    moving these keys again.
+`tests/test_best_ensemble_distinct.py` guards the ensemble: its static half asserts that
+the five revisions name five distinct base models, and its `-m slow` half reads each
+revision's `config.json` from the Hub and asserts the published architectures are
+distinct too. The [changelog](changelog.md#v180-beta) records why that test exists.
 
 ### Two version namespaces, and where they collide
 
@@ -195,8 +215,8 @@ The fold rule is `splitN ↔ foldN column ↔ seed = 420 + (N−1)`.
   `v3.3` = vit-base-384, `v4.3` = regnety_160 (sweep `v7.3.1`), `v5.3` = vit-large-384.
 
 They **collide on `v1.3` and `v4.3`**. The published meaning wins, by exact-key-first
-resolution rather than by ordering luck. `model_accuracies_new.csv` is therefore *not*
-stale and must not be "corrected" — it is a faithful record of the sweep namespace.
+resolution rather than by ordering luck. `model_accuracies_new.csv` records the sweep
+namespace; the Hugging Face model card and this site use the published one.
 
 ## Outputs and their columns
 
@@ -217,11 +237,12 @@ Written under `[OUTPUT] FOLDER_RESULTS` (default `./result`).
 | `<doc_id>.document.json`                  | the ATRIUM record, carrying `page_categories`, `pages[].category`, `pages[].category_confidence`                                                                                |
 | `ro-crate-metadata.json`                  | RO-Crate 1.1 JSON-LD, from `atrium_rocrate.py`'s own CLI                                                                                                                        |
 
-!!! info "RO-Crate export is real, and documented nowhere in the repository"
-    `atrium_rocrate.py` ships a deterministic exporter — `@graph` sorted by `@id`,
-    `datePublished` derived from block stamps rather than the clock — with
-    `--document`, `--run`, `--paradata`, `--out-dir` and `--selftest`. Neither `README.md`
-    nor `CONTRIBUTING.md` mentions it. See [RO-Crate export](../../contracts/rocrate.md).
+!!! info "RO-Crate export"
+    `atrium_rocrate.py`, vendored from the hub, is a deterministic exporter — `@graph`
+    sorted by `@id`, `datePublished` derived from the record's stamps rather than the
+    clock — with `--document`, `--run`, `--paradata`, `--out-dir` and `--selftest`. It
+    runs as a separate step over finished records. See
+    [RO-Crate export](../../contracts/rocrate.md).
 
 ## Licence resolution
 
@@ -235,87 +256,23 @@ actually resolved to.
 | `ultralytics`    | AGPL-3.0     | conditional — only with `--yolo` |
 
 So an inference or evaluation run is **MIT**; `--train` pulls in the LINDAT dataset and
-the run resolves to **CC BY-NC 4.0** — non-commercial, not share-alike. The README,
-`para_config.txt` and `small_data_samples/LICENSE` all say CC BY-NC 4.0. A `--yolo` run adds
-Ultralytics: an inference run with it resolves to **AGPL-3.0**, and with `--train` the resolver
-ranks CC BY-NC 4.0 above it. DeepDoctection, which no code imports, is no longer listed.
-
-## Known drift — read this before trusting a number
-
-Each item was confirmed against the code at `vit` / `8415ce7`. These are reported here,
-not fixed here; each is a candidate issue in the tool's own repository.
-
-**Numbers that disagree with themselves**
-
-1. `v4.2` and `v5.2` accuracies are **swapped** between the table (`README.md:690-691`)
-   and the prose that discusses it (`:720`, `:740`).
-2. `v4.3` is stated as **98.92 %** in the Top-1 table and **99.16 %** in the prose at
-   `README.md:781`. The registry and `model_accuracies_top1.csv` agree on 99.16.
-3. `regnety_160` is listed at **224 px** in the README's base-model table and in the
-   Acknowledgements; `MODEL_STATIC` says **384**.
-4. The Versions table names `v1.2`'s base as `efficientnetv2_s.in21k` and `v4.2`'s as
-   `efficientnetv2_l`; the published `v1.3`/`v1.4` are `efficientnetv2_m` and
-   `v4.3`/`v4.4` are `regnety_160`. The "strange order of base model versions" is
-   acknowledged in the README and never resolved — the two namespaces above are the
-   explanation.
-5. **No accuracy figures exist for the `v*.4` models that `--best` now uses.** Every
-   published number describes `v*.3`.
-
-**Defaults that are not what the prose says**
-
-6. `--file_format` is documented as defaulting to `jpeg`; the config ships `png`, and
-   that is what argparse uses.
-7. `api_client.py` defaults to `-v v4.3`, which is not in the service's
-   `AVAILABLE_VERSIONS` (`v1.4`–`v5.4`). It resolves, but outside the warmed set — so the
-   first call downloads.
-8. `setup/setup_api_service.sh` downloads `v1.3`–`v5.3`, not the `v*.4` ensemble the
-   service serves, and ends by suggesting `uvicorn service.api:app --reload` while the
-   published image runs `python -m service.api`. The two treat `RELOAD` differently.
-
-**Documented shapes that the code does not return**
-
-9. `service/README.md`'s `/predict_image` examples show `model_version` and
-   `requested_topn`. `ImageResponse` declares neither, and FastAPI's `response_model`
-   **filters unknown keys**, so they are never returned.
-10. `GET /` is documented as serving the static interface; it returns a JSON welcome
-    message. The interface is at `/frontend`.
-
-**Stale paths and links**
-
-11. ~~The README links `supplement_scripts/…` in five places; the directory is
-    `supplementary/scripts/`.~~ ✅ Fixed — the README now links `supplementary/scripts/…`.
-12. The paradata example link points at a file that is not in the repository.
-13. The tree diagram lists `result/stats/model_accuracies.csv` and two plots; the real
-    files are `model_accuracies_top1.csv` and `model_accuracies_top3.csv`, and the plots
-    do not exist.
-14. `.gitignore` contains `/chekcpoint/` — a typo — so the real `checkpoint/` directory is
-    **not** ignored.
-15. The `transformers` 5.x caution ends mid-sentence, without naming the exception.
-
-**Things that exist but are unwritten**
-
-16. YOLO support — `yolo_classifier.py`, `--yolo`, `--yolo_base` and the whole `[YOLO]`
-    config section — has **zero** mentions in `README.md` or `CONTRIBUTING.md`, though the
-    parser's own description says "Page sorter based on ViT / YOLO-cls".
-17. `--chunk` / `--no-chunk` and `[INPUT] chunk_size` are undocumented, and they change the
-    output-writing path to append mode.
-18. All five `--document-json*` flags and `[DOCUMENT]` are undocumented on the CLI side.
-19. RO-Crate export and the SKOS registry — 45 KB and 49 KB of code respectively — have no
-    README mention.
-20. `README.html` (178 KB, git-tracked, one commit stale) sits at the repository root with
-    no stated generator. **This site is the HTML documentation; that file is not.**
+the run resolves to **CC BY-NC 4.0** — non-commercial, not share-alike. A `--yolo` run adds
+Ultralytics: an inference run with it resolves to **AGPL-3.0**, and with `--train` the
+resolver ranks CC BY-NC 4.0 above it. The rule — the most restrictive component wins — is
+the shared `para_licenses.py`, the same in every ATRIUM tool.
 
 ## Sources
 
-Read from `ufal/atrium-page-classification` at branch **`vit`**, commit `8415ce7`
-(2026-09-21). This table records **provenance**, not a build instruction.
+Read from `ufal/atrium-page-classification` at branch **`vit`**, commit `adee922`
+(2026-09-23). This table records **provenance**, not a build instruction.
 
-| Source                                              | What was taken from it                                             |
-|-----------------------------------------------------|--------------------------------------------------------------------|
-| `run.py:36-219` (`build_parser`)                    | the complete flag table and every default                          |
-| `setup/config.txt`                                  | the configuration table                                            |
-| `model_registry.py:36-48, 94-119, 150-217`          | ensemble, folds, `MODEL_STATIC`, the two namespaces                |
-| `service/api.py:50-58, 150-166, 226-330`            | limits, response models, endpoints, errors                         |
-| `utils.py:95-125`                                   | the CSV column construction                                        |
-| `setup/para_config.txt`                             | licence components                                                 |
-| `README.md`, `service/README.md`, `CONTRIBUTING.md` | compared against the above; disagreements listed under Known drift |
+| Source                                   | What was taken from it                                  |
+|------------------------------------------|---------------------------------------------------------|
+| `run.py` (`build_parser`)                | the complete flag table and every default               |
+| `setup/config.txt`                       | the configuration table                                 |
+| `model_registry.py`                      | ensemble, folds, `MODEL_STATIC`, the two namespaces     |
+| `service/api.py`, `service/inference.py` | limits, warm-up, response models, endpoints, errors     |
+| `service/atrium_service.py`              | `/health`, `/ready` and the upload-limit resolution     |
+| `service/api_client.py`                  | the client invocation                                   |
+| `utils.py`, `parallel_best.py`           | the CSV column construction and the ensemble file names |
+| `setup/para_config.txt`                  | licence components                                      |

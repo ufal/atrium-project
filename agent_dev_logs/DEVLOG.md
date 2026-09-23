@@ -1275,3 +1275,58 @@ derived reading aid in `agent_dev_logs/`._
   `workflow_lint.py --offline` OK. The built site greps clean for the personal contact address, the
   partner-contacts file, maintainer handles, token prefixes, the grant number, internal secret
   names, CI run IDs, and cluster paths and hostnames.
+
+## 2026-09-23 (round 6) — the site states only what stays true
+
+- **#57 — all 23 pages rewritten to a durable bar**, still scoped to page-classification and the
+  translator. The maintainer's TODO asks for "static, unchangeable claims"; rounds 3–5 had held
+  every page to "values verified against code, and named drift where the two disagree", which
+  published audit material that goes stale within days — two tool "Known drift" lists (20 and 17
+  items), the agent-skills drift table, the contributing-standards "Contradictions" section, the
+  schemas "What the schema says that the code does not", the rocrate "What a crate cannot yet
+  say", "Written so far / round N" admonitions, dated counts, and SHAs and `file:NN` references
+  in prose. All of it was stripped from the published pages and **relocated, not deleted**:
+  `agent_dev_logs/digests/57.findings.md` groups every finding by the repository that owns the
+  fix, each re-checked against the current heads and marked open, resolved-at-SHA or unverified.
+  It sits outside `docs_site/`, so MkDocs never publishes it. `INDEX.md`'s bar changes with it:
+  a page must now also *stay true until the tool changes*.
+
+- **Lasting content the pages lacked was written in their place.** page-classification: how a
+  prediction is made (resize → normalise → softmax → Top-N; `--best` averages each model's Top-N
+  probabilities, `--average` averages fold weights), label naming and what each category suggests
+  doing next, preparing input and the `<doc>[-_]<page>.png` convention, reading the output with
+  real rows from a committed `v4.3` result table, the `vX.Y` revision scheme, YOLO-cls and CLIP,
+  `curl` examples, how to cite. Translator: how a translation is made, metadata (AMCR) mode step
+  by step (secure parser, namespace discovery through OAI-PMH envelopes, per-field detection,
+  idempotent `append`), vocabulary protection (Tag-and-Protect for `lindat`, prompt glossary for
+  LLM back-ends — and none for the ct2 NMT families), language identification and pair discovery,
+  a dual-pass Mermaid diagram, a code map, design limits. Hub: "How the ecosystem works" with a
+  diagram on the portal, a workflow index on Pipelines, a glossary of terms on External tools,
+  the deployment model and a batch-image quick start on Operations, "Anatomy of a tool" on
+  Architecture, the record's life cycle and how its licence is computed on the document
+  contract, release steps and a shared-code rule on Contributing standards, a Turtle concept and
+  an RO-Crate excerpt produced by the real exporter.
+
+- **Re-read at the current heads, and five things had moved.** page-classification `vit` is at
+  `adee922` (the pages cited `8415ce7` / `8c98a3d`): `a95c6c6` reworked `pdf2png.sh`, `sort.sh`
+  and `filtering.py`, so the round-5 data-script findings are resolved at source; the README now
+  gives the dataset licence as CC BY-NC 4.0 everywhere. The translator `master` is at `71feaef`
+  (pages cited `88242fe`): `ct2` is registered — the Reference's `--backend` row still said only
+  `lindat` / `openai_compatible`. The translator's first-record licence ordering is **still**
+  open at `71feaef`, so the document-contract worked example no longer displays the translator
+  record's licence; the page states the rule, and the defect is in the register.
+
+- **One site defect, found by building rather than reading.** Both tool index pages carry the
+  `atrium-pipeline` strip as `markdown="0"` raw HTML with `href="../<tool>/index.md"`. MkDocs
+  rewrites `.md` links only in Markdown-generated HTML, so the built pages linked to
+  `…/tools/<tool>/index.md`, which does not exist — and `--strict` cannot see it. Now
+  `../<tool>/`. Two smaller ones: page-classification's history linked an `agent_dev_logs/issues/`
+  the repository does not have; `external-tools.md` pointed at a Known-drift item (handle
+  `1-5959`) the list never contained.
+
+- **Verified.** `mkdocs build --strict` exits 0 with no warnings over 23 pages, `nav` ↔
+  `docs_site/` 23 ↔ 23; 128 of 128 markdown tables render as tables; seven Mermaid diagrams
+  render; the pipeline-strip links resolve; the body sweep for time-bound wording leaves only
+  tool names, settled history and behaviour; the built site greps clean for e-mail addresses,
+  handles, token prefixes, the grant number and run IDs. `pytest tests/` 141 passed, 4 skipped;
+  `workflow_lint.py --offline` OK — no code changed.

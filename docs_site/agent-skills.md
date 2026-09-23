@@ -2,7 +2,7 @@
 title: Agent skills
 nav_order: 10
 status: partial
-round: 4
+round: 6
 issue: 57
 ---
 
@@ -11,9 +11,9 @@ issue: 57
 Give a coding agent — Claude Code, Codex, Antigravity — the ability to call an ATRIUM tool,
 without teaching it the tool's code.
 
-!!! info "Documented so far: the page-classification and translator skills"
-    All five tools have an `agent-skill` branch. The two below were read directly from their
-    branches; the other three are added with their tool sections.
+!!! info "Scope"
+    All five tools have an `agent-skill` branch. The two described below are
+    page-classification's and the translator's; the other three follow the same pattern.
 
 ## What a skill is here
 
@@ -28,21 +28,38 @@ HTTP service:
 | `scripts/server.sh`        | starts the service (Docker Compose, or a local `uvicorn`) and waits until it answers                                       |
 
 The agent never imports the tool's code. It starts the service, then talks to it over HTTP —
-which is what lets the same client point at a hosted instance later by changing one environment
-variable and nothing else.
+which is what lets the same client point at a hosted instance by changing one environment
+variable and nothing else:
 
-What each branch **drops** compared with its default branch: the test suite, every workflow
-except `skill-validate.yml`, `CONTRIBUTING.md`, `agent_dev_logs/`, the lint and coverage
-configuration, and the modules the service does not import. What it keeps **byte-identical**:
-the `Dockerfile`, the compose files, the shared service module and healthcheck — and for
-page-classification, `service/api.py` itself. The translator's `service/api.py` differs by one
-guarded `/frontend` mount for a demo web page that exists only on this branch.
+```mermaid
+flowchart LR
+  U["the user's request"] --> AG["coding agent<br/>reads SKILL.md"]
+  AG -- "runs" --> CL["scripts/atrium_&lt;verb&gt;.py<br/>stdlib-only client"]
+  AG -. "if no server answers" .-> SV["scripts/server.sh<br/>starts the service"]
+  CL -- "HTTP: /info, then the POST endpoint" --> API["the tool's HTTP service"]
+  API --> M["the tool's models<br/>or remote back-end"]
+  API -- "result, and the record if asked" --> CL
+  CL -- "table · CSV · JSON · file" --> AG
+```
+
+**`SKILL.md`** follows the Agent Skills convention the agents share: a YAML frontmatter
+block with a `name` and a `description` — the text an agent uses to decide *whether* the
+skill applies — followed by Markdown instructions for *how* to use it. Only the frontmatter
+is read up front; the body and the scripts are loaded when the skill is chosen, so an
+installed skill costs almost nothing until it is used.
+
+Compared with its default branch, each skill branch leaves out what an agent does not
+need — the test suite, most workflows, `CONTRIBUTING.md`, `agent_dev_logs/`, lint and
+coverage configuration, and modules the service does not import — and keeps the
+`Dockerfile`, the compose files, the shared service module and the healthcheck unchanged,
+so the service it starts is the same one the default branch publishes. The translator's
+branch adds a small demonstration web page at `/frontend`.
 
 ## The two skills
 
 === "page-classification"
 
-    **`name: atrium-page-classification`** — read from the `agent-skill` branch at `c689a06`.
+    **`name: atrium-page-classification`**
 
     > Classifies historical document page images (PNG/JPEG) and multipage PDFs into 11 structural
     > categories (text, handwritten, tables, drawings, photos) using fine-tuned ViT / RegNetY /
@@ -76,7 +93,7 @@ guarded `/frontend` mount for a demo web page that exists only on this branch.
 
 === "translator"
 
-    **`name: atrium-translator`** — read from the `agent-skill` branch at `1857b3b`.
+    **`name: atrium-translator`**
 
     > Translates archaeological archival XML documents - ALTO OCR pages or AMCR metadata records -
     > between languages (Czech-centric, default target English) via the LINDAT/CUBBITT NMT service,
@@ -154,8 +171,8 @@ export ATRIUM_PC_URL="https://<hosted-instance>/atrium-pc"
 export ATRIUM_TR_URL="https://<hosted-instance>/atrium-tr"
 ```
 
-A LINDAT-hosted instance of both services is planned; until it exists, every skill runs its own
-server. Update an installed skill with `git pull` inside its directory.
+Without a URL, the skill starts a local server with `scripts/server.sh`. Update an installed
+skill with `git pull` inside its directory.
 
 ## The service contract the skills lean on
 
@@ -167,7 +184,7 @@ Every ATRIUM service implements the same meta-contract, from the hub-canonical
 | `GET /info`             | `service` (the repository name), `version` (from `para_config.txt`, never hard-coded), `endpoints` (the live route list), `limits` (at least `max_upload_mb`), plus capabilities — the classifier adds `categories` and `available_models`; the translator adds `supported_formats` |
 | `GET /health`           | `{"status": "ok"}`, always 200 while the process lives — liveness                                                                                                                                                                                                                   |
 | `GET /health?deep=true` | 503 with a `detail` when a dependency is degraded, or while draining                                                                                                                                                                                                                |
-| `GET /ready`            | 200 when ready to serve; 503 `draining` after SIGTERM — readiness                                                                                                                                                                                                                   |
+| `GET /ready`            | 503 `starting` until warm-up completes; 200 when ready to serve; 503 `draining` after SIGTERM — readiness                                                                                                                                                                           |
 
 The error codes are harmonised, so a client can treat all five services alike:
 
@@ -196,66 +213,28 @@ Each `agent-skill` branch calls the hub's `skill-validate.reusable.yml`, which c
 5. **The live contract** — in a `TestClient`: `/info` names the repository and version, advertises
    only real routes and a `max_upload_mb` limit; `/health` answers; the OpenAPI document validates.
 
-What it does **not** check: `/ready`, static mounts, or that `server.sh` actually starts anything.
-And if the service cannot be imported in CI — likely for page-classification, whose import pulls in
-PyTorch — check 5 downgrades to a warning and passes.
-
-## Known drift
-
-Read from both branches at the commits above. Reported here, not fixed here — the branches belong
-to their repositories.
-
-!!! danger "page-classification's `server.sh` cannot start the service through Docker"
-    * The default path runs `docker compose -f docker-compose.yml up -d` — with **no `--profile api`
-      and no service name**. The HTTP service is defined under the `api` profile, so this starts only
-      the batch `classify` service, which runs once and exits. `/info` never answers, and the script
-      times out after 15 minutes.
-    * `--gpu` passes `-f docker-compose.gpu.yml` **alone**; that file is an overlay with no image or
-      build definition of its own.
-    * `--local` runs `setup/setup_api_service.sh`, whose paths (`../venv`, `requirements.txt`) are
-      written relative to `setup/` — run from the repository root, as `server.sh` does, they point
-      outside the repository.
-    * The branch's `Dockerfile` copies `setup/requirements-test.txt`, which the branch does not
-      contain, so a local image build fails.
-
-    The hub's template, `docs/templates/skill/server.template.sh`, does all four correctly
-    (`--profile api`, base-plus-overlay `-f` files, the repository's real paths). The translator's
-    `server.sh` works: it runs `docker compose up -d api`, and naming the service activates its
-    profile.
-
-The smaller mismatches:
-
-| Where it is said                        | What it says                                                              | What the code does                                                                                     |
-|-----------------------------------------|---------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| `docs/skills_catalog.md`                | `server.sh` polls `/ready`                                                | both scripts poll `/info`                                                                              |
-| `docs/agent_skill_strategy.md` §4.4, §6 | "retry 3× with backoff"; short connect, long read                         | three attempts in total at a constant 10 s; one timeout                                                |
-| the same                                | usage errors exit `1`                                                     | argparse usage errors exit `2`, the same code as "unreachable"                                         |
-| §4.4                                    | wrong media type → `415`                                                  | page-classification answers `400`                                                                      |
-| translator `SKILL.md`                   | `/health?deep=true` verifies LINDAT reachability                          | it checks that the backend is warmed and that FastText loaded — no call to LINDAT                      |
-| translator `SKILL.md`                   | query `/info` for the supported languages                                 | `/info` lists no languages                                                                             |
-| translator `SKILL.md`                   | server runs stay traceable through paradata                               | the service writes paradata into a per-request temporary directory that is deleted with the response   |
-| page-classification `SKILL.md`          | examples with `--version v4.3`, fallback `v2.3`                           | the service's warmed set is `v1.4`–`v5.4`; older revisions still resolve but are not listed in `/info` |
-| page-classification `SKILL.md`          | the server needs `service/requirements.txt` (PyTorch, transformers, timm) | that file holds the web stack; the model stack is in `setup/requirements.txt`                          |
+Check 5 needs the service to import in CI; where it cannot — a service whose import pulls in
+a large model stack, for example — the check reports a warning rather than failing. Starting
+the server with `server.sh`, `/ready` and static mounts are outside the workflow's scope.
 
 ## Writing a skill for another tool
 
 Start from the hub's templates in `docs/templates/skill/` — `SKILL.template.md`,
 `atrium_client.skeleton.py`, `server.template.sh`, `serviceREADME.template.md` — and the
 normative rules in `docs/agent_skill_strategy.md`: the service contract (§4), what the branch
-must carry (§5), the client rules (§6) and the `SKILL.md` structure (§7). The templates already
-carry the corrections from the first rollout; the drift table above is what happens when a branch
-is written before them.
+must carry (§5), the client rules (§6) and the `SKILL.md` structure (§7). The templates carry
+the conventions settled during the first rollout — starting the service by its compose
+profile, polling `/info` until it answers, and the shared exit codes above.
 
 ## Sources
 
 This table records **provenance**: what this page was written from, not a build instruction.
 
-| Source                                                                                                                               | What was taken from it                                     |
-|--------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------|
-| `atrium-page-classification@agent-skill` `c689a06` — `SKILL.md`, `README.md`, `scripts/`, `Dockerfile`, `setup/setup_api_service.sh` | the page-classification skill, read through the GitHub API |
-| `atrium-translator@agent-skill` `1857b3b` — the same files                                                                           | the translator skill                                       |
-| `atrium-page-classification@vit` `8c98a3d` and `atrium-translator@master` `88242fe` — `service/api.py`                               | the error codes and deep-health checks                     |
-| `atrium-project/docs/templates/shared/atrium_service.py`                                                                             | the meta-contract                                          |
-| `atrium-project/docs/skills_catalog.md`, `docs/agent_skill_strategy.md` §§4–7                                                        | the normative contract, compared against the code          |
-| `atrium-project/.github/workflows/skill-validate.reusable.yml`                                                                       | what CI checks                                             |
-| `atrium-project/docs/templates/skill/`                                                                                               | the templates                                              |
+| Source                                                                         | What was taken from it        |
+|--------------------------------------------------------------------------------|-------------------------------|
+| `atrium-page-classification@agent-skill` — `SKILL.md`, `README.md`, `scripts/` | the page-classification skill |
+| `atrium-translator@agent-skill` — the same files                               | the translator skill          |
+| `atrium-project/docs/templates/shared/atrium_service.py`                       | the meta-contract             |
+| `atrium-project/docs/skills_catalog.md`, `docs/agent_skill_strategy.md` §§4–7  | the normative contract        |
+| `atrium-project/.github/workflows/skill-validate.reusable.yml`                 | what CI checks                |
+| `atrium-project/docs/templates/skill/`                                         | the templates                 |

@@ -2,7 +2,7 @@
 title: Pipelines
 nav_order: 2
 status: partial
-round: 5
+round: 6
 issue: 57
 authored: true
 ---
@@ -12,30 +12,47 @@ authored: true
 What the tools do, end to end: what goes in, what each stage does, what comes out, and what
 the point of it is.
 
-!!! info "Written so far: W1, W4, W5, W6, W7, W8, W12 and W13"
-    Every workflow that runs through **page-classification** or the **translator**, the two
-    repositories whose documentation is furthest along. The remaining five belong to the other
-    three tools; they are listed at the bottom with a line each and will be written as those
-    sections are.
+!!! info "Scope"
+    Every workflow that runs through **page-classification** or the **translator** is
+    described in full. The five that belong only to alto-postprocess, nlp-enrich and
+    llm-enrich are listed under [Other workflows](#other-workflows).
 
-## The correction this page makes
+**The workflows at a glance:**
 
-Every existing diagram in this ecosystem draws five boxes with arrows between them. That
-picture is wrong in a specific and consequential way: **most of those arrows are not file
-handoffs.** Verified against the tree:
+| #   | Workflow                                                                         | In one line                                                                 |
+|-----|----------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| W1  | [Scanned / OCR document pipeline](#w1--scanned--ocr-document-pipeline)           | a scanned page in, a searchable, enriched, documented record out            |
+| W2  | Born-digital pipeline                                                            | the same, for PDFs and DOCX files that already have a text layer            |
+| W3  | Digital → OCR re-origination                                                     | handing a born-digital document back to OCR when its text layer is unusable |
+| W4  | [Containerised service / API](#w4--containerised-service--api-workflow)          | any tool, over HTTP, one document per request                               |
+| W5  | [Agent Skill](#w5--agent-skill-workflow)                                         | a coding agent using a tool through its service                             |
+| W6  | [E2E smoke](#w6--e2e-smoke-the-integration-contract)                             | the automated test that runs the whole chain                                |
+| W7  | [Vocabulary harvesting](#w7--vocabulary-harvesting--review-the-translators-half) | building the term list that keeps translations consistent                   |
+| W8  | [Training and evaluation](#w8--training-and-evaluation-page-classification)      | making and scoring a page-classification model                              |
+| W9  | Parameter optimisation                                                           | tuning alto-postprocess's line-categorisation rules                         |
+| W10 | Document-understanding benchmark                                                 | comparing models on sampled documents                                       |
+| W11 | Format adaptation                                                                | converting between OCR formats at the edges                                 |
+| W12 | [Annotation round trip](#w12--annotation-round-trip-page-classifications-half)   | turning PDFs into a labelled training set, and corrections back into it     |
+| W13 | [RO-Crate export](#w13--ro-crate-export--fair-publication)                       | packaging finished records for a repository or catalogue                    |
 
-* **No repository reads `TRANSLATED/`** — zero hits across all four downstream repositories.
-  The translator is a terminal branch.
-* **`nlp-enrich` reads `DOC_LINE_CATEG/` and the *original* `ALTO/`**, never the
-  translator's output.
-* **`alto-postprocess` never consumes `page_categories`.** Its only occurrences of that key
-  are in the vendored schema files — deep-copy pass-through. The page classifier informs a
-  **human routing decision**; it does not trigger the next stage.
+## How the stages connect
 
-The genuine file handoffs are exactly three: `PAGE_ALTO/` (alto → translator),
-`DOC_LINE_CATEG/` (alto → nlp, alto → llm) and `TEITOK/` (nlp → llm).
+A pipeline diagram with five boxes in a row suggests five file handoffs. The files actually
+move differently:
 
-What *is* linear is the **record**. So this page draws two layers.
+* **page-classification informs a routing decision.** Its categories tell a person or a
+  script which pages go to OCR, HTR, table or image extraction; the next stage,
+  alto-postprocess, works from the OCR output and does not read `page_categories`.
+* **alto-postprocess is where the files fan out.** It writes per-page ALTO (`PAGE_ALTO/`) for
+  the translator and a per-line table (`DOC_LINE_CATEG/`) for nlp-enrich and llm-enrich.
+* **The translator's output is an end product.** `TRANSLATED/` holds English editions for
+  readers; no later stage reads it.
+* **nlp-enrich reads `DOC_LINE_CATEG/` and the original `ALTO/`**, and writes `TEITOK/`,
+  which llm-enrich reads.
+
+So there are three file handoffs — `PAGE_ALTO/`, `DOC_LINE_CATEG/` and `TEITOK/` — and one
+thing that does run through every stage in order: the **record**. This page draws both
+layers.
 
 ### Layer 1 — the file DAG
 
@@ -50,7 +67,7 @@ flowchart LR
   ALTO --> DLC[DOC_LINE_CATEG/]
   PA --> TR[translator]
   TR --> TXL[TRANSLATED/]
-  TXL --> DEAD(((read by nothing)))
+  TXL --> END(((end product)))
   DLC --> NLP[nlp-enrich]
   OCR --> NLP
   DLC --> LLM[llm-enrich]
@@ -117,12 +134,11 @@ document (stage 3), linguistic annotation and named entities (stage 4), and
 vocabulary-linked enrichment (stage 5) — with a provenance record that says which program,
 at which version, produced each of them.
 
-!!! warning "There is no way to run this as one command"
-    `atrium-project/compose/docker-compose.pipeline.yml` **does not exist**. No
-    cross-service orchestration exists anywhere in the ecosystem. The only working
-    end-to-end definition is the CI workflow described in [W6](#w6--e2e-smoke-the-integration-contract),
-    and the practical answer to "how do I run the whole pipeline?" is to copy its `docker run`
-    invocations. The two this round covers are reproduced in
+!!! note "Running the whole chain"
+    Each stage runs as its own container, and the stages are joined by the files above and
+    the record passed with `--document-json` / `--document-json-out`. The
+    [E2E workflow (W6)](#w6--e2e-smoke-the-integration-contract) is the reference sequence of
+    `docker run` invocations; the two stages documented here are reproduced in
     [page-classification → Guide](tools/page-classification/guide.md#4--run-it-as-one-stage-of-the-pipeline)
     and [translator → Guide](tools/translator/guide.md#5--run-it-as-one-stage-of-the-pipeline).
 
@@ -146,10 +162,10 @@ Dockerfile as its batch image, and every one exposes the same meta-contract:
 
 The tool-specific endpoints for the two repositories documented here:
 
-| Tool                | Endpoints                                       | Upload cap                                                                       |
-|---------------------|-------------------------------------------------|----------------------------------------------------------------------------------|
-| page-classification | `POST /predict_image`, `POST /predict_document` | 10 MB, 50 PDF pages                                                              |
-| translator          | `POST /translate`                               | 50 MB — the highest of the five, because ALTO XML goes in and ALTO XML comes out |
+| Tool                | Endpoints                                       | Upload cap                                             |
+|---------------------|-------------------------------------------------|--------------------------------------------------------|
+| page-classification | `POST /predict_image`, `POST /predict_document` | 10 MB, 50 PDF pages                                    |
+| translator          | `POST /translate`                               | 50 MB, because ALTO XML goes in and ALTO XML comes out |
 
 **Outputs.** JSON for the classifier; for the translator, the **document itself** as an XML
 attachment, or `multipart/mixed` when a record was supplied. The translator is the one
@@ -157,8 +173,9 @@ service that does not answer with a JSON envelope, by design — it composes wit
 
 **What the user actually gets.** A stateless, horizontally scalable stage: nothing is
 retained between requests, so a Kubernetes `Deployment` can scale on queue depth. Error
-codes are harmonised across all five services (`413`, `415`/`400`, `422`, `500`, `503`), so
-a client can treat them uniformly — with the one caveat that FastAPI's `detail` is a string
+codes are harmonised across all five services — `413` too large, `400` or `415` a wrong
+content type, `422` unusable input, `500` a processing failure, `503` warming up or
+draining — so a client can treat them uniformly — with the one caveat that FastAPI's `detail` is a string
 for a service-raised error and a list of validation objects when FastAPI rejects the request
 first.
 
@@ -199,12 +216,6 @@ hosted endpoint: switching is one variable, so when the services are hosted no s
 change. The agent never holds a model or a GPU — the classifier's weights live in the service
 container, and the translator's model runs at LINDAT.
 
-!!! warning "page-classification's `server.sh` does not start the API through Docker"
-    Its default path starts the batch service rather than the `api` profile, so stage 1 times
-    out. Until it is fixed, start the service by hand — `docker compose --profile api up -d api`
-    — or point `ATRIUM_PC_URL` at a running one. The translator's script works. Details in
-    [Agent skills → Known drift](agent-skills.md#known-drift).
-
 ### W6 — E2E smoke: the integration contract
 
 **Purpose.** Prove that the five tools still compose. This is the only place the whole chain
@@ -221,7 +232,7 @@ the record forward: `1_pc.json` → `2_alto.json` → `3_translate.json` → `4_
 
 **The `DOC_LINE_CATEG` bridge.** The E2E config sets `SKIP_CLASSIFY = true` for
 alto-postprocess, and the hub commits that stage's real output as a fixture instead —
-`DOC_LINE_CATEG/CTX000000003.csv`, in alto HEAD's 37-column `CSV_HEADER` format, one
+`DOC_LINE_CATEG/CTX000000003.csv`, in alto-postprocess's 37-column `CSV_HEADER` format, one
 `Clear` line and one `Non-text` line.
 
 The reason is hardware: alto-postprocess's line-categorisation step (`langID_classify.py`)
@@ -230,21 +241,11 @@ committing its output is what lets the remaining four stages be exercised at all
 and 5 read the bridge file directly. It is a *pinned* fixture, unlike the vocabulary, because
 the assertions depend on its content.
 
-*(This explanation is reconstructed here: `fixtures/e2e/README.md` is truncated mid-sentence
-at exactly this point, after the words "`langID_classify.py` hard-requires CUDA".)*
-
-**What a green run does and does not prove.**
-
-!!! warning "A green E2E does not describe one coherent artifact"
-    Each stage runs a **published image** selected by the `image-tag` input, but mounts
-    **source checked out with no `ref:`** — that is, each tool repository's *default
-    branch*, not the branch or tag the image was built from. Only the hub checkout is
-    pinned, at `@v1`.
-
-    So read a green run as: *default-branch source is compatible with that image tag*. Read
-    the two together, or the claim is stronger than the evidence. Coupling `ref:` to
-    `image-tag` is filed separately, because it changes what the gate means rather than
-    correcting a document.
+!!! note "How to read a green run"
+    Each stage runs a **published image**, selected by the workflow's `image-tag` input,
+    together with files checked out from each tool repository's **default branch**;
+    the hub's own files come from its `v1` tag. A green run therefore says that the
+    default-branch configuration works with that image tag.
 
 Assertions check **formats and contracts, never model quality**. Every job boundary in the
 workflow is one cross-repository interface, which is the point.
@@ -263,38 +264,34 @@ TEATER thesaurus over GraphQL. No credentials.
 **Stages.** `load_vocab.py` does 1–3 once; the translator does 4–6 on every run given
 `--vocabulary`.
 
-| # | Stage           | What actually happens                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-|---|-----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 1 | Harvest AMCR    | `ListRecords` with `metadataPrefix=oai_amcr&set=heslo` against `https://api.aiscr.cz/2.2/oai`, following resumption tokens and sleeping `--delay` (0.3 s) between pages. Each `heslo` block gives its Czech term and its `heslo_en` sibling when both are non-empty. A network or XML error ends the harvest and **keeps what was collected so far**                                                                                                                                                                                                                                                  |
-| 2 | Harvest TEATER  | Introspect the schema at `https://teater.aiscr.cz/api/graphql`. `exportAll` returns the export's URL (as the API's internal `http://localhost:8080/api/export`, rewritten to the public host); the download is a JSON `categories` tree, and every concept with a Czech and an English name gives a pair keyed by its TEATER id. A label shared by two concepts keeps the last. Only if that yields nothing does the fallback run: `search(value: "", limit: 99999)` in Czech and in English, joined on `id`, which the live API answers with `{}` today. Every TEATER request is spaced by `--delay` |
-| 3 | Merge and write | TEATER first, then AMCR over it, so **AMCR wins** a collision. Keys are lower-cased and rows sorted, so a re-harvest gives a stable diff. Five columns: `source_lemma, target_translation, source, source_id, uri`. Nothing harvested → exit `2`, and the existing file is left alone; `--skip-amcr` together with `--skip-teater` is refused as a usage error                                                                                                                                                                                                                                        |
-| 4 | Load            | `processors/vocab.py` reads the 2-column form or the 5-column one, with or without a header row. A later duplicate key wins. An unreadable file prints a warning and loads **nothing** — the run carries on without a vocabulary                                                                                                                                                                                                                                                                                                                                                                      |
-| 5 | Tag and protect | Before each translation call: multi-word phrases, longest first, case-insensitive, whole words only — **every occurrence** gets its own sentinel; then single words by UDPipe lemma (only for languages with a UDPipe model), **skipping plural tokens** so the model can inflect the English. Each match becomes an `Xtermzzz<N>z` sentinel; after translation it is restored — exact, then case-insensitive, then fuzzy — as the agreed term                                                                                                                                                        |
-| 6 | Account         | Paradata records `vocabulary_protected_terms` per document plus a total, and the run's licence gains `udpipe2_engine`, `udpipe2_models`, `amcr_vocab` and `teater_data`                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| # | Stage           | What actually happens                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+|---|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1 | Harvest AMCR    | `ListRecords` with `metadataPrefix=oai_amcr&set=heslo` against `https://api.aiscr.cz/2.2/oai`, following resumption tokens and sleeping `--delay` (0.3 s) between pages. Each `heslo` block gives its Czech term and its `heslo_en` sibling when both are non-empty. A network or XML error ends the harvest and **keeps what was collected so far**                                                                                                                                                                                                      |
+| 2 | Harvest TEATER  | Introspect the schema at `https://teater.aiscr.cz/api/graphql`. `exportAll` returns the export's URL (as the API's internal `http://localhost:8080/api/export`, rewritten to the public host); the download is a JSON `categories` tree, and every concept with a Czech and an English name gives a pair keyed by its TEATER id. A label shared by two concepts keeps the last. Only if that yields nothing does the fallback run: `search(value: "", limit: 99999)` in Czech and in English, joined on `id`. Every TEATER request is spaced by `--delay` |
+| 3 | Merge and write | TEATER first, then AMCR over it, so **AMCR wins** a collision. Keys are lower-cased and rows sorted, so a re-harvest gives a stable diff. Five columns: `source_lemma, target_translation, source, source_id, uri`. Nothing harvested → exit `2`, and the existing file is left alone; `--skip-amcr` together with `--skip-teater` is refused as a usage error                                                                                                                                                                                            |
+| 4 | Load            | `processors/vocab.py` reads the 2-column form or the 5-column one, with or without a header row. A later duplicate key wins. An unreadable file prints a warning and loads **nothing** — the run carries on without a vocabulary                                                                                                                                                                                                                                                                                                                          |
+| 5 | Tag and protect | Before each translation call: multi-word phrases, longest first, case-insensitive, whole words only — **every occurrence** gets its own sentinel; then single words by UDPipe lemma (only for languages with a UDPipe model), **skipping plural tokens** so the model can inflect the English. Each match becomes an `Xtermzzz<N>z` sentinel; after translation it is restored — exact, then case-insensitive, then fuzzy — as the agreed term                                                                                                            |
+| 6 | Account         | Paradata records `vocabulary_protected_terms` per document plus a total, and the run's licence gains `udpipe2_engine`, `udpipe2_models`, `amcr_vocab` and `teater_data`                                                                                                                                                                                                                                                                                                                                                                                   |
 
 **Outputs.** `data_samples/vocabulary.csv` (the default `--out`), and translated documents in
 which every protected term carries its agreed rendering.
 
-**What the user actually gets.** From the two runs committed with the repository (2026-06-08):
-113 terms protected across 16 AMCR records, and 869 in a single ALTO document. Both runs resolve
-to **CC BY-NC-SA 4.0**, determined by CUBBITT and the UDPipe models — loading the vocabulary adds
-two CC BY-NC 4.0 sources, but a CUBBITT run was already the more restrictive licence.
+**What the user actually gets.** Consistent terminology across every translated document, with
+a count of protected terms per document in the paradata, and a glossary whose every row points
+back at the thesaurus concept it came from. A translation run with the vocabulary resolves to
+**CC BY-NC-SA 4.0**, determined by CUBBITT and the UDPipe models — the vocabulary adds two
+CC BY-NC 4.0 sources, but a CUBBITT run is already the more restrictive licence.
 
-**Worth knowing.**
-
-* The committed `vocabulary.csv` was regenerated from the live sources on 2026-09-23 in the
-  5-column form: 5,087 rows, 1,266 from AMCR and 3,821 from TEATER, every one with its concept id
-  and URI. The term pairs are identical to the older 2-column file it replaced. Both forms load.
-* `teater.aiscr.cz` serves its certificate without the RapidSSL intermediate, so a harvest
-  through `requests` fails TLS verification unless `REQUESTS_CA_BUNDLE` includes it (the
-  translator README says how). Do not turn verification off instead.
-* AMCR lists 1,461 `heslo` records, 1,460 of them with both labels; they collapse to 1,266 pairs
-  because the same Czech label recurs across AMCR's keyword lists.
+**Worth knowing.** The same Czech label can recur across AMCR's keyword lists, so the number
+of pairs is smaller than the number of AMCR records. The glossary is written in the five-column
+form; a two-column `source_lemma,target_translation` file loads just as well. Harvest with TLS
+verification on — if a certificate chain is incomplete, add the missing intermediate through
+`REQUESTS_CA_BUNDLE` rather than disabling verification.
 
 **The review half** belongs to nlp-enrich, which builds the reviewed SKOS vocabulary from the same
 two sources with its own harvester. The files are prefix-compatible by design — these five columns
-are the first five of nlp-enrich's `*_flat.csv` (`load_vocab.py:51-55`) — but they are two
-harvests, and they differ. See
+are the first five of nlp-enrich's `*_flat.csv` — but they are separate harvests, each from the
+live sources at the time it was run. See
 [SKOS → The translator and its glossary](contracts/skos.md#the-translator-and-its-glossary).
 
 ### W8 — Training and evaluation (page-classification)
@@ -302,9 +299,8 @@ harvests, and they differ. See
 **Purpose.** Fine-tune, cross-validate and score a page classifier — the only workflow in the
 ecosystem that produces a model rather than consuming one.
 
-**Inputs.** A directory tree of page images, one folder per category (the label list is
-derived from the sorted sub-directory names at run time, which is why the document schema
-deliberately carries no `enum` for this field). Optionally an explicit folds CSV.
+**Inputs.** A directory tree of page images, one folder per category — training reads the
+label list from the sorted sub-directory names. Optionally an explicit folds CSV.
 
 **Stages.**
 
@@ -322,14 +318,13 @@ deliberately carries no `enum` for this field). Optionally an explicit folds CSV
 **Outputs.** Model weights, `{stamp}_{rev}_FOLD_{n}_DATASETS.txt` recording the split
 actually used, evaluation CSVs, confusion matrices, and paradata whose resolved licence is
 **CC BY-NC 4.0** rather than MIT — because training logs the LINDAT dataset, which
-`setup/para_config.txt` declares as CC BY-NC 4.0. (The README says a training run resolves to
-CC BY-NC-SA 4.0; the resolver follows `para_config.txt`.)
+`setup/para_config.txt` declares as CC BY-NC 4.0.
 
 **What the user actually gets.** A reproducible model. The fold rule
 `splitN ↔ foldN ↔ seed 420+(N−1)` and `REVISION_BEST_FOLDS` mean a published revision can be
-retrained on the split it originally saw, which is what made the licensed-subset retraining
-measurable at all: `v*.4` differed from `v*.3` on 24 of 229 samples, all of them already
-ambiguous.
+retrained on the split it originally saw — which is how the `v*.4` generation was trained on
+the licensed subset and compared page by page with the generation before it; see
+[page-classification → History](tools/page-classification/history.md#2026-06--08--retraining-on-the-licensed-dataset-15).
 
 Full flag reference: [page-classification → Reference](tools/page-classification/reference.md#training-and-evaluation).
 
@@ -367,31 +362,25 @@ wrong label from a right one:
 
 * **A mistyped `CLASS` is a new category.** `sort.sh` routes `TEXt` into its own folder, and
   training then counts twelve classes. Check the label list against the eleven in
-  [SKOS → What page-classification actually does with it](contracts/skos.md#what-page-classification-actually-does-with-it)
+  [SKOS → How page-classification uses it](contracts/skos.md#how-page-classification-uses-it)
   before sorting; `collect_images()` prints a note when the folders and the declared labels differ.
 * **`filtering.py` keys on the `<name>-<page>.png` convention.** A PNG renamed outside it is not
   indexed — the script warns and counts it — so its row is reported as missing.
-* **`sort.bat` still reads by position**, unlike `sort.sh`: on Windows keep `FILE, PAGE, CLASS` as
-  the first three columns. The `.bat` scripts are not exercised by CI.
+* **`sort.bat` reads by position**, unlike `sort.sh`: on Windows keep `FILE, PAGE, CLASS` as
+  the first three columns.
 
 **Helpers around the loop.** `averaging.py` averages several result tables — only pages present in
 every input survive, and a wide per-model table counts one vote per model, which makes it a
 majority vote; `per_doc_split.py` splits a result table into one CSV per document;
 `result_analysis.sh` scores a directory of `*_EVAL.csv` files; `downscale.py` resizes a label tree.
 
-**The README's commands** for these scripts use the current paths and flags:
-`supplementary/scripts/…`, `data_scripts/unix/…` / `data_scripts/windows/…`,
-`downscale.py --src … --dst …`, `result_analysis.sh <dir> --pattern …`, `logs_stat.py`, and
-`--dry-run` / `/n` for sorting. An older copy of the README that says otherwise predates those fixes.
-
 **Outputs.** A label tree ready for W8, a CSV that agrees with it, and split records that say which
 page was used where.
 
 **What the user actually gets.** The published training dataset — 48,499 page images from 37,328
 documents, cited as `hdl.handle.net/20.500.12800/1-6184` — is this loop's output. The `v*.4`
-generation is the one round trip that has been measured: the set was reduced for licensing, the
-five models were retrained on the same folds, and predictions moved on 24 of 229 samples, all of
-them already ambiguous ([W8](#w8--training-and-evaluation-page-classification)).
+generation is one complete round trip: the set was reduced to its licensed subset and the five
+models retrained on the same folds ([W8](#w8--training-and-evaluation-page-classification)).
 
 ### W13 — RO-Crate export / FAIR publication
 
@@ -401,7 +390,8 @@ knowing anything about ATRIUM.
 **Inputs.** Records that have already been through the pipeline and, for a run crate, the run's
 paradata file.
 
-**Stages.** One, run by hand. The exporter is vendored into both tools and neither calls it:
+**Stages.** One, run as its own step over finished records. The exporter, `atrium_rocrate.py`, is
+vendored into every tool:
 
 ```bash
 python atrium_rocrate.py --document CTX000000003.document.json --out-dir crate/
@@ -412,17 +402,16 @@ python atrium_rocrate.py --run 1.document.json 2.document.json --paradata run.js
 A run crate holds one sub-crate per document and also declares the Process Run Crate profile.
 
 **What the user actually gets.** A catalogue-readable description with a separate creator and date
-for every block, so "who classified the pages" and "who translated them" have separate answers.
-What does not survive: which page carries which category, the classifier's confidences, and the
-translation's language pair and backend. The record's licence carries through as it is, defect
-included. And the FAIR half is not there yet — no persistent identifier, no checksums on outputs,
-no commit SHA. The full mapping is under
-[RO-Crate export → What happens to these two tools' blocks](contracts/rocrate.md#what-happens-to-these-two-tools-blocks),
-the gaps under [What a crate cannot yet say](contracts/rocrate.md#what-a-crate-cannot-yet-say).
+for every block, so "who classified the pages" and "who translated them" have separate answers,
+and the record's computed licence. Per-page detail — which page carries which category, the
+language pair of a translation — stays in the record, which can travel inside the crate. The full
+mapping is under
+[RO-Crate export → What happens to these two tools' blocks](contracts/rocrate.md#what-happens-to-these-two-tools-blocks).
 
-## The remaining five
+## Other workflows
 
-Listed so the map is complete. Each will be written as its tool's section lands.
+These run through alto-postprocess, nlp-enrich and llm-enrich only; each tool's own README
+describes them.
 
 | #   | Workflow                               | What it is                                                                                                                                                                                  |
 |-----|----------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -437,16 +426,14 @@ Listed so the map is complete. Each will be written as its tool's section lands.
 Written from the tree at the refs below. This table records **provenance**, not a build
 instruction.
 
-| Source                                                                                                                                                                                                                          | What was taken from it                                                                                            |
-|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
-| `atrium-project/.github/workflows/e2e-pipeline-smoke.yml`                                                                                                                                                                       | W1's stage table, W6 in full, the published-image-vs-default-branch caveat, `SKIP_CLASSIFY = true`                |
-| `atrium-project/fixtures/e2e/README.md`                                                                                                                                                                                         | the fixture description; the bridge explanation is **reconstructed**, because that file is truncated mid-sentence |
-| `atrium-project/docs/templates/shared/atrium_document.py:108-118`                                                                                                                                                               | `BLOCK_OWNERS`                                                                                                    |
-| `atrium-project/docs/document_schema.md:125-145`                                                                                                                                                                                | the write/read contract and the accretion rules                                                                   |
-| `atrium-project/docs/skills_catalog.md`, `docs/k8s_deployment.md`                                                                                                                                                               | W4's endpoint and limit tables                                                                                    |
-| `atrium-page-classification` @ `vit` `8415ce7` — `run.py`, `setup/config.txt`, `model_registry.py`                                                                                                                              | W8                                                                                                                |
-| `atrium-translator` @ `master` `88242fe` — `main.py`, `service/api.py`, `service/README.md`                                                                                                                                     | W1 stage 3, W4                                                                                                    |
-| `atrium-page-classification` @ `vit` `8c98a3d` — `data_scripts/{unix,windows}/*`, `supplementary/scripts/*`, `result/stats/*.sh`, `utils.py`, `classifier.py`, `setup/{config,para_config}.txt`, `README.md` § Data preparation | W12, and the W8 licence correction; every "run" claim executed on copies in a scratch directory                   |
-| `atrium-translator` @ `master` `88242fe` — `load_vocab.py`, `processors/{vocab,translator,lemmatizer}.py`, `data_samples/vocabulary.csv`, `data_samples/translated_files/paradata/*.json`                                       | W7                                                                                                                |
-| both tools' `agent-skill` branches (pc `c689a06`, translator `1857b3b`)                                                                                                                                                         | W5                                                                                                                |
-| `atrium-project/docs/templates/shared/atrium_rocrate.py`                                                                                                                                                                        | W13                                                                                                               |
+| Source                                                                                                                                                                                                                                                   | What was taken from it                               |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------|
+| `atrium-project/.github/workflows/e2e-pipeline-smoke.yml`                                                                                                                                                                                                | W1's stage table, W6 in full, `SKIP_CLASSIFY = true` |
+| `atrium-project/fixtures/e2e/README.md`                                                                                                                                                                                                                  | the fixture description                              |
+| `atrium-project/docs/templates/shared/atrium_document.py`                                                                                                                                                                                                | `BLOCK_OWNERS`                                       |
+| `atrium-project/docs/document_schema.md`                                                                                                                                                                                                                 | the write/read contract and the accretion rules      |
+| `atrium-project/docs/skills_catalog.md`, `docs/k8s_deployment.md`                                                                                                                                                                                        | W4's endpoint and limit tables                       |
+| `atrium-page-classification` @ `vit` `adee922` — `run.py`, `setup/config.txt`, `setup/para_config.txt`, `model_registry.py`, `data_scripts/{unix,windows}/*`, `supplementary/scripts/*`, `result/stats/*.sh`, `utils.py`, `README.md` § Data preparation | W8 and W12                                           |
+| `atrium-translator` @ `master` `71feaef` — `main.py`, `service/api.py`, `load_vocab.py`, `processors/{vocab,translator,lemmatizer}.py`, `data_samples/vocabulary.csv`                                                                                    | W1 stage 3, W4, W7                                   |
+| both tools' `agent-skill` branches                                                                                                                                                                                                                       | W5                                                   |
+| `atrium-project/docs/templates/shared/atrium_rocrate.py`                                                                                                                                                                                                 | W13                                                  |

@@ -2,7 +2,7 @@
 title: translator — Changelog
 nav_order: 53
 status: published
-round: 3
+round: 6
 issue: 57
 repo: atrium-translator
 role: changelog
@@ -10,15 +10,14 @@ role: changelog
 
 # translator — Changelog
 
-**23 releases, v0.0.2 → v1.1.0-beta.** The canonical entries live in the tool's
+**The release history from v0.0.2 on.** The canonical entries live in the tool's
 [`CONTRIBUTING.md`](https://github.com/ufal/atrium-translator/blob/master/CONTRIBUTING.md#-release-history).
-This page gives the same history in the two shapes that table cannot: a scannable line per
-release, and the arcs those releases belong to.
+This page gives the same history in two other shapes: a scannable line per release, and the
+arcs those releases belong to.
 
-!!! warning "Every release is a pre-release — but GitHub does not say so"
-    All 23 are marked *Pre-release* in `CONTRIBUTING.md`. However, **`v1.1.0-beta` and
-    `v1.0.0-beta` were published with GitHub's `prerelease` flag set to `false`**, so the
-    repository's release page presents a beta as its latest stable version.
+Releases are numbered as pre-releases in the project's own sense — `0.x`, then `-beta` —
+and from `v0.10.1` on each one publishes its container images through the release gate
+described on [Operations](../../operations.md#the-release-gate).
 
 ## The four arcs
 
@@ -37,12 +36,11 @@ of logging corrupt output, pinned dependencies, and `--fast-align`. `v0.8.0` mov
 translation from per-block to **per-page** calls, which is where the ~20× call-count
 reduction comes from.
 
-**3 · Backends, and the question that is still open** (`v0.6.2` → `v0.7.0`, and issue #4).
-A pluggable `TranslationBackend` protocol replaces the hardcoded LINDAT call, with
-`lindat` and `openai_compatible` registered and a CTranslate2 scaffold left unregistered.
-`v0.7.0` calls this "finalized in theory (not tested in practice)", which remains an
-accurate description: the bake-off that would choose between the candidates has never been
-run.
+**3 · Backends** (`v0.6.2` → `v0.7.0`, and issue #4). A pluggable `TranslationBackend`
+protocol replaces the hardcoded LINDAT call, with `lindat` and `openai_compatible`
+registered and a CTranslate2 scaffold alongside. `v0.7.0` calls this "finalized in theory
+(not tested in practice)": the architecture was settled first, and the choice between
+candidate models was left to a measurement harness, `eval/bakeoff.py`.
 
 **4 · Production readiness** (`v0.9.0` → `v1.1.0-beta`). OpenAPI conformance, shared
 version and licence tests, the `atrium_document` integration, the hub's reusable workflows
@@ -50,7 +48,7 @@ at `@v1`, and then two releases that are about behaviour rather than features:
 `v1.0.0-beta` makes five announced-but-inert contracts real, and `v1.1.0-beta` adds the
 replace/append switch and fixes three defects that only appeared under real use.
 
-## v1.1.0-beta — the current release
+## v1.1.0-beta — the replace/append switch
 
 **The replace/append switch.** `--output-mode replace|append` — also a `config.txt` key, an
 `OUTPUT_MODE` environment variable and a `/translate` field — decides whether the
@@ -117,7 +115,12 @@ reintroducing the defect and watching the new guard go red.
 
 ## Sources
 
-Transposed from `ufal/atrium-translator/CONTRIBUTING.md` §`📦 Release History` at branch
-**`master`**, commit `88242fe` (2026-09-21), with the v1.0.0-beta defect table cross-checked
-against `agent_dev_logs/DEVLOG.md`. The arcs are written here, not taken from a source. This
-table records **provenance**, not a build instruction.
+Read from `ufal/atrium-translator` at branch **`master`**, commit `71feaef` (2026-09-23).
+The arcs are written here, not taken from a source. This table records **provenance**, not a
+build instruction.
+
+| Source                                  | What was taken from it                              |
+|-----------------------------------------|-----------------------------------------------------|
+| `CONTRIBUTING.md` § `📦 Release History` | every release line and the two release descriptions |
+| `agent_dev_logs/DEVLOG.md`              | the v1.0.0-beta defect table, cross-checked         |
+| `CITATION.cff`                          | the current version and its release date            |

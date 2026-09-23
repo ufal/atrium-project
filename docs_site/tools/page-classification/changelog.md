@@ -2,7 +2,7 @@
 title: page-classification — Changelog
 nav_order: 33
 status: published
-round: 3
+round: 6
 issue: 57
 repo: atrium-page-classification
 role: changelog
@@ -10,14 +10,13 @@ role: changelog
 
 # page-classification — Changelog
 
-**27 releases, v0.1.0 → v1.8.0-beta.** The canonical entries live in the tool's
+**The release history from v0.1.0 on.** The canonical entries live in the tool's
 [`CONTRIBUTING.md`](https://github.com/ufal/atrium-page-classification/blob/vit/CONTRIBUTING.md#-release-history),
-where each is a single table cell of up to 1,600 characters. This page gives the same
-history in the two shapes that cell cannot: a scannable line per release, and the arcs
-those releases actually belong to.
+one table cell per release. This page gives the same history in two other shapes: a
+scannable line per release, and the arcs those releases belong to.
 
-Every release to date is marked **Pre-release** on GitHub. There has never been a stable
-tag.
+Versions below `v1.0` were research milestones; from `v1.0.3-beta` on, each release is a
+usable program, published as a GitHub pre-release with its container images.
 
 ## The five arcs
 
@@ -54,10 +53,10 @@ replaces issue comments. Then the `atrium_document` standard is integrated
 `atrium_document.py` as its contract tightened — `doc_id` inherited from the baseline
 rather than re-derived, `set_source()` filling sub-keys a partial first write left unset.
 
-**5 · Standards and service contracts** (`v1.8.0-beta`). The current release, and the
-densest. It is described in full below.
+**5 · Standards and service contracts** (`v1.8.0-beta`). The densest single release,
+described in full below.
 
-## v1.8.0-beta — the current release
+## v1.8.0-beta
 
 Four things land at once, and they are independent of each other.
 
@@ -70,15 +69,15 @@ Nothing would have raised. `tests/test_best_ensemble_distinct.py` now makes that
 unshippable — a static half asserting five distinct base models, and a `-m slow` half that
 reads each revision's `config.json` from the Hub.
 
-**Two ecosystem standards.** SKOS via `atrium_vocab.py` — six concept schemes, resolvable
-`w3id.org/atrium/` URIs, advisory-only validation — wired into
+**Two ecosystem standards.** SKOS via `atrium_vocab.py` — six concept schemes, stable
+`w3id.org/atrium/` URIs, advisory-only validation — exposed to this tool through
 `model_registry.category_uri()`. And RO-Crate via `atrium_rocrate.py`, with deterministic
 `document_crate()` and `run_crate()` builders.
 
 **Service contracts.** `/ready` and `/health?deep=true` drain semantics; `$PORT` and `HOST`
 honoured through `python -m service.api`; a published `.env.example` enforced by
 `test_env_contract.py`; and `logging.basicConfig()` removed from `service/inference.py`, so
-`LOG_LEVEL` finally works.
+`LOG_LEVEL` takes effect.
 
 !!! danger "Two breaking changes in this release"
     `atrium_document.schema.json` tightens `required` and adds `anyOf`/`allOf`, so records
@@ -119,6 +118,11 @@ honoured through `python -m service.api`; a published `.env.example` enforced by
 
 ## Sources
 
-Transposed from `ufal/atrium-page-classification/CONTRIBUTING.md` §`📦 Release History`
-at branch **`vit`**, commit `8415ce7` (2026-09-21). The arcs are written here, not taken
-from a source. This table records **provenance**, not a build instruction.
+Read from `ufal/atrium-page-classification` at branch **`vit`**, commit `adee922`
+(2026-09-23). The arcs are written here, not taken from a source. This table records
+**provenance**, not a build instruction.
+
+| Source                                  | What was taken from it                             |
+|-----------------------------------------|----------------------------------------------------|
+| `CONTRIBUTING.md` § `📦 Release History` | every release line and the v1.8.0-beta description |
+| `CITATION.cff`                          | the current version and its release date           |

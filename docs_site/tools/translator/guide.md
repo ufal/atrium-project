@@ -2,7 +2,7 @@
 title: translator — Guide
 nav_order: 51
 status: published
-round: 3
+round: 6
 issue: 57
 repo: atrium-translator
 role: guide
@@ -14,10 +14,9 @@ Get it running — from a local checkout, from a container, or as one stage of t
 pipeline — without reading the code. Every flag mentioned here is listed in full on the
 [Reference](reference.md) page.
 
-!!! warning "Clone the right branch"
-    The default branch is **`master`**. `test` is currently the same commit; `main` also
-    exists and is **stale and divergent**. Three near-identical refs plus one that is not
-    is a trap worth knowing about before you clone.
+!!! note "Branches"
+    The code lives on the default branch, **`master`**; `test` is the integration branch
+    changes are staged on. See [History → Branches](history.md#branches).
 
 ## 1 · Local install
 
@@ -31,8 +30,9 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-There is no `pip install .` — the repository ships no `pyproject.toml`, no `setup.py` and
-no console script. Every invocation is `python main.py` from the repository root.
+The repository is not a pip-installable package: every invocation is `python main.py` from
+the repository root. Optional back-ends have their own requirement files —
+`requirements-llm.txt` for `openai_compatible`, `requirements-ct2.txt` for `ct2`.
 
 ## 2 · Translate something
 
@@ -62,11 +62,20 @@ AMCR's own thesaurus already uses for `heslo` / `heslo_en`, and stamps the sourc
 with its own `xml:lang`. Re-running is then a no-op rather than a double translation,
 because the pair is detectable. In ALTO mode `append` **labels rather than duplicates** —
 it sets `LANG` on the `TextBlock` and leaves the `String` inventory 1:1 with the source.
+[Reference → Metadata mode](reference.md#metadata-amcr-mode) walks through the steps.
 
-!!! tip "Run `append` with `--xsd` the first time against real AMCR data"
-    Whether the schema permits the repeated element (`maxOccurs`) is an open question that
-    the validator settles. Note that `--xsd` is **not applied to ALTO** — only to the
-    metadata path.
+!!! tip "Validate `append` output against the AMCR schema"
+    `--xsd <url-or-path>` validates the finished metadata file and reports any failure as a
+    warning — the way to confirm that a target schema accepts the added sibling elements.
+    It applies to metadata output only, not to ALTO.
+
+**Straight from AMCR** — an input may be an OAI-PMH `GetRecord` URL, like the samples in
+`amcr-inputs.txt`; it is downloaded to `--download-dir` first:
+
+```bash
+python main.py "https://api.aiscr.cz/2.2/oai?verb=GetRecord&metadataPrefix=oai_amcr&identifier=https://api.aiscr.cz/id/C-TX-202400594" \
+    --formats xml -o /data/translated
+```
 
 **Fewer API calls, slightly coarser line splits:**
 
@@ -74,18 +83,17 @@ it sets `LANG` on the `TextBlock` and leaves the `String` inventory 1:1 with the
 python main.py /data/PAGE_ALTO/... --alto --fast-align -o /data/translated
 ```
 
-## 3 · Configuration, and the precedence that actually applies
+## 3 · Configuration and precedence
 
 Four layers, highest first:
 
 **CLI flag → `config.txt` key → environment variable → built-in default.**
 
-!!! danger "`--source_lang` does not default to `cs`"
-    The README says the default is `cs`. `parse_arguments()` sets `default=None` and falls
-    through to the config file — and the shipped `config.txt` says `source_lang = auto`.
-    **The effective default for anyone using the repository as shipped is `auto`**, i.e.
-    FastText detection. Pass `--source_lang cs` explicitly if that is what you mean; doing
-    so also keeps the CC BY-NC FastText component out of the run's resolved licence.
+!!! note "The source language defaults to detection"
+    The shipped `config.txt` sets `source_lang = auto`, so FastText identifies the language
+    unless `--source_lang` is given. Pass `--source_lang cs` when the input is known to be
+    Czech: it saves the detection step and keeps the CC BY-NC FastText component out of
+    the run's resolved licence.
 
 The endpoints are attachable, which is the point of `config.txt`'s own note on them: they
 are environment variables rather than config keys because they vary per deployment.
@@ -101,7 +109,7 @@ which is exactly what the repository's own integration tests do.
 ## 4 · Run it as a container
 
 Two images are published to GHCR from one Dockerfile. `<version>` is the release without its
-leading `v` — `1.1.0-beta` — or `latest`; see [Operations](../../operations.md#images-and-tags) for
+leading `v` — `1.1.0-beta` for release `v1.1.0-beta` — or `latest`; see [Operations](../../operations.md#images-and-tags) for
 when each tag moves.
 
 | Image                                          | Stage  | Entry point             | What it is                    |
@@ -109,8 +117,8 @@ when each tag moves.
 | `ghcr.io/ufal/atrium-translator:<version>`     | `base` | `python main.py`        | the batch CLI                 |
 | `ghcr.io/ufal/atrium-translator-api:<version>` | `api`  | `python -m service.api` | the HTTP service on port 8000 |
 
-The `-api` suffix belongs to the image **name**. The compose file tags the image it builds locally
-as `atrium-translator:${ATRIUM_VERSION}-api`; that is a local tag, not one the registry publishes.
+The `-api` suffix belongs to the image **name**: pull `atrium-translator-api:<version>` for the
+service. An image built locally with Compose carries its own local tag.
 
 ```bash
 docker compose run --rm translator          # batch, ./data:/data
@@ -127,9 +135,9 @@ Volumes: `./data:/data`, `hf-cache:/cache/huggingface` (the FastText model), and
 
 ## 5 · Run it as one stage of the pipeline
 
-There is **no cross-service orchestration** in this ecosystem — no
-`compose/docker-compose.pipeline.yml` exists. The only working end-to-end recipe is the
-hub's CI workflow, and this is its translator stage, reproduced verbatim:
+Each pipeline stage runs as its own container, and the document record passed between
+them with `--document-json` / `--document-json-out` is the handoff. The hub's end-to-end
+smoke workflow is the reference sequence; this is its translator stage:
 
 ```bash
 docker run --rm \
@@ -151,12 +159,14 @@ input is `…-1.alto.xml`, a page, not the document. See [Pipelines](../../pipel
 
 ## 6 · Use the vocabulary
 
-With a vocabulary CSV loaded (`source_lemma,target_translation`), the **Tag-and-Protect**
-strategy runs before every translation call: multi-word phrases are matched longest-first,
-as whole words, at every occurrence; single words are matched by lemma through UDPipe with a
-singular/plural agreement guard (for the eight languages with a UDPipe model; any other
-language skips the lemma pass); matches are replaced by NMT-safe sentinels,
-translated, and restored with the controlled translation.
+With a vocabulary CSV loaded, controlled terms keep their fixed English translation. On
+the `lindat` backend this is **Tag-and-Protect**: multi-word phrases are matched
+longest-first, as whole words, at every occurrence; single words are matched by lemma
+through UDPipe, skipping plurals so the English keeps its agreement (for the eight
+languages with a UDPipe model; any other language skips the lemma pass); matches are
+replaced by sentinels the model copies through, and restored after translation. LLM
+backends receive the matching terms as a glossary in the prompt instead.
+[Reference → Vocabulary protection](reference.md#vocabulary-protection) has the details.
 
 ```bash
 python main.py /data/amcr --vocabulary data_samples/vocabulary.csv -o /data/translated
@@ -164,37 +174,40 @@ python load_vocab.py --out data_samples/vocabulary.csv      # rebuild it from AM
 ```
 
 `load_vocab.py` harvests AMCR over OAI-PMH and TEATER over GraphQL; `--skip-amcr` and
-`--skip-teater` take one source at a time, and `--delay` throttles the harvest. The
-shipped vocabulary is roughly 5,000 rows.
+`--skip-teater` take one source at a time, and `--delay` throttles the harvest. The shipped
+vocabulary holds several thousand Czech–English term pairs, each traceable to the
+thesaurus concept it came from.
 
 Loading it changes the run's resolved licence: AMCR and TEATER data are both CC BY-NC 4.0.
 
+## 7 · Use it from a coding agent
+
+The `agent-skill` branch packages the HTTP service as an Agent Skill, so a coding agent can
+translate a file by calling the running service. Installation and the contract it relies on
+are on the [Agent skills](../../agent-skills.md) page.
+
 ## Troubleshooting
 
-The repository has no troubleshooting section. These are the failure modes that are real,
-and where each one is decided.
-
-| Symptom                                                 | Cause                                                                                                                         | Fix                                                                                                                     |
-|---------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
-| `.env` values have no effect under `python main.py`     | **Nothing calls `load_dotenv`.** `.env` reaches the *container* through Compose's `env_file`, but a bare local run ignores it | export the variables, or run through Compose                                                                            |
-| `EACCES` writing to `./data` under Docker               | host directory not writable by uid 10001                                                                                      | `chown 10001` the mounted directory                                                                                     |
-| Container reports healthy, nothing can reach it         | `HOST=127.0.0.1` binds inside the container only                                                                              | leave `HOST` unset (defaults to `0.0.0.0`)                                                                              |
-| Every document is detected as English                   | the FastText model failed to load; `detect()` then answers `("en", 0.0)` for everything                                       | check `GET /health?deep=true`, which now reports it; or pass `--source_lang` explicitly, which skips detection entirely |
-| `/translate` returns 200 with the metadata untranslated | fixed in v1.1.0-beta — an unconfigured `AMCR_FIELDS_PATH` used to yield an empty XPath list                                   | upgrade; it is now a **422**                                                                                            |
-| A translation run is very slow, with no error           | the page batch fell back to one call per item — up to ~20× more calls                                                         | v1.1.0-beta counts and logs it; look for the per-document `WARNING` summary                                             |
-| `LOG_LEVEL` does not quiet the batch CLI                | **43 `print()` calls remain** in runtime code                                                                                 | known gap; `LOG_LEVEL` governs the service, not the CLI diagnostics                                                     |
-| Container exits 143                                     | clean SIGTERM drain                                                                                                           | expected; not a failure                                                                                                 |
+| Symptom                                             | Cause                                                                                                  | Fix                                                                                                                 |
+|-----------------------------------------------------|--------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| `.env` values have no effect under `python main.py` | `.env` is read by Compose (`env_file`) for the container; `main.py` reads only the process environment | export the variables, or run through Compose                                                                        |
+| `EACCES` writing to `./data` under Docker           | host directory not writable by uid 10001                                                               | `chown 10001` the mounted directory                                                                                 |
+| Container reports healthy, nothing can reach it     | `HOST=127.0.0.1` binds inside the container only                                                       | leave `HOST` unset (defaults to `0.0.0.0`)                                                                          |
+| Every document is detected as English               | the FastText model could not be downloaded or loaded; detection then answers `en` for everything       | check `GET /health?deep=true`, which reports it; or pass `--source_lang` explicitly, which skips detection entirely |
+| `/translate` answers 422 for a metadata file        | no readable `AMCR_FIELDS_PATH`, so there are no fields to translate                                    | point `AMCR_FIELDS_PATH` at `amcr-fields.txt` or your own XPath list                                                |
+| A translation run is slow, with no error            | page batches fell back to one call per item, after a line-count mismatch or a transport error          | read the per-document `WARNING` summary, which counts each cause                                                    |
+| Container exits 143                                 | clean SIGTERM drain                                                                                    | expected; not a failure                                                                                             |
 
 ## Sources
 
-Read from `ufal/atrium-translator` at branch **`master`**, commit `88242fe` (2026-09-21).
+Read from `ufal/atrium-translator` at branch **`master`**, commit `71feaef` (2026-09-23).
 This table records **provenance**, not a build instruction.
 
 | Source                                                                       | What was taken from it                                                              |
 |------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
 | `README.md` §§ Prerequisites, Docker & Compose, Usage, Environment Variables | the install and invocation sequences                                                |
-| `main.py:268-352`                                                            | the real flag defaults, and the `--source_lang` correction                          |
+| `main.py` (`parse_arguments`, `fetch_xml_from_url`)                          | flag defaults, URL inputs                                                           |
 | `config.txt`                                                                 | the precedence rules and the attachable-endpoint note, quoted from its own comments |
 | `Dockerfile`, `docker-compose.yml`                                           | image targets, volumes, uid, shutdown behaviour                                     |
-| `agent_dev_logs/digests/46.digest.md`                                        | the batch-fallback instrumentation and the `/translate` 422 fix                     |
-| `atrium-project/.github/workflows/e2e-pipeline-smoke.yml`                    | Stage 3, reproduced verbatim                                                        |
+| `service/api.py`, `utils.py`                                                 | the metadata-mode 422, the batch-fallback summary                                   |
+| `atrium-project/.github/workflows/e2e-pipeline-smoke.yml`                    | the pipeline-stage invocation                                                       |

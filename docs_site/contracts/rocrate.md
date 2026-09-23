@@ -2,18 +2,18 @@
 title: RO-Crate export
 nav_order: 7
 status: partial
-round: 4
+round: 6
 issue: 57
 ---
 
 # RO-Crate export
 
-What ATRIUM can publish as an RO-Crate, what happens to page-classification's and the
-translator's contributions on the way, and what a crate cannot yet say.
+What ATRIUM can publish as an RO-Crate, and how the blocks page-classification and the
+translator write are carried into it.
 
-!!! info "Shown for page-classification and translator"
-    The exporter handles every block. The mapping below is for the blocks these two tools write,
-    and it was produced by running the exporter, not by reading about it.
+!!! info "Scope"
+    The exporter handles every block. The mapping below is for the blocks these two tools
+    write, taken from the exporter's own output.
     [`docs/rocrate_export.md`](https://github.com/ufal/atrium-project/blob/main/docs/rocrate_export.md)
     is the full guide, including an RO-Crate tutorial from zero.
 
@@ -26,44 +26,64 @@ ATRIUM. ATRIUM's exporter, `atrium_rocrate.py` (RO-Crate **1.1**), turns a
 [document record](../ecosystem/document-contract.md) into such a description, and a set of records
 from one run into a crate of crates.
 
+A crate is what a repository, a catalogue or a reviewer receives: the data files plus a
+description they can read with generic RO-Crate tooling — who produced what, with which
+program, when, under which licence — without running any ATRIUM code.
+
 ## What happens to these two tools' blocks
 
 Exporting the [worked-example record](../ecosystem/document-contract.md#a-worked-example) —
 page-classification's `page_categories` and `pages`, then the translator's `translations` and
 `derived_from` — gives 18 entities:
 
-| In the record                                     | In the crate                                                                                                                                   | What survives                                                                                                                                                                                                                                                                    |
-|---------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `page_categories: {"1": "TEXT_P"}`                | a `DefinedTerm` `https://w3id.org/atrium/page-category/TEXT_P`, in the `DefinedTermSet` `…/scheme/page-category`, listed in the root's `about` | **the label only.** Which page it was assigned to is gone — a crate says the document is *about* `TEXT_P`, not that page 1 is `TEXT_P`                                                                                                                                           |
-| `pages[].category`, `pages[].category_confidence` | the same `DefinedTerm`, de-duplicated                                                                                                          | the confidence (`0.981`) is **dropped**                                                                                                                                                                                                                                          |
-| `translations`                                    | a `#block-translations` `CreativeWork`, created by `#tool-translator`                                                                          | **only that the block exists.** `source_lang`, `target_lang`, `backend` and `output_mode` are not mapped — a crate cannot say which language pair or which translation service was used                                                                                          |
-| `derived_from.translated_xml`                     | a `File` `CTX000000003-1_en.alto.xml`, `encodingFormat: application/alto+xml`, in the root's `hasPart`                                         | the file — named by the **bare filename** the translator records, with no path and no checksum                                                                                                                                                                                   |
-| `derived_from.classification` (when present)      | a `File` in `hasPart`                                                                                                                          | the file — which is page-classification's **run-wide** result CSV, not a per-document one                                                                                                                                                                                        |
-| each `assembled.blocks` stamp                     | a `#block-<name>` `CreativeWork` with `recordBlock`, `dateModified` and `creator`                                                              | who wrote each block last                                                                                                                                                                                                                                                        |
-| each `provenance.contributors[]` entry            | a `#run-<program>-<run_id>` `CreateAction`: `instrument` the tool, `result` the blocks it wrote                                                | who ran, when, and what they produced                                                                                                                                                                                                                                            |
-| each program                                      | a `#tool-<program>` `SoftwareApplication` with the repository `url`                                                                            | version, image and runtime only if a paradata map is passed in from Python — the command line never passes one                                                                                                                                                                   |
-| `provenance.license`                              | the root's `license`                                                                                                                           | the record's licence — **including its defect**: the example resolves to MIT, determined by `vit_models`, although it describes a CC BY-NC-SA 4.0 translation. See [rule 5 in practice](../ecosystem/document-contract.md#rule-5-in-practice-what-licence-a-record-ends-up-with) |
+| In the record                                     | In the crate                                                                                                                                   | What the crate carries                                                                                                                            |
+|---------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| `page_categories: {"1": "TEXT_P"}`                | a `DefinedTerm` `https://w3id.org/atrium/page-category/TEXT_P`, in the `DefinedTermSet` `…/scheme/page-category`, listed in the root's `about` | the label: a crate says the document is *about* `TEXT_P`; the per-page assignment stays in the record                                             |
+| `pages[].category`, `pages[].category_confidence` | the same `DefinedTerm`, de-duplicated                                                                                                          | the label, once; the confidence stays in the record                                                                                               |
+| `translations`                                    | a `#block-translations` `CreativeWork`, created by `#tool-translator`                                                                          | the block, with its creator and date; the language pair, backend and output mode stay in the record                                               |
+| `derived_from.translated_xml`                     | a `File` `CTX000000003-1_en.alto.xml`, `encodingFormat: application/alto+xml`, in the root's `hasPart`                                         | the translated file, by the name the translator records                                                                                           |
+| `derived_from.classification` (when present)      | a `File` in `hasPart`                                                                                                                          | page-classification's result table for the run                                                                                                    |
+| each `assembled.blocks` stamp                     | a `#block-<name>` `CreativeWork` with `recordBlock`, `dateModified` and `creator`                                                              | who wrote each block last                                                                                                                         |
+| each `provenance.contributors[]` entry            | a `#run-<program>-<run_id>` `CreateAction`: `instrument` the tool, `result` the blocks it wrote                                                | who ran, when, and what they produced                                                                                                             |
+| each program                                      | a `#tool-<program>` `SoftwareApplication` with the repository `url`                                                                            | the program and its repository; version, image and runtime when a paradata map is passed in from Python                                           |
+| `provenance.license`                              | the root's `license`                                                                                                                           | the record's computed licence — see [how the record's licence is computed](../ecosystem/document-contract.md#how-the-records-licence-is-computed) |
 
-The root also names the four `CITATION.cff` authors as ORCID `Person` entities — hard-coded in the
-exporter, because the hub has no `CITATION.cff` of its own to read them from.
+The root also names the project's authors as ORCID `Person` entities.
 
-## What a crate gets right
+For page-classification's half of that record, the heart of the output reads:
+
+```json
+{ "@id": "./", "@type": "Dataset",
+  "name": "ATRIUM document record CTX000000003", "identifier": "CTX000000003",
+  "about": [ { "@id": "https://w3id.org/atrium/page-category/TEXT_P" } ],
+  "license": { "@id": "https://opensource.org/license/mit/" },
+  "datePublished": "2026-09-22",
+  "mentions": [ { "@id": "#run-page-classification-260922-220516" } ],
+  "author": [ "…" ] },
+{ "@id": "#block-page_categories", "@type": "CreativeWork", "recordBlock": "page_categories",
+  "creator": { "@id": "#tool-page-classification" },
+  "dateModified": "2026-09-22T22:05:16.866272+00:00" },
+{ "@id": "https://w3id.org/atrium/page-category/TEXT_P", "@type": "DefinedTerm",
+  "name": "TEXT_P", "termCode": "TEXT_P",
+  "inDefinedTermSet": { "@id": "https://w3id.org/atrium/scheme/page-category" } }
+```
+
+## Properties of a crate
 
 * **It is deterministic.** Entities are merged by `@id`, the descriptor and the root come first,
   everything else is sorted by `@id`, and the JSON is written with sorted keys. The same record
   always produces byte-identical output, so a crate can be diffed and committed.
 * **`datePublished` is derived, not stamped.** It is the newest of the record's block stamps and
-  contributor times, cut to a date — never the export clock. (`rocrate_export.md` says block stamps
-  only; the code reads both.)
+  contributor times, cut to a date — never the export clock.
 * **Granularity survives.** Each block keeps its own entity with its own creator, so "who produced
   the page categories" and "who produced the translation" have separate answers.
 * **Controlled values become resolvable terms**, under the [SKOS URIs](skos.md#how-a-uri-is-minted).
 
-## Nobody runs it yet
+## Running the exporter
 
-The exporter is vendored into both tools — and **neither calls it**. There is no reference to
-`atrium_rocrate` in either tool's runtime code; page-classification's release bundle does not even
-ship it. It is a reader, run by hand over records that already exist:
+The exporter is vendored into every tool as `atrium_rocrate.py` and runs as a separate step,
+over records that already exist — a tool run writes records, and a crate is made from them
+when they are to be published:
 
 ```bash
 python atrium_rocrate.py --document CTX000000003.document.json --out-dir crate/
@@ -75,24 +95,10 @@ python atrium_rocrate.py --selftest
 sub-crate per document, and additionally conforms to the Process Run Crate profile. The write is
 atomic.
 
-## What a crate cannot yet say
-
-From `rocrate_export.md` §7, plus what running it on these two tools' records shows:
-
-| Gap                                                                | Consequence                                                              |
-|--------------------------------------------------------------------|--------------------------------------------------------------------------|
-| **No commit SHA** — paradata records a branch or tag               | software provenance is "this ref", not "this commit"                     |
-| **No output checksums** — `sha256` exists only on `source`         | a `hasPart` file cannot be verified from the crate                       |
-| **No DOI or other PID** anywhere                                   | the crate's `@id` is a local path                                        |
-| **The hub has no `CITATION.cff`**                                  | author metadata is hard-coded in the exporter                            |
-| `entities[].translation_en` is owned but **never written**         | that part of the schema can never appear in a crate                      |
-| `translations` is **not mapped**                                   | a crate cannot say which language pair or service produced a translation |
-| page categories lose **their pages and confidences**               | a crate cannot say which page is which category                          |
-| `derived_from` values are **bare filenames** or **run-wide files** | the crate's `hasPart` entries do not identify one document's files       |
-
-`skos_strategy.md` also records a change to prefer the source vocabulary's URI as a term's `@id`
-(its V-5 / F6) as done. The exporter at the hub's `main` does not contain it; it does not affect
-`page-category`, whose terms are ATRIUM-minted either way.
+A crate describes; it does not replace the record. Per-page detail — which page carries
+which category, with what confidence, and the language pair of a translation — stays in the
+record, which can itself be shipped inside the crate as one of its files.
+`rocrate_export.md` §7 lists what the export leaves for later work.
 
 ## Where RO-Crate sits among the standards
 
@@ -106,10 +112,7 @@ catalogue reads. `rocrate_export.md` §3 is the reasoning in full.
 
 This table records **provenance**: what this page was written from, not a build instruction.
 
-| Source                                                                                                  | What was taken from it                                             |
-|---------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| `atrium-project/docs/templates/shared/atrium_rocrate.py` — run on the worked-example record, 2026-09-22 | the mapping table, entity by entity                                |
-| `atrium-project/docs/rocrate_export.md` §§3, 4.1, 6, 7                                                  | the design, the `datePublished` rule as documented, the known gaps |
-| a search of both tools' runtime Python at `vit` @ `8c98a3d` and `master` @ `88242fe`                    | that neither calls the exporter                                    |
-| `atrium-page-classification/.github/workflows/release.yml`                                              | the release bundle's contents                                      |
-| `atrium-project/docs/skos_strategy.md` V-5 / F6                                                         | compared against the exporter                                      |
+| Source                                                                                      | What was taken from it                 |
+|---------------------------------------------------------------------------------------------|----------------------------------------|
+| `atrium-project/docs/templates/shared/atrium_rocrate.py` — run on the worked-example record | the mapping table and the JSON excerpt |
+| `atrium-project/docs/rocrate_export.md` §§3, 4.1, 6, 7                                      | the design and the reasoning           |
