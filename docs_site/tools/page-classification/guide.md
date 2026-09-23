@@ -77,12 +77,18 @@ see [Reference → Outputs](reference.md#outputs-and-their-columns) for the colu
 
 The README gives Docker three lines. Here is the whole picture.
 
-Two images are published to GHCR from the same Dockerfile:
+Two images are published to GHCR from the same Dockerfile. `<version>` is the release without its
+leading `v` — `1.8.0-beta` — or `latest`; see [Operations](../../operations.md#images-and-tags) for
+when each tag moves.
 
 | Image                                                   | Stage  | Entry point                             | What it is                    |
 |---------------------------------------------------------|--------|-----------------------------------------|-------------------------------|
 | `ghcr.io/ufal/atrium-page-classification:<version>`     | `base` | `python3 /app/entrypoint.py` → `run.py` | the batch CLI                 |
-| `ghcr.io/ufal/atrium-page-classification:<version>-api` | `api`  | `python -m service.api`                 | the HTTP service on port 8000 |
+| `ghcr.io/ufal/atrium-page-classification-api:<version>` | `api`  | `python -m service.api`                 | the HTTP service on port 8000 |
+
+The `-api` suffix belongs to the image **name**. The compose file tags the image it builds locally
+as `atrium-page-classification:${ATRIUM_VERSION}-api`; that is a local tag, not one the registry
+publishes.
 
 ```bash
 # batch, over ./data/input, writing to ./data/output

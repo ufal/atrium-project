@@ -1,4 +1,4 @@
-# ATRIUM hub site tree — issue #57, round 3 (content)
+# ATRIUM hub site tree — issue #57, rounds 3–4 (content)
 
 Everything here lands on **`atrium-project`'s default branch (`main`)**, not on `gh-pages`.
 `gh-pages` receives the *built* site; this is its source, and `.github/workflows/pages.yml`
@@ -25,6 +25,32 @@ tool's code at a named commit, not taken from its prose.
 Each page keeps a `## Sources` table, but its job has changed: it is now a **provenance
 record** naming what was read and at which ref, not a build instruction.
 
+## What round 4 changed
+
+**The nine remaining hub shells are written**, plus the portal copy on `index.md` — the
+static parts of the site: the repository map, the architecture, the document contract, the
+schemas, the SKOS vocabulary, RO-Crate export, agent skills, operations and the contribution
+standard. Each is the **page-classification + translator view** of a contract whose normative
+text lives in the hub's `docs/`: the concrete fields, URIs, endpoints, probes, images and
+branches those two tools have, read out of their code, and where the hub document and the code
+disagree. The other three tools appear only as identity rows until their sections are written.
+
+**Two round-3 errors are corrected**, line by line: both tool guides named the API image
+`atrium-<tool>:<version>-api` — the registry publishes `atrium-<tool>-api:<version>`, with no
+leading `v` — and page-classification's overview repeated the hub's claim that the tool reads its
+label list from the filesystem at run time, which is true only of `--train`/`--eval`.
+
+Two findings were **run, not inferred**: the shared `atrium_document.py` and `atrium_paradata.py`,
+driven with each tool's calls and `para_config.txt`, reproduce the licence each tool's record
+ends up with, and the worked example on the document-contract page validates against the schema.
+The RO-Crate page's mapping table is the real exporter's output on that same record.
+
+**Tables follow the maintainer's formatter**: every column padded to its longest cell by
+character count, one space either side, separator dashes = width + 2 — reverse-engineered from
+the round-3 commit, where it reproduces 13 of 14 reformatted files byte-for-byte (the 14th differs
+only in one table the formatter skipped). Tables indented inside content tabs are aligned the same
+way.
+
 ## Layout
 
 | Path                          | What it is                                                                                                               |
@@ -39,20 +65,22 @@ record** naming what was read and at which ref, not a build instruction.
 
 ## Page status
 
-| Page                                                                                          | State                                                                               |
-|-----------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
-| `index.md`                                                                                    | outline — portal copy pending; "Start here" points at the written sections          |
-| `pipelines.md`                                                                                | **partial** — both layer diagrams and W1, W4, W6, W8 written; nine workflows listed |
-| `external-tools.md`                                                                           | **partial** — the entries these two tools need, written; the rest outlined          |
-| `development-history.md`                                                                      | **partial** — per-repo index written; hub chronology pending                        |
-| `tools/page-classification/*`                                                                 | **written** — 5 pages, from `vit` @ `8415ce7`                                       |
-| `tools/translator/*`                                                                          | **written** — 5 pages, from `master` @ `88242fe`                                    |
-| `ecosystem/*`, `contracts/*`, `agent-skills.md`, `operations.md`, `contributing-standards.md` | still round-2 shells                                                                |
+| Page                                                                                   | State                                                                               |
+|----------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| `index.md`                                                                             | **written** — the portal: what ATRIUM is, the six repositories, where to start      |
+| `pipelines.md`                                                                         | **partial** — both layer diagrams and W1, W4, W6, W8 written; nine workflows listed |
+| `external-tools.md`                                                                    | **partial** — the entries these two tools need, written; the rest outlined          |
+| `development-history.md`                                                               | **partial** — per-repo index written; hub chronology pending                        |
+| `tools/page-classification/*`                                                          | **written** — 5 pages, from `vit` @ `8415ce7`                                       |
+| `tools/translator/*`                                                                   | **written** — 5 pages, from `master` @ `88242fe`                                    |
+| `ecosystem/repository-map.md`                                                          | **written** — six identity rows; depth for the two documented tools                 |
+| `ecosystem/{architecture,document-contract}.md`, `contracts/{schemas,skos,rocrate}.md` | **partial** — written for page-classification and translator                        |
+| `agent-skills.md`, `operations.md`, `contributing-standards.md`                        | **partial** — written for page-classification and translator                        |
 
 `mkdocs.yml`'s `nav` and `docs_site/` agree in both directions, **23 ↔ 23**, checked by a
 green `mkdocs build --strict`. Under `strict: true` a nav entry with no file and a file with
 no nav entry are both build failures, which is why a tool section may only be added to the
-nav in the same commit as its pages.
+nav in the same commit as its pages. **No page on the site is a round-2 shell any more.**
 
 ## Why `docs_site/` and not `docs/`
 
@@ -81,14 +109,19 @@ named drift where the two disagree.
 
 ## Verified
 
+As of round 4 (2026-09-23), on the maintainer's `b717aab` plus this round's files:
+
 - `mkdocs build --strict` → **exits 0**, 23 pages, on mkdocs 1.6.1 / mkdocs-material 9.7.7 /
   pymdown-extensions 12.0.1. Every internal cross-page link and anchor resolves.
-- `python3 -m pytest tests/ -q` → **111 passed, 22 skipped** — unchanged from the baseline.
+- `python3 -m pytest tests/ -q` → **141 passed, 4 skipped**. (Round 3 recorded 111 / 22; the
+  difference is only that `pytest`, `pyyaml` and `jsonschema` are installed in this environment,
+  so fewer tests skip. No test file changed.)
 - `python3 tools/ci/workflow_lint.py --repo-root . --hub-root . --offline` → **OK**.
-- The built `site/` contains **no** `ASSEMBLER` marker and **no** "Draft shell" admonition
-  under `tools/`, and no reference to `arub-p_contacts` anywhere.
-- Both Mermaid diagrams on `pipelines.md` render as `class="mermaid"` elements — the corpus's
-  first two.
+- The built `site/` contains **no** `ASSEMBLER` marker and **no** "Draft shell" admonition on any
+  page, and none of: the personal contact address, `arub-p_contacts`, maintainer handles, token
+  prefixes, the grant number, or internal secret names.
+- Three Mermaid diagrams render as `class="mermaid"` elements — two on `pipelines.md`, one on
+  `ecosystem/architecture.md`.
 
 ## Contents
 
@@ -127,7 +160,7 @@ named drift where the two disagree.
   docs_site/tools/translator/history.md
 ```
 
-## What this round deliberately does not do
+## What these rounds deliberately do not do
 
 - **The other three tool sections.** alto-postprocess, nlp-enrich and llm-enrich keep their
   reserved `nav_order` ranges and nothing else.
@@ -140,3 +173,6 @@ named drift where the two disagree.
   `57.digest.md` and `57.plan.md`, and **has never existed in this repository** — every
   `§`-reference to it points nowhere. Its 12-page design survives only as a DEVLOG summary.
   Flagged here, not written.
+- **The hub's licence statement.** `mkdocs.yml`'s `copyright:` line and every landing card say
+  "MIT licensed", but the hub has **no `LICENSE` and no `CITATION.cff`** — the two tools are MIT,
+  the hub states nothing. Left for the maintainer to decide, not edited.

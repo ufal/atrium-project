@@ -89,10 +89,13 @@ The set is built from three orthogonal criteria: **presence of graphical element
     [SKOS & the ATRIUM vocabulary](../../contracts/skos.md).
 
 **There is deliberately no `enum` in the document schema for this field.**
-`validate_document()` is a live output gate that raises, and the tool derives its label
-list from `sorted(os.listdir())` at run time — so an enum would convert a directory
-naming slip into a stalled pipeline. The vocabulary registry reports instead of
-refusing. Two consequences worth knowing: the schema's own
+`validate_document()` is a live output gate that raises, so an enum would turn a single
+labelling slip into a stalled pipeline; the vocabulary registry is meant to report instead of
+refusing. (The hub's documents add that the tool reads its label list from the filesystem at
+run time. That is true only of `--train` and `--eval`; inference — the path that writes the
+record — uses the fixed `model_registry.CATEGORIES`. See
+[Schemas](../../contracts/schemas.md#what-the-schema-says-that-the-code-does-not).) Two
+consequences worth knowing: the schema's own
 `page_categories.examples` used to be `{"1": "Text", "2": "Plate"}` — *neither is a
 member of the set* — and `fixtures/atrium_document.example.json` still carries those
 values today.
@@ -156,12 +159,12 @@ Read from `ufal/atrium-page-classification` at branch **`vit`**, commit `8415ce7
 (2026-09-21), and from the hub's canonical documents. This table records **provenance**:
 what this page was written from, not a build instruction.
 
-| Source | What was taken from it |
-|---|---|
-| `README.md` §§ Versions, Model description, Categories, Results | category definitions, accuracy figures, dataset description |
-| `model_registry.py:36-48, 150-200` | the canonical label order, the `v*.4` ensemble, the fold rule |
-| `setup/para_config.txt` | the licence component table |
-| `atrium-project/docs/templates/shared/atrium_document.py:108-118` | block ownership |
-| `atrium-project/docs/document_schema.md:130-142, 438-452, 610-620` | the write/read contract, the no-`enum` decision, the two live defects |
-| `atrium-project/docs/templates/shared/atrium_vocab.py:187, 283-295` | `PAGE_CATEGORIES` and the registry authority |
-| `agent_dev_logs/digests/48.digest.md` | the open `v*.3` vs `v*.4` question |
+| Source                                                              | What was taken from it                                                |
+|---------------------------------------------------------------------|-----------------------------------------------------------------------|
+| `README.md` §§ Versions, Model description, Categories, Results     | category definitions, accuracy figures, dataset description           |
+| `model_registry.py:36-48, 150-200`                                  | the canonical label order, the `v*.4` ensemble, the fold rule         |
+| `setup/para_config.txt`                                             | the licence component table                                           |
+| `atrium-project/docs/templates/shared/atrium_document.py:108-118`   | block ownership                                                       |
+| `atrium-project/docs/document_schema.md:130-142, 438-452, 610-620`  | the write/read contract, the no-`enum` decision, the two live defects |
+| `atrium-project/docs/templates/shared/atrium_vocab.py:187, 283-295` | `PAGE_CATEGORIES` and the registry authority                          |
+| `agent_dev_logs/digests/48.digest.md`                               | the open `v*.3` vs `v*.4` question                                    |

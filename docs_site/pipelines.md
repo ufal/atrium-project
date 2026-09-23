@@ -134,7 +134,7 @@ a web frontend, an Agent Skill or another service uses.
 **Inputs.** One file per request, uploaded as multipart, optionally with a baseline
 `document_json` to accrete onto.
 
-**Stages.** Every one of the five tools publishes a `<version>-api` image from the same
+**Stages.** Every one of the five tools publishes an `atrium-<tool>-api` image from the same
 Dockerfile as its batch image, and every one exposes the same meta-contract:
 
 | Endpoint                | Guarantee                                                                               |

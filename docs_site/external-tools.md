@@ -231,9 +231,11 @@ inherit the repository's visibility and can be pulled anonymously when it is pub
 is what makes `image-tag` the most consequential input in that workflow.
 
 !!! warning "`:latest` moves only on a version tag"
-    A branch push publishes `sha-*` and `:test`, never `:latest`. So `:latest` means *the most
-    recent released version*, not *the most recent build* — which matters when reading an E2E
-    result. See [W6](pipelines.md).
+    Only a push to the `test` branch publishes, as `sha-*` and `:test`; pushes to other branches
+    publish nothing. `:latest` and the version tag move only on a `v*` tag, and only after the
+    release gate passes — `-beta` tags included. So `:latest` means *the most recent release that
+    passed the gate*, not *the most recent build* — which matters when reading an E2E result. See
+    [W6](pipelines.md) and [Operations](operations.md#images-and-tags).
 
 **Onward:** <https://docs.github.com/packages>
 

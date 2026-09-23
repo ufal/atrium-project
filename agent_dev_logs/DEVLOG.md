@@ -1162,3 +1162,72 @@ derived reading aid in `agent_dev_logs/`._
   typing gets right). `pytest tests/` **111 passed, 22 skipped**, unchanged.
   `workflow_lint.py --offline` **OK**. The built `site/` carries no `ASSEMBLER` marker and no
   draft-shell admonition under `tools/`, and no reference to `arub-p_contacts`.
+
+## 2026-09-22 → 2026-09-23 (round 4) — the static half of the site
+
+- **#57 — the nine remaining hub shells written**, plus the portal: `ecosystem/repository-map`,
+  `ecosystem/architecture`, `ecosystem/document-contract`, `contracts/schemas`, `contracts/skos`,
+  `contracts/rocrate`, `agent-skills`, `operations`, `contributing-standards`, and `index.md`. **No
+  page on the site is a round-2 shell any more.** Each is the page-classification + translator view
+  of a contract whose normative text is in the hub's `docs/` — so it links to that text rather than
+  condensing it, which was how round 2 produced six pages of re-sliced hub documents. The other
+  three tools appear as identity rows only (role, default branch, owned blocks, landing page).
+
+- **Round 3 had shipped two factual errors, now corrected line by line.** Both tool guides named
+  the service image `ghcr.io/ufal/atrium-<tool>:<version>-api`. `docker-tool.reusable.yml` appends
+  `-<stage>` to the image **name**, so the registry holds `atrium-<tool>-api:<version>` — and the
+  version tag has no leading `v`. The wrong form came from the compose files, the Kubernetes
+  template, `k8s_deployment.md` and both service READMEs, which all write it; it names a tag that is
+  never published. And page-classification's overview repeated the hub schema's claim that the tool
+  reads its label list from the filesystem at run time — true only for `--train`/`--eval`, which
+  write no record; inference uses `model_registry.CATEGORIES`. Both were caught by reading the code
+  this round's pages cite, not by review.
+
+- **The translator's records under-state their licence, and it was run, not inferred.** Driving the
+  shared `atrium_document.py` and `atrium_paradata.py` with the translator's own sequence of calls
+  and its `para_config.txt`: `process_single_file()` attaches the licence block (`main.py:511`)
+  before `lindat_cubbitt` is logged (`:675`, after the first success). The first record of every run
+  therefore carries **no translator components** with an explicit `--source_lang` — the E2E's case —
+  and only FastText's CC BY-NC 4.0 with `auto`; from the second file on it is correctly CC BY-NC-SA
+  4.0. The HTTP service logs components after the call, so every service record under-states.
+  page-classification has the mirror image: its CLI records resolve to MIT, its service records —
+  written with no paradata logger — fall back to CC BY-NC 4.0 with a `license_note`. The worked
+  example on the contract page is that run's output, validated with `jsonschema`, and it resolves to
+  **MIT, determined by `vit_models` alone**, while describing a CC BY-NC-SA translation. The same
+  licence flows into the RO-Crate: the exporter was run on the same record for the mapping table.
+
+- **What a crate loses, measured.** `page_categories` becomes `DefinedTerm`s under the concept URIs
+  but loses which page carries which label and every `category_confidence`; `translations`' contents
+  (language pair, backend, output mode) are not mapped at all; both tools' `derived_from` values
+  arrive as a bare filename and a run-wide CSV. And neither tool calls the exporter — it is a
+  reader, run by hand.
+
+- **Status tables in hub documents that the code contradicts.** `skos_strategy.md` marks F2 (filter
+  `collect_images()` to directories) and F3 (`load_vocab.py --from-flat`, a 5-column 4,952-row
+  vocabulary) as done 2026-09-16; neither is in `vit` @ `8c98a3d` or `master` @ `88242fe`, and V-3
+  says the translator's harvester has no `main()` while it has one. Recorded on the SKOS page with
+  both sides quoted — the same pattern as the three stale state tables before it: a hand-maintained
+  status goes stale faster than anyone re-reads it.
+
+- **The page-classification Agent Skill cannot start its service through Docker.** Its `server.sh`
+  runs `docker compose -f docker-compose.yml up -d` with no `--profile api`, so only the batch service
+  starts; `--gpu` passes the overlay alone; `--local` calls a setup script whose paths are relative
+  to `setup/`; and the branch `Dockerfile` copies a `setup/requirements-test.txt` the branch does
+  not contain. The translator's `server.sh` works — naming the service activates its profile. The
+  hub's `server.template.sh` already does all four right; the branch predates it.
+
+- **Formatting adopted from the maintainer.** Round 3's files came back from `b717aab` changed in
+  table alignment only. The rule, reverse-engineered and checked against that commit — pad every
+  column to its longest cell by character count, one space each side, dashes = width + 2 —
+  reproduces 13 of the 14 reformatted files byte-for-byte; the 14th differs only in one table the
+  formatter skipped. Applied to every file this round, including tables indented inside content tabs.
+
+- **Not changed, flagged.** `mkdocs.yml`'s `copyright:` and every landing card say "MIT licensed";
+  the hub has no `LICENSE` or `CITATION.cff`. The licence statement is the maintainer's to make.
+
+- **Verified.** `mkdocs build --strict` exits 0 over 23 pages on the first pass, every anchor
+  resolving; `nav` ↔ `docs_site/` 23 ↔ 23; `pytest tests/` 141 passed, 4 skipped (111 / 22 before —
+  more dependencies installed here, no test changed); `workflow_lint.py --offline` OK. The built
+  site greps clean for the personal contact address, the partner-contacts file, maintainer handles,
+  token prefixes, the grant number and internal secret names. The 17 vendored shared files were
+  re-verified byte-identical in both tools at their current heads.

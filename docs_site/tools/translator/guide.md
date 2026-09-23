@@ -100,12 +100,17 @@ which is exactly what the repository's own integration tests do.
 
 ## 4 · Run it as a container
 
-Two images are published to GHCR from one Dockerfile:
+Two images are published to GHCR from one Dockerfile. `<version>` is the release without its
+leading `v` — `1.1.0-beta` — or `latest`; see [Operations](../../operations.md#images-and-tags) for
+when each tag moves.
 
 | Image                                          | Stage  | Entry point             | What it is                    |
 |------------------------------------------------|--------|-------------------------|-------------------------------|
 | `ghcr.io/ufal/atrium-translator:<version>`     | `base` | `python main.py`        | the batch CLI                 |
-| `ghcr.io/ufal/atrium-translator:<version>-api` | `api`  | `python -m service.api` | the HTTP service on port 8000 |
+| `ghcr.io/ufal/atrium-translator-api:<version>` | `api`  | `python -m service.api` | the HTTP service on port 8000 |
+
+The `-api` suffix belongs to the image **name**. The compose file tags the image it builds locally
+as `atrium-translator:${ATRIUM_VERSION}-api`; that is a local tag, not one the registry publishes.
 
 ```bash
 docker compose run --rm translator          # batch, ./data:/data
