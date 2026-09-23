@@ -235,9 +235,11 @@ actually resolved to.
 | `lindat_dataset` | CC BY-NC 4.0 | conditional — only when training |
 
 So an inference or evaluation run is **MIT**; `--train` pulls in the LINDAT dataset and
-the run resolves to **CC BY-NC-SA 4.0**. (The dataset is published as CC BY-NC-**SA** 4.0;
-`para_config.txt` spells it CC BY-NC 4.0, which is the third spelling in the repository
-and is noted below.)
+the run resolves to **CC BY-NC 4.0** — the resolver uses `para_config.txt`'s value. The
+README says a training run resolves to CC BY-NC-**SA** 4.0 and that the dataset is published
+under it, while `small_data_samples/LICENSE` is CC BY-NC 4.0 — three statements, two licences.
+Which one the dataset carries is its owners' call; the paradata follows
+`para_config.txt`.
 
 ## Known drift — read this before trusting a number
 

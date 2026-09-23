@@ -142,7 +142,9 @@ Repository code is **MIT**. The licence of a *run*, though, is resolved from the
 components that run actually touched, and recorded in the paradata:
 
 * an inference or evaluation run resolves to **MIT**;
-* `--train` pulls in the LINDAT dataset and resolves to **CC BY-NC-SA 4.0**.
+* `--train` pulls in the LINDAT dataset and resolves to **CC BY-NC 4.0** — the value
+  `setup/para_config.txt` declares for it (the README says CC BY-NC-SA 4.0; see
+  [Reference → Licence resolution](reference.md#licence-resolution)).
 
 ## Where to go next
 

@@ -1231,3 +1231,47 @@ derived reading aid in `agent_dev_logs/`._
   site greps clean for the personal contact address, the partner-contacts file, maintainer handles,
   token prefixes, the grant number and internal secret names. The 17 vendored shared files were
   re-verified byte-identical in both tools at their current heads.
+
+## 2026-09-23 (round 5) — the designed sections filled
+
+- **#57 — the three pages that still carried "pending" placeholders are written**, scoped to
+  page-classification and the translator. `pipelines.md` gains W5 (Agent-Skill), W7 (vocabulary
+  harvesting, the translator's half), W12 (the annotation round trip, page-classification's half)
+  and W13 (RO-Crate export); "the remaining nine" becomes "the remaining five", all of which belong
+  to the other three tools. `external-tools.md`'s "Still to write" block becomes real entries for
+  everything the two tools depend on — the metadata standards they vendor, CoNLL-U, PDF
+  rasterisation, the classifier's ML stack, the translator's other back-ends and metrics, the CI
+  and runtime infrastructure, the institutions, and the DMP standards deliberately not implemented.
+  `development-history.md` gets the cross-repository chronology, condensed from this file into six
+  eras, and the four lessons it keeps repeating.
+
+- **Every inferred behaviour was run, on copies, before it was published.** `sort.sh` reads its CSV
+  by position — a wider CSV turns the rest of the row into a nested label folder — creates label
+  folders for pages it then cannot find, and rejects a zero-padded page number as invalid octal.
+  `filtering.py` refuses the annotation format (`CLASS`) and drops, rather than relabels, a page
+  moved between folders. The shipped `small_data_samples/` cannot be trained on with the shipped
+  config: its `LICENSE` file is listed as a category and `collect_images()` raises. `pdf2png.sh`
+  deletes each PDF it converts and skips `.PDF`. The README's `downscale.py` and
+  `result_analysis.sh` invocations fail on their flags. On the translator side, `load_vocab.py`'s
+  TEATER `exportAll` path is a stub that returns nothing, the committed vocabulary is still the
+  2-column file the harvester no longer writes, and the CTranslate2 scaffold's default compute type
+  `int4` is rejected by CTranslate2 4.8.2. In the shared `para_licenses.py`, SPDX spellings such as
+  `CC0-1.0` and `cc-by-sa-4.0` are unrecognised, and an unrecognised licence becomes the run's
+  effective licence with no URL and both restriction flags false.
+
+- **Four round-3 statements corrected, line by line.** page-classification's `--train` resolves to
+  **CC BY-NC 4.0**, the value `para_config.txt` declares — not the README's CC BY-NC-SA 4.0, which
+  round 3 repeated on `pipelines.md` W8 and on the tool's overview and reference pages;
+  `amcr-inputs.txt` holds 15 URLs, not 16; OAI-PMH is named by all three repositories that use it,
+  not by none; UDPipe's model names carry a `-241121` suffix.
+
+- **Two things could not be checked from here, and the pages say so.** AIS CR's own site and the
+  LINDAT dataset record were unreachable, so the AIS CR entry states only the hosts the code relies
+  on, and the dataset's published licence is left as the README / `LICENSE` / `para_config.txt`
+  disagreement it is.
+
+- **Verified.** `mkdocs build --strict` exits 0 with no warnings; `nav` ↔ `docs_site/` 23 ↔ 23;
+  every markdown table on the three pages renders as a table; `pytest tests/` 141 passed, 4 skipped;
+  `workflow_lint.py --offline` OK. The built site greps clean for the personal contact address, the
+  partner-contacts file, maintainer handles, token prefixes, the grant number, internal secret
+  names, CI run IDs, and cluster paths and hostnames.
