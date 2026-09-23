@@ -446,7 +446,7 @@ declaration, published as SKOS. See [`skos_strategy.md`](skos_strategy.md).
   scheme. A JSON Schema annotation, so it is inert to validators and readable by tooling.
 * **No `enum` was added, anywhere.** It is the obvious move and it is wrong here.
   `validate_document()` is a live output gate that *raises*, and `page-classification/utils.py`
-  derives its label list from `sorted(os.listdir())` at run time — so an enum would convert a
+  derives its label list from its training tree's sub-directory names at run time — so an enum would convert a
   naming slip into a stalled pipeline. The registry's `validate_labels()` reports instead, matching
   the abstain-with-a-`NOTE` idiom §1a already uses for an unrecognised origin.
 * **`page_categories.examples` corrected.** They were `{"1": "Text", "2": "Plate"}`; neither is a

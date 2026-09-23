@@ -133,13 +133,14 @@ So an unknown label would reach a record unreported. The registry *would* catch 
 it. Records carry bare labels, not URIs; a consumer that wants the URI builds it with
 `concept_uri("page-category", label)`.
 
-!!! warning "A defect recorded as fixed that is not"
-    `skos_strategy.md` lists defect **V-2** — `collect_images()` derives its categories with
-    `sorted(os.listdir(directory))`, so a stray file in a training tree shifts every class index —
-    as open, and follow-up **F2**, "filter to directories", as **done 2026-09-16**. At `vit` @
-    `8c98a3d` the function still calls `sorted(os.listdir(directory))` unfiltered, with a comment
-    saying the derivation is "deliberately left exactly as it was". The status table and the code
-    disagree; the code is what runs.
+!!! note "Defect V-2 is fixed"
+    `skos_strategy.md`'s defect **V-2** — `collect_images()` derived its categories with
+    `sorted(os.listdir(directory))`, so a stray file in a training tree shifted every class index,
+    and the shipped `small_data_samples/LICENSE` stopped a run with `NotADirectoryError` — is fixed,
+    and follow-up **F2** records it. The function now keeps only sub-directories, hidden ones
+    excluded, and three tests in `TestCollectImages` pin it, one of them on the shipped sample tree.
+    The drift warning in the table above still runs, for the case a filter cannot catch: a stray or
+    missing category *directory*.
 
 ## The translator and its glossary
 

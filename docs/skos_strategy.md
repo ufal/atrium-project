@@ -261,15 +261,21 @@ a-line-category:Garbage` — `closeMatch`, not `exactMatch`, because one is an O
 rendered image and the other a decode-sanity judgement over an embedded text layer. Close, not
 identical, and deliberately not transitive.
 
-### V-2 — `collect_images()` breaks on its own shipped sample data ❌ open, documented
+### V-2 — `collect_images()` broke on its own shipped sample data ✅ fixed
 
-`atrium-page-classification/utils.py:196` derives categories with `sorted(os.listdir(directory))`.
-The shipped `small_data_samples/` contains a `LICENSE` **file**, which sorts into position 2. On
-that tree the call **raises `NotADirectoryError`**; with a stray *directory* instead it silently
-returns a 12-element list, shifting every class index after it out of step with
-`model_registry.CATEGORIES`. Confirmed pre-existing against `HEAD`. An advisory check now names the
-offending entry before either happens. The real fix — filter to directories — changes behaviour and
-is left to its owner.
+`atrium-page-classification/utils.py` derived categories with `sorted(os.listdir(directory))`.
+The shipped `small_data_samples/` contains a `LICENSE` **file**, which sorted into position 2. On
+that tree the call **raised `NotADirectoryError`**; with a stray *directory* instead it silently
+returned a 12-element list, shifting every class index after it out of step with
+`model_registry.CATEGORIES`.
+
+`collect_images()` now takes the categories from the dataset root's **sub-directories** only,
+hidden ones (`.ipynb_checkpoints/`) excluded, so files such as `LICENSE` are ignored and the shipped
+tree yields exactly the eleven declared labels. This does change what the function returns on a tree
+that holds stray files; on a clean tree the list is the same. What a filter cannot catch is a stray
+or missing category *directory* — an `unsorted/` holding pen, a mistyped label folder — so the
+advisory check, `_advise_category_drift()`, still runs and names such an entry. Pinned by three
+tests in `TestCollectImages`, one of them on the shipped `small_data_samples/`.
 
 ### V-3 — vocabulary harvesting is duplicated and divergent ⚠️ partially addressed
 
@@ -321,7 +327,7 @@ Neither is in `CATEGORIES`.
 | #      | Item                                                                                        | Why not now                                                                                                                                                                                                                          |
 |--------|---------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | ~~F1~~ | ~~Take the V-1 fix~~ ✅ **done 2026-09-16**                                                  | Taken. `DROP_CATEGORIES` now filters on `UNTRUSTWORTHY_LINE_CATEGORIES`, so `Trash` is dropped on the OCR path. **This changes what the model is shown.** Pinned by `test_convert_drops_trash_lines_on_the_ocr_path`.                |
-| ~~F2~~ | ~~Fix V-2 by filtering to directories~~ ✅ **done 2026-09-16**                               | Taken. `collect_images()` filters to directories, so the shipped `small_data_samples/` no longer raises and class indices cannot silently shift. Three tests in `TestCollectImages`.                                                 |
+| ~~F2~~ | ~~Fix V-2 by filtering to directories~~ ✅ **done 2026-09-23**                               | Taken. `collect_images()` filters to directories, so the shipped `small_data_samples/` no longer raises and class indices cannot silently shift. Three tests in `TestCollectImages`.                                                 |
 | F3     | Retire the translator's duplicate harvester in favour of nlp-enrich's artifacts             | ⚠️ **partly taken 2026-09-16** — see below. Full retirement still needs a release plan.                                                                                                                                              |
 | F4     | Add verified CNEC 2.0 glosses as `skos:definition`                                          | Needs the CNEC reference; inventing them would be worse than omitting                                                                                                                                                                |
 | F5     | Register the `w3id.org/atrium` redirect                                                     | Optional; blocks nothing                                                                                                                                                                                                             |

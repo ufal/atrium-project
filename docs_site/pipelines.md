@@ -300,7 +300,7 @@ harvests, and they differ. See
 ecosystem that produces a model rather than consuming one.
 
 **Inputs.** A directory tree of page images, one folder per category (the label list is
-derived from `sorted(os.listdir())` at run time, which is why the document schema
+derived from the sorted sub-directory names at run time, which is why the document schema
 deliberately carries no `enum` for this field). Optionally an explicit folds CSV.
 
 **Stages.**
@@ -339,65 +339,47 @@ into it. Every page-classification model was trained on a set built this way.
 are typed into a CSV.
 
 **The one fact to hold on to: folder names are the labels.** Training and evaluation read a
-directory tree with one folder per category, and take the category list from
-`sorted(os.listdir())` — whatever is in that directory, files included (`utils.py:196`). A
-mistyped folder name is a new class; a stray file stops the run.
+directory tree with one folder per category, and take the category list from the sorted names of
+its sub-directories (`collect_images()` in `utils.py`); files and hidden entries at that level are
+ignored. A mistyped folder name is a new class, and an empty folder is one too.
 
 **Stages.** The scripts live in `data_scripts/unix/` (`.sh`) and `data_scripts/windows/` (`.bat`),
 with the same flags in both, and in `supplementary/scripts/`.
 
-| # | Stage                    | Script                                       | What actually happens                                                                                                                                                                                                                                                                   |
-|---|--------------------------|----------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 1 | PDF → page images        | `pdf2png.sh` · `pdf2png.bat`                 | Unix: `pdftoppm`, one job per core, 300 dpi PNG by default, page numbers zero-padded (`doc-001.png`). **Each PDF is deleted once converted unless `-k` is given**, and only lower-case `*.pdf` is found. Windows: ImageMagick + Ghostscript, one file at a time, unpadded (`doc-1.png`) |
-| 2 | Gather one-pagers        | `move_single.sh` · `.bat` *(optional)*       | Every folder holding exactly one image is emptied into `./onepagers/` and removed; `-n` previews it. The default target is relative to *where you run it*, while `sort.sh` looks for `onepagers/` *inside its input directory* — run it from there, or pass `-t`                        |
-| 3 | Annotate                 | a spreadsheet                                | A CSV of exactly three columns, `FILE,PAGE,CLASS`, one row per page, `PAGE` **not** zero-padded. The README suggests keeping the categories roughly equal in size                                                                                                                       |
-| 4 | Route into label folders | `sort.sh` · `sort.bat`                       | Each row's page is copied — or `--move`d — into `<out>/<CLASS>/`, trying no padding, then 2-, 3- and 4-digit padding, then `onepagers/`. `sort.sh --dry-run` previews it; `sort.bat` has no dry run                                                                                     |
-| 5 | Train and evaluate       | `run.py --train` · `--eval`                  | [W8](#w8--training-and-evaluation-page-classification). `--folds_csv` fixes the split: it needs a `PNG` column holding the exact file name and `foldN` columns of `train` / `dev` / `test`; pages missing from it are left out                                                          |
-| 6 | Review                   | the `--raw` and EVAL tables                  | Raw tables are sorted by per-class probability, so the ambiguous pages gather where a reviewer looks; EVAL tables carry a `TRUE` column beside the prediction                                                                                                                           |
-| 7 | Correct                  | a file manager                               | Mislabelled pages are moved between label folders — the tree is the source of truth, not the CSV                                                                                                                                                                                        |
-| 8 | Re-sync the CSV          | `filtering.py`                               | Keeps only the rows whose `(file, page, class)` still exists in the tree, written to `<stem>_filtered.csv` beside the input                                                                                                                                                             |
-| 9 | Account for the split    | `result/stats/unused.sh` · `dataset_stat.sh` | Which annotated pages no fold used, and per-set, per-category counts, read from the `*_FOLD_*_DATASETS.txt` split records                                                                                                                                                               |
+| # | Stage                    | Script                                       | What actually happens                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+|---|--------------------------|----------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1 | PDF → page images        | `pdf2png.sh` · `pdf2png.bat`                 | Unix: `pdftoppm`, one job per core, 300 dpi PNG by default, page numbers zero-padded (`doc-001.png`); `.pdf` and `.PDF` are both found. **The PDFs are kept unless `--delete` (`/delete`) is given.** Windows: ImageMagick + Ghostscript, one file at a time, unpadded (`doc-1.png`)                                                                                                                                                                               |
+| 2 | Gather one-pagers        | `move_single.sh` · `.bat` *(optional)*       | Every folder holding exactly one image is emptied into `./onepagers/` and removed; `-n` previews it. The default target is relative to *where you run it*, while `sort.sh` looks for `onepagers/` *inside its input directory* — run it from there, or pass `-t`                                                                                                                                                                                                   |
+| 3 | Annotate                 | a spreadsheet                                | A CSV with a header row and at least `FILE,PAGE,CLASS`, one row per page. Further columns are ignored, and `PAGE` may be zero-padded (`08`). `sort.sh` finds the columns by header name; `sort.bat` reads the first three by position. The README suggests keeping the categories roughly equal in size                                                                                                                                                            |
+| 4 | Route into label folders | `sort.sh` · `sort.bat`                       | Each row's page is copied — or `--move`d — into `<out>/<CLASS>/`, trying no padding, then 2-, 3- and 4-digit padding, in the document's folder or, when it has none, in `onepagers/`. A label folder is made only once a page is found for it; a row whose `PAGE` is not a number or whose `CLASS` is empty or holds `/` or `\` is reported and skipped. `sort.sh` also takes `CLASS-1`/`CATEGORY`, so a result table routes as-is. `--dry-run` (`/n`) previews it |
+| 5 | Train and evaluate       | `run.py --train` · `--eval`                  | [W8](#w8--training-and-evaluation-page-classification). `--folds_csv` fixes the split: it needs a `PNG` column holding the exact file name and `foldN` columns of `train` / `dev` / `test`; pages missing from it are left out                                                                                                                                                                                                                                     |
+| 6 | Review                   | the `--raw` and EVAL tables                  | Raw tables are sorted by per-class probability, so the ambiguous pages gather where a reviewer looks; EVAL tables carry a `TRUE` column beside the prediction                                                                                                                                                                                                                                                                                                      |
+| 7 | Correct                  | a file manager                               | Mislabelled pages are moved between label folders — the tree is the source of truth, not the CSV                                                                                                                                                                                                                                                                                                                                                                   |
+| 8 | Re-sync the CSV          | `filtering.py`                               | Keeps each row whose `(file, page, class)` still exists in the tree and **relabels** a row whose page now sits in exactly one other label folder; a page that is gone, or in several other folders, is dropped and reported. Reads `CLASS`, else `CLASS-1`, else `CATEGORY`; writes `<stem>_filtered.csv` beside the input. `--no-relabel` only drops                                                                                                              |
+| 9 | Account for the split    | `result/stats/unused.sh` · `dataset_stat.sh` | Which annotated pages no fold used, and per-set, per-category counts, read from the `*_FOLD_*_DATASETS.txt` split records                                                                                                                                                                                                                                                                                                                                          |
 
-**What the loop does not do for you.** Each of these was run, on copies, in a scratch directory:
+**What the loop still leaves to you.** The scripts refuse what would misroute a page — a `PAGE`
+that is not a number, a label that is not a single folder name — and report it; they cannot tell a
+wrong label from a right one:
 
-* **`sort.sh` reads the CSV by position.** Only the first two commas split a row; everything after
-  the second is the class. A CSV with more columns — one that also carries a document title and a
-  DOI, say — produces a label folder named `TEXT,Doc A,10.60585`, and the `/` in the DOI nests a
-  second folder inside it. Cut the CSV to three columns first.
-* **A row whose page is missing still creates its label folder**, empty: `sort.sh` makes the folder
-  before it looks for the file, and an empty folder is still a category to training.
-* **A zero-padded `PAGE` fails.** `08` is rejected as an invalid octal number and the page is
-  reported not found. The `onepagers/` fallback tries the unpadded name only.
-* **`filtering.py` does not accept the annotation CSV.** It requires `FILE, PAGE, CLASS-1` — the
-  column names of the classifier's *output* — and exits on a `FILE,PAGE,CLASS` file. And a page
-  moved to another folder has its row **dropped, not relabelled**: after a correction pass the CSV
-  loses the corrected pages rather than recording their new labels.
-* **The shipped sample tree cannot be trained on as configured.** `setup/config.txt` points
-  `[TRAIN]` and `[EVAL]` at `./small_data_samples`, which holds a `LICENSE` file beside its eleven
-  label folders; `collect_images()` lists it as a twelfth category and stops with
-  `NotADirectoryError`. The function's docstring describes exactly this, and leaves the fix — keep
-  directories only — to a separate, behaviour-changing change. `skos_strategy.md` records that fix
-  as done; at `8c98a3d` it is not. See
-  [SKOS → What page-classification actually does with it](contracts/skos.md#what-page-classification-actually-does-with-it).
+* **A mistyped `CLASS` is a new category.** `sort.sh` routes `TEXt` into its own folder, and
+  training then counts twelve classes. Check the label list against the eleven in
+  [SKOS → What page-classification actually does with it](contracts/skos.md#what-page-classification-actually-does-with-it)
+  before sorting; `collect_images()` prints a note when the folders and the declared labels differ.
+* **`filtering.py` keys on the `<name>-<page>.png` convention.** A PNG renamed outside it is not
+  indexed — the script warns and counts it — so its row is reported as missing.
+* **`sort.bat` still reads by position**, unlike `sort.sh`: on Windows keep `FILE, PAGE, CLASS` as
+  the first three columns. The `.bat` scripts are not exercised by CI.
 
 **Helpers around the loop.** `averaging.py` averages several result tables — only pages present in
 every input survive, and a wide per-model table counts one vote per model, which makes it a
 majority vote; `per_doc_split.py` splits a result table into one CSV per document;
 `result_analysis.sh` scores a directory of `*_EVAL.csv` files; `downscale.py` resizes a label tree.
 
-**Where the README's instructions fail as written.**
-
-| The README says                                                | What works                                                                                  |
-|----------------------------------------------------------------|---------------------------------------------------------------------------------------------|
-| `supplement_scripts/…`                                         | `supplementary/scripts/…`                                                                   |
-| `data_scripts/pdf2png.sh`, `data_scripts/move_single.sh`       | `data_scripts/unix/…` or `data_scripts/windows/…`                                           |
-| `downscale.py -i train_dir -o small_train_dir --scale 50`      | `--src` / `--dst`; `-i` is an argparse error                                                |
-| `result_analysis.sh -d result/tables/`                         | the directory is positional; `-d` is "Unknown option"                                       |
-| `filtering.py -i annotations.csv -d train_dir` cleans your CSV | it needs `CLASS-1`, not `CLASS`, and writes `annotations_filtered.csv` rather than in place |
-| `logs_stats.py`                                                | `logs_stat.py`                                                                              |
-| "use `--dry-run`" for sorting                                  | `sort.sh` only                                                                              |
-
-`pdf2png.bat`'s header also points at a `pdf2png.ps1` that does not exist.
+**The README's commands** for these scripts use the current paths and flags:
+`supplementary/scripts/…`, `data_scripts/unix/…` / `data_scripts/windows/…`,
+`downscale.py --src … --dst …`, `result_analysis.sh <dir> --pattern …`, `logs_stat.py`, and
+`--dry-run` / `/n` for sorting. An older copy of the README that says otherwise predates those fixes.
 
 **Outputs.** A label tree ready for W8, a CSV that agrees with it, and split records that say which
 page was used where.

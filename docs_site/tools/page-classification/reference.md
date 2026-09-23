@@ -231,15 +231,14 @@ actually resolved to.
 | Component        | Licence      | When it counts                   |
 |------------------|--------------|----------------------------------|
 | `vit_models`     | MIT          | always                           |
-| `deepdoctection` | Apache-2.0   | conditional                      |
 | `lindat_dataset` | CC BY-NC 4.0 | conditional — only when training |
+| `ultralytics`    | AGPL-3.0     | conditional — only with `--yolo` |
 
 So an inference or evaluation run is **MIT**; `--train` pulls in the LINDAT dataset and
-the run resolves to **CC BY-NC 4.0** — the resolver uses `para_config.txt`'s value. The
-README says a training run resolves to CC BY-NC-**SA** 4.0 and that the dataset is published
-under it, while `small_data_samples/LICENSE` is CC BY-NC 4.0 — three statements, two licences.
-Which one the dataset carries is its owners' call; the paradata follows
-`para_config.txt`.
+the run resolves to **CC BY-NC 4.0** — non-commercial, not share-alike. The README,
+`para_config.txt` and `small_data_samples/LICENSE` all say CC BY-NC 4.0. A `--yolo` run adds
+Ultralytics: an inference run with it resolves to **AGPL-3.0**, and with `--train` the resolver
+ranks CC BY-NC 4.0 above it. DeepDoctection, which no code imports, is no longer listed.
 
 ## Known drift — read this before trusting a number
 
@@ -283,8 +282,8 @@ not fixed here; each is a candidate issue in the tool's own repository.
 
 **Stale paths and links**
 
-11. The README links `supplement_scripts/…` in five places; the directory is
-    `supplementary/scripts/`.
+11. ~~The README links `supplement_scripts/…` in five places; the directory is
+    `supplementary/scripts/`.~~ ✅ Fixed — the README now links `supplementary/scripts/…`.
 12. The paradata example link points at a file that is not in the repository.
 13. The tree diagram lists `result/stats/model_accuracies.csv` and two plots; the real
     files are `model_accuracies_top1.csv` and `model_accuracies_top3.csv`, and the plots

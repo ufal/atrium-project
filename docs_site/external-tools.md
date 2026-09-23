@@ -453,13 +453,14 @@ different tools:
 
 | Where                                                                                                  | Tool                                  | Resolution                                                              |
 |--------------------------------------------------------------------------------------------------------|---------------------------------------|-------------------------------------------------------------------------|
-| the service's `POST /predict_document`                                                                 | PyMuPDF (`fitz`), `page.get_pixmap()` | its default, 72 dpi; at most 50 pages (`service/api.py:58`, `:114-124`) |
+| the service's `POST /predict_document`                                                                 | PyMuPDF (`fitz`), `page.get_pixmap()` | 300 dpi (`PDF_RENDER_DPI`); at most 50 pages (`service/api.py`)         |
 | dataset preparation on Unix ([W12](pipelines.md#w12--annotation-round-trip-page-classifications-half)) | poppler's `pdftoppm`                  | 300 dpi by default                                                      |
 | dataset preparation on Windows                                                                         | ImageMagick with Ghostscript          | 300 dpi by default                                                      |
 
-**Worth knowing.** Training pages were rasterised at 300 dpi and service pages are rasterised at
-72; the repository records no comparison of the two. `poppler-utils` is still installed in the
-image and in three CI workflows, though no Python code calls it. PyMuPDF is distributed under
+**Worth knowing.** The service renders PDF pages at 300 dpi, the resolution the training pages
+were made at; PyMuPDF's own default is 72 dpi, which is what the service used before
+`PDF_RENDER_DPI` was set. `poppler-utils` is not installed in the image or in CI: only
+`pdf2png.sh` calls `pdftoppm`, on the machine that prepares a dataset. PyMuPDF is distributed under
 AGPL-3.0 or a commercial licence, and Ghostscript under AGPL-3.0; neither is a component in
 `para_config.txt`.
 
@@ -489,10 +490,12 @@ computes the evaluation reports.
 | `ultralytics`           | `>=8.4.155`            | the `--yolo` path, off by default (`[YOLO] use_yolo = False`)                                                                             |
 | `timm`                  | `>=1.0.29`             | never imported directly — the `timm/…` checkpoints load through `transformers`                                                            |
 
-**Worth knowing.** **Ultralytics has no `para_config.txt` entry**, so a `--yolo` run's resolved
-licence does not reflect it; Ultralytics distributes its package under AGPL-3.0. The Dockerfile's
-comment says the `transformers<5` pin is repeated in `service/requirements.txt`; it is not — that
-file deliberately leaves the model stack out, and the image installs both files.
+**Worth knowing.** Ultralytics distributes its package and base weights under AGPL-3.0.
+`para_config.txt` declares it as the conditional component `ultralytics`, and `run.py` logs it on
+every `--yolo` run, so a `--yolo` inference run resolves to AGPL-3.0; with `--train`, the resolver
+ranks the dataset's CC BY-NC 4.0 above it. The `transformers<5` pin lives in
+`setup/requirements.txt` only — `service/requirements.txt` deliberately leaves the model stack out,
+and the image installs both files.
 
 **Onward:** <https://pytorch.org/> · <https://huggingface.co/docs/transformers> ·
 <https://huggingface.co/docs/timm> · <https://docs.ultralytics.com/>
