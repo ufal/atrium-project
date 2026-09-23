@@ -2,7 +2,7 @@
 title: Repository map
 nav_order: 5
 status: published
-round: 4
+round: 6
 issue: 57
 ---
 
@@ -13,23 +13,28 @@ document record it is allowed to write, and where its documentation lives.
 
 ## The six at a glance
 
-| Repository                   | Role                                                                                       | Default branch | Writes, in the record                                                                                                                            | Landing page                                                                                    | Docs here                                                        |
-|------------------------------|--------------------------------------------------------------------------------------------|----------------|--------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|------------------------------------------------------------------|
-| `atrium-page-classification` | Structural perception — eleven page categories that inform how each page is processed      | `vit`          | `page_categories` · `pages[]` *category, category_confidence*                                                                                    | [ufal.github.io/atrium-page-classification](https://ufal.github.io/atrium-page-classification/) | **[page-classification](../tools/page-classification/index.md)** |
-| `atrium-alto-postprocess`    | Deserialisation and OCR quality control — the fan-out point of the whole pipeline          | `master`       | `pages` · `content` · `lines` · `tables` *(originator, OCR documents)*                                                                           | [ufal.github.io/atrium-alto-postprocess](https://ufal.github.io/atrium-alto-postprocess/)       | —                                                                |
-| `atrium-translator`          | Protected translation — a terminal branch: its output is recorded, not consumed            | `master`       | `translations` · `entities[]` *translation_en*                                                                                                   | [ufal.github.io/atrium-translator](https://ufal.github.io/atrium-translator/)                   | **[translator](../tools/translator/index.md)**                   |
-| `atrium-nlp-enrich`          | Morphosyntax and named entities — produces the TEITOK corpus format                        | `master`       | `entities` · parts of `lines[]` and `pages[]` · `derived_from.teitok`                                                                            | [ufal.github.io/atrium-nlp-enrich](https://ufal.github.io/atrium-nlp-enrich/)                   | —                                                                |
-| `atrium-llm-enrich`          | Semantic enrichment against the ATRIUM controlled vocabulary; also hosts `digital-convert` | `main`         | `enrichment` · `forms` · `entities[]` *pid* · `regenerable.markdown` — and, as `digital-convert`, the positional plane of born-digital documents | [ufal.github.io/atrium-llm-enrich](https://ufal.github.io/atrium-llm-enrich/)                   | —                                                                |
-| `atrium-project`             | The hub — shared code, reusable CI, the end-to-end tests and this site                     | `main`         | nothing                                                                                                                                          | [ufal.github.io/atrium-project](https://ufal.github.io/atrium-project/)                         | you are here                                                     |
+| Repository                                                                         | Role                                                                                       | Default branch | Authorised to write, in the record                                                                                                               | Landing page                                                                                    | Docs here                                                        |
+|------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|----------------|--------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|------------------------------------------------------------------|
+| [`atrium-page-classification`](https://github.com/ufal/atrium-page-classification) | Structural perception — eleven page categories that inform how each page is processed      | `vit`          | `page_categories` · `pages[]` *category, category_confidence*                                                                                    | [ufal.github.io/atrium-page-classification](https://ufal.github.io/atrium-page-classification/) | **[page-classification](../tools/page-classification/index.md)** |
+| [`atrium-alto-postprocess`](https://github.com/ufal/atrium-alto-postprocess)       | Deserialisation and OCR quality control — the fan-out point of the whole pipeline          | `master`       | `pages` · `content` · `lines` · `tables` *(originator, OCR documents)*                                                                           | [ufal.github.io/atrium-alto-postprocess](https://ufal.github.io/atrium-alto-postprocess/)       | —                                                                |
+| [`atrium-translator`](https://github.com/ufal/atrium-translator)                   | Protected translation — a terminal branch: its output is recorded, not consumed            | `master`       | `translations` · `entities[]` *translation_en*                                                                                                   | [ufal.github.io/atrium-translator](https://ufal.github.io/atrium-translator/)                   | **[translator](../tools/translator/index.md)**                   |
+| [`atrium-nlp-enrich`](https://github.com/ufal/atrium-nlp-enrich)                   | Morphosyntax and named entities — produces the TEITOK corpus format                        | `master`       | `entities` · parts of `lines[]` and `pages[]` · `derived_from.teitok`                                                                            | [ufal.github.io/atrium-nlp-enrich](https://ufal.github.io/atrium-nlp-enrich/)                   | —                                                                |
+| [`atrium-llm-enrich`](https://github.com/ufal/atrium-llm-enrich)                   | Semantic enrichment against the ATRIUM controlled vocabulary; also hosts `digital-convert` | `main`         | `enrichment` · `forms` · `entities[]` *pid* · `regenerable.markdown` — and, as `digital-convert`, the positional plane of born-digital documents | [ufal.github.io/atrium-llm-enrich](https://ufal.github.io/atrium-llm-enrich/)                   | —                                                                |
+| [`atrium-project`](https://github.com/ufal/atrium-project)                         | The hub — shared code, reusable CI, the end-to-end tests and this site                     | `main`         | nothing                                                                                                                                          | [ufal.github.io/atrium-project](https://ufal.github.io/atrium-project/)                         | you are here                                                     |
 
-The **Docs here** column fills in as each tool section is written; until then, a repository's
-own `README.md` is the reference, and its landing page links to it.
+Where a repository has no section in **Docs here**, its own `README.md` is the reference, and
+its landing page links to it.
+
+Of the two documented tools, both are MIT-licensed code. **page-classification** runs its
+models locally — on CPU, or faster on a CUDA GPU; **the translator** calls remote LINDAT
+services by default and needs no GPU unless a self-hosted CTranslate2 model is chosen.
 
 !!! note "The order is accretion order, not a chain of file handoffs"
     The rows are in the order a document record travels — page-classification writes first,
     llm-enrich last. That is **not** the order files move in. Only three real file handoffs
-    exist (`PAGE_ALTO/`, `DOC_LINE_CATEG/`, `TEITOK/`), the translator's output is read by
-    nothing, and nothing reads `page_categories` automatically. [Pipelines](../pipelines.md)
+    exist (`PAGE_ALTO/`, `DOC_LINE_CATEG/`, `TEITOK/`), the translator's output is an end
+    product rather than an input to a later stage, and `page_categories` informs a routing
+    decision rather than feeding a program. [Pipelines](../pipelines.md)
     draws both layers.
 
 ## Who may write which block
@@ -47,7 +52,7 @@ the hub-canonical `BLOCK_OWNERS` and vendored byte-identically into every tool:
 
 Shared blocks are split by field rather than by block: page-classification may write only
 `category` and `category_confidence` inside `pages[]`, and the translator only `translation_en`
-inside `entities[]`.
+inside `entities[]` — a field the schema reserves for it; entities themselves are created later, by nlp-enrich.
 
 ### The positional plane has two possible originators
 
@@ -70,43 +75,39 @@ table learns about it.
     was renamed from `llm-enrich-digital` precisely so that the program name records *what was
     done*, not *which repository happened to host it*.
 
-!!! warning "Two things this table is not"
-    **It authorises writes; it is not the read-time answer.** To find out who wrote a block in a
-    *given* record, read `assembled.blocks[<block>].program` — and for a field-split block,
+!!! note "This table authorises writes; the record says who wrote"
+    To find out who wrote a block in a *given* record, read
+    `assembled.blocks[<block>].program` — and for a field-split block,
     `provenance.contributors[]`, since the stamp names only the most recent writer. See
     [The document contract](document-contract.md).
 
-    **The hub's prose table is one prefix short.** `docs/document_schema.md` lists
-    `digital-born…` and `docx` as the digital-convert prefixes; the code also accepts a bare
-    `pdf`.
+## Branches
 
-## Branches of the two documented tools
-
-A default branch is where a clone lands, and in both repositories that is not the whole story.
+A default branch is where a clone lands. Both documented tools stage changes on a `test`
+branch before they reach it, and both keep the Agent Skill on a branch of its own.
 
 === "page-classification"
 
-    | Branch        | What it is                                                                              |
-    |---------------|-----------------------------------------------------------------------------------------|
-    | **`vit`**     | the default branch and the code; `test` currently points at the same commit             |
-    | `test`        | staging, and the base for pull requests                                                 |
-    | `master`      | **stale** — last moved 2026-06-26, and still holds an older `vit/…` subdirectory layout |
-    | `clip`        | a parallel model family (CLIP-based), with its own Hugging Face repository              |
-    | `agent-skill` | the Agent Skill packaging — see [Agent skills](../agent-skills.md)                      |
-    | `gh-pages`    | the landing card                                                                        |
+    | Branch        | What it is                                                                             |
+    |---------------|----------------------------------------------------------------------------------------|
+    | **`vit`**     | the default branch and the code                                                        |
+    | `test`        | staging, and the base for pull requests                                                |
+    | `master`      | an index of the model families, from the repository's earlier layout; not developed on |
+    | `clip`        | a parallel model family (CLIP-based), with its own Hugging Face repository             |
+    | `agent-skill` | the Agent Skill packaging — see [Agent skills](../agent-skills.md)                     |
+    | `gh-pages`    | the landing card                                                                       |
 
-    `CONTRIBUTING.md` describes `master` as the stable branch. In practice the stable line is
-    `vit`; see [Contributing standards](../contributing-standards.md).
+    `vit` and `clip` name model families, not development stages.
 
 === "translator"
 
-    | Branch        | What it is                                                                  |
-    |---------------|-----------------------------------------------------------------------------|
-    | **`master`**  | the default branch and the code; `test` currently points at the same commit |
-    | `test`        | staging, and the base for pull requests                                     |
-    | `main`        | **vestigial** — holds only the initial commit from 2026-02-18               |
-    | `agent-skill` | the Agent Skill packaging — see [Agent skills](../agent-skills.md)          |
-    | `gh-pages`    | the landing card                                                            |
+    | Branch        | What it is                                                         |
+    |---------------|--------------------------------------------------------------------|
+    | **`master`**  | the default branch and the code                                    |
+    | `test`        | staging, and the base for pull requests                            |
+    | `main`        | the repository's initial commit; not developed on                  |
+    | `agent-skill` | the Agent Skill packaging — see [Agent skills](../agent-skills.md) |
+    | `gh-pages`    | the landing card                                                   |
 
 The hub itself has `main`, `test` and `gh-pages` (the built site), plus a **`v1` tag** — the
 channel every tool repository's CI pins the hub's reusable workflows to. See
@@ -119,7 +120,8 @@ This table records **provenance**: what this page was written from, not a build 
 | Source                                                                      | What was taken from it                                 |
 |-----------------------------------------------------------------------------|--------------------------------------------------------|
 | `atrium-project/_generators/repos.py:14-109`                                | each repository's role, stage and default branch       |
-| `git ls-remote --symref` on all six repositories, 2026-09-22                | default branches and branch heads, verified live       |
+| `git ls-remote --symref` on all six repositories, 2026-09-23                | default branches and branch heads                      |
 | `atrium-project/docs/templates/shared/atrium_document.py:108-163, 217, 275` | `BLOCK_OWNERS`, `ORIGIN_ORIGINATORS`, the field splits |
 | `atrium-project/docs/document_schema.md:104-143, 254-261`                   | the ownership tables and the `digital-convert` rename  |
+| `atrium-translator/utils.py` (`process_metadata_xml`)                       | `translation_en` reserved but not filled               |
 | `atrium-project/docs/templates/shared/atrium_rocrate.py:110-119`            | `digital-convert` → `atrium-llm-enrich`                |

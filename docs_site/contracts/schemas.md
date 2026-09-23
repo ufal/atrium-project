@@ -2,18 +2,19 @@
 title: Schemas
 nav_order: 9
 status: partial
-round: 4
+round: 6
 issue: 57
 ---
 
 # Schemas
 
 The two JSON Schemas the ecosystem ships, read field by field for the parts page-classification
-and the translator write — and what each schema says that the code does not do.
+and the translator write.
 
-!!! info "Annotated so far: the fields the two documented tools write"
+!!! info "Scope"
     The schemas cover every block. The annotations below cover the fields owned by
-    page-classification and the translator; the rest are added with their tools' sections.
+    page-classification and the translator; the blocks of alto-postprocess, nlp-enrich and
+    llm-enrich are described in the schema itself.
 
 Both files are canonical in the hub (`docs/templates/shared/`) and vendored byte-identically into
 every tool, where `para-drift` checks them.
@@ -35,17 +36,19 @@ untouched.
 | `enum`   | **none, on purpose**                                                         |
 | Examples | `{"1": "TEXT", "2": "DRAW"}`                                                 |
 
-The one field in the record that carries `x-atrium-scheme` and is written by page-classification.
-Its examples were corrected from `"Text"` / `"Plate"`, neither of which is a valid label; the
-hub's example fixture still carries the old values.
+**`x-atrium-scheme`** is an ATRIUM annotation, not a JSON Schema keyword: validators ignore
+it, and it tells a reader which controlled vocabulary the values come from. A consumer turns
+a value into its SKOS URI with `atrium_vocab.concept_uri("page-category", value)` — for
+`TEXT_HW`, `https://w3id.org/atrium/page-category/TEXT_HW`. See
+[SKOS & the ATRIUM vocabulary](skos.md).
 
 ### `pages[]` — shared, keyed by `page`
 
 | Field                                                                                           | Type                 | Written by              |                                                                                  |
 |-------------------------------------------------------------------------------------------------|----------------------|-------------------------|----------------------------------------------------------------------------------|
 | `page`                                                                                          | string, **required** | whoever creates the row | a label, so `iv` or `A-1` survive; never derive order from it — use `page_index` |
-| `category`                                                                                      | string               | page-classification     | **no `x-atrium-scheme`** — the same values as `page_categories`, unannotated     |
-| `category_confidence`                                                                           | number, 0–1          | page-classification     | the top-1 score, rounded to 3 decimals by the CLI and unrounded by the service   |
+| `category`                                                                                      | string               | page-classification     | the same label as `page_categories` for that page                                |
+| `category_confidence`                                                                           | number, 0–1          | page-classification     | the top-1 score, `SCORE-1` of the result table                                   |
 | `page_index`, `quality_score`, `quality_band`, `needs_ocr`, `needs_ocr_reason`, `ocr`, `canvas` |                      | the originator          | not written by either documented tool                                            |
 
 Items allow additional properties. page-classification writes `category` and
@@ -54,38 +57,42 @@ extended, never replaced.
 
 ### `translations` — written by the translator
 
-| Field         | Type   | Declared                                    | What the translator writes                                                                              |
-|---------------|--------|---------------------------------------------|---------------------------------------------------------------------------------------------------------|
-| `source_lang` | string | ✓                                           | the **requested** source language — which can be the literal string `"auto"`, not the language detected |
-| `target_lang` | string | ✓                                           | e.g. `"en"`                                                                                             |
-| `backend`     | string | ✓ — examples `lindat`, `ctranslate2`, `llm` | `lindat` or `openai_compatible` — the registry's names                                                  |
-| `output_mode` | —      | **not declared**                            | `replace` or `append`; allowed because the block has `additionalProperties: true`                       |
+| Field         | Type   | What the translator writes                                                                                    |
+|---------------|--------|---------------------------------------------------------------------------------------------------------------|
+| `source_lang` | string | the source language as requested — a code such as `"cs"`, or `"auto"` when it was detected per block or field |
+| `target_lang` | string | e.g. `"en"`                                                                                                   |
+| `backend`     | string | the backend's registry name: `lindat`, `openai_compatible` or `ct2`                                           |
+| `output_mode` | string | `replace` or `append` — carried as an additional property, which the block allows                             |
 
-No field is required.
+No field is required. The translated text itself is not in this block: the file is referenced
+from `derived_from.translated_xml`.
 
 ### `entities[].translation_en`
 
-Declared as a string and assigned to the translator. **No code path writes it.** A comment in the
-translator's `utils.py` says so plainly — "UNIMPLEMENTED, not merely deferred".
+Declared as a string and assigned to the translator. Entities are created by nlp-enrich, which
+runs after the translator, so the field is reserved rather than filled in the current
+pipeline order.
 
 ### `derived_from`
 
 An object of strings, with no owner check: any program can write any key. The two tools write
 `classification` (page-classification) and `translated_xml` (the translator) — see
-[what they point at](../ecosystem/document-contract.md#what-the-references-actually-point-at).
+[what they point at](../ecosystem/document-contract.md#what-the-references-point-at).
 
-### What the schema says that the code does not
+### Validating a record
 
-| The schema, or the hub document, says                                                                                     | The code                                                                                                                                                      |
-|---------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `page_categories`: "page-classification derives its label list from the filesystem at runtime (utils.py collect_images)"  | only `--train` and `--eval` do — and they write no record. Inference, the path that writes `page_categories`, uses the fixed list `model_registry.CATEGORIES` |
-| `page_categories`: an unknown label raises "the advisory NOTE the registry raises"                                        | page-classification never calls the registry's `validate_labels()` on the labels it emits                                                                     |
-| `docs/document_schema.md`: `x-atrium-scheme` is "a new annotation on each vocabulary-bearing field", listing seven fields | the schema carries it on **two**: `page_categories` and `lines[].categ`                                                                                       |
-| `translations`: "Language pair and the persistent translated artifact it produced"                                        | the artifact is not in this block; it is `derived_from.translated_xml`                                                                                        |
-| `translations.backend` examples: `lindat`, `ctranslate2`, `llm`                                                           | the registry's names are `lindat`, `openai_compatible` and `ct2`; `ctranslate2` and `llm` never appear                                                        |
-| `$id`: `https://github.com/ufal/atrium-project/docs/templates/shared/atrium_document.schema.json`                         | that URL does not resolve — a GitHub file URL needs `/blob/<ref>/`                                                                                            |
+Every tool validates the record it writes before writing it. To check one by hand, against
+the vendored schema:
 
-None of these stops a record validating; each is a description that will mislead a reader.
+```python
+import json, jsonschema
+schema = json.load(open("atrium_document.schema.json"))
+record = json.load(open("CTX000000003.document.json"))
+jsonschema.validate(record, schema)          # raises ValidationError on failure
+```
+
+or through the shared module, which also applies the version rules below:
+`atrium_document.load_document(path)` refuses a newer major version and migrates an older one.
 
 ## `atrium_vocab.schema.json`
 
@@ -93,21 +100,19 @@ A structural schema for the **JSON-LD export** of the vocabulary registry
 (`atrium_vocab.py --jsonld`) — not for the record. It pins the `@context` prefixes (`skos`, `dct`,
 `rdfs`, and the source vocabularies), requires a `registry_version`, and allows three node types in
 `@graph`: `skos:Concept` (must have `inScheme`, `prefLabel`, `notation`), `skos:ConceptScheme`
-(must have a title, description and comment) and `skos:Collection` (must have a `prefLabel` — its
-description also asks for at least one member, which the schema does not enforce).
+(must have a title, description and comment) and `skos:Collection` (must have a `prefLabel`).
 
-It is vendored, byte-checked by `para-drift`, and shipped in page-classification's release
-bundle — but **no test and no CI step validates the registry's output against it.** See
+It is vendored into every tool and byte-checked by `para-drift`. See
 [SKOS & the ATRIUM vocabulary](skos.md).
 
 ## Version policy
 
-| Contract            | Version                                      | On a newer major          | On an older major                             |
-|---------------------|----------------------------------------------|---------------------------|-----------------------------------------------|
-| document record     | `1.0`, frozen                                | `load_document()` refuses | migrated — the migration is currently a no-op |
-| paradata            | `2.0`                                        | refused                   | migrated (`1.0 → 2.0` adds `docker_image`)    |
-| vocabulary registry | `1.0`                                        | —                         | —                                             |
-| RO-Crate            | `1.1` (the RO-Crate specification's version) | —                         | —                                             |
+| Contract            | Version                                      | On a newer major          | On an older major                          |
+|---------------------|----------------------------------------------|---------------------------|--------------------------------------------|
+| document record     | `1.0`, frozen                                | `load_document()` refuses | migrated                                   |
+| paradata            | `2.0`                                        | refused                   | migrated (`1.0 → 2.0` adds `docker_image`) |
+| vocabulary registry | `1.0`                                        | —                         | —                                          |
+| RO-Crate            | `1.1` (the RO-Crate specification's version) | —                         | —                                          |
 
 An **additive** change — a new optional field, a new block — does not bump a version. A
 **breaking** change bumps the major and ships a `_migrate_X_to_Y()` function. A record missing
@@ -117,12 +122,10 @@ An **additive** change — a new optional field, a new block — does not bump a
 
 This table records **provenance**: what this page was written from, not a build instruction.
 
-| Source                                                                                                                       | What was taken from it                                  |
-|------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------|
-| `atrium-project/docs/templates/shared/atrium_document.schema.json`                                                           | every field definition quoted above                     |
-| `atrium-project/docs/templates/shared/atrium_vocab.schema.json`                                                              | the registry schema                                     |
-| `atrium-project/docs/templates/shared/atrium_document.py`, `atrium_paradata.py`, `atrium_vocab.py`, `atrium_rocrate.py`      | version constants and the load/migrate behaviour        |
-| `atrium-page-classification@vit` `8c98a3d` — `run.py:385-413`, `atrium_document_adapter.py`, `.github/workflows/release.yml` | what page-classification writes, and the release bundle |
-| `atrium-translator@master` `88242fe` — `utils.py:363-403`, `processors/backend.py`                                           | what the translator writes, and the backend names       |
-| `atrium-project/docs/document_schema.md:438-452`                                                                             | the hub's statements, compared                          |
-| a search of every `.py`, `.yml` and `.sh` in the hub and both tools for `atrium_vocab.schema`                                | that nothing validates against it                       |
+| Source                                                                                                                  | What was taken from it                                       |
+|-------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------|
+| `atrium-project/docs/templates/shared/atrium_document.schema.json`                                                      | every field definition quoted above                          |
+| `atrium-project/docs/templates/shared/atrium_vocab.schema.json`                                                         | the registry schema                                          |
+| `atrium-project/docs/templates/shared/atrium_document.py`, `atrium_paradata.py`, `atrium_vocab.py`, `atrium_rocrate.py` | version constants, the load/migrate behaviour, `concept_uri` |
+| `atrium-page-classification@vit` `adee922` — `run.py`, `atrium_document_adapter.py`                                     | what page-classification writes                              |
+| `atrium-translator@master` `71feaef` — `utils.py`, `processors/backend.py`                                              | what the translator writes, and the backend names            |

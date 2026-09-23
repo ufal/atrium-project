@@ -2,20 +2,20 @@
 title: The document contract
 nav_order: 6
 status: partial
-round: 4
+round: 6
 issue: 57
 ---
 
 # The document contract
 
 The `atrium_document` record is the one thing that travels through the whole pipeline. This
-page says what it holds, who may write which part of it, and — the part the normative
-documents cannot tell you — how page-classification and the translator actually write it.
+page says what it holds, who may write which part of it, how it is built up stage by stage,
+and how page-classification and the translator write it.
 
-!!! info "Normative text lives in the hub; this is the two-tool view of it"
+!!! info "Normative text lives in the hub"
     [`docs/document_schema.md`](https://github.com/ufal/atrium-project/blob/main/docs/document_schema.md)
-    is the specification. This page shows what two of the five writers do with it, verified
-    against their code, and where the two disagree.
+    is the specification. This page explains it, with page-classification and the translator
+    as the worked cases.
 
 ## The object
 
@@ -57,82 +57,80 @@ and every run that wrote anything appends itself once:
 
 `blocks` is a **comma-separated string**, not a list. The stamp names only the *most recent*
 writer of a block, so for a block several programs write fields of — `pages[]`, `entities[]` —
-`contributors[]` is the only complete account. The hub's statement of the rule lists `program`,
-`run_id` and `paradata_ref`; the stamp also carries `updated_at`.
+`contributors[]` is the only complete account.
 
-## The six rules, and what each tool actually does
+### The life of a record
 
-The rules are the hub's. The right-hand columns are read from each tool's code.
+1. **Load.** A stage opens the record it was given with `--document-json` — the *baseline* —
+   or starts a new one. A baseline written by a newer major schema version is refused; an
+   older one is migrated.
+2. **Write.** The stage writes only the blocks it owns: `set_block()` replaces a whole block,
+   `merge_block()` updates chosen fields inside a keyed list such as `pages[]`. Everything
+   else in the baseline is carried through untouched.
+3. **Stamp.** Each written block gets its `assembled.blocks` stamp, the run is added to
+   `provenance.contributors[]`, and the run's licence block is added to the record's.
+4. **Validate.** The finished record is checked against `atrium_document.schema.json`; a
+   stage never emits a record that fails its own schema.
+5. **Write out.** The file is written atomically — to a temporary name, then renamed — so a
+   reader never sees half a record.
+
+The next stage repeats the cycle with this file as its baseline.
+
+## The six rules, per tool
+
+The rules are the hub's; the right-hand columns show how each tool applies them.
 
 | Rule                                | page-classification                                                                                                                                                                                             | translator                                                                                                                                                                  |
 |-------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **1 · Baseline in, record out**     | **Opt-in.** No record is written unless `--document-json-out` or `--document-json-out-dir` is set (or their `[DOCUMENT]` config keys). Writes the file itself, atomically, rather than through `finalize()`     | **Always writes one**, by default as `<doc_id>.document.json` next to its output, baseline or not                                                                           |
-| **2 · Own block only**              | `set_block("page_categories", …)` **merged with the baseline's categories** — page keys from an earlier run survive — plus a keyed `merge_block("pages", …)` restricted to `category` and `category_confidence` | `set_block("translations", …)` and `add_derived_from("translated_xml", …)`. `entities[].translation_en` is authorised and **never written**                                 |
+| **2 · Own block only**              | `set_block("page_categories", …)` **merged with the baseline's categories** — page keys from an earlier run survive — plus a keyed `merge_block("pages", …)` restricted to `category` and `category_confidence` | `set_block("translations", …)` and `add_derived_from("translated_xml", …)`                                                                                                  |
 | **3 · No baseline → own part only** | derives `doc_id` from the filename: a trailing `-N` or `_N` is the page, the rest is the document (`scan_0007.png` → document `scan`, page `"7"`); no suffix means page `1`, with a warning                     | **inherits `doc_id` from the baseline** — its input is a page, `<doc>-1.alto.xml`, so deriving it would re-key the document — and derives it only when there is no baseline |
 | **4 · Per-block provenance**        | stamps `page_categories`, `pages`, and `derived_from` when it records a result table                                                                                                                            | stamps `translations` and `derived_from`                                                                                                                                    |
-| **5 · Licences accrete**            | contributes its paradata licence block; see below                                                                                                                                                               | contributes its paradata licence block **before** its backend's components are logged; see below                                                                            |
+| **5 · Licences accrete**            | contributes its paradata licence block; see below                                                                                                                                                               | contributes its paradata licence block; see below                                                                                                                           |
 | **6 · Unknown blocks preserved**    | ✓ through the shared module                                                                                                                                                                                     | ✓ through the shared module                                                                                                                                                 |
 
-### Rule 5 in practice: what licence a record ends up with
+### How the record's licence is computed
 
-This is where the two tools' records say something other than their own paradata.
+`provenance.license` is not declared by anyone. Each run contributes the licence block its
+paradata has resolved, at the moment the record is written, from the components logged so
+far, and the record's licence is recomputed
+from the previous `license_detail` plus every block contributed since, by the shared
+`para_licenses` rule: **the most restrictive licence wins**, and `license_detail` keeps the
+full derivation — which components, with which licence, decided it.
 
-=== "page-classification"
+A page-classification inference run contributes **MIT** (`vit_models` is its only
+always-on component; the training dataset counts only for `--train`, which writes no
+record). A translator run with the default backend and vocabulary logs the CUBBITT, UDPipe,
+AMCR and TEATER components, which resolve in its paradata to **CC BY-NC-SA 4.0**.
 
-    | Path         | Record licence                                                                                                                                                                                                                                                                            |
-    |--------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-    | CLI          | **MIT** — only `vit_models` is always-on; `lindat_dataset` counts only when training, which writes no record                                                                                                                                                                              |
-    | HTTP service | **CC BY-NC 4.0**, with `license_note: "License helper unavailable or no components recorded; defaulted conservatively to CC BY-NC 4.0."` — the service writes records without a paradata logger, so it contributes no licence block and the module falls back to its conservative default |
+When no licence block with any component has ever been contributed, the module falls back
+conservatively to **CC BY-NC 4.0** and says so in `provenance.license_note`.
 
-    The same inference, run two ways, yields two different licences on the record.
+### What the references point at
 
-=== "translator"
+Only `source` and `derived_from` may reference files, and only persistent ones. What the
+two tools put there:
 
-    `process_single_file()` attaches the run's licence block to the record **before** the
-    backend's components are logged — `lindat_cubbitt` (CC BY-NC-SA 4.0) is logged only *after*
-    the first file succeeds. So:
-
-    | Run                                  | What the translator contributes to the record                                |
-    |--------------------------------------|------------------------------------------------------------------------------|
-    | first file, explicit `--source_lang` | **no components at all** — FastText is not loaded, CUBBITT not yet logged    |
-    | first file, `--source_lang auto`     | FastText only — **CC BY-NC 4.0**                                             |
-    | every later file of the same run     | CUBBITT as well — **CC BY-NC-SA 4.0**, as it should be                       |
-    | HTTP service, every request          | components are logged after the call returns — **nothing**, on every request |
-
-    The run's paradata, written at the end, says CC BY-NC-SA 4.0. The end-to-end test translates
-    exactly one file with `--source_lang cs` — the first case.
-
-Both results were confirmed by running the shared `atrium_document.py` and `atrium_paradata.py`
-with each tool's `para_config.txt` and each tool's sequence of calls. The worked example below is
-the output of that run.
-
-### What the references actually point at
-
-Rule-by-rule discipline says only `source` and `derived_from` may reference files, and only
-persistent ones. What the two tools put there:
-
-| Field          | page-classification                                                                                                                                                      | translator                                                                                                                                                                               |
-|----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `derived_from` | `classification` — the result table, which is **one CSV for the whole run** (or one per day when `--chunk` is on), not a per-document file; absent for a single-file run | `translated_xml` — a **bare filename** such as `CTX000000003-1_en.alto.xml`, not a path. In a batch run every file shares one baseline and one output path, so the last file's name wins |
-| `paradata_ref` | CLI: `paradata/<run>_page-classification.json` — the file is actually written under `result/paradata/`. Service: empty                                                   | CLI: `<output>/paradata/<run>_translator.json`, possibly absolute. Service: a path inside a per-request temporary directory that is deleted with the response                            |
+| Field          | page-classification                                                                                                                      | translator                                                                                             |
+|----------------|------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| `derived_from` | `classification` — the run's result table, one CSV for the whole run (or one per day when `--chunk` is on); absent for a single-file run | `translated_xml` — the translated file's name, such as `CTX000000003-1_en.alto.xml`                    |
+| `paradata_ref` | the run's paradata file; empty for records written by the service, which keeps no paradata file                                          | the run's paradata file under `<output>/paradata/`; in the service, the per-request paradata, not kept |
 
 ## Over HTTP
 
 Both services can accrete onto a record uploaded with the request — as a multipart part named
 `document_json` — and they return it differently:
 
-|                                                                   | page-classification                                                                                      | translator                                                                            |
-|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
-| Returns the record                                                | inside its JSON response, as `document_json`                                                             | as the second part of a `multipart/mixed` response, after the translated XML          |
-| Without a baseline                                                | only if `document_json_out=true` is sent — it can originate a record                                     | **never** — it cannot originate a record over HTTP                                    |
-| A baseline that fails to load (corrupt, or a newer major version) | **422** `Unusable document_json baseline`                                                                | a generic **500** `Translation processing failed.`                                    |
-| A baseline that loads but does not validate                       | accreted onto with a warning — the response carries `document_json_schema_error`, so a caller can see it | accreted onto with a warning in the service log only; nothing in the response says so |
-| Its own output fails the schema (baseline valid)                  | refused — **500** `Document record rejected by its own schema`                                           | refused — the generic **500**                                                         |
+|                                                  | page-classification                                                  | translator                                                                    |
+|--------------------------------------------------|----------------------------------------------------------------------|-------------------------------------------------------------------------------|
+| Returns the record                               | inside its JSON response, as `document_json`                         | as the second part of a `multipart/mixed` response, after the translated XML  |
+| Without a baseline                               | only if `document_json_out=true` is sent — it can originate a record | only with a baseline — over HTTP it extends records rather than starting them |
+| Its own output fails the schema (baseline valid) | refused with a **500**                                               | refused with a **500**                                                        |
 
 ## A worked example
 
 What the record looks like after page-classification and then the translator have written to it
-— **generated by running the shared module with the calls each tool makes**, and validated
+— generated by running the shared module with the calls each tool makes, and validated
 against `atrium_document.schema.json`. alto-postprocess, which runs between them in the real
 chain, is left out so that only these two tools' writes are visible; in the real chain its blocks
 and licence components would be here too.
@@ -184,22 +182,16 @@ Then the **translator** takes that record as `--document-json` and writes:
   "assembled":  {"blocks": {"translations": {"program": "translator", "…": "…"},
                             "derived_from": {"program": "translator", "…": "…"}},
                  "had_baseline": true},
-  "provenance": {"license": "MIT",
+  "provenance": {"license": "…", "license_detail": "…",
                  "contributors": [ "…page-classification…",
                                    {"program": "translator", "blocks": "translations,derived_from", "…": "…"} ]}
 }
 ```
 
-`page_categories` and `pages` pass through untouched (rule 2). And the record's licence is still
-**MIT, determined by `vit_models` alone** — although the translation it now describes was made
-with a CC BY-NC-SA 4.0 service. That is rule 5's defect, in the record itself.
-
-!!! warning "Do not copy the hub fixture"
-    `fixtures/atrium_document.example.json` is the hub's illustrative record. It uses
-    `page_categories` values `"Text"` and `"Plate"` — neither is one of the
-    [eleven labels](../tools/page-classification/index.md#the-11-categories) — a
-    `derived_from.translated_xml` of `TRANSLATED/…`, which is not what the translator writes, and no
-    `output_mode`. The example above is what the code produces.
+`page_categories` and `pages` pass through untouched (rule 2); the translator adds its
+blocks, its stamps and itself to `contributors[]`, and its licence block joins
+page-classification's in the computation of `provenance.license` (rule 5). The values in
+`page_categories` are the [eleven labels](../tools/page-classification/index.md#the-11-categories).
 
 ## How paradata accumulates
 
@@ -207,22 +199,21 @@ Every run also writes its own **paradata** file — the per-run log the `paradat
 at: tool version, run id, the resolved licence with its full derivation, timings, configuration,
 and statistics. It is written by the shared `atrium_paradata.py`, schema version **`2.0`**.
 
+The file is a flat JSON object — `tool_version`, `run_id`, `start_time`, `license_detail`,
+configuration and statistics at the top level; `docs/paradata_schema.md` describes its fields.
+
 The versioning rule is the same for both: an **additive** change does not bump the version; a
 **breaking** one bumps the major and ships a `_migrate_X_to_Y()` function. A record or paradata
 file with a *newer* major version than the reader knows is **refused**; an older one is migrated.
-(`docs/paradata_schema.md` describes the paradata JSON as nested `provenance`, `license`, `timing`,
-`config` and `statistics` blocks; the file is in fact flat — `tool_version`, `start_time`,
-`license_detail` and so on at the top level.)
 
 ## Sources
 
 This table records **provenance**: what this page was written from, not a build instruction.
 
-| Source                                                                                                                                                                 | What was taken from it                                                        |
-|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
-| `atrium-project/docs/templates/shared/atrium_document.py`, `atrium_document.schema.json`, `atrium_paradata.py`                                                         | the object, the stamp, the rules as implemented; byte-identical in both tools |
-| `atrium-project/docs/document_schema.md:41-62`, `docs/paradata_schema.md`                                                                                              | the rules as specified                                                        |
-| `atrium-page-classification@vit` `8c98a3d` — `atrium_document_adapter.py`, `utils.py`, `run.py`, `service/document_json.py`, `service/api.py`, `setup/para_config.txt` | what page-classification writes                                               |
-| `atrium-translator@master` `88242fe` — `main.py:168-200, 410-532, 575-690`, `utils.py:385-403`, `service/api.py`, `para_config.txt`                                    | what the translator writes, and when it logs its licence components           |
-| an in-memory run of the shared modules with each tool's calls and `para_config.txt`, validated with `jsonschema`, 2026-09-22                                           | the licence results and the worked example                                    |
-| `atrium-project/fixtures/atrium_document.example.json`                                                                                                                 | compared, not used                                                            |
+| Source                                                                                                                                                                 | What was taken from it                                         |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------|
+| `atrium-project/docs/templates/shared/atrium_document.py`, `atrium_document.schema.json`, `atrium_paradata.py`, `para_licenses.py`                                     | the object, the stamp, the life cycle, the licence computation |
+| `atrium-project/docs/document_schema.md`, `docs/paradata_schema.md`                                                                                                    | the rules as specified                                         |
+| `atrium-page-classification@vit` `adee922` — `atrium_document_adapter.py`, `utils.py`, `run.py`, `service/document_json.py`, `service/api.py`, `setup/para_config.txt` | what page-classification writes                                |
+| `atrium-translator@master` `71feaef` — `main.py`, `utils.py`, `service/api.py`, `para_config.txt`                                                                      | what the translator writes                                     |
+| an in-memory run of the shared modules with each tool's calls, validated with `jsonschema`, 2026-09-22                                                                 | the worked example                                             |

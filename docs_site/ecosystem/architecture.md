@@ -2,7 +2,7 @@
 title: Architecture
 nav_order: 4
 status: partial
-round: 4
+round: 6
 issue: 57
 ---
 
@@ -11,10 +11,10 @@ issue: 57
 How the six repositories fit together as one system: what is shared, what is federated, and
 where the boundaries are.
 
-!!! info "Written from the page-classification and translator side"
-    The mechanisms below are the same in all five tool repositories. The per-repository facts —
-    which files are vendored where, which workflows call what — are verified for the two tools
-    documented so far; the other three are added with their sections.
+!!! info "Scope"
+    The mechanisms below are the same in all five tool repositories. The per-repository
+    examples — which files are vendored where, which workflows call what — are given for
+    page-classification and the translator.
 
 ## Hub and spokes
 
@@ -50,6 +50,40 @@ flowchart TB
 Everything else — the tool's behaviour, its README, its release history — belongs to the tool
 repository, and the hub never touches it.
 
+## Anatomy of a tool
+
+Every tool repository has the same shape, whatever it does. One Dockerfile builds two images
+from one code base; both run the same processing code, and both speak the same record and
+paradata contracts through the vendored shared modules:
+
+```mermaid
+flowchart LR
+  subgraph REPO["a tool repository"]
+    CODE["tool code<br/>(the part that differs)"]
+    SHARED["vendored shared modules<br/>record · paradata · licences · vocabulary · service"]
+    CFG["config.txt · para_config.txt<br/>.env.example"]
+  end
+  CODE --- SHARED
+  CFG --- CODE
+  REPO -- "Dockerfile, stage base" --> CLI["atrium-&lt;tool&gt;<br/>batch CLI"]
+  REPO -- "Dockerfile, stage api" --> API["atrium-&lt;tool&gt;-api<br/>HTTP service on :8000"]
+  IN[/"input files<br/>+ optional record"/] --> CLI
+  IN --> API
+  CLI --> OUT[/"output files · record · paradata"/]
+  API --> OUT
+```
+
+* **The batch CLI** reads a file or a directory, writes result files, and — when given
+  `--document-json-out` — an updated document record. It exits non-zero when a run fails,
+  so it can be scheduled as a job.
+* **The HTTP service** wraps the same processing in FastAPI, adds `/info`, `/health` and
+  `/ready`, drains in-flight requests on SIGTERM, and returns the updated record in the
+  response when one is sent in.
+* **Paradata** — a JSON file per run: tool version, run id, configuration, statistics, and
+  the licence the run resolved to from the components it actually used.
+* **An Agent Skill** on a separate `agent-skill` branch wraps the service for coding agents;
+  see [Agent skills](../agent-skills.md).
+
 ## What is canonical, and what is vendored
 
 The hub does not publish the shared code as a package. It **enforces it by copy**: seventeen
@@ -79,19 +113,16 @@ its destination in a tool repository, and whether it has a `--selftest` that CI 
 | `test_env_contract.py`              | `tests/test_env_contract.py`              |          | `.env.example` must list every variable the service reads              |
 | `test_dockerfile_security_layer.py` | `tests/test_dockerfile_security_layer.py` |          | pins the `apt-get upgrade` layer that keeps the release gate passable  |
 
-**Verified 2026-09-22: all 17 are present and byte-identical** in page-classification (`vit`
-@ `8c98a3d`) and in the translator (`master` @ `88242fe`), at exactly the destinations above.
-`test_env_contract.py` additionally needs a repo-local `tests/env_contract_data.py`, which both
-repositories have and which is deliberately not vendored.
+`test_env_contract.py` additionally needs a repo-local `tests/env_contract_data.py` — the
+list of variables that particular service reads — which each repository keeps and which is
+deliberately not vendored.
 
-### What looks shared but is not
+### Repository-local helpers
 
-Three files are easy to mistake for part of the canon:
-
-* `atrium_document_adapter.py` in page-classification and `atrium_test_support.py` in the
-  translator are **repo-local** helpers around the shared modules.
-* `tests/test_paradata.py` is described as "shared across all repos" in both repositories'
-  `CONTRIBUTING.md`. It is **not in the manifest**, and the two copies differ.
+Next to the shared files, each tool keeps its own glue, which is not part of the canon and
+may differ freely: `atrium_document_adapter.py` in page-classification and
+`atrium_test_support.py` in the translator wrap the shared modules for that tool, and each
+repository's `tests/test_paradata.py` tests its own paradata configuration.
 
 ### How a change to shared code lands
 
@@ -134,8 +165,8 @@ on their `agent-skill` branches), and each keeps a few workflows of its own:
     | `codeql.yml`                                                                | → hub           | push, PR, weekly                                                            |
     | `security.yml`                                                              | → hub           | push, PR, tags, weekly                                                      |
     | `release.yml`                                                               | local           | tags `v*` — version gate, then a self-contained release zip                 |
-    | `scheduled-smoke.yml`                                                       | local           | daily — checks the `v4.3` model revision is reachable, runs the slow tests  |
-    | `gpu-inference.yml`                                                         | local           | manual only — needs a self-hosted GPU runner that does not exist yet        |
+    | `scheduled-smoke.yml`                                                       | local           | daily — checks a published model revision is reachable, runs the slow tests |
+    | `gpu-inference.yml`                                                         | local           | manual only — runs on a self-hosted GPU runner                              |
 
 === "translator"
 
@@ -172,27 +203,28 @@ the hub. The hub re-reads on schedules and on manual dispatch instead.
 code. Stages meet in the `atrium_document` JSON — see
 [The document contract](document-contract.md) — and in three directories of files.
 
-### Tool-owned, and not enforced by anyone
+### Per-repository files
 
-These look standardised and are not. Each repository keeps its own copy and they have drifted:
+These start from hub templates but belong to each repository, which adapts them to its own
+code; CI does not compare them across repositories:
 
-| File                                         | State                                                                                                                                                                                                    |
-|----------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `CONTRIBUTING.md`                            | a hub skeleton exists (`docs/templates/CONTRIBUTING.md`), but it is **not vendored** — not in the manifest, not checked. See [Contributing standards](../contributing-standards.md)                      |
-| `ruff.toml`                                  | copied from a hub template and then edited locally. The template lists seven first-party modules for import sorting; page-classification lists five; the translator's has no import-sorting block at all |
-| `.pre-commit-config.yaml`                    | the tools pin pre-commit-hooks v6.0.0 and ruff v0.15.18; the hub's own config pins older versions                                                                                                        |
-| `CITATION.cff`, `LICENSE`, `para_config.txt` | per repository by design — they are what the release gate compares                                                                                                                                       |
+| File                                         | What it is                                                                                                                                |
+|----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| `CONTRIBUTING.md`                            | filled in from the hub skeleton `docs/templates/CONTRIBUTING.md`. See [Contributing standards](../contributing-standards.md)              |
+| `ruff.toml`                                  | started from a hub template; each repository names its own first-party modules for import sorting, and always excludes the vendored files |
+| `.pre-commit-config.yaml`                    | the hooks `pre-commit.reusable.yml` runs — whitespace, YAML and ruff                                                                      |
+| `CITATION.cff`, `LICENSE`, `para_config.txt` | per repository by design — they are what the release gate compares                                                                        |
 
 ## Sources
 
 This table records **provenance**: what this page was written from, not a build instruction.
 
-| Source                                                                                                            | What was taken from it                                           |
-|-------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------|
-| `atrium-project/docs/templates/shared/MANIFEST.json`                                                              | the 17 files and their destinations                              |
-| byte comparison of each manifest row against `atrium-page-classification@8c98a3d` and `atrium-translator@88242fe` | the parity claim, run 2026-09-22                                 |
-| `atrium-project/scripts/revendor_shared.sh`                                                                       | the re-vendoring procedure and its exit semantics                |
-| `atrium-project/.github/workflows/*.reusable.yml` and the hub-own workflows                                       | the federation                                                   |
-| each tool's `.github/workflows/*.yml` at its default branch                                                       | the per-tool tables                                              |
-| each tool's `ruff.toml` and `.pre-commit-config.yaml`                                                             | the drift in tool-owned configuration                            |
-| `atrium-project/agent_dev_logs/digests/project_state_2706.md` §3                                                  | the reason there is no monorepo — **rewritten from**, not quoted |
+| Source                                                                      | What was taken from it                                             |
+|-----------------------------------------------------------------------------|--------------------------------------------------------------------|
+| `atrium-project/docs/templates/shared/MANIFEST.json`                        | the 17 files and their destinations                                |
+| `atrium-page-classification@adee922`, `atrium-translator@71feaef`           | vendored destinations, repository-local helpers, Dockerfile stages |
+| `atrium-project/scripts/revendor_shared.sh`                                 | the re-vendoring procedure and its exit semantics                  |
+| `atrium-project/.github/workflows/*.reusable.yml` and the hub-own workflows | the federation                                                     |
+| each tool's `.github/workflows/*.yml` at its default branch                 | the per-tool tables                                                |
+| each tool's `ruff.toml` and `.pre-commit-config.yaml`                       | tool-owned configuration                                           |
+| `atrium-project/agent_dev_logs/digests/project_state_2706.md` §3            | the reason there is no monorepo — **rewritten from**, not quoted   |

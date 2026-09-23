@@ -2,33 +2,36 @@
 title: Contributing standards
 nav_order: 12
 status: partial
-round: 4
+round: 6
 issue: 57
 ---
 
 # Contributing standards
 
-The family contribution standard — branch model, commit convention, pull-request format — read
-once, and then where each repository actually deviates from it.
+The family contribution standard — branch model, commit convention, pull-request format,
+releases — read once, and then each repository's own conventions.
 
-!!! info "Compared so far: page-classification and translator"
-    The standard applies to all five tool repositories. The per-repository comparison below covers
-    the two documented so far.
+!!! info "Scope"
+    The standard applies to all five tool repositories. The per-repository conventions below
+    are page-classification's and the translator's.
 
-!!! warning "The standard is a skeleton, not a shared file"
-    The hub keeps a template at `docs/templates/CONTRIBUTING.md`, with «placeholders» for each
-    repository to fill. It is **not vendored**: it is not in `MANIFEST.json`, `revendor_shared.sh`
-    does not copy it, and `para-drift` does not check it. Each repository's `CONTRIBUTING.md` is its
-    own file, and they have drifted — which is why this page compares them instead of assuming them.
+!!! note "A template, filled in per repository"
+    The hub keeps the standard as a template, `docs/templates/CONTRIBUTING.md`, with
+    «placeholders» for each repository to fill. Unlike the shared code, it is not vendored:
+    each repository's `CONTRIBUTING.md` is its own file, adapted to its code, and is the
+    authority for that repository.
 
 ## The family standard
 
 ### Branches
 
-| Branch   | Environment          | Rule                                                                                       |
-|----------|----------------------|--------------------------------------------------------------------------------------------|
-| `test`   | Staging              | The base for all development. Always branch from `test`, and open pull requests against it |
-| `master` | Stable / integration | Merged only by a human reviewer. No pull requests directly into `master`                   |
+| Branch  | Environment          | Rule                                                                                       |
+|---------|----------------------|--------------------------------------------------------------------------------------------|
+| `test`  | Staging              | The base for all development. Always branch from `test`, and open pull requests against it |
+| default | Stable / integration | Merged only by a human reviewer. No pull requests directly into it                         |
+
+The stable branch is the repository's default branch — `master` in the translator, `vit` in
+page-classification, whose branch names follow its model families.
 
 Branch names follow three patterns:
 
@@ -73,121 +76,90 @@ Issues reference the commits that resolved them, not the other way round: a comm
 | `style`    | formatting, no logic change               |
 | `perf`     | a performance improvement                 |
 
-This table is **byte-identical** in the skeleton and in both documented repositories.
-
 ### Releases
 
 There is no release branch. A release is a **`v*` tag**, and three version strings must agree
 before it can publish: the tag, `CITATION.cff`'s `version`, and `para_config.txt`'s
 `[tool] version`. The hub's `check_version.py` — vendored into every tool — enforces it in each
-repository's release workflow, and `security.reusable.yml` checks it again. So a release is cut by
-bumping two files and tagging, never by hand-editing one.
+repository's release workflow, and `security.reusable.yml` checks it again. Cutting a release:
 
-## What the two repositories share, exactly
+1. Bump `version` and `date-released` in `CITATION.cff`, and `[tool] version` in
+   `para_config.txt`, to the same value.
+2. Add the release to the *Release History* table in `CONTRIBUTING.md`.
+3. Merge through `test` into the default branch.
+4. Tag the merge commit `v<version>` and push the tag.
+5. CI checks the three versions, builds the images, runs the release gate and — only if it
+   passes — publishes `<version>` and `latest`. See [Operations](operations.md#the-release-gate).
 
-Comparing each `##` section of the two `CONTRIBUTING.md` files byte for byte:
+### Shared code
 
-| Section                                          | page-classification vs translator               |
-|--------------------------------------------------|-------------------------------------------------|
-| Contributor Workflow                             | **identical**                                   |
-| Pull Request Format                              | **identical**                                   |
-| Commit Messages                                  | **identical**                                   |
-| Repository Documentation Management              | **identical**                                   |
-| Branches & Environments                          | identical except the three branch-name examples |
-| Code Conventions & Testing                       | differs — see below                             |
-| Release History, Project Contributions, Contacts | repository-specific by design                   |
+The seventeen files listed in
+[Architecture](ecosystem/architecture.md#what-is-canonical-and-what-is-vendored) are **never
+edited in a tool repository**: CI fails on a single changed byte. A change to shared code is
+made in the hub and copied out with `scripts/revendor_shared.sh`, and the tool repositories'
+copies land together. Everything else in a tool repository is its own.
 
-The four identical sections are themselves *not* identical to the skeleton — the wording differs
-in small ways (a one-line `git` command, a separate Draft-PR line, a shorter issue-tracking note) —
-so the skeleton states the family's intent, and these two files are close, unenforced copies of it.
+### Which document owns what
 
-Both repositories answer "who owns which document?" the same way, and it is worth following:
 `README.md` is for visitors — overview, workflow, quick start; `CONTRIBUTING.md` is for
-developers — conventions, branches, pull requests, testing. A rule lives in one of them, and the
-other links to it.
+developers — conventions, branches, pull requests, testing, the release history. A rule lives in
+one of them, and the other links to it.
 
-## Where each repository deviates
+## Per-repository conventions
 
 === "page-classification"
 
     | Topic                          | This repository                                                                                                    |
     |--------------------------------|--------------------------------------------------------------------------------------------------------------------|
     | Branch-name examples           | `feature-new-model`, `bugfix-truncated-image`, `hotfix-flags-priority`                                             |
-    | Minimum checks before a commit | `python -m compileall -q .` then `ruff check .` — no `pre-commit` step                                             |
+    | Minimum checks before a commit | `python -m compileall -q .` then `ruff check .`                                                                    |
     | Test requirements              | `pip install -r setup/requirements-test.txt`                                                                       |
     | Fast / full / coverage         | `pytest -m "not slow" --tb=short` · `pytest --tb=short` · `pytest -m "not slow" --cov=. --cov-report=term-missing` |
     | Lint configuration             | `ruff.toml`: line length 120, `py311`, rules `E, F, W, I`, `E501` ignored                                          |
-    | Pre-commit hooks               | pre-commit-hooks v6.0.0, ruff v0.15.18 (`--fix` + format), shellcheck v0.11.0                                      |
+    | Pre-commit hooks               | whitespace and YAML checks, ruff (`--fix` + format), shellcheck for the data scripts                               |
     | Config file                    | `setup/para_config.txt` — not at the root                                                                          |
 
 === "translator"
 
-    | Topic                          | This repository                                                                                                                                |
-    |--------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
-    | Branch-name examples           | `feature-amcr-validation`, `bugfix-chunk-truncation`, `hotfix-api-timeout` — the skeleton's own examples, which were evidently taken from here |
-    | Minimum checks before a commit | `python -m compileall -q .` then `pre-commit run --all-files`                                                                                  |
-    | Test requirements              | `pip install -r requirements-test.txt`                                                                                                         |
-    | Fast / full / coverage         | the same three commands                                                                                                                        |
-    | Lint configuration             | `ruff.toml`: line length 120, `py311`, rules `E, F, W, I`, `E501` ignored, no import-sorting block                                             |
-    | Pre-commit hooks               | pre-commit-hooks v6.0.0, ruff v0.15.18 (`--fix` + format) — no shellcheck                                                                      |
-    | Config file                    | `para_config.txt` at the root                                                                                                                  |
+    | Topic                          | This repository                                                            |
+    |--------------------------------|----------------------------------------------------------------------------|
+    | Branch-name examples           | `feature-amcr-validation`, `bugfix-chunk-truncation`, `hotfix-api-timeout` |
+    | Minimum checks before a commit | `python -m compileall -q .` then `pre-commit run --all-files`              |
+    | Test requirements              | `pip install -r requirements-test.txt`                                     |
+    | Fast / full / coverage         | the same three commands                                                    |
+    | Lint configuration             | `ruff.toml`: line length 120, `py311`, rules `E, F, W, I`, `E501` ignored  |
+    | Pre-commit hooks               | whitespace and YAML checks, ruff (`--fix` + format)                        |
+    | Config file                    | `para_config.txt` at the root                                              |
 
-## Contradictions a contributor will hit
+## What CI runs on a pull request
 
-Each is quoted from the file at its default branch and recorded here, not fixed here — the
-`CONTRIBUTING.md` files belong to their repositories.
+Every pull request against `test` runs the repository's caller workflows — the fast test lane
+and a container smoke test (`docker.yml`), the service contract (`api-contract.yml`), byte
+parity of the shared files (`para-drift.yml`), `pre-commit`, workflow lint, CodeQL and the
+version check. [Architecture → The CI federation](ecosystem/architecture.md#the-ci-federation)
+lists them. A pull request is ready for review when all of them are green.
 
-**page-classification**
+## Contributing to this site
 
-* **The branch model describes a repository that no longer exists.** `CONTRIBUTING.md` says to
-  branch from `test` and that `master` is the stable branch. The default branch is **`vit`**,
-  `test` currently equals `vit`, and `master` has not moved since 2026-06-26 — it still holds an
-  older `vit/…` subdirectory layout. The README, meanwhile, tells users to check out `vit` or
-  `clip`, which it treats as model-family lines. Someone who clones the default branch and follows
-  `CONTRIBUTING.md` receives instructions that do not match what they cloned.
-* A reference to "the recommended default (`main` branch)" means the **Hugging Face model
-  revision** `main`, not a git branch — the repository has no `main` branch.
+The site is built from `docs_site/` in the hub with MkDocs Material. A page:
 
-**translator**
-
-* The **release-history table's column headers are swapped**: the header reads
-  *Version · Release Type · Key Features & Fixes*, while every row is *version · features · type*.
-* The "minimum checks" comment says pre-commit "runs black, isort, flake8, etc."; the configured
-  hooks are whitespace and YAML checks plus ruff. The move to ruff is described two sections later.
-* A footnote points at **`ARUP-CAS/atrium-translator`**; the repository is `ufal/atrium-translator`.
-* `CONTRIBUTING.md` records alternative or locally hosted translation backends as "**not** in scope
-  … a planned direction", while the README advertises a pluggable architecture with LLM and
-  CTranslate2 backends. The code sides with the README — see
-  [translator → Overview](tools/translator/index.md).
-
-**Both**
-
-* Both files call `tests/test_paradata.py` "shared across all repos". It is **not** one of the 17
-  shared files, and the two copies differ from line 23 onward.
-* Neither has the skeleton's *Shared ("drop-in") code* section, so neither tells a contributor that
-  17 files must not be edited locally. [Architecture](ecosystem/architecture.md#what-is-canonical-and-what-is-vendored)
-  is the place that says it.
-
-**The skeleton itself**
-
-The template that new copies would be made from has defects of its own: its one-line pipeline
-order puts nlp-enrich before the translator and leaves out llm-enrich; it names 2 shared files
-where there are 17; and it refers to `paradata-drift.reusable.yml` and `docs/paradata-schema.md`,
-neither of which exists — the real names are `para-drift.reusable.yml` and
-`docs/paradata_schema.md`.
-
-## Sources
+* starts with front matter — `title`, `nav_order`, `status`, `issue`, and `repo` / `role` on
+  a tool page — and is listed in `mkdocs.yml`'s `nav`;
+* is **written**, not generated: it explains and connects, and leaves the full-length manual to
+  the tool's own `README.md`;
+* states lasting facts — what a tool is, how it works, how to use it — and keeps
+  time-bound findings out of the page;
+* ends with a `## Sources
 
 This table records **provenance**: what this page was written from, not a build instruction.
 
-| Source                                                         | What was taken from it                             |
-|----------------------------------------------------------------|----------------------------------------------------|
-| `atrium-project/docs/templates/CONTRIBUTING.md`                | the family standard, and its defects               |
-| `atrium-page-classification/CONTRIBUTING.md` @ `vit` `8c98a3d` | its sections, compared by hash, and its deviations |
-| `atrium-translator/CONTRIBUTING.md` @ `master` `88242fe`       | the same                                           |
-| each repository's `ruff.toml` and `.pre-commit-config.yaml`    | the lint and hook tables                           |
-| `git ls-remote` on both repositories, 2026-09-22               | the branch facts                                   |
-| `tests/test_paradata.py` in both repositories                  | byte comparison                                    |
+| Source                                                         | What was taken from it              |
+|----------------------------------------------------------------|-------------------------------------|
+| `atrium-project/docs/templates/CONTRIBUTING.md`                | the family standard                 |
+| `atrium-page-classification/CONTRIBUTING.md` @ `vit` `adee922` | its conventions and release history |
+| `atrium-translator/CONTRIBUTING.md` @ `master` `71feaef`       | the same                            |
+| each repository's `ruff.toml` and `.pre-commit-config.yaml`    | the lint and hook tables            |
+| `atrium-project/mkdocs.yml`, `tools/docs/requirements.txt`     | the site conventions and build      |
 
 Contact details are deliberately not reproduced here; each repository's own
 *Contacts & Acknowledgements* section is the place to find them.
