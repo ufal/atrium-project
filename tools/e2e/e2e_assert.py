@@ -29,15 +29,23 @@ Three issue #10 findings shaped what runs below:
     by catching a fork nobody had predicted, from a stage whose derivation was
     right: see `assert_doc_id_stable()`.
 
+A fourth check covers the one output that is not the record itself. With
+``--teitok-dir``, nlp-enrich's TEITOK file for the document must exist, be TEI
+with tokens, and contain every id the record points into:
+``pages[].teitok_surface`` → ``<surface id>`` and ``entities[]``/``lines[].teitok_ref``
+→ an element ``id``. See `assert_teitok()`.
+
 Usage:
     python tools/e2e/e2e_assert.py work/doc_json/5_llm.json \\
         --llm-stage-ran true \\
-        --stages work/doc_json/1_pc.json ... work/doc_json/5_llm.json
+        --stages work/doc_json/1_pc.json ... work/doc_json/5_llm.json \\
+        --teitok-dir work/nlp_out/TEITOK
 """
 
 import argparse
 import json
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 # The canonical atrium_document.py lives in docs/templates/shared/ here (the tool
@@ -181,6 +189,71 @@ def assert_doc_id_stable(stage_paths, final_doc, final_path):
     print(f"✅ doc_id: {distinct[0]!r} unchanged across {len(seen)} stage record(s)")
 
 
+def _teitok_format(root):
+    """The writer's format stamp: ``<application ident="atrium-nlp-enrich" version=...>``."""
+    for el in root.iter():
+        if el.tag.split("}")[-1] == "application" and el.get("ident") == "atrium-nlp-enrich":
+            return el.get("version")
+    return None
+
+
+def assert_teitok(doc, teitok_dir):
+    """nlp-enrich's TEITOK file agrees with the record that points into it.
+
+    The record's `pages[].teitok_surface` and `entities[].teitok_ref` are TEITOK-local
+    ids (`facs-1`, `n-5`), so a record can only be read together with the file. Nothing
+    else checks that the two agree: nlp-enrich's own XSD gate sees only the XML, and
+    the schema sees only the record.
+
+    Surfaces must always resolve. Entity/line refs must resolve for TEITOK format 2
+    (`version="teitok-2"`), whose writer and document hook take their ids from one
+    parse. Format-1 files (older images) numbered entities in two places, so an
+    unresolved ref there is reported but does not fail.
+    """
+    doc_id = doc.get("doc_id")
+    matches = sorted(Path(teitok_dir).rglob(f"{doc_id}.teitok.xml"))
+    assert matches, (
+        f"❌ no {doc_id}.teitok.xml under {teitok_dir}: nlp-enrich ran with SAVE_TEITOK=true "
+        f"but wrote no TEITOK for this document"
+    )
+    path = matches[0]
+    root = ET.parse(path).getroot()
+    assert root.tag.split("}")[-1] == "TEI", f"❌ {path}: root is <{root.tag}>, not <TEI>"
+    tokens = [el for el in root.iter() if el.tag.split("}")[-1] == "tok"]
+    assert tokens, f"❌ {path}: no <tok> — the TEITOK carries no text"
+
+    ids = {el.get("id") for el in root.iter() if el.get("id")}
+    surfaces = {el.get("id") for el in root.iter() if el.tag.split("}")[-1] == "surface"}
+    for page in doc.get("pages") or []:
+        ref = page.get("teitok_surface")
+        if ref is None:
+            continue
+        assert ref in surfaces, (
+            f"❌ pages[{page.get('page')!r}].teitok_surface = {ref!r} is not a <surface id> in "
+            f"{path.name} (surfaces: {sorted(surfaces)})"
+        )
+
+    fmt = _teitok_format(root)
+    refs = [
+        (block, row.get("teitok_ref"))
+        for block in ("entities", "lines")
+        for row in doc.get(block) or []
+        if row.get("teitok_ref")
+    ]
+    missing = [(block, ref) for block, ref in refs if ref not in ids]
+    if missing and fmt == "teitok-2":
+        raise AssertionError(f"❌ {len(missing)} teitok_ref(s) point at no element of {path.name}: {missing[:5]}")
+    if missing:
+        print(
+            f"⚠️  {len(missing)} of {len(refs)} teitok_ref(s) do not resolve in {path.name}; "
+            f"tolerated for a TEITOK file without the teitok-2 stamp (format {fmt!r})"
+        )
+    print(
+        f"✅ teitok: {path.name} ({fmt or 'format 1'}) — {len(tokens)} token(s), "
+        f"{len(surfaces)} surface(s), {len(refs) - len(missing)}/{len(refs)} ref(s) resolve"
+    )
+
+
 def _assert_enrichment(doc, llm_stage_ran):
     """The llm-enrich block check, shared by both branches (G5).
 
@@ -284,7 +357,7 @@ def assert_digital_contract(doc, json_path):
     return pages, needs_ocr_pages
 
 
-def assert_document_contract(json_path, llm_stage_ran="auto", stage_paths=(), expect_needs_ocr=False):
+def assert_document_contract(json_path, llm_stage_ran="auto", stage_paths=(), expect_needs_ocr=False, teitok_dir=None):
     doc = _load(json_path)
 
     # 0. The contract itself, before any block-by-block check: a record that does
@@ -393,6 +466,10 @@ def assert_document_contract(json_path, llm_stage_ran="auto", stage_paths=(), ex
     # 4. LLM Enrich: API Util Regeneration — conditional on the llm stage having run.
     _assert_enrichment(doc, llm_stage_ran)
 
+    # 5. NLP Enrich: the TEITOK file the record points into (only when asked for).
+    if teitok_dir:
+        assert_teitok(doc, teitok_dir)
+
     print(f"✅ e2e_assert.py: Document contract verified successfully for {json_path}")
 
 
@@ -435,6 +512,14 @@ def main(argv=None):
         help="every per-stage record in pipeline order. doc_id must be identical "
         "across all of them and equal to the final record's.",
     )
+    parser.add_argument(
+        "--teitok-dir",
+        default=None,
+        metavar="DIR",
+        help="scanned branch: nlp-enrich's TEITOK_OUTPUT_DIR. The document's .teitok.xml "
+        "must exist, be TEI with tokens, and contain every <surface id> / teitok_ref the "
+        "record points at.",
+    )
     args = parser.parse_args(argv)
 
     assert_document_contract(
@@ -442,6 +527,7 @@ def main(argv=None):
         llm_stage_ran=args.llm_stage_ran,
         stage_paths=args.stages,
         expect_needs_ocr=args.expect_needs_ocr,
+        teitok_dir=args.teitok_dir,
     )
     return 0
 

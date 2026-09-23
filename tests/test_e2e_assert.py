@@ -263,3 +263,76 @@ def test_cli_accepts_the_workflow_invocation(tmp_path, record):
     stages = _stage_chain(tmp_path, record, [record["doc_id"]] * 5)
     assert e2e_assert.main([final, "--llm-stage-ran", "true", "--stages", *stages]) == 0
     assert e2e_assert.main([final, "--llm-stage-ran", "false", "--stages", *stages]) == 0
+
+
+# ── --teitok-dir: the TEITOK file must contain every id the record points into ────────────
+
+
+def _teitok(tmp_path, *, version="teitok-2", surfaces=("facs-1", "facs-2"), names=("n-5",), toks=1):
+    app = (
+        f'<application ident="atrium-nlp-enrich" version="{version}"><label>w</label></application>' if version else ""
+    )
+    facsimile = "".join(f'<surface id="{s}"><graphic url="x.png"/></surface>' for s in surfaces)
+    tokens = " ".join(f'<tok id="w-{i}">t{i}</tok>' for i in range(1, toks + 1))
+    body = "".join(f'<name id="{n}" type="LOC">' for n in names) + tokens + "</name>" * len(names)
+    d = tmp_path / "TEITOK"
+    d.mkdir(exist_ok=True)
+    (d / "CTX000000001.teitok.xml").write_text(
+        f'<TEI xmlnsoff="http://www.tei-c.org/ns/1.0"><teiHeader><encodingDesc><appInfo>{app}'
+        f"</appInfo></encodingDesc></teiHeader><facsimile>{facsimile}</facsimile>"
+        f'<text><body><div type="TextBlock" id="b-1.1"><s id="s-3">{body}</s></div></body></text></TEI>',
+        encoding="utf-8",
+    )
+    return str(d)
+
+
+def test_teitok_that_matches_the_record_passes(tmp_path, record, capsys):
+    teitok_dir = _teitok(tmp_path)
+    final = _write(tmp_path, "final.json", record)
+    e2e_assert.assert_document_contract(final, llm_stage_ran=True, teitok_dir=teitok_dir)
+    assert "✅ teitok: CTX000000001.teitok.xml (teitok-2)" in capsys.readouterr().out
+
+
+def test_missing_teitok_file_fails(tmp_path, record):
+    (tmp_path / "TEITOK").mkdir()
+    final = _write(tmp_path, "final.json", record)
+    with pytest.raises(AssertionError, match="no CTX000000001.teitok.xml"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=True, teitok_dir=str(tmp_path / "TEITOK"))
+
+
+def test_teitok_without_tokens_fails(tmp_path, record):
+    teitok_dir = _teitok(tmp_path, toks=0, names=())
+    final = _write(tmp_path, "final.json", record)
+    with pytest.raises(AssertionError, match="no <tok>"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=True, teitok_dir=teitok_dir)
+
+
+def test_unresolved_teitok_surface_fails(tmp_path, record):
+    """pages[].teitok_surface pointing at no <surface> -- e.g. a record written with one
+    id scheme next to a TEITOK file written with another."""
+    teitok_dir = _teitok(tmp_path, surfaces=("CTX000000001.surface1",))
+    final = _write(tmp_path, "final.json", record)
+    with pytest.raises(AssertionError, match="teitok_surface = 'facs-1'"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=True, teitok_dir=teitok_dir)
+
+
+def test_unresolved_entity_ref_fails_for_teitok_format_2(tmp_path, record):
+    teitok_dir = _teitok(tmp_path, names=("n-1",))
+    final = _write(tmp_path, "final.json", record)
+    with pytest.raises(AssertionError, match="teitok_ref"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=True, teitok_dir=teitok_dir)
+
+
+def test_unresolved_entity_ref_only_warns_for_format_1(tmp_path, record, capsys):
+    """Released images before TEITOK format 2 numbered entities in two places; the check
+    reports a mismatch there without failing the lane."""
+    teitok_dir = _teitok(tmp_path, version=None, names=("n-1",))
+    final = _write(tmp_path, "final.json", record)
+    e2e_assert.assert_document_contract(final, llm_stage_ran=True, teitok_dir=teitok_dir)
+    assert "do not resolve" in capsys.readouterr().out
+
+
+def test_cli_accepts_teitok_dir(tmp_path, record):
+    teitok_dir = _teitok(tmp_path)
+    final = _write(tmp_path, "final.json", record)
+    assert e2e_assert.main([final, "--llm-stage-ran", "true", "--teitok-dir", teitok_dir]) == 0

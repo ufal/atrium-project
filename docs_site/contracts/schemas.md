@@ -86,9 +86,10 @@ the vendored schema:
 
 ```python
 import json, jsonschema
+
 schema = json.load(open("atrium_document.schema.json"))
 record = json.load(open("CTX000000003.document.json"))
-jsonschema.validate(record, schema)          # raises ValidationError on failure
+jsonschema.validate(record, schema)  # raises ValidationError on failure
 ```
 
 or through the shared module, which also applies the version rules below:

@@ -187,7 +187,7 @@
         "height": 792,
         "unit": "pt"
       },
-      "teitok_surface": "CTX000000001.surface1"
+      "teitok_surface": "facs-1"
     },
     {
       "page": "2",
@@ -201,7 +201,7 @@
         "height": 792,
         "unit": "pt"
       },
-      "teitok_surface": "CTX000000001.surface2"
+      "teitok_surface": "facs-2"
     }
   ],
   "content": {
@@ -218,7 +218,7 @@
       "quality_score": 0.98,
       "lemma": "výzkum",
       "upos": "NOUN",
-      "teitok_ref": "CTX000000001.s3",
+      "teitok_ref": "s-3",
       "bbox": [
         120,
         400,
@@ -246,7 +246,7 @@
         470,
         432
       ],
-      "teitok_ref": "CTX000000001.name5",
+      "teitok_ref": "n-5",
       "pid": {
         "wikidata": null,
         "geonames": null,

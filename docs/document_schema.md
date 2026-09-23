@@ -83,6 +83,17 @@ space — **origin top-left, y increasing downwards, in the unit named by that p
 `pages[].canvas.unit`** — and `pages[].teitok_surface` is a **logical** `<surface>` id, so
 the presentation layer re-renders on demand.
 
+The TEITOK references are **local ids inside that document's TEITOK file** (nlp-enrich,
+`TEITOK/<doc_id>.teitok.xml`), in TEITOK's own scheme: `pages[].teitok_surface` = the page's
+`<surface id>` (`facs-1`), `entities[].teitok_ref` = the entity's `<name id>` (`n-5`),
+`lines[].teitok_ref` = a sentence `<s id>` (`s-3`). They are not globally unique, so they
+are always read together with `doc_id` (or `derived_from.teitok`). nlp-enrich's TEITOK
+format 2 (2026-09) takes them from the same parse as the XML; before that they were
+`<doc_id>.surface1`/`<doc_id>.name5`. The schema types them as plain strings, so both forms
+validate. `pages[].teitok_surface` is set only for pages that have a `<surface>`, which
+means ALTO input: the text-only `/enrich` path has no facsimile. The E2E lane checks that
+every reference resolves (`tools/e2e/e2e_assert.py --teitok-dir`).
+
 That convention is normative and format-independent. It is what ALTO already uses, so the
 OCR path is unchanged, but it is **not** PDF user space, which puts the origin bottom-left:
 a digital-born PDF adapter must convert before writing (with pdfplumber, use `top`/`bottom`,

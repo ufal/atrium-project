@@ -163,6 +163,11 @@ jobs:
           OUTPUT_TXT = /workspace/work/PAGE_TXT
           EOF
 
+      # SAVE_TEITOK=true (2026-09-23): the fixtures README advertises "... -> TEITOK", and
+      # the record's pages[].teitok_surface / entities[].teitok_ref are ids INSIDE that file,
+      # so with it off the lane checked references to a file nobody wrote. nlp-enrich's
+      # stats stage validates its own XSD before it finishes; the assert step below checks
+      # that the file and the record agree (--teitok-dir).
       - name: Write nlp-enrich e2e config
         run: |
           W="${{ github.workspace }}/work"
@@ -189,7 +194,7 @@ jobs:
           WORD_CHUNK_LIMIT=900
           SAVE_CSV=true
           SAVE_CONLLU_NE=true
-          SAVE_TEITOK=false
+          SAVE_TEITOK=true
           FAIL_ON_EMPTY=true
           EOF
 
@@ -472,14 +477,17 @@ jobs:
           # shellcheck disable=SC2086 — STAGES is a deliberate list of paths
           python tools/e2e/e2e_assert.py "$FINAL" \
             --llm-stage-ran "$LLM_STAGE_RAN" \
-            --stages $STAGES
+            --stages $STAGES \
+            --teitok-dir work/nlp_out/TEITOK
 
       - name: Upload Pipeline Artifacts
         if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-pipeline-outputs
-          path: work/doc_json/*.json
+          path: |
+            work/doc_json/*.json
+            work/nlp_out/TEITOK/*.teitok.xml
 
       - name: Open issue on scheduled failure
         if: failure() && github.event_name == 'schedule'

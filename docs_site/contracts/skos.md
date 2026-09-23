@@ -138,6 +138,7 @@ Records carry the bare label. To get from a label to its concept:
 
 ```python
 from atrium_vocab import concept_uri, validate_labels
+
 concept_uri("page-category", "TEXT_HW")
 # 'https://w3id.org/atrium/page-category/TEXT_HW'
 validate_labels("page-category", ["TEXT", "Text", "Plate"])

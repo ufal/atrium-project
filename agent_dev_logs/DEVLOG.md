@@ -1330,3 +1330,18 @@ derived reading aid in `agent_dev_logs/`._
   tool names, settled history and behaviour; the built site greps clean for e-mail addresses,
   handles, token prefixes, the grant number and run IDs. `pytest tests/` 141 passed, 4 skipped;
   `workflow_lint.py --offline` OK — no code changed.
+
+## 2026-09-23 — TEITOK format 2 reaches the hub (nlp-enrich #9/#10/#28, Stage 5)
+
+* `fixtures/atrium_document.example.json`: TEITOK references are the file-local ids nlp-enrich's format-2
+writer emits (`teitok_surface` `facs-1`/`facs-2`, `teitok_ref` `s-3`/`n-5`); `docs/document_schema.md`
+documents them (local to `<doc_id>.teitok.xml`, plain strings, `teitok_surface` only for ALTO pages).
+* `e2e-pipeline-smoke.yml`: nlp-enrich runs with `SAVE_TEITOK=true`, the failure artefact includes the TEITOK
+file, and `tools/e2e/e2e_assert.py --teitok-dir` checks that the document's `.teitok.xml` exists, is TEI with
+tokens, and contains every `<surface id>` / `teitok_ref` the record points at. Entity refs are strict for
+`version="teitok-2"` files and only reported for older ones, so the lane stays green on released images.
+Tests in `tests/test_e2e_assert.py`.
+* Not touched, on purpose: `docs/templates/shared/atrium_vocab.py` (byte-identical in five tool repos; its
+authority `teitok_alto.py _CNEC_TO_CONLL` still exists, now an alias of nlp-enrich's `ner_types.CNEC_TO_CONLL`
+and pinned equal by nlp-enrich's `tests/test_ner_types.py`) and `docs_site/external-tools.md` (nlp/llm entries
+belong to a later #57 round). Branch `claude/inspiring-cerf-2gdtd1`, local, awaiting review.
