@@ -1345,3 +1345,39 @@ Tests in `tests/test_e2e_assert.py`.
 authority `teitok_alto.py _CNEC_TO_CONLL` still exists, now an alias of nlp-enrich's `ner_types.CNEC_TO_CONLL`
 and pinned equal by nlp-enrich's `tests/test_ner_types.py`) and `docs_site/external-tools.md` (nlp/llm entries
 belong to a later #57 round). Branch `claude/inspiring-cerf-2gdtd1`, local, awaiting review.
+
+## 2026-09-24 — TEITOK round 4 (nlp-enrich #38); the hub's `13.*` logs were another repo's
+
+* **The `13` mix-up.** `agent_dev_logs/digests/13.digest.md` and `plans/13.plan.md` held the data-format strategy of
+**atrium-llm-enrich #13** ("The intermediate steps — data format to use"), while hub **#13** is the CAA Proceedings
+paper. The 2026-09-23 "Current state summary" about TEITOK ids and the E2E check was posted on hub #13 for the same
+reason. The pair is rewritten for the CAA paper (deadline 2026-10-31); the design content moved to llm-enrich's own
+#13 logs; moving the misposted comment is a user action. Earlier lines of this file that say "#13" in the data-format
+sense — 2026-07-24 ("digests + plans refreshed for #13"), 2026-07-29 ("the #13 document accretion") and the
+2026-09-23 Stage-5 entry — mean atrium-llm-enrich #13.
+* **nlp-enrich v0.21.0** (TEITOK format 2) is tagged and published, so `:latest` now writes format 2; the E2E, which
+last ran on 09-23, has not run on it yet. Its `--teitok-dir` check is strict for exactly `version="teitok-2"`, which
+the round-4 plan keeps.
+* **Round-4 findings that touch the hub:** `docs_site/pipelines.md` W11 misdescribes flexiconv (it converts *into*
+TEITOK, in nlp-enrich and llm-enrich only); `docs_site/external-tools.md` attributes TEI/TEITOK and flexiconv to the
+wrong tools and has no TEITOK/flexi* entries; `docs/document_schema.md` needs `teitok_surface` for converted layout
+documents, a note that `lines[].teitok_ref` is not written yet, and the record-vs-TEITOK bbox units;
+`tools/e2e/e2e_assert.py` accepts a reference that matches any element id and does not check pages.
+* **Small corrections:** `digests/24.digest.md` / `plans/24.plan.md` (llm-enrich no longer carries `teitok_alto.py`;
+plan title), `digests/53.digest.md` (pin line), `plans/54.plan.md` (#13 references name atrium-llm-enrich). The
+`13`, `24` and `53` files are on `test` as `d006088` (with the tables re-padded); `plans/54.plan.md` is not yet.
+* **Round 4 implemented the same day (delivered as files, not yet on `test`).**
+  * `tools/e2e/e2e_assert.py` `assert_teitok`: for a `teitok-2` file an `entities[].teitok_ref` must name a `<name>`
+    and a `lines[].teitok_ref` an `<s>` (`wrong_kind`), and `entities[].page` must equal the `<pb n>` in force where
+    the `<name>` starts (`wrong_page`) — the check that would have caught nlp-enrich's page defect; older files keep
+    report-only refs; the legacy `</n>` close tag is repaired before parsing. Four new tests in
+    `tests/test_e2e_assert.py`; a real stage-4 record + TEITOK pair from nlp-enrich's round 4 passes.
+  * Docs: `docs_site/pipelines.md` (W11 in both tables: flexiconv converts *into* TEITOK, in nlp-enrich and
+    llm-enrich), `docs_site/external-tools.md` (TEITOK writer/readers, flexiconv's licence, pin and owner),
+    `docs/document_schema.md` (`teitok_surface` for converted layouts, `entities[].page` = the page of the `<pb>` in
+    force, `lines[].teitok_ref` not written yet, record bbox units vs TEITOK boxes), `docs/agent_skill_strategy.md`
+    (llm-enrich accepts no ALTO; nlp-enrich takes a lines file + ALTO or a converted TEITOK), `docs/docker_gha_roadmap.md`
+    (H2: the VCS pins are closed, the hub's unpinned tooling installs remain).
+  * `pytest tests/`: 169 passed; `mkdocs build --strict` and `tools/ci/workflow_lint.py --offline` clean.
+  * Still the user's: move the misposted 09-23 comment from hub #13 to atrium-llm-enrich #13; dispatch the E2E on the
+    released nlp-enrich image (the first format-2 run) and again once the round-4 change set is released.

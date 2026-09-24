@@ -90,9 +90,21 @@ The TEITOK references are **local ids inside that document's TEITOK file** (nlp-
 are always read together with `doc_id` (or `derived_from.teitok`). nlp-enrich's TEITOK
 format 2 (2026-09) takes them from the same parse as the XML; before that they were
 `<doc_id>.surface1`/`<doc_id>.name5`. The schema types them as plain strings, so both forms
-validate. `pages[].teitok_surface` is set only for pages that have a `<surface>`, which
-means ALTO input: the text-only `/enrich` path has no facsimile. The E2E lane checks that
-every reference resolves (`tools/e2e/e2e_assert.py --teitok-dir`).
+validate. `pages[].teitok_surface` is set only for pages that have a `<surface>`: ALTO
+input, or a converted TEITOK layout whose pages name an image or a size (nlp-enrich's
+`FLEXICONV_ANNOTATE`, or `/enrich` with a TEITOK upload or an `alto` part); a text-only run has
+no facsimile. `entities[].page` is the page of the entity's first token, the same page as the
+`<pb>` in force where its `<name>` starts (nlp-enrich takes both from one resolution of the
+document's pages, layout first — since nlp-enrich#38, not from UDPipe's chunks). The E2E lane
+checks that every reference resolves to the right element (`entities[]` to a `<name>`,
+`lines[]` to an `<s>`) and that the pages agree (`tools/e2e/e2e_assert.py --teitok-dir`).
+
+Two things a reader of both files should know. `lines[].teitok_ref` is granted to nlp-enrich
+but **not written** by it today (its hook's `include_lines` branch is a placeholder; the
+fixture's `s-3` shows the intended form). And `entities[].bbox` is in the **layout source's
+own coordinates** (ALTO units, as `pages[].canvas` declares), while the TEITOK file may have
+scaled its `bbox`es to the page images (`INPUT_PAGES_DIR`, `IMAGE_DPI`) or shifted them to the
+PrintSpace (`BBOX_ORIGIN=printspace`); its `<surface lrx lry>` names the extent it uses.
 
 That convention is normative and format-independent. It is what ALTO already uses, so the
 OCR path is unchanged, but it is **not** PDF user space, which puts the origin bottom-left:

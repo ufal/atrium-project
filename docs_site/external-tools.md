@@ -150,7 +150,10 @@ under AGPL-3.0 or a commercial licence, and Ghostscript under AGPL-3.0.
 
 PAGE XML and hOCR (other OCR output formats), METS (a packaging standard for digitised
 objects), TEI P5 and TEITOK (text-encoding formats), and IOB2 (a token-level tagging scheme for
-named entities) belong to alto-postprocess and nlp-enrich.
+named entities) belong to alto-postprocess and nlp-enrich. TEITOK in particular: nlp-enrich
+writes it (its "format 2" follows the conventions of the TEITOK tools — flexiconv, flexipipe,
+xmltokenizer, teitok-tools — and is tested against flexiconv's reader); llm-enrich and
+alto-postprocess read it.
 
 ## Models
 
@@ -675,8 +678,11 @@ every published image. It replaced a separate SBOM job that could race the image
 
 ### Infrastructure used by the other stages
 
-vLLM and Ollama (servers for running large language models locally), flexiconv (format
-conversion) and alto-tools (ALTO utilities) belong to llm-enrich and alto-postprocess.
+vLLM and Ollama (servers for running large language models locally) belong to llm-enrich;
+alto-tools (ALTO utilities, vendored as `alto_tools.py`) to alto-postprocess. flexiconv (UFAL's
+converter of PDF, DOCX, PAGE XML, hOCR, … into TEITOK; GPL-3.0-or-later, optional, pinned at
+v0.3.10) belongs to nlp-enrich, whose `api_flexiconv.sh` runs it on the command line only — no
+service image contains it; llm-enrich vendors the same adapter.
 
 ## The ATRIUM project itself
 

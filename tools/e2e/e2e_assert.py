@@ -44,6 +44,7 @@ Usage:
 
 import argparse
 import json
+import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -189,6 +190,40 @@ def assert_doc_id_stable(stage_paths, final_doc, final_path):
     print(f"✅ doc_id: {distinct[0]!r} unchanged across {len(seen)} stage record(s)")
 
 
+# Older TEITOK exports (nlp-enrich format 1) close <name> with </n>: not well-formed XML.
+_NAME_CLOSE = re.compile(r"</n\s*>")
+_PB_ID = re.compile(r"pb-(\d+)")
+#: The element a record's teitok_ref must name, per block.
+_REF_TAGS = {"entities": "name", "lines": "s"}
+
+
+def _local(tag):
+    return tag.split("}")[-1] if isinstance(tag, str) else ""
+
+
+def _parse_teitok(path):
+    """The TEITOK root, after repairing the legacy ``</n>`` close tag (reported, not fatal)."""
+    text, repaired = _NAME_CLOSE.subn("</name>", Path(path).read_text(encoding="utf-8"))
+    if repaired:
+        print(f"ℹ️  {Path(path).name}: {repaired} legacy </n> close tag(s) repaired before parsing")
+    return ET.fromstring(text)
+
+
+def _pages_in_force(root):
+    """Element id -> the page of the ``<pb>`` in force where the element starts: the K of
+    ``pb-K`` (the writer's page number, the one the record uses), else ``pb@n``. A ``<pb>``
+    inside an element (a sentence or entity running over a page break) comes after its
+    start, so the element stays on the page it starts on -- its first token's page."""
+    page, out = None, {}
+    for el in root.iter():
+        if _local(el.tag) == "pb":
+            m = _PB_ID.fullmatch(el.get("id") or "")
+            page = m.group(1) if m else (el.get("n") or page)
+        elif el.get("id"):
+            out[el.get("id")] = page
+    return out
+
+
 def _teitok_format(root):
     """The writer's format stamp: ``<application ident="atrium-nlp-enrich" version=...>``."""
     for el in root.iter():
@@ -205,10 +240,14 @@ def assert_teitok(doc, teitok_dir):
     else checks that the two agree: nlp-enrich's own XSD gate sees only the XML, and
     the schema sees only the record.
 
-    Surfaces must always resolve. Entity/line refs must resolve for TEITOK format 2
-    (`version="teitok-2"`), whose writer and document hook take their ids from one
-    parse. Format-1 files (older images) numbered entities in two places, so an
-    unresolved ref there is reported but does not fail.
+    Surfaces must always resolve. For TEITOK format 2 (`version="teitok-2"`), whose
+    writer and document hook take their ids and pages from one parse, entity/line refs
+    must resolve *to the right element* (`entities[]` to a `<name>`, `lines[]` to an `<s>`)
+    and every entity's `page` must be the page of the `<pb>` in force where its `<name>`
+    starts. That last check is the one that would have caught nlp-enrich#38: pages taken
+    from UDPipe's chunks put entities on one page in the record and under another `<pb>` in
+    the TEITOK. Format-1 files (older images) numbered entities in two places, so a
+    mismatch there is reported but does not fail.
     """
     doc_id = doc.get("doc_id")
     matches = sorted(Path(teitok_dir).rglob(f"{doc_id}.teitok.xml"))
@@ -217,13 +256,13 @@ def assert_teitok(doc, teitok_dir):
         f"but wrote no TEITOK for this document"
     )
     path = matches[0]
-    root = ET.parse(path).getroot()
-    assert root.tag.split("}")[-1] == "TEI", f"❌ {path}: root is <{root.tag}>, not <TEI>"
-    tokens = [el for el in root.iter() if el.tag.split("}")[-1] == "tok"]
+    root = _parse_teitok(path)
+    assert _local(root.tag) == "TEI", f"❌ {path}: root is <{root.tag}>, not <TEI>"
+    tokens = [el for el in root.iter() if _local(el.tag) == "tok"]
     assert tokens, f"❌ {path}: no <tok> — the TEITOK carries no text"
 
-    ids = {el.get("id") for el in root.iter() if el.get("id")}
-    surfaces = {el.get("id") for el in root.iter() if el.tag.split("}")[-1] == "surface"}
+    ids = {el.get("id"): _local(el.tag) for el in root.iter() if el.get("id")}
+    surfaces = {el.get("id") for el in root.iter() if _local(el.tag) == "surface"}
     for page in doc.get("pages") or []:
         ref = page.get("teitok_surface")
         if ref is None:
@@ -234,19 +273,39 @@ def assert_teitok(doc, teitok_dir):
         )
 
     fmt = _teitok_format(root)
-    refs = [
-        (block, row.get("teitok_ref"))
-        for block in ("entities", "lines")
-        for row in doc.get(block) or []
-        if row.get("teitok_ref")
-    ]
+    rows = [(block, row) for block in ("entities", "lines") for row in doc.get(block) or [] if row.get("teitok_ref")]
+    refs = [(block, row["teitok_ref"]) for block, row in rows]
     missing = [(block, ref) for block, ref in refs if ref not in ids]
-    if missing and fmt == "teitok-2":
-        raise AssertionError(f"❌ {len(missing)} teitok_ref(s) point at no element of {path.name}: {missing[:5]}")
-    if missing:
+    wrong_kind = [(block, ref, ids[ref]) for block, ref in refs if ref in ids and ids[ref] != _REF_TAGS[block]]
+    in_force = _pages_in_force(root)
+    wrong_page = [
+        (row["teitok_ref"], str(row.get("page")), in_force[row["teitok_ref"]])
+        for block, row in rows
+        if block == "entities"
+        and in_force.get(row["teitok_ref"]) is not None
+        and str(row.get("page")) != in_force[row["teitok_ref"]]
+    ]
+    if fmt == "teitok-2":
+        problems = []
+        if missing:
+            problems.append(f"{len(missing)} teitok_ref(s) point at no element: {missing[:5]}")
+        if wrong_kind:
+            problems.append(
+                f"{len(wrong_kind)} teitok_ref(s) point at the wrong element (entities -> <name>, "
+                f"lines -> <s>): {wrong_kind[:5]}"
+            )
+        if wrong_page:
+            problems.append(
+                f"{len(wrong_page)} entit(y/ies) on another page than the <pb> in force at their "
+                f"<name> — (ref, record page, TEITOK page): {wrong_page[:5]}"
+            )
+        if problems:
+            raise AssertionError(f"❌ {path.name}: " + "; ".join(problems))
+    elif missing or wrong_kind or wrong_page:
         print(
-            f"⚠️  {len(missing)} of {len(refs)} teitok_ref(s) do not resolve in {path.name}; "
-            f"tolerated for a TEITOK file without the teitok-2 stamp (format {fmt!r})"
+            f"⚠️  {path.name}: {len(missing)} unresolved, {len(wrong_kind)} mistyped and "
+            f"{len(wrong_page)} mis-paged teitok_ref(s) of {len(refs)}; tolerated for a TEITOK "
+            f"file without the teitok-2 stamp (format {fmt!r}) — they do not resolve reliably"
         )
     print(
         f"✅ teitok: {path.name} ({fmt or 'format 1'}) — {len(tokens)} token(s), "

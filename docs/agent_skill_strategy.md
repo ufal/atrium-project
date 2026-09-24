@@ -132,13 +132,13 @@ HEAD checks of the LINDAT UDPipe/NameTag URLs).
 
 ### 4.2 Primary endpoints stay domain-specific
 
-| Service             | Primary endpoint(s)                                                                                                                           | Input                            | Output                         |
-|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|--------------------------------|
-| page-classification | `POST /predict_image`, `POST /predict_document`                                                                                               | PNG/JPEG · PDF                   | JSON top-N labels (per page)   |
-| translator          | `POST /translate`                                                                                                                             | ALTO/metadata XML                | translated XML attachment      |
-| alto-postprocess    | `POST /process`                                                                                                                               | ALTO XML · TXT                   | JSON per-line lang/quality     |
-| nlp-enrich          | `POST /enrich`, `POST /enrich_text`, `POST /rescale`, jobs API (`POST /jobs`, `GET /jobs/{id}`, `GET /jobs/{id}/result`, `DELETE /jobs/{id}`) | lines file / JSON lines / TEITOK | TEITOK XML + keywords envelope |
-| llm-enrich (new)    | `POST /extract_keywords`, `POST /extract_keywords_text`                                                                                       | TXT/CSV/TEITOK/ALTO / JSON lines | JSON per-line vocab keywords   |
+| Service             | Primary endpoint(s)                                                                                                                           | Input                                               | Output                         |
+|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|--------------------------------|
+| page-classification | `POST /predict_image`, `POST /predict_document`                                                                                               | PNG/JPEG · PDF                                      | JSON top-N labels (per page)   |
+| translator          | `POST /translate`                                                                                                                             | ALTO/metadata XML                                   | translated XML attachment      |
+| alto-postprocess    | `POST /process`                                                                                                                               | ALTO XML · TXT                                      | JSON per-line lang/quality     |
+| nlp-enrich          | `POST /enrich`, `POST /enrich_text`, `POST /rescale`, jobs API (`POST /jobs`, `GET /jobs/{id}`, `GET /jobs/{id}/result`, `DELETE /jobs/{id}`) | lines file (+ ALTO) / JSON lines / converted TEITOK | TEITOK XML + keywords envelope |
+| llm-enrich (new)    | `POST /extract_keywords`, `POST /extract_keywords_text`                                                                                       | TXT/MD/CSV/TEITOK / JSON lines                      | JSON per-line vocab keywords   |
 
 **No renames.** Uniformity lives in the meta-contract, not the paths. (A rejected alternative —
 one `/process` everywhere — would break every existing client and frontend for cosmetic gain.)

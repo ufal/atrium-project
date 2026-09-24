@@ -268,19 +268,29 @@ def test_cli_accepts_the_workflow_invocation(tmp_path, record):
 # ── --teitok-dir: the TEITOK file must contain every id the record points into ────────────
 
 
-def _teitok(tmp_path, *, version="teitok-2", surfaces=("facs-1", "facs-2"), names=("n-5",), toks=1):
+def _teitok(
+    tmp_path,
+    *,
+    version="teitok-2",
+    surfaces=("facs-1", "facs-2"),
+    names=("n-5",),
+    toks=1,
+    page="1",
+    close="</name>",
+):
     app = (
         f'<application ident="atrium-nlp-enrich" version="{version}"><label>w</label></application>' if version else ""
     )
     facsimile = "".join(f'<surface id="{s}"><graphic url="x.png"/></surface>' for s in surfaces)
     tokens = " ".join(f'<tok id="w-{i}">t{i}</tok>' for i in range(1, toks + 1))
-    body = "".join(f'<name id="{n}" type="LOC">' for n in names) + tokens + "</name>" * len(names)
+    body = "".join(f'<name id="{n}" type="LOC">' for n in names) + tokens + close * len(names)
     d = tmp_path / "TEITOK"
     d.mkdir(exist_ok=True)
     (d / "CTX000000001.teitok.xml").write_text(
         f'<TEI xmlnsoff="http://www.tei-c.org/ns/1.0"><teiHeader><encodingDesc><appInfo>{app}'
         f"</appInfo></encodingDesc></teiHeader><facsimile>{facsimile}</facsimile>"
-        f'<text><body><div type="TextBlock" id="b-1.1"><s id="s-3">{body}</s></div></body></text></TEI>',
+        f'<text><body><pb n="{page}" id="pb-{page}"/>'
+        f'<div type="TextBlock" id="b-{page}.1"><s id="s-3">{body}</s></div></body></text></TEI>',
         encoding="utf-8",
     )
     return str(d)
@@ -330,6 +340,48 @@ def test_unresolved_entity_ref_only_warns_for_format_1(tmp_path, record, capsys)
     final = _write(tmp_path, "final.json", record)
     e2e_assert.assert_document_contract(final, llm_stage_ran=True, teitok_dir=teitok_dir)
     assert "do not resolve" in capsys.readouterr().out
+
+
+def test_entity_on_another_page_than_its_name_fails_for_teitok_format_2(tmp_path, record):
+    """The check that would have caught nlp-enrich#38: the record put an entity on page 1
+    (its page from UDPipe's chunks) while the TEITOK had it under the <pb> of page 2."""
+    teitok_dir = _teitok(tmp_path, page="2")
+    final = _write(tmp_path, "final.json", record)
+    with pytest.raises(AssertionError, match="another page"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=True, teitok_dir=teitok_dir)
+
+
+def test_an_entity_running_over_a_page_break_keeps_its_first_page(tmp_path, record):
+    """A <pb/> inside the <name> (nlp-enrich puts it before the token on the new page)
+    does not move the entity: its page is where the <name> starts."""
+    teitok_dir = Path(_teitok(tmp_path, toks=2))
+    path = teitok_dir / "CTX000000001.teitok.xml"
+    path.write_text(
+        path.read_text(encoding="utf-8").replace('<tok id="w-2">', '<pb n="2" id="pb-2"/><tok id="w-2">'),
+        encoding="utf-8",
+    )
+    final = _write(tmp_path, "final.json", record)
+    e2e_assert.assert_document_contract(final, llm_stage_ran=True, teitok_dir=str(teitok_dir))
+
+
+def test_entity_ref_must_name_a_name_element(tmp_path, record):
+    """teitok_ref "n-5" resolving to a <tok> (an id scheme mix-up) is not a match."""
+    teitok_dir = _teitok(tmp_path, names=())
+    path = Path(teitok_dir) / "CTX000000001.teitok.xml"
+    path.write_text(
+        path.read_text(encoding="utf-8").replace('<tok id="w-1">', '<tok id="n-5">'),
+        encoding="utf-8",
+    )
+    final = _write(tmp_path, "final.json", record)
+    with pytest.raises(AssertionError, match="wrong element"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=True, teitok_dir=teitok_dir)
+
+
+def test_legacy_name_close_tag_is_repaired_before_parsing(tmp_path, record, capsys):
+    teitok_dir = _teitok(tmp_path, version=None, close="</n>")
+    final = _write(tmp_path, "final.json", record)
+    e2e_assert.assert_document_contract(final, llm_stage_ran=True, teitok_dir=teitok_dir)
+    assert "legacy </n> close tag(s) repaired" in capsys.readouterr().out
 
 
 def test_cli_accepts_teitok_dir(tmp_path, record):

@@ -31,7 +31,7 @@ the point of it is.
 | W8  | [Training and evaluation](#w8--training-and-evaluation-page-classification)      | making and scoring a page-classification model                              |
 | W9  | Parameter optimisation                                                           | tuning alto-postprocess's line-categorisation rules                         |
 | W10 | Document-understanding benchmark                                                 | comparing models on sampled documents                                       |
-| W11 | Format adaptation                                                                | converting between OCR formats at the edges                                 |
+| W11 | Format adaptation                                                                | converting PDF, DOCX, PAGE XML, hOCR, … into TEITOK at the edge (flexiconv) |
 | W12 | [Annotation round trip](#w12--annotation-round-trip-page-classifications-half)   | turning PDFs into a labelled training set, and corrections back into it     |
 | W13 | [RO-Crate export](#w13--ro-crate-export--fair-publication)                       | packaging finished records for a repository or catalogue                    |
 
@@ -413,13 +413,13 @@ mapping is under
 These run through alto-postprocess, nlp-enrich and llm-enrich only; each tool's own README
 describes them.
 
-| #   | Workflow                               | What it is                                                                                                                                                                                  |
-|-----|----------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| W2  | Born-digital pipeline                  | Two stages, not six — a digital-born PDF or DOCX already has a text layer, so `digital-convert` originates the positional plane directly and origin-consistency refuses a second originator |
-| W3  | Digital → OCR re-origination           | How a digital-born document that turns out to need OCR is re-authorised, through `needs_ocr: true` — the single exception that lets two originators coexist                                 |
-| W9  | Parameter optimisation / rule coverage | alto-postprocess's sweep over its categorisation rules                                                                                                                                      |
-| W10 | Document-understanding benchmark       | llm-enrich's stratified sampling and model comparison                                                                                                                                       |
-| W11 | Format adaptation via flexiconv        | Converting between ALTO, PAGE XML, hOCR and friends at the edges of the pipeline                                                                                                            |
+| #   | Workflow                               | What it is                                                                                                                                                                                                                                                                 |
+|-----|----------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| W2  | Born-digital pipeline                  | Two stages, not six — a digital-born PDF or DOCX already has a text layer, so `digital-convert` originates the positional plane directly and origin-consistency refuses a second originator                                                                                |
+| W3  | Digital → OCR re-origination           | How a digital-born document that turns out to need OCR is re-authorised, through `needs_ocr: true` — the single exception that lets two originators coexist                                                                                                                |
+| W9  | Parameter optimisation / rule coverage | alto-postprocess's sweep over its categorisation rules                                                                                                                                                                                                                     |
+| W10 | Document-understanding benchmark       | llm-enrich's stratified sampling and model comparison                                                                                                                                                                                                                      |
+| W11 | Format adaptation via flexiconv        | nlp-enrich's `api_flexiconv.sh` converts documents that are not ALTO (PDF, DOCX, PAGE XML, hOCR, …) *into* TEITOK; nlp-enrich then annotates them (`FLEXICONV_ANNOTATE`, or a converted file uploaded to `/enrich`) and llm-enrich reads them. flexiconv never writes ALTO |
 
 ## Sources
 
