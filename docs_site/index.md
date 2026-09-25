@@ -42,7 +42,8 @@ together — six repositories in all.
     ---
 
     Turns OCR output into per-page ALTO, extracted text and a scored table of line quality — the
-    point the whole pipeline fans out from.
+    point the whole pipeline fans out from. Besides ALTO it reads the other OCR formats (PAGE XML,
+    hOCR, ABBYY FineReader XML, DjVuXML, Tesseract TSV, OCR JSON) and PDF, office and text files.
 
     [Landing page](https://ufal.github.io/atrium-alto-postprocess/) · [Source](https://github.com/ufal/atrium-alto-postprocess)
 
@@ -112,6 +113,7 @@ flowchart LR
   SCAN[/"scanned pages"/] --> PC[page-classification]
   PC -. "routing decision" .-> OCR["OCR<br/>(outside the pipeline)"]
   OCR --> ALTO[alto-postprocess]
+  DOCS[/"PDF, office and text files"/] -. "text-lines" .-> ALTO
   ALTO -- "PAGE_ALTO/" --> TR[translator]
   ALTO -- "DOC_LINE_CATEG/" --> NLP[nlp-enrich]
   ALTO -- "DOC_LINE_CATEG/" --> LLM[llm-enrich]

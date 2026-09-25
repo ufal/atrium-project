@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 21 open issues. As of 2026-09-21 `test` (`05f3a8b`) and `main` (`3990a6c`) have **diverged** — `test` carries `docs fixed tables`, `main` does not · tag `v1` moving with `main` — **note the pending retag window**: #59's and #60's changes to what `para-drift.reusable.yml` enforces, plus 2026-09-16's canonical file #17, must land in the hub and all five tool repos before `v1` moves._
+> _Hub/planning repo. 24 open issues. `test` = `main` = tag `v1` = `eec0682` (2026-09-24); the 2026-09-21 divergence and its retag window are closed — `v1` carries #59/#60 and canonical file #17. CI green on `eec0682` (E2E pipeline smoke 35990199050, digital smoke 35990199010, fast-lane matrix 35990199041, docs site 35990199021)._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0709.md` (prior: `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -1357,7 +1357,7 @@ sense — 2026-07-24 ("digests + plans refreshed for #13"), 2026-07-29 ("the #13
 2026-09-23 Stage-5 entry — mean atrium-llm-enrich #13.
 * **nlp-enrich v0.21.0** (TEITOK format 2) is tagged and published, so `:latest` now writes format 2; the E2E, which
 last ran on 09-23, has not run on it yet. Its `--teitok-dir` check is strict for exactly `version="teitok-2"`, which
-the round-4 plan keeps.
+the round-4 plan keeps. _(It ran after the push, 2026-09-24: run 35990199050, green — next entry.)_
 * **Round-4 findings that touch the hub:** `docs_site/pipelines.md` W11 misdescribes flexiconv (it converts *into*
 TEITOK, in nlp-enrich and llm-enrich only); `docs_site/external-tools.md` attributes TEI/TEITOK and flexiconv to the
 wrong tools and has no TEITOK/flexi* entries; `docs/document_schema.md` needs `teitok_surface` for converted layout
@@ -1365,8 +1365,8 @@ documents, a note that `lines[].teitok_ref` is not written yet, and the record-v
 `tools/e2e/e2e_assert.py` accepts a reference that matches any element id and does not check pages.
 * **Small corrections:** `digests/24.digest.md` / `plans/24.plan.md` (llm-enrich no longer carries `teitok_alto.py`;
 plan title), `digests/53.digest.md` (pin line), `plans/54.plan.md` (#13 references name atrium-llm-enrich). The
-`13`, `24` and `53` files are on `test` as `d006088` (with the tables re-padded); `plans/54.plan.md` is not yet.
-* **Round 4 implemented the same day (delivered as files, not yet on `test`).**
+`13`, `24` and `53` files are on `test` as `d006088` (with the tables re-padded); `plans/54.plan.md` is not yet. _(`plans/54.plan.md` landed in `eec0682`; `d006088` had also written #54's plan over `plans/53.plan.md` — restored in round 5.)_
+* **Round 4 implemented the same day (delivered as files, then pushed as `eec0682`).**
   * `tools/e2e/e2e_assert.py` `assert_teitok`: for a `teitok-2` file an `entities[].teitok_ref` must name a `<name>`
     and a `lines[].teitok_ref` an `<s>` (`wrong_kind`), and `entities[].page` must equal the `<pb n>` in force where
     the `<name>` starts (`wrong_page`) — the check that would have caught nlp-enrich's page defect; older files keep
@@ -1380,4 +1380,26 @@ plan title), `digests/53.digest.md` (pin line), `plans/54.plan.md` (#13 referenc
     (H2: the VCS pins are closed, the hub's unpinned tooling installs remain).
   * `pytest tests/`: 169 passed; `mkdocs build --strict` and `tools/ci/workflow_lint.py --offline` clean.
   * Still the user's: move the misposted 09-23 comment from hub #13 to atrium-llm-enrich #13; dispatch the E2E on the
-    released nlp-enrich image (the first format-2 run) and again once the round-4 change set is released.
+    released nlp-enrich image (the first format-2 run) and again once the round-4 change set is released. _(The first format-2 run happened on the push: 35990199050. The #13 note was left where it is, by decision.)_
+
+## 2026-09-24 (later) — round 4 pushed and green; round 5: format docs, ALTO-only pages fixed, dev logs
+
+* **Pushed.** `eec0682` on `test` and `main`, and `v1` moved to it. On it: the E2E pipeline smoke (35990199050, the
+first run on TEITOK format 2, with the stricter `assert_teitok`: CTX000000003, 1/1 references resolved), the digital-born
+smoke (35990199010), the cross-repo fast-lane matrix (35990199041), the docs site (35990199021) — all green. The tool
+repos' round 4: nlp `8003051`, llm `951db5e` (+ `08dff48`), alto `fb72526` (+ #31 Phase 4 up to `2e2794d`).
+* **Round 5 in the hub (docs only).** alto-postprocess was described as ALTO-only; now `docs_site/pipelines.md` (W1 note,
+W11 with both format-adaptation routes, Sources row), `index.md` (diagram edge, card), `ecosystem/repository-map.md`
+(role, per-format origins, Sources), `external-tools.md` (ALTO v3-only splitter caveat, links to alto-postprocess's
+*Formats and their standards* and nlp-enrich's TEITOK sections, Sources), `_generators/repos.py` (tagline, role — the
+regenerated alto landing card is not pushed), `docs/document_schema.md` (the bare `pdf` prefix the table lacked, the
+origins alto-postprocess records, the `digital-born-*` kinds nobody originates yet), `docs/agent_skill_strategy.md` and
+`docs/k8s_deployment.md` (alto inputs). `pytest tests/` 169 passed, `mkdocs build --strict` clean.
+* **Dev logs.** Milestones relabelled on 2026-09-08 put into every pair that still had the old label (#4, #6, #10,
+#15, #16, #17, #18, #21, #22, #32, #40, #51, #56). Threads recorded that the pairs had missed: #4 (the WP4 deliverable,
+the five owned SSHOMP records), #6 (licence template, repos needing updates; licences added since), #18 (execute or
+retire `docs/docker_gha_roadmap.md`), #21 (dataset re-published as hdl 1-5959), #22 (`bench_compare.py`, SDG, Alfie's
+comment; the "re-integration already built" claim corrected), **#24 (the 2026-08-01 three-format decision and its
+JSON-2-MD / TEITOK-2-MD TODO)**, #32 (JSON inputs on `test` and `agent-skill`; two of five gap fixes in the tree),
+#51 (09-17 status, V-5), #53 (09-15/09-16 status; **plan restored** from `c6a8ce5` — `d006088` had overwritten it with
+#54's), #54 (freeze tag still not cut), #55, #57, #58. **New pair: #66** (Galaxy).

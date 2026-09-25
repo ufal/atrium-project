@@ -129,8 +129,19 @@ digital-born PDF/DOCX. These are mutually exclusive per document, so those block
 
 | `source.origin` prefix           | Originator         |
 |----------------------------------|--------------------|
-| `digital-born…` · `docx`         | `digital-convert`  |
+| `digital-born…` · `docx` · `pdf` | `digital-convert`  |
 | `ABBYY-ALTO` · `ocr:…` · `vlm:…` | `alto-postprocess` |
+
+The first writer of `source` decides the origin. alto-postprocess records one per input format:
+`ABBYY-ALTO` for ALTO; `ocr:page-xml`, `ocr:hocr`, `ocr:abbyy-finereader`, `ocr:djvu`,
+`ocr:tesseract` and `ocr:pdf-text-layer` for the other OCR formats; `ocr:generic` for text whose
+making the file does not record (OCR JSON, TXT, CSV, TEI, …); and `digital-born-<kind>` for the
+born-digital documents its text-lines method reads (DOCX, ODT/ODS/ODP, XLSX, PPTX, EPUB, RTF,
+HTML, e-mail, a PDF with visible text). For those it writes `source` only. `digital-born…` then
+names `digital-convert`, which reads only PDF and DOCX, so for the other kinds no program writes
+the positional plane yet. A site whose files of such a kind really are transcriptions declares
+them `ocr:generic` with alto-postprocess's `[DOCUMENT].SOURCE_ORIGIN_BY_KIND`
+([`docs/text_inputs.md` §6](https://github.com/ufal/atrium-alto-postprocess/blob/master/docs/text_inputs.md#6-provenance-sourceorigin)).
 
 `_assert_origin_consistent()` enforces it on both `set_block()` and `merge_block()`. Matching
 is case-insensitive; `resolve_originator(origin)` is the public form. An origin the table has
@@ -156,14 +167,14 @@ engine ran, so "was this OCR'd" stays answerable.
 > writer. Code that hardcodes `alto-postprocess` as the source of `lines[]` was reading the
 > wrong contract even before digital-born documents existed.
 
-| Tool                | Owns                                                                                                                                                                                                                                  |
-|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| page-classification | `page_categories` · `pages[]` *category, category_confidence*                                                                                                                                                                         |
-| alto-postprocess    | `pages[]` *page_index, quality_score, quality_band, needs_ocr, needs_ocr_reason, ocr, canvas* · `content` · `lines[]` *categ, quality_score, lang, text* · `tables[]` — **originator, OCR/ALTO documents only**                       |
-| digital-convert     | `pages[]` *page_index, canvas, quality_score, quality_band, needs_ocr, needs_ocr_reason* · `content` · `lines[]` *text, bbox, group_id, style, lang, quality_score, categ* · `tables[]` — **originator, digital-born documents only** |
-| translator          | `translations` · `entities[]` *translation_en*                                                                                                                                                                                        |
-| nlp-enrich          | `entities[]` · `lines[]` *lemma, upos, feats, teitok_ref, bbox* · `pages[]` *teitok_surface* · `derived_from.teitok`                                                                                                                  |
-| llm-enrich          | `enrichment` · `forms` · `entities[]` *pid* · `regenerable.markdown`                                                                                                                                                                  |
+| Tool                | Owns                                                                                                                                                                                                                                                        |
+|---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| page-classification | `page_categories` · `pages[]` *category, category_confidence*                                                                                                                                                                                               |
+| alto-postprocess    | `pages[]` *page_index, quality_score, quality_band, needs_ocr, needs_ocr_reason, ocr, canvas* · `content` · `lines[]` *categ, quality_score, lang, text* · `tables[]` — **originator, documents with an OCR-class origin** (`ABBYY-ALTO`, `ocr:…`, `vlm:…`) |
+| digital-convert     | `pages[]` *page_index, canvas, quality_score, quality_band, needs_ocr, needs_ocr_reason* · `content` · `lines[]` *text, bbox, group_id, style, lang, quality_score, categ* · `tables[]` — **originator, digital-born documents only**                       |
+| translator          | `translations` · `entities[]` *translation_en*                                                                                                                                                                                                              |
+| nlp-enrich          | `entities[]` · `lines[]` *lemma, upos, feats, teitok_ref, bbox* · `pages[]` *teitok_surface* · `derived_from.teitok`                                                                                                                                        |
+| llm-enrich          | `enrichment` · `forms` · `entities[]` *pid* · `regenerable.markdown`                                                                                                                                                                                        |
 
 `quality_score` is one axis — **text trustworthiness, 0–1** — with two derivations. On the
 OCR path it is an engine-confidence proxy; on the digital-born path it is a decode-sanity

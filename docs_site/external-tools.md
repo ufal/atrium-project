@@ -60,7 +60,9 @@ and each `String` carries one token in a `CONTENT` attribute plus its bounding b
 **Where ATRIUM uses it.** It is the backbone format of the whole pipeline. `alto-postprocess`
 consumes OCR ALTO and emits per-page ALTO under `PAGE_ALTO/`; the
 [translator](tools/translator/index.md) rewrites ALTO in place, preserving every coordinate;
-the E2E fixture is one ALTO v3 page. Versions v1–v4 are in scope.
+the E2E fixture is one ALTO v3 page. Versions v1–v4 are in scope, with one catch:
+alto-postprocess's ALTO methods split only v3 files (`page_split.py`), while its text-lines
+method and service read every version.
 
 **Why it is harder than it looks.** Because ALTO stores text *spatially*, translating or
 rewriting it is not a text operation — see
@@ -154,6 +156,18 @@ named entities) belong to alto-postprocess and nlp-enrich. TEITOK in particular:
 writes it (its "format 2" follows the conventions of the TEITOK tools — flexiconv, flexipipe,
 xmltokenizer, teitok-tools — and is tested against flexiconv's reader); llm-enrich and
 alto-postprocess read it.
+
+Each has a reference in the repository that uses it:
+
+* **OCR and text input formats** — ALTO, PAGE XML, hOCR, ABBYY FineReader XML, DjVuXML,
+  Tesseract TSV, OCR JSON, PDF text layers, TEI/TEITOK, office, e-mail and plain-text files: the
+  standard behind each, the tools that write it and what alto-postprocess keeps of it, in
+  [Formats and their standards](https://github.com/ufal/atrium-alto-postprocess/blob/master/docs/text_inputs.md#formats-and-their-standards).
+* **TEITOK as an output** — the standards it builds on, how nlp-enrich composes a file from the
+  line table, UDPipe, NameTag and the ALTO layout, the tools that write or read it, and the
+  pitfalls: nlp-enrich's README, from
+  [The format and the standards it builds on](https://github.com/ufal/atrium-nlp-enrich#the-format-and-the-standards-it-builds-on)
+  to [Pitfalls](https://github.com/ufal/atrium-nlp-enrich#pitfalls).
 
 ## Models
 
@@ -776,4 +790,5 @@ This table records **provenance**, not a build instruction.
 | `atrium-page-classification` @ `vit` `adee922` — `setup/{requirements,para_config,config}.txt`, `service/{api.py,inference.py,requirements.txt}`, `Dockerfile`, `docker-compose.yml`, `.github/dependabot.yml`, `.coveragerc`, `.pre-commit-config.yaml`, `data_scripts/`, `result/`, `README.md`, `CITATION.cff`                                     | Hugging Face, `ufal/vit-historical-page`, `regnety_160`, the ML stack, PDF rasterisation, Docker, the LINDAT dataset handle, ARÚP/ARÚB result files |
 | the shared files both tools vendor — `atrium_vocab.py`, `atrium_rocrate.py`, `atrium_document.py` + schema, `atrium_paradata.py`, `para_licenses.py`, `check_version.py`                                                                                                                                                                              | every metadata-standards entry; the licence and Turtle behaviour                                                                                    |
 | `atrium-project` @ `main` `7b0b84e` — `docker-tool.reusable.yml`, `security.reusable.yml`, `codeql.reusable.yml`, `docs/templates/Dockerfile`, `docs/templates/workflows/dependabot.example.yml`, `docs/rocrate_export.md` §3, `docs/skos_strategy.md`                                                                                                | Trivy, CodeQL, SBOM, GHCR tagging, Dependabot, the DMP standards                                                                                    |
+| `atrium-alto-postprocess` @ `test` `2e2794d` — `page_split.py`, `text_formats.py`; its `docs/text_inputs.md` and `atrium-nlp-enrich`'s `README.md` § "TEITOK XML" as extended on 2026-09-24                                                                                                                                                           | the ALTO version note; the two format references                                                                                                    |
 | `https://api.aiscr.cz/2.2/oai?verb=Identify`                                                                                                                                                                                                                                                                                                          | the AMCR endpoint's self-description and metadata licence                                                                                           |

@@ -166,13 +166,13 @@ silently gets the raw one:
 **`MAX_UPLOAD_MB` — what the five services share is the variable name and the resolver, not the
 number.** The limit is a property of what each service ingests:
 
-| Repo                | `MAX_UPLOAD_MB` | Set at                   | Why this number                                           |
-|---------------------|-----------------|--------------------------|-----------------------------------------------------------|
-| translator          | `50`            | `service/api.py:55`      | highest — ALTO XML in, ALTO XML out                       |
-| alto-postprocess    | `25`            | `service/text_api.py:82` | ALTO XML for a whole scanned volume                       |
-| llm-enrich          | `10`            | `service/api.py:46`      | a CSV of lines                                            |
-| page-classification | `10`            | `service/api.py:56`      | a multi-page PDF                                          |
-| nlp-enrich          | `5`             | `service/api.py:43`      | lowest — a 5 MB CSV is already at the `MAX_WORDS` ceiling |
+| Repo                | `MAX_UPLOAD_MB` | Set at                   | Why this number                                                  |
+|---------------------|-----------------|--------------------------|------------------------------------------------------------------|
+| translator          | `50`            | `service/api.py:55`      | highest — ALTO XML in, ALTO XML out                              |
+| alto-postprocess    | `25`            | `service/text_api.py:82` | ALTO XML for a whole scanned volume, or a PDF or office document |
+| llm-enrich          | `10`            | `service/api.py:46`      | a CSV of lines                                                   |
+| page-classification | `10`            | `service/api.py:56`      | a multi-page PDF                                                 |
+| nlp-enrich          | `5`             | `service/api.py:43`      | lowest — a 5 MB CSV is already at the `MAX_WORDS` ceiling        |
 
 The manifest's commented `MAX_UPLOAD_MB: "10"` is llm-enrich's and page-classification's
 number. Uncommenting it as-is silently *raises* nlp-enrich's limit 2× and *lowers*

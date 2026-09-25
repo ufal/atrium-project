@@ -37,9 +37,10 @@ REPOS = [
         "default_branch": "master",
         "title": "ALTO XML Files Postprocessing Pipeline",
         "subtitle": "split · stats · extract · classify · aggregate",
-        "tagline": "Post-processing of ALTO XML files — turns OCR output into per-page ALTO, "
-        "extracted text and a scored line-quality table.",
-        "role": "Deserialisation and OCR quality control. The fan-out point of the whole pipeline.",
+        "tagline": "Post-processing of OCR output — ALTO XML, and also PAGE XML, hOCR, PDF, office and "
+        "text files — into extracted text and a scored line-quality table, plus per-page ALTO.",
+        "role": "Deserialisation of ALTO and every other OCR or text-bearing input, and OCR quality "
+        "control. The fan-out point of the whole pipeline.",
         "chips": [
             ("python", "3.11", "https://www.python.org/downloads/", "py"),
             ("🤗 HF", "fasttext-langID", "https://huggingface.co/facebook/fasttext-language-identification", "hf"),
