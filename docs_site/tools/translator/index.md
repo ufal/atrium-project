@@ -2,7 +2,7 @@
 title: translator
 nav_order: 50
 status: published
-round: 6
+round: 7
 issue: 57
 repo: atrium-translator
 role: index
@@ -148,6 +148,7 @@ assembled deliberately — see
 * **[Reference](reference.md)** — every flag, every endpoint, every output field, and how each mode works
 * **[Changelog](changelog.md)** — the release history, grouped into arcs
 * **[History](history.md)** — why it is shaped the way it is
+* **[Workflow](../../workflows/translator.md)** — the workflow step by step, as its SSH Open Marketplace and Galaxy records describe it
 * **[Pipelines](../../pipelines.md)** — where this stage sits, end to end
 * **[External tools & services](../../external-tools.md)** — LINDAT, CUBBITT, UDPipe, ALTO, AMCR
 

@@ -2,7 +2,7 @@
 title: Pipelines
 nav_order: 2
 status: partial
-round: 6
+round: 7
 issue: 57
 authored: true
 ---
@@ -16,6 +16,10 @@ the point of it is.
     Every workflow that runs through **page-classification** or the **translator** is
     described in full. The five that belong only to alto-postprocess, nlp-enrich and
     llm-enrich are listed under [Other workflows](#other-workflows).
+
+This page follows the tools together. Each tool's **own** workflow — its steps, formats and
+licence, told the way its SSH Open Marketplace and Galaxy records tell it — is on
+[Workflows](workflows/index.md).
 
 **The workflows at a glance:**
 
@@ -420,7 +424,9 @@ mapping is under
 ## Other workflows
 
 These run through alto-postprocess, nlp-enrich and llm-enrich only; each tool's own README
-describes them.
+describes them, and the stable core of each tool's workflow is on its Workflows page —
+[alto-postprocess](workflows/alto-postprocess.md), [nlp-enrich](workflows/nlp-enrich.md),
+[llm-enrich](workflows/llm-enrich.md).
 
 | #   | Workflow                               | What it is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 |-----|----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

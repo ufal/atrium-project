@@ -2,7 +2,7 @@
 title: ATRIUM — UFAL documentation
 nav_order: 1
 status: published
-round: 6
+round: 7
 issue: 57
 ---
 
@@ -35,7 +35,7 @@ together — six repositories in all.
     Sorts a scanned page into one of **eleven structural categories** — so a person or a script
     can decide whether it needs OCR, handwriting recognition, table extraction or image handling.
 
-    [Overview](tools/page-classification/index.md) · [Guide](tools/page-classification/guide.md) · [Reference](tools/page-classification/reference.md)
+    [Overview](tools/page-classification/index.md) · [Guide](tools/page-classification/guide.md) · [Reference](tools/page-classification/reference.md) · [Workflow](workflows/page-classification.md)
 
 -   **alto-postprocess**
 
@@ -45,7 +45,7 @@ together — six repositories in all.
     point the whole pipeline fans out from. Besides ALTO it reads the other OCR formats (PAGE XML,
     hOCR, ABBYY FineReader XML, DjVuXML, Tesseract TSV, OCR JSON) and PDF, office and text files.
 
-    [Landing page](https://ufal.github.io/atrium-alto-postprocess/) · [Source](https://github.com/ufal/atrium-alto-postprocess)
+    [Workflow](workflows/alto-postprocess.md) · [Landing page](https://ufal.github.io/atrium-alto-postprocess/) · [Source](https://github.com/ufal/atrium-alto-postprocess)
 
 -   **[translator](tools/translator/index.md)**
 
@@ -54,7 +54,7 @@ together — six repositories in all.
     Translates ALTO pages and AMCR metadata records **in place** — every tag, namespace and
     coordinate preserved; only the text changes.
 
-    [Overview](tools/translator/index.md) · [Guide](tools/translator/guide.md) · [Reference](tools/translator/reference.md)
+    [Overview](tools/translator/index.md) · [Guide](tools/translator/guide.md) · [Reference](tools/translator/reference.md) · [Workflow](workflows/translator.md)
 
 -   **nlp-enrich**
 
@@ -63,7 +63,7 @@ together — six repositories in all.
     Morphology, syntax and named entities for every text line, and the TEITOK corpus format with
     bounding boxes kept.
 
-    [Landing page](https://ufal.github.io/atrium-nlp-enrich/) · [Source](https://github.com/ufal/atrium-nlp-enrich)
+    [Workflow](workflows/nlp-enrich.md) · [Landing page](https://ufal.github.io/atrium-nlp-enrich/) · [Source](https://github.com/ufal/atrium-nlp-enrich)
 
 -   **llm-enrich**
 
@@ -72,7 +72,7 @@ together — six repositories in all.
     Keywords and vocabulary mapping against the ATRIUM controlled vocabulary, with local or remote
     LLMs — and the converter for born-digital documents.
 
-    [Landing page](https://ufal.github.io/atrium-llm-enrich/) · [Source](https://github.com/ufal/atrium-llm-enrich)
+    [Workflow](workflows/llm-enrich.md) · [Landing page](https://ufal.github.io/atrium-llm-enrich/) · [Source](https://github.com/ufal/atrium-llm-enrich)
 
 -   **atrium-project** — the hub
 
@@ -92,19 +92,22 @@ together — six repositories in all.
   tag and coordinate preserved
 - **[Pipelines](pipelines.md)** — what the tools do, end to end: what each stage reads and
   writes, drawn as the file flow and the record flow
+- **[Workflows](workflows/index.md)** — each tool's own workflow, step by step, with the formats
+  in and out — the text its SSH Open Marketplace and Galaxy records are built from
 - **[External tools & services](external-tools.md)** — the glossary, if a name is unfamiliar
 - **[Repository map](ecosystem/repository-map.md)** — which repo owns what
 
 And by question:
 
-| If you want to…                                      | Read                                                                                            |
-|------------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| know what a record written by these tools looks like | [The document contract](ecosystem/document-contract.md)                                         |
-| run a tool as a service, or on Kubernetes            | [Operations](operations.md)                                                                     |
-| let a coding agent use a tool                        | [Agent skills](agent-skills.md)                                                                 |
-| know what every field and label means                | [Schemas](contracts/schemas.md) · [SKOS & the ATRIUM vocabulary](contracts/skos.md)             |
-| publish results to a repository or catalogue         | [RO-Crate export](contracts/rocrate.md)                                                         |
-| change shared code, or contribute                    | [Architecture](ecosystem/architecture.md) · [Contributing standards](contributing-standards.md) |
+| If you want to…                                                     | Read                                                                                            |
+|---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| know what a record written by these tools looks like                | [The document contract](ecosystem/document-contract.md)                                         |
+| run a tool as a service, or on Kubernetes                           | [Operations](operations.md)                                                                     |
+| let a coding agent use a tool                                       | [Agent skills](agent-skills.md)                                                                 |
+| know what every field and label means                               | [Schemas](contracts/schemas.md) · [SKOS & the ATRIUM vocabulary](contracts/skos.md)             |
+| publish results to a repository or catalogue                        | [RO-Crate export](contracts/rocrate.md)                                                         |
+| describe a tool's workflow on the SSH Open Marketplace or in Galaxy | [Workflows](workflows/index.md)                                                                 |
+| change shared code, or contribute                                   | [Architecture](ecosystem/architecture.md) · [Contributing standards](contributing-standards.md) |
 
 ## How the ecosystem works
 

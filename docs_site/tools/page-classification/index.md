@@ -2,7 +2,7 @@
 title: page-classification
 nav_order: 30
 status: published
-round: 6
+round: 7
 issue: 57
 repo: atrium-page-classification
 role: index
@@ -244,6 +244,7 @@ Cite the paper for the method and the LINDAT record for the data:
 * **[Reference](reference.md)** — every flag, every endpoint, every output column
 * **[Changelog](changelog.md)** — the release history, grouped into arcs
 * **[History](history.md)** — why it is shaped the way it is
+* **[Workflow](../../workflows/page-classification.md)** — the workflow step by step, as its SSH Open Marketplace and Galaxy records describe it
 * **[Pipelines](../../pipelines.md)** — where this stage sits, end to end
 * **[External tools & services](../../external-tools.md)** — Hugging Face, LINDAT, ALTO, and the rest
 

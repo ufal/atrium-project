@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the five tool-repo gh-pages stub trees (issue #57, round 2).
+"""Generate the five tool-repo gh-pages stub trees (issue #57; round 2, docs links round 7).
 
 Each tree becomes the ROOT of that repository's `gh-pages` branch. The branch is
 an orphan: it shares no history with test/master/main/vit and carries no source.
@@ -22,7 +22,7 @@ from repos import HUB_SITE, ORG, REPOS  # noqa: E402
 OUT = pathlib.Path(__file__).parent.parent / "stubs"
 CSS = (pathlib.Path(__file__).parent / "style.css").read_text()
 
-GENERATED = "2026-09-21"
+GENERATED = "2026-09-25"
 
 
 def esc(s: str) -> str:
@@ -95,7 +95,7 @@ PAGE = """<!DOCTYPE html>
     </ul>
 
     <div class="actions">
-      <a class="btn btn-primary" href="{hub_site}/tools/{short}/">Documentation &rarr;</a>
+      <a class="btn btn-primary" href="{hub_site}/{docs_path}">Documentation &rarr;</a>
       <a class="btn" href="{org}/{slug}">Source on GitHub</a>
       <a class="btn" href="{hub_site}/">ATRIUM docs home</a>
     </div>
@@ -110,7 +110,7 @@ PAGE = """<!DOCTYPE html>
 
   <footer>
     <p>This page is a published stub. The documentation itself lives in the
-       <a href="{hub_site}/tools/{short}/">ATRIUM hub site</a>; the code lives on the
+       <a href="{hub_site}/{docs_path}">ATRIUM hub site</a>; the code lives on the
        <a href="{org}/{slug}/tree/{default_branch}"><code>{default_branch}</code></a> branch.</p>
     <p>Developed by <a href="https://ufal.mff.cuni.cz">UFAL</a>, Charles University &middot;
        funded by <a href="https://atrium-research.eu/">ATRIUM</a> &middot;
@@ -136,19 +136,20 @@ card, published by GitHub Pages at <{pages_url}>.
 
 * The **code** lives on [`{default_branch}`]({org}/{slug}/tree/{default_branch}).
 * The **documentation** lives in the ATRIUM hub site at
-  <{hub_site}/tools/{short}/>, assembled from this repository's own
-  `README.md`, `CONTRIBUTING.md` and `agent_dev_logs/DEVLOG.md`. Nothing is copied
-  here &mdash; see [`atrium-project` issue #57]({org}/atrium-project/issues/57).
+  <{hub_site}/{docs_path}>, written from this repository's own
+  `README.md`, `CONTRIBUTING.md` and `agent_dev_logs/DEVLOG.md`, which stay the full
+  manual. Nothing is copied here &mdash; see
+  [`atrium-project` issue #57]({org}/atrium-project/issues/57).
 
 ## What is in here
 
-| Path | Purpose |
-|------|---------|
-| `index.html` | the landing card |
-| `404.html` | the same card, framed as a not-found page |
-| `assets/style.css` | self-contained styles; no webfont, no CDN, no script |
-| `.nojekyll` | tell Pages to serve these files as-is instead of running Jekyll |
-| `README.md` | this file |
+| Path               | Purpose                                                         |
+|--------------------|-----------------------------------------------------------------|
+| `index.html`       | the landing card                                                |
+| `404.html`         | the same card, framed as a not-found page                       |
+| `assets/style.css` | self-contained styles; no webfont, no CDN, no script            |
+| `.nojekyll`        | tell Pages to serve these files as-is instead of running Jekyll |
+| `README.md`        | this file                                                       |
 
 ## Maintaining it
 
@@ -192,6 +193,7 @@ def main() -> int:
             org=ORG,
             slug=slug,
             short=short,
+            docs_path=repo["docs_path"],
             default_branch=repo["default_branch"],
             generated=GENERATED,
             description=esc(repo["tagline"]),
@@ -222,6 +224,7 @@ def main() -> int:
             README.format(
                 slug=slug,
                 short=short,
+                docs_path=repo["docs_path"],
                 org=ORG,
                 hub_site=HUB_SITE,
                 default_branch=repo["default_branch"],

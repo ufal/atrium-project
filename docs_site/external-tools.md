@@ -2,7 +2,7 @@
 title: External tools & services
 nav_order: 3
 status: partial
-round: 6
+round: 7
 issue: 57
 authored: true
 ---
@@ -16,8 +16,9 @@ explained here.
 
 !!! info "Scope"
     Every entry page-classification and the translator depend on, including the shared
-    standards and infrastructure both tools vendor. Entries that only the other three tools
-    use are named at the end of each section.
+    standards and infrastructure both tools vendor, and the platforms all five tools'
+    workflows are published on. Entries that only the other three tools use are named at the
+    end of each section.
 
 **On this page:**
 [Terms used across this site](#terms-used-across-this-site) ·
@@ -32,21 +33,23 @@ explained here.
 
 ## Terms used across this site
 
-| Term                  | Meaning                                                                                                                                                  |
-|-----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **OCR** / **HTR**     | optical character recognition (printed or typed text) / handwritten text recognition — different engines, which is why pages are classified first        |
-| **NMT**               | neural machine translation — a model trained to translate whole sentences, such as CUBBITT                                                               |
-| **record**            | the `atrium_document` JSON file that travels through the pipeline, one per document — see [The document contract](ecosystem/document-contract.md)        |
-| **block**             | one top-level part of the record, written by exactly one tool — `page_categories`, `translations`, …                                                     |
-| **accretion**         | how the record grows: each stage adds its own block and carries every other block forward unchanged                                                      |
-| **paradata**          | data about the *process*: which program, version and configuration produced an output, when, and under which licence — one JSON file per run             |
-| **provenance**        | the record's account of who contributed what: per-block stamps plus a list of contributing runs                                                          |
-| **FAIR**              | Findable, Accessible, Interoperable, Reusable — the principles research data publication aims at; RO-Crate export is ATRIUM's route to them              |
-| **`PAGE_ALTO/`**      | alto-postprocess's output: one ALTO file per page, `<doc>/<doc>-N.alto.xml` — what the translator reads                                                  |
-| **`DOC_LINE_CATEG/`** | alto-postprocess's per-line table: every text line with its quality category — what nlp-enrich and llm-enrich read                                       |
-| **TEITOK**            | a corpus format and platform built on TEI XML, keeping tokens linked to their position on the page — nlp-enrich's output                                 |
-| **GraphQL**           | a query language for web APIs, in which the client names exactly the fields it wants — how TEATER is queried                                             |
-| **originator**        | the program that creates the positional plane (`pages`, `content`, `lines`, `tables`) of a record: alto-postprocess for OCR, `digital-convert` otherwise |
+| Term                    | Meaning                                                                                                                                                                                   |
+|-------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **OCR** / **HTR**       | optical character recognition (printed or typed text) / handwritten text recognition — different engines, which is why pages are classified first                                         |
+| **NMT**                 | neural machine translation — a model trained to translate whole sentences, such as CUBBITT                                                                                                |
+| **record**              | the `atrium_document` JSON file that travels through the pipeline, one per document — see [The document contract](ecosystem/document-contract.md)                                         |
+| **block**               | one top-level part of the record, written by exactly one tool — `page_categories`, `translations`, …                                                                                      |
+| **accretion**           | how the record grows: each stage adds its own block and carries every other block forward unchanged                                                                                       |
+| **paradata**            | data about the *process*: which program, version and configuration produced an output, when, and under which licence — one JSON file per run                                              |
+| **provenance**          | the record's account of who contributed what: per-block stamps plus a list of contributing runs                                                                                           |
+| **FAIR**                | Findable, Accessible, Interoperable, Reusable — the principles research data publication aims at; RO-Crate export is ATRIUM's route to them                                               |
+| **`PAGE_ALTO/`**        | alto-postprocess's output: one ALTO file per page, `<doc>/<doc>-N.alto.xml` — what the translator reads                                                                                   |
+| **`DOC_LINE_CATEG/`**   | alto-postprocess's per-line table: every text line with its quality category — what nlp-enrich and llm-enrich read                                                                        |
+| **TEITOK**              | a corpus format and platform built on TEI XML, keeping tokens linked to their position on the page — nlp-enrich's output                                                                  |
+| **GraphQL**             | a query language for web APIs, in which the client names exactly the fields it wants — how TEATER is queried                                                                              |
+| **originator**          | the program that creates the positional plane (`pages`, `content`, `lines`, `tables`) of a record: alto-postprocess for OCR, `digital-convert` otherwise                                  |
+| **workflow narrative**  | a tool's workflow told step by step, with the formats in and out of every step — the text its SSH Open Marketplace and Galaxy records are built from; see [Workflows](workflows/index.md) |
+| **actionable workflow** | a workflow described on the SSH Open Marketplace that can also be run — in ATRIUM, as a Galaxy workflow                                                                                   |
 
 ## Data & OCR formats
 
@@ -401,6 +404,78 @@ is what makes `image-tag` the most consequential input in that workflow.
     [W6](pipelines.md#w6--e2e-smoke-the-integration-contract) and [Operations](operations.md#images-and-tags).
 
 **Onward:** <https://docs.github.com/packages>
+
+### SSH Open Marketplace
+
+**What it is.** A discovery portal for the social sciences and humanities that lists tools and
+services, training materials, datasets and workflows. Records are contributed by their authors
+and published once a moderator approves them, and every item keeps a persistent identifier — the
+short code in its address, such as `RER7Fw`. A **workflow** record is a narrative: a description
+followed by ordered steps, where each step can name its activity, its input and output formats,
+and the tools or services it uses as related records.
+
+**Where ATRIUM uses it.** Every ÚFAL tool has a tool-or-service record under the keyword
+`ATRIUM catalogue` — [`RER7Fw`](https://marketplace.sshopencloud.eu/tool-or-service/RER7Fw)
+(page-classification), [`YParYU`](https://marketplace.sshopencloud.eu/tool-or-service/YParYU)
+(alto-postprocess), [`CizIUW`](https://marketplace.sshopencloud.eu/tool-or-service/CizIUW)
+(translator), [`EMhu3X`](https://marketplace.sshopencloud.eu/tool-or-service/EMhu3X)
+(nlp-enrich), [`j9fqxo`](https://marketplace.sshopencloud.eu/tool-or-service/j9fqxo)
+(llm-enrich). The translator's workflow has its own record,
+[`13eHAZ`](https://marketplace.sshopencloud.eu/workflow/13eHAZ), and the AMČR text workflow,
+[`0xSpVP`](https://marketplace.sshopencloud.eu/workflow/0xSpVP), strings the tools together.
+The text these records are built from is on [Workflows](workflows/index.md).
+
+**Onward:** <https://marketplace.sshopencloud.eu/>
+
+### TaDiRAH
+
+**What it is.** The *Taxonomy of Digital Research Activities in the Humanities* — a controlled
+list of what researchers do with digital methods: collecting, converting, enriching, analysing,
+translating and so on. The SSH Open Marketplace names the *activity* of a tool, and of each step
+of a workflow, with terms based on it.
+
+**Where ATRIUM uses it.** Each step of a [workflow narrative](workflows/index.md) names its
+activity with the term the marketplace offers — *Converting*, *Extracting*, *Translating*,
+*Named Entity Recognition* — so the step can be copied into a workflow record as it stands.
+
+**Onward:** <https://vocabs.dariah.eu/tadirah/>
+
+### Galaxy
+
+**What it is.** An open web platform for running analysis tools and chaining them into
+workflows without programming. A Galaxy **tool** is a command-line program described by an XML
+wrapper that declares its inputs, outputs and parameters, each input and output with a Galaxy
+**datatype** (`alto`, `tei`, `xml`, `tabular`, `json`, `pdf`, `png`, …); the program runs from a
+package or a container. A **workflow** chains tools and is shared as a `.ga` file, with an
+annotation, a creator, a licence and labelled inputs and outputs. Tools are published through
+the Galaxy **ToolShed** and tested with **Planemo**; public servers such as usegalaxy.eu install
+them. [ssh.usegalaxy.eu](https://ssh.usegalaxy.eu/) is usegalaxy.eu's entry point for the social
+sciences and humanities, with the same tools and a Digital Humanities section. The Intergalactic
+Workflow Commission (**IWC**) curates reviewed workflows.
+
+**Where ATRIUM uses it.** An *actionable workflow* is one that is described on the SSH Open
+Marketplace and can also be run — in ATRIUM, as a Galaxy workflow. DARIAH keeps ATRIUM's Galaxy
+tool wrappers and workflows in the
+[`atrium-galaxy-tools`](https://github.com/DARIAH-ERIC/atrium-galaxy-tools) repository. Each
+[workflow narrative](workflows/index.md) carries a Galaxy sheet for its tool: the datatypes of
+its inputs and outputs, its container, compute and network needs, and its test data.
+
+**Onward:** <https://galaxyproject.org/> · <https://planemo.readthedocs.io/>
+
+### WorkflowHub, and Workflow RO-Crate
+
+**What it is.** A registry for computational workflows. It gives each workflow a citable
+identifier and stores it as a **Workflow RO-Crate** — an [RO-Crate](#ro-crate-11-and-the-process-run-crate-profile)
+whose main entity is the workflow itself, with its inputs, outputs, creator and licence. Galaxy
+workflows reviewed by the IWC, and those of the Galaxy Training Network, are deposited there
+automatically.
+
+**Where ATRIUM uses it.** When a Galaxy workflow of an ATRIUM tool is published, WorkflowHub is
+where it becomes citable; the [field table on Workflows](workflows/index.md#one-text-three-platforms)
+shows which part of a narrative fills which field of the crate. It is a different crate from the
+one the tools export for their records, which describes a document and the runs that produced it.
+
+**Onward:** <https://workflowhub.eu/>
 
 ## Metadata standards & serialisations
 
@@ -784,11 +859,12 @@ records, and richer views such as an RO-Crate are derived from them afterwards.
 Written from the tree at the refs below, plus the public documentation each entry links to.
 This table records **provenance**, not a build instruction.
 
-| Source                                                                                                                                                                                                                                                                                                                                                | What was taken from it                                                                                                                              |
-|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
-| `atrium-translator` @ `master` `71feaef` — `processors/{backend,identifier,translator,lemmatizer,llm_translator,ct2_translator}.py`, `config.txt`, `para_config.txt`, `docs/translation-backends.md`, `amcr-inputs.txt`, `load_vocab.py`, `eval/`, `service/requirements.txt`, `.github/dependabot.yml`, `CITATION.cff`, `data_samples/my_documents/` | CUBBITT, UDPipe, FastText, AMCR, OAI-PMH, TEATER, CoNLL-U, the back-ends, sacreBLEU / COMET, FastAPI, AIS CR hosts, and every licence consequence   |
-| `atrium-page-classification` @ `vit` `adee922` — `setup/{requirements,para_config,config}.txt`, `service/{api.py,inference.py,requirements.txt}`, `Dockerfile`, `docker-compose.yml`, `.github/dependabot.yml`, `.coveragerc`, `.pre-commit-config.yaml`, `data_scripts/`, `result/`, `README.md`, `CITATION.cff`                                     | Hugging Face, `ufal/vit-historical-page`, `regnety_160`, the ML stack, PDF rasterisation, Docker, the LINDAT dataset handle, ARÚP/ARÚB result files |
-| the shared files both tools vendor — `atrium_vocab.py`, `atrium_rocrate.py`, `atrium_document.py` + schema, `atrium_paradata.py`, `para_licenses.py`, `check_version.py`                                                                                                                                                                              | every metadata-standards entry; the licence and Turtle behaviour                                                                                    |
-| `atrium-project` @ `main` `7b0b84e` — `docker-tool.reusable.yml`, `security.reusable.yml`, `codeql.reusable.yml`, `docs/templates/Dockerfile`, `docs/templates/workflows/dependabot.example.yml`, `docs/rocrate_export.md` §3, `docs/skos_strategy.md`                                                                                                | Trivy, CodeQL, SBOM, GHCR tagging, Dependabot, the DMP standards                                                                                    |
-| `atrium-alto-postprocess` @ `test` `2e2794d` — `page_split.py`, `text_formats.py`; its `docs/text_inputs.md` and `atrium-nlp-enrich`'s `README.md` § "TEITOK XML" as extended on 2026-09-24                                                                                                                                                           | the ALTO version note; the two format references                                                                                                    |
-| `https://api.aiscr.cz/2.2/oai?verb=Identify`                                                                                                                                                                                                                                                                                                          | the AMCR endpoint's self-description and metadata licence                                                                                           |
+| Source                                                                                                                                                                                                                                                                                                                                                                                  | What was taken from it                                                                                                                              |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| `atrium-translator` @ `master` `71feaef` — `processors/{backend,identifier,translator,lemmatizer,llm_translator,ct2_translator}.py`, `config.txt`, `para_config.txt`, `docs/translation-backends.md`, `amcr-inputs.txt`, `load_vocab.py`, `eval/`, `service/requirements.txt`, `.github/dependabot.yml`, `CITATION.cff`, `data_samples/my_documents/`                                   | CUBBITT, UDPipe, FastText, AMCR, OAI-PMH, TEATER, CoNLL-U, the back-ends, sacreBLEU / COMET, FastAPI, AIS CR hosts, and every licence consequence   |
+| `atrium-page-classification` @ `vit` `adee922` — `setup/{requirements,para_config,config}.txt`, `service/{api.py,inference.py,requirements.txt}`, `Dockerfile`, `docker-compose.yml`, `.github/dependabot.yml`, `.coveragerc`, `.pre-commit-config.yaml`, `data_scripts/`, `result/`, `README.md`, `CITATION.cff`                                                                       | Hugging Face, `ufal/vit-historical-page`, `regnety_160`, the ML stack, PDF rasterisation, Docker, the LINDAT dataset handle, ARÚP/ARÚB result files |
+| the shared files both tools vendor — `atrium_vocab.py`, `atrium_rocrate.py`, `atrium_document.py` + schema, `atrium_paradata.py`, `para_licenses.py`, `check_version.py`                                                                                                                                                                                                                | every metadata-standards entry; the licence and Turtle behaviour                                                                                    |
+| `atrium-project` @ `main` `7b0b84e` — `docker-tool.reusable.yml`, `security.reusable.yml`, `codeql.reusable.yml`, `docs/templates/Dockerfile`, `docs/templates/workflows/dependabot.example.yml`, `docs/rocrate_export.md` §3, `docs/skos_strategy.md`                                                                                                                                  | Trivy, CodeQL, SBOM, GHCR tagging, Dependabot, the DMP standards                                                                                    |
+| `atrium-alto-postprocess` @ `test` `2e2794d` — `page_split.py`, `text_formats.py`; its `docs/text_inputs.md` and `atrium-nlp-enrich`'s `README.md` § "TEITOK XML" as extended on 2026-09-24                                                                                                                                                                                             | the ALTO version note; the two format references                                                                                                    |
+| SSH Open Marketplace records `RER7Fw`, `YParYU`, `CizIUW`, `EMhu3X`, `j9fqxo`, `13eHAZ`, `0xSpVP`, `IrpmkB`; `SSHOC/sshoc-marketplace-frontend` (metadata guidelines); `DARIAH-ERIC/atrium-galaxy-tools`; `usegalaxy-eu/infrastructure-playbook`, `usegalaxy-eu/usegalaxy-eu-tools`; `galaxyproject/galaxy` (`datatypes_conf.xml.sample`); `galaxyproject/iwc`, `galaxyproject/planemo` | SSH Open Marketplace, TaDiRAH, Galaxy, WorkflowHub                                                                                                  |
+| `https://api.aiscr.cz/2.2/oai?verb=Identify`                                                                                                                                                                                                                                                                                                                                            | the AMCR endpoint's self-description and metadata licence                                                                                           |

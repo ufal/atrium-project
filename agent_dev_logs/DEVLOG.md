@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 24 open issues. `test` = `main` = tag `v1` = `eec0682` (2026-09-24); the 2026-09-21 divergence and its retag window are closed — `v1` carries #59/#60 and canonical file #17. CI green on `eec0682` (E2E pipeline smoke 35990199050, digital smoke 35990199010, fast-lane matrix 35990199041, docs site 35990199021)._
+> _Hub/planning repo. 24 open issues. `test` = `main` = `8de7896` (2026-09-25, issue logs); tag `v1` = `c2b423a`; the 2026-09-21 divergence and its retag window are closed — `v1` carries #59/#60 and canonical file #17. Latest entry: 2026-09-25 (round 7, not yet pushed). CI green on `eec0682` (E2E pipeline smoke 35990199050, digital smoke 35990199010, fast-lane matrix 35990199041, docs site 35990199021)._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0709.md` (prior: `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -1403,3 +1403,42 @@ comment; the "re-integration already built" claim corrected), **#24 (the 2026-08
 JSON-2-MD / TEITOK-2-MD TODO)**, #32 (JSON inputs on `test` and `agent-skill`; two of five gap fixes in the tree),
 #51 (09-17 status, V-5), #53 (09-15/09-16 status; **plan restored** from `c6a8ce5` — `d006088` had overwritten it with
 #54's), #54 (freeze tag still not cut), #55, #57, #58. **New pair: #66** (Galaxy).
+
+## 2026-09-25 (round 7) — workflow narratives, landing cards, SSHOMP and Galaxy preparation
+
+* **Inputs re-read.** All six repositories at their `test` heads (hub `8de7896`, pc `adee922`, alto `a584b7d`,
+translator `524d627`, nlp `53e60c5`, llm `8831399`); every repository's issue exports (regenerated 09:21) checked
+against the live API — the newest comments are K4TEL's on #4 (05:54: `j9fqxo` submitted, all five tool records
+updated) and #57 (05:43). The SSH Open Marketplace record pages read anonymously: the four approved tool versions
+(`106106`–`106124`) still carry the July texts plus one diagram each; `j9fqxo` and `0xSpVP` v`106039` are not public.
+The marketplace API and every Galaxy site are blocked from this session; Galaxy was read through its GitHub sources.
+* **#57 — Workflows section** (`docs_site/workflows/`, six pages). An overview with the fixed narrative shape, the two
+depths and the field table (narrative → SSHOMP workflow record → Galaxy `.ga` → Workflow RO-Crate); full narratives
+for page-classification and the translator, each with a Galaxy sheet; stable-core narratives for alto-postprocess,
+nlp-enrich and llm-enrich, written from their release tags (`v1.5.1-beta`, `v0.21.0`, `v0.7.0`) with a *Scope* box.
+`external-tools.md` gains SSH Open Marketplace, TaDiRAH, Galaxy, WorkflowHub and two glossary terms; the portal,
+Pipelines, both tool overviews and the repository map link the new pages; `mkdocs.yml` nav has the new group.
+* **#57 — landing cards.** `_generators/repos.py` gets `docs_path` per repository (tool section where one exists,
+workflow page otherwise) and `make_stubs.py` uses it; nlp-enrich's chips become Python 3.11 and YAKE · KeyBERT. The
+regenerated `gh-pages` files differ from the deployed ones only in the intended lines (alto: tagline, role, links;
+nlp: chips, links; llm: links; pc/translator: date and README wording).
+* **#4.** Digest and plan refreshed for the 09-25 submissions; `13eHAZ` decided → rebuild (B5 re-cut from the
+translator narrative, durable wording); new Appendix C (page-classifier workflow record) and Appendix D (phrases in the
+submitted texts that will date, with durable replacements).
+* **#17.** Digest and plan rewritten: `0xSpVP` v`106039` (11 steps) submitted 09-24, awaiting moderation; the check to
+run once it is public; relating `13eHAZ` and the new pc workflow record to it.
+* **#66.** Digest and plan rewritten from the Galaxy research: DARIAH's `atrium-galaxy-tools` already pairs an
+ATRIUM Galaxy workflow with its SSHOMP narrative (`IrpmkB`); ssh.usegalaxy.eu is a usegalaxy.eu subdomain with no MT,
+UDPipe/NameTag, keyword, language-ID or OCR-QC tool; `alto` and `tei` datatypes exist, `conllu` does not; custom
+containers run there. Seven questions for M. A. Greenwood (which server, which route, containers vs conda, network and
+models, GPU, `.ga` metadata, access). The planned `docs_site/operations/galaxy.md` is replaced by the Galaxy sheets.
+* **#57 digest / plan / findings.** Digest status and ⏳ Open rewritten (the fences and mirror were already gone); a
+round-7 block with the remaining work at the top of the plan; `57.findings.md` gains round-7 lines and first sections
+for alto-postprocess, nlp-enrich and llm-enrich.
+* **Verified.** `mkdocs build --strict` exits 0 with no warnings (mkdocs 1.6.1, mkdocs-material 9.7.7,
+pymdown-extensions 12.1); `nav` ↔ `docs_site/` 29 ↔ 29; 152 of 152 markdown tables render as tables; 7 Mermaid
+diagrams; no built link to a missing tool section; no e-mail address or maintainer handle in the built site; the
+time-bound-wording sweep is clean on the new pages; tables re-padded by the maintainer's rule; `ruff check
+_generators/` clean; `pytest tests/` 154 passed, 2 skipped (HEAD export: 152 passed, 4 skipped — the two extra skips
+need a git checkout); `workflow_lint.py --offline` OK.
+* **Not pushed.** Hub files and the regenerated `gh-pages` cards are delivered as files; pushing is the user's step.

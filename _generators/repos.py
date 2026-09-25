@@ -1,8 +1,14 @@
-"""Shared repo facts for the #57 round-2 generators.
+"""Shared repo facts for the #57 landing-card generator.
 
-Every value here was read out of the repository tree on 2026-09-18, not invented:
-titles from each README's `#` line, taglines from the GitHub repo description,
-chips from each README's own badge block, default branches from the repo metadata.
+Every value here was read out of the repository tree, not invented: titles from each
+README's `#` line, taglines from the GitHub repo description, chips from each README's
+own badge block, default branches from the repo metadata (first read 2026-09-18). The
+Python chip follows the version the images and CI use; a README badge that lags it is a
+finding for that repository, not a reason to publish the old value.
+
+`docs_path` is where the card's "Documentation" button lands, relative to HUB_SITE: the
+tool's section when the hub has one, its workflow page until then. It is the one value
+to change when a tool section is written.
 """
 
 HUB = "atrium-project"
@@ -15,6 +21,7 @@ REPOS = [
     {
         "slug": "atrium-page-classification",
         "short": "page-classification",
+        "docs_path": "tools/page-classification/",
         "stage": 1,
         "default_branch": "vit",
         "title": "Image classification using fine-tuned ViT, RegNetY or EffNetV2",
@@ -33,6 +40,7 @@ REPOS = [
     {
         "slug": "atrium-alto-postprocess",
         "short": "alto-postprocess",
+        "docs_path": "workflows/alto-postprocess/",
         "stage": 2,
         "default_branch": "master",
         "title": "ALTO XML Files Postprocessing Pipeline",
@@ -53,6 +61,7 @@ REPOS = [
     {
         "slug": "atrium-translator",
         "short": "translator",
+        "docs_path": "tools/translator/",
         "stage": 3,
         "default_branch": "master",
         "title": "ATRIUM — LINDAT Translation Wrapper",
@@ -72,6 +81,7 @@ REPOS = [
     {
         "slug": "atrium-nlp-enrich",
         "short": "nlp-enrich",
+        "docs_path": "workflows/nlp-enrich/",
         "stage": 4,
         "default_branch": "master",
         "title": "ALTO XML Postprocessing — NLP Enrichment of text",
@@ -80,10 +90,10 @@ REPOS = [
         "TEITOK XML with bounding boxes preserved.",
         "role": "Morphosyntax and named entities. Produces the TEITOK corpus format.",
         "chips": [
-            ("python", "3.8+", "https://www.python.org/downloads/", "py"),
+            ("python", "3.11", "https://www.python.org/downloads/", "py"),
             ("API", "UDPipe 2", "https://lindat.mff.cuni.cz/services/udpipe/api-reference.php", "api"),
             ("API", "NameTag 3", "https://lindat.mff.cuni.cz/services/nametag/api-reference.php", "api"),
-            ("dep", "KER", "https://github.com/ufal/ker", "dep"),
+            ("keywords", "YAKE · KeyBERT", "https://github.com/LIAAD/yake", "dep"),
             ("license", "MIT", "https://opensource.org/license/mit/", "lic"),
             ("funded by", "ATRIUM", "https://atrium-research.eu/", "atr"),
         ],
@@ -91,6 +101,7 @@ REPOS = [
     {
         "slug": "atrium-llm-enrich",
         "short": "llm-enrich",
+        "docs_path": "workflows/llm-enrich/",
         "stage": 5,
         "default_branch": "main",
         "title": "ATRIUM LLM Enricher",

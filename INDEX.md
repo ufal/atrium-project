@@ -1,4 +1,4 @@
-# ATRIUM hub site tree — issue #57, rounds 3–6 (content)
+# ATRIUM hub site tree — issue #57, rounds 3–7 (content)
 
 Everything here lands on **`atrium-project`'s default branch (`main`)**, not on `gh-pages`.
 `gh-pages` receives the *built* site; this is its source, and `.github/workflows/pages.yml`
@@ -119,34 +119,65 @@ which lives outside `docs_site/` and is never published.
 - **Site defect fixed:** the `atrium-pipeline` strips linked `../<tool>/index.md` inside raw
   HTML, which MkDocs does not rewrite — those links 404'd on the built site. Now `../<tool>/`.
 
+## What round 7 changed
+
+**A Workflows section: one narrative per tool** (`docs_site/workflows/`, six pages). Issue #57's
+TODO asked for every workflow "from beginning to end with a clear purpose and results stated";
+#4/#17 need the same text as SSH Open Marketplace workflow records, and #66 needs it as Galaxy
+workflows. A narrative is written once, in a fixed shape — Purpose · At a glance · Steps ·
+What you get · Limits · Provenance and licence · Where it sits · On other platforms · Sources —
+so each section fills one field of the SSH Open Marketplace record, of the Galaxy `.ga` file and
+of a Workflow RO-Crate. The overview page holds that field table.
+
+- **Two depths.** page-classification and the translator, the two tools whose workflow has
+  settled, get **full** narratives, with a Galaxy sheet each (datatypes, container, compute,
+  network, test data, the closest tools already in Galaxy). alto-postprocess, nlp-enrich and
+  llm-enrich get the **stable core** — purpose, step order, formats, licence floor, records —
+  written only from behaviour present in their latest release tag and unchanged on `test`,
+  with a *Scope* box pointing to their README for the rest.
+- **The model it follows** is ATRIUM's own T4.2.1 pairing: DARIAH's SSH Open Marketplace
+  workflow `IrpmkB` (the narrative) and its Galaxy workflow in `DARIAH-ERIC/atrium-galaxy-tools`
+  (the runnable twin).
+- **Glossary:** four new entries on External tools — SSH Open Marketplace, TaDiRAH, Galaxy,
+  WorkflowHub and Workflow RO-Crate — and two terms, *workflow narrative* and *actionable
+  workflow*.
+- **Wired in:** nav group *Workflows* after Pipelines; the portal cards, "Start here" and the
+  by-question table; both tool overviews' "Where to go next"; the repository map's *Docs here*
+  column for the three tools without a section; the Pipelines scope note and *Other workflows*.
+- **Landing cards:** `_generators/repos.py` gains a `docs_path` per repository and
+  `make_stubs.py` uses it, so the "Documentation →" button of alto-postprocess, nlp-enrich and
+  llm-enrich lands on their workflow page instead of a missing tool section. The regenerated
+  cards also carry alto-postprocess's multi-format tagline and nlp-enrich's current chips.
+
 ## Layout
 
 | Path                                    | What it is                                                                                                               |
 |-----------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
 | `mkdocs.yml`                            | site config. `docs_dir: docs_site`, `site_dir: site`, `strict: true`, `validation.links.anchors: warn`                   |
 | `PAGES_SETUP.md`                        | the publishing mechanics: why a branch source, how Pages is enabled, what the legacy Jekyll builder would have published |
-| `docs_site/**`                          | **23 pages** — 13 hub pages + 2 repos × 5 tool-section pages                                                             |
+| `docs_site/**`                          | **29 pages** — 13 hub pages + 6 Workflows pages + 2 repos × 5 tool-section pages                                         |
 | `agent_dev_logs/digests/57.findings.md` | the unpublished findings register: everything round 6 removed from the pages, by owning repository, with a status        |
 | `docs_site/assets/extra.css`            | styling hook; the `.atrium-pipeline` strip on each tool index uses it                                                    |
 | `.github/workflows/pages.yml`           | builds `docs_site/` with `--strict`; publishes to `gh-pages` on push to `main`                                           |
-| `tools/docs/requirements.txt`           | the pinned toolchain — mkdocs 1.6.1, mkdocs-material 9.7.7, pymdown-extensions 12.0.1                                    |
-| `_generators/`                          | what is left of the round-2 generators: `make_stubs.py`, `repos.py`, `style.css`                                         |
+| `tools/docs/requirements.txt`           | the toolchain ranges — verified with mkdocs 1.6.1, mkdocs-material 9.7.7, pymdown-extensions 12.x                        |
+| `_generators/`                          | the landing-card generator: `make_stubs.py`, `repos.py` (with each card's `docs_path`), `style.css`                      |
 
 ## Page status
 
-| Page                                                                                   | State                                                                              |
-|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|
-| `index.md`                                                                             | **written** — the portal, and how the ecosystem works                              |
-| `pipelines.md`                                                                         | **partial** — workflow index; W1, W4–W8, W12, W13 in full; five listed             |
-| `external-tools.md`                                                                    | **partial** — glossary of terms; every entry the two tools depend on               |
-| `development-history.md`                                                               | **partial** — per-repo index and the cross-repository chronology                   |
-| `tools/page-classification/*`                                                          | **written** — 5 pages, from `vit` @ `adee922` (round 6)                            |
-| `tools/translator/*`                                                                   | **written** — 5 pages, from `master` @ `71feaef` (round 6)                         |
-| `ecosystem/repository-map.md`                                                          | **written** — six identity rows; depth for the two documented tools                |
-| `ecosystem/{architecture,document-contract}.md`, `contracts/{schemas,skos,rocrate}.md` | **partial** — written for page-classification and translator                       |
-| `agent-skills.md`, `operations.md`, `contributing-standards.md`                        | **partial** — written for page-classification and translator                       |
+| Page                                                                                   | State                                                                                                                              |
+|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| `index.md`                                                                             | **written** — the portal, and how the ecosystem works                                                                              |
+| `pipelines.md`                                                                         | **partial** — workflow index; W1, W4–W8, W12, W13 in full; five listed                                                             |
+| `external-tools.md`                                                                    | **partial** — glossary of terms; every entry the two tools depend on; SSH Open Marketplace, TaDiRAH, Galaxy, WorkflowHub (round 7) |
+| `workflows/*`                                                                          | **written** — overview, 2 full narratives, 3 stable-core narratives (round 7)                                                      |
+| `development-history.md`                                                               | **partial** — per-repo index and the cross-repository chronology                                                                   |
+| `tools/page-classification/*`                                                          | **written** — 5 pages, from `vit` @ `adee922` (round 6)                                                                            |
+| `tools/translator/*`                                                                   | **written** — 5 pages, from `master` @ `71feaef` (round 6)                                                                         |
+| `ecosystem/repository-map.md`                                                          | **written** — six identity rows; depth for the two documented tools                                                                |
+| `ecosystem/{architecture,document-contract}.md`, `contracts/{schemas,skos,rocrate}.md` | **partial** — written for page-classification and translator                                                                       |
+| `agent-skills.md`, `operations.md`, `contributing-standards.md`                        | **partial** — written for page-classification and translator                                                                       |
 
-`mkdocs.yml`'s `nav` and `docs_site/` agree in both directions, **23 ↔ 23**, checked by a
+`mkdocs.yml`'s `nav` and `docs_site/` agree in both directions, **29 ↔ 29**, checked by a
 green `mkdocs build --strict`. Under `strict: true` a nav entry with no file and a file with
 no nav entry are both build failures, which is why a tool section may only be added to the
 nav in the same commit as its pages. **No page on the site is a round-2 shell any more.**
@@ -166,6 +197,8 @@ re-vendored inside one atomic window or CI goes red in five repositories at once
 1. **frontmatter** — `title`, `nav_order`, `status`, `round`, `issue`, plus `repo`/`role` on
    tool pages. `nav_order` is `20 + stage*10 + role_index`: page-classification 30–34,
    translator 50–54, with 40–44 and 60–74 reserved for the three sections not yet written.
+   The Workflows pages use 14–19 (overview, then the tools in pipeline order) and carry
+   `role: workflow`.
 2. **The page.** Written prose, tables and diagrams — no markers, no admonition claiming the
    page will be filled later.
 3. **`## Sources`** — a provenance table: what was read, at which ref, and what was taken
@@ -179,6 +212,19 @@ defects, open-issue status, dated measurements. Those go to
 [`57.findings.md`](agent_dev_logs/digests/57.findings.md) as candidate issues for their owners.
 
 ## Verified
+
+**Round 7 (2026-09-25)**, on hub `test` @ `8de7896` plus this round's files; narratives written against
+page-classification `v1.8.0-beta`, translator `v1.1.0-beta`, alto-postprocess `v1.5.1-beta`, nlp-enrich `v0.21.0` and
+llm-enrich `v0.7.0`:
+
+- `mkdocs build --strict` → **exits 0**, no warnings, 29 pages; `nav` ↔ `docs_site/` 29 ↔ 29.
+- **152 of 152** markdown tables render as HTML tables; **seven** Mermaid diagrams, as before.
+- No built link points at `…/tools/{alto-postprocess,nlp-enrich,llm-enrich}/`.
+- The time-bound-wording sweep leaves nothing on the six Workflows pages; the built site greps clean for e-mail
+  addresses and maintainer handles.
+- `_generators/make_stubs.py` output differs from each deployed `gh-pages` tree only in the intended lines;
+  `ruff check _generators/` clean.
+- `pytest tests/` → **154 passed, 2 skipped**; `workflow_lint.py --offline` → **OK**.
 
 **Round 6 (2026-09-23)**, on hub `main` @ `7b0b84e` plus this round's files, pages written
 against page-classification `vit` @ `adee922` and translator `master` @ `71feaef`:
@@ -250,17 +296,25 @@ As of round 5 (2026-09-23), on the maintainer's `88bc1a6` plus that round's file
   docs_site/tools/translator/reference.md
   docs_site/tools/translator/changelog.md
   docs_site/tools/translator/history.md
+  docs_site/workflows/index.md
+  docs_site/workflows/page-classification.md
+  docs_site/workflows/alto-postprocess.md
+  docs_site/workflows/translator.md
+  docs_site/workflows/nlp-enrich.md
+  docs_site/workflows/llm-enrich.md
 ```
 
 ## What these rounds deliberately do not do
 
 - **The other three tool sections.** alto-postprocess, nlp-enrich and llm-enrich keep their
-  reserved `nav_order` ranges and nothing else.
-- **Any change to a tool repository.** The drift these pages document is reported, not fixed
-  at source; each item is a candidate issue in its own repository.
-- **Repointing the landing cards' deep links.** `_generators/make_stubs.py` still generates
-  cards linking to `…/atrium-project/tools/<short>/` for all five repos. Two of those paths
-  now exist; the other three resolve when their sections are written.
+  reserved `nav_order` ranges; until their sections are written, their workflow page is what
+  the site says about them.
+- **Any change to a tool repository's code or documentation.** The drift these pages document
+  is reported, not fixed at source; each item is a candidate issue in its own repository. The
+  one exception is each tool's `gh-pages` landing card, which the hub generates.
+- **Tool sections behind the landing cards.** Since round 7 a card links to its tool section
+  where one exists (page-classification, translator) and to its workflow page otherwise;
+  `repos.py`'s `docs_path` is the one value to change when a section is written.
 - **`PAGES_STRATEGY.md`.** It is referenced by `PAGES_SETUP.md`, `DEVLOG.md`,
   `57.digest.md` and `57.plan.md`, and **has never existed in this repository** — every
   `§`-reference to it points nowhere. Its 12-page design survives only as a DEVLOG summary.

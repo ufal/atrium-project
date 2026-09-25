@@ -117,6 +117,13 @@ validation:
 nav:
   - Home: index.md
   - Pipelines: pipelines.md
+  - Workflows:
+      - Overview: workflows/index.md
+      - page-classification: workflows/page-classification.md
+      - alto-postprocess: workflows/alto-postprocess.md
+      - translator: workflows/translator.md
+      - nlp-enrich: workflows/nlp-enrich.md
+      - llm-enrich: workflows/llm-enrich.md
   - External tools & services: external-tools.md
   - Ecosystem:
       - Architecture: ecosystem/architecture.md
