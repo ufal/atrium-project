@@ -177,3 +177,44 @@ def test_finalize_names_the_record_after_the_document(tmp_path, baseline):
         out = doc.finalize()
 
     assert Path(out).name == f"{DOC_ID}.document.json"
+
+
+# ── the text-lines input suffixes (atrium-alto-postprocess#31) ─────────────────
+
+
+@pytest.mark.parametrize(
+    "name,doc_id",
+    [
+        # A dotted name used to fall back to the first dot: two reports, one doc_id.
+        ("scan.2019.pdf", "scan.2019"),
+        ("report.v1.docx", "report.v1"),
+        ("report.v2.docx", "report.v2"),
+        ("export.2024.hocr", "export.2024"),
+        ("CTX000000001.pdf", "CTX000000001"),
+        # Unchanged: the multi-dot pipeline suffixes still win, and a compression
+        # wrapper is not a suffix (the first-dot fallback answers the stem).
+        ("CTX000000001.udpipe.conllu", "CTX000000001"),
+        ("CTX000000001.teitok.xml", "CTX000000001"),
+        ("CTX000000001.txt.gz", "CTX000000001"),
+        ("image.2019.png", "image"),
+    ],
+)
+def test_canonical_doc_id_strips_the_text_lines_input_suffixes(name, doc_id):
+    assert canonical_doc_id(name) == doc_id
+
+
+def test_the_client_skeleton_mirrors_known_pipeline_suffixes():
+    """docs/templates/skill/atrium_client.skeleton.py copies the list (a client must key a
+    document exactly as the service does); a copy drifts unless something compares it."""
+    import ast
+
+    from atrium_document import KNOWN_PIPELINE_SUFFIXES
+
+    skeleton = _SHARED.parent / "skill" / "atrium_client.skeleton.py"
+    tree = ast.parse(skeleton.read_text(encoding="utf-8"))
+    mirrored = next(
+        ast.literal_eval(node.value)
+        for node in tree.body
+        if isinstance(node, ast.Assign) and any(getattr(t, "id", "") == "KNOWN_PIPELINE_SUFFIXES" for t in node.targets)
+    )
+    assert mirrored == list(KNOWN_PIPELINE_SUFFIXES)

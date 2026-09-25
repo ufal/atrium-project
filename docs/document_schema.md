@@ -133,7 +133,9 @@ digital-born PDF/DOCX. These are mutually exclusive per document, so those block
 | `ABBYY-ALTO` · `ocr:…` · `vlm:…` | `alto-postprocess` |
 
 The first writer of `source` decides the origin. alto-postprocess records one per input format:
-`ABBYY-ALTO` for ALTO; `ocr:page-xml`, `ocr:hocr`, `ocr:abbyy-finereader`, `ocr:djvu`,
+`ABBYY-ALTO` for ALTO (its text-lines method records the engine an ALTO or hOCR file names in its
+header instead — `ocr:tesseract`, `ocr:pero`, `ocr:kraken`, `ocr:transkribus`, `ocr:ocrd`, …);
+`ocr:page-xml`, `ocr:hocr`, `ocr:abbyy-finereader`, `ocr:djvu`,
 `ocr:tesseract` and `ocr:pdf-text-layer` for the other OCR formats; `ocr:generic` for text whose
 making the file does not record (OCR JSON, TXT, CSV, TEI, …); and `digital-born-<kind>` for the
 born-digital documents its text-lines method reads (DOCX, ODT/ODS/ODP, XLSX, PPTX, EPUB, RTF,
@@ -142,6 +144,10 @@ names `digital-convert`, which reads only PDF and DOCX, so for the other kinds n
 the positional plane yet. A site whose files of such a kind really are transcriptions declares
 them `ocr:generic` with alto-postprocess's `[DOCUMENT].SOURCE_ORIGIN_BY_KIND`
 ([`docs/text_inputs.md` §6](https://github.com/ufal/atrium-alto-postprocess/blob/master/docs/text_inputs.md#6-provenance-sourceorigin)).
+The `digital-born…` row stays a prefix by decision (atrium-alto-postprocess#31, 2026-09-25):
+narrowing it to `digital-born-pdf`/`-docx` would change the §1a contract for all five repos, and the
+per-kind override already lets a site say what its files are. Revisit it when digital-convert reads
+more kinds.
 
 `_assert_origin_consistent()` enforces it on both `set_block()` and `merge_block()`. Matching
 is case-insensitive; `resolve_originator(origin)` is the public form. An origin the table has
@@ -495,6 +501,9 @@ declaration, published as SKOS. See [`skos_strategy.md`](skos_strategy.md).
   now states both sets and points at the defect (V-1) and its one-line fix rather than implying the
   field is already filtered. **The filter itself is unchanged** — correcting it changes what text
   the model reads, which is a behaviour decision with an owner, not a documentation fix.
+  *Update 2026-09-25:* the owner took it — `DROP_CATEGORIES` now filters on
+  `atrium_vocab.UNTRUSTWORTHY_LINE_CATEGORIES` (Garbage, Inverted, Trash), and the `categ` description
+  says so (V-1 fixed, atrium-alto-postprocess#31).
 
 `atrium_vocab.py` and `atrium_vocab.schema.json` join the hub-canonical set: `SHARED_FILES` in
 `scripts/revendor_shared.sh`, two `diff -u` steps plus a `--selftest` step in

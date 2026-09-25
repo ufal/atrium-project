@@ -1442,3 +1442,25 @@ time-bound-wording sweep is clean on the new pages; tables re-padded by the main
 _generators/` clean; `pytest tests/` 154 passed, 2 skipped (HEAD export: 152 passed, 4 skipped — the two extra skips
 need a git checkout); `workflow_lint.py --offline` OK.
 * **Not pushed.** Hub files and the regenerated `gh-pages` cards are delivered as files; pushing is the user's step.
+
+## 2026-09-25 — atrium-alto-postprocess#31 Phase 5: the cross-repo follow-ups
+
+* **`KNOWN_PIPELINE_SUFFIXES`** (canonical `atrium_document.py` and the client skeleton's mirror): the single-dot inputs
+  alto-postprocess's text-lines method reads (`.pdf .docx .docm .dotx .odt .ods .odp .xlsx .xlsm .pptx .pptm .epub .rtf
+  .html .htm .xhtml .hocr .tei .jsonl .ndjson .tsv .tab .markdown .mdown .text .log .srt .vtt .eml .mbox .mbx .zip`);
+  compression wrappers deliberately not (`x.txt.gz` would become `x.txt`). `scan.2019.pdf` is now `scan.2019`, not
+  `scan`. **Decided with K4TEL:** this also turns `CTX01.scan.pdf` into `CTX01.scan` (it was `CTX01` by the first-dot
+  fallback), so page-classification's two tests that pinned that change in the same re-vendor. Tests: canonical_doc_id
+  cases and a skeleton-mirror check in `tests/test_document_record_doc_id.py`. Swapped into all five tool repos in-session:
+  alto-postprocess, llm-enrich, nlp-enrich and translator unchanged; page-classification only the two tests above.
+* **`tests/test_document_required.py`:** call sites named `<repo>/<file>::<function>` instead of line numbers (five had
+  drifted); new shapes: json-keys `page_split`, `text_split` (OCR and born-digital, source only), and the text-lines
+  extractor as the fifth extract twin; source-only records carry `assembled` without `blocks`, as the tools write it.
+* **V-1:** the F1 row said "done 2026-09-16", but llm-enrich still filtered `{Garbage, Inverted}` and the pinning test did
+  not exist. Fixed in llm-enrich now; `skos_strategy.md` §6/§7, `document_schema.md`, the canonical `atrium_vocab.py`
+  comments and the schema's `categ` description agree.
+* **`ORIGIN_ORIGINATORS`:** the `digital-born…` prefix stays by decision; `document_schema.md` says why (a §1a change
+  for all repos; alto-postprocess's `SOURCE_ORIGIN_BY_KIND` is the per-site answer).
+* Hub `pytest tests/` 184 passed, 1 skipped; shared tests 158 passed, 2 skipped; `ruff` clean. **Next (the user's):**
+  merge, retag `v1`, re-vendor `atrium_document.py`, `atrium_document.schema.json` and `atrium_vocab.py` into the five
+  tool repos together with page-classification's two tests. Not pushed: files delivered in chat.

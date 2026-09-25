@@ -53,7 +53,7 @@ re-describing AMCR's or TEATER's concepts; adding an RDF library to any repo.
 | alt labels (2,707) and scope notes (2,330)      | `VocabRecord.alt_*`, `note_*`     | ⚠️ captured, dropped by `nested_keep`      |
 | `entities[].pid.{wikidata,geonames,aat,amcr}`   | `atrium_document.schema.json`     | ❌ declared, **written by nothing**         |
 | 11 page categories                              | `model_registry.py:5-17`          | ⚠️ bare strings, definitions in prose only |
-| 5 + 2 line categories                           | two repos, disjoint               | ❌ see defect V-1                           |
+| 5 + 2 line categories                           | two repos, disjoint               | ✅ registered; defect V-1 fixed 2026-09-25  |
 | A second, divergent harvester                   | `atrium-translator/load_vocab.py` | ⚠️ discards every id it receives           |
 
 `VocabRecord` (`vocab_sources.py:85-121`) is already a `skos:Concept` in all but name — `cs`/`en`/`de`
@@ -233,21 +233,23 @@ cross-reference field is worse than a null. A hook that lies is not a hook.
 ## 🐞 6. Defect register
 
 Found while mapping the vocabulary layer. Each is a case of an uncontrolled label crossing a repo
-boundary. **V-1 is documented, not fixed, by explicit decision** — fixing it changes what text
-reaches the model on the OCR path, and that is a pipeline behaviour change this work does not make.
+boundary. **V-1 was documented, not fixed, by explicit decision** — fixing it changes what text
+reaches the model on the OCR path, a pipeline behaviour change with an owner. The owner took it on
+2026-09-25 (atrium-alto-postprocess#31, see F1).
 
-### V-1 — `DROP_CATEGORIES` never matches on the OCR path ❌ open, documented
+### V-1 — `DROP_CATEGORIES` never matched on the OCR path ✅ fixed 2026-09-25
 
-`atrium-llm-enrich/api_util/json_to_md.py:48` filters `frozenset({"Garbage", "Inverted"})`. Those
-are `digital-convert`'s labels. `alto-postprocess` emits `Clear`/`Empty`/`Noisy`/`Non-text`/`Trash`
+`atrium-llm-enrich/api_util/json_to_md.py`'s `DROP_CATEGORIES` filtered
+`frozenset({"Garbage", "Inverted"})`. Those are `digital-convert`'s labels. `alto-postprocess` emits `Clear`/`Empty`/`Noisy`/`Non-text`/`Trash`
 (`text_util.py:1152-1385` → `service/text_inference.py:363` → `service/text_api.py:196`). The sets
-are disjoint, so **every OCR-path document passes its garbage lines straight to the model.**
+are disjoint, so **every OCR-path document passed its garbage lines straight to the model.**
 
 Three separate places asserted the opposite, and all three are corrected here: the schema's `categ`
 description, `alto-postprocess/service/text_api.py:177-179`, and `json_to_md.py`'s own comment,
 which credited the values to *"alto-postprocess's compute_quality_score"*.
 
-**The fix, when someone takes it:**
+**The fix, taken 2026-09-25** (`json_to_md.DROP_CATEGORIES`; pinned by atrium-llm-enrich
+`tests/test_json_to_md.py::test_convert_drops_trash_lines_on_the_ocr_path`):
 
 ```python
 from atrium_vocab import UNTRUSTWORTHY_LINE_CATEGORIES
@@ -255,8 +257,8 @@ from atrium_vocab import UNTRUSTWORTHY_LINE_CATEGORIES
 DROP_CATEGORIES = frozenset(UNTRUSTWORTHY_LINE_CATEGORIES)  # {"Garbage", "Inverted", "Trash"}
 ```
 
-It needs an owner because it changes what the model sees. The registry makes it one line and makes
-the relationship machine-readable in the meantime: `a-line-category:Trash skos:closeMatch
+It needed an owner because it changes what the model sees. The registry made it one line and makes
+the relationship machine-readable: `a-line-category:Trash skos:closeMatch
 a-line-category:Garbage` — `closeMatch`, not `exactMatch`, because one is an OCR judgement over a
 rendered image and the other a decode-sanity judgement over an embedded text layer. Close, not
 identical, and deliberately not transitive.
@@ -324,16 +326,16 @@ Neither is in `CATEGORIES`.
 
 ## 🗂️ 7. Follow-ups (not done here, deliberately)
 
-| #      | Item                                                                                        | Why not now                                                                                                                                                                                                                          |
-|--------|---------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ~~F1~~ | ~~Take the V-1 fix~~ ✅ **done 2026-09-16**                                                  | Taken. `DROP_CATEGORIES` now filters on `UNTRUSTWORTHY_LINE_CATEGORIES`, so `Trash` is dropped on the OCR path. **This changes what the model is shown.** Pinned by `test_convert_drops_trash_lines_on_the_ocr_path`.                |
-| ~~F2~~ | ~~Fix V-2 by filtering to directories~~ ✅ **done 2026-09-23**                               | Taken. `collect_images()` filters to directories, so the shipped `small_data_samples/` no longer raises and class indices cannot silently shift. Three tests in `TestCollectImages`.                                                 |
-| F3     | Retire the translator's duplicate harvester in favour of nlp-enrich's artifacts             | ⚠️ **partly taken 2026-09-16** — see below. Full retirement still needs a release plan.                                                                                                                                              |
-| F4     | Add verified CNEC 2.0 glosses as `skos:definition`                                          | Needs the CNEC reference; inventing them would be worse than omitting                                                                                                                                                                |
-| F5     | Register the `w3id.org/atrium` redirect                                                     | Optional; blocks nothing                                                                                                                                                                                                             |
-| ~~F6~~ | ~~Add `*_uri` fields and populate `teater_category_uri`~~ ✅ **done 2026-09-16**             | `enrichment.items[].teater_category_uri` added (additive, no bump) and populated from `vocab_manager.concept_index()` — never through `nested_keep`, so the prompt is untouched. The crate now uses it as the term's `@id`; see V-5. |
-| F7     | Re-harvest so `close_match`/`broad_match`/`citation_uri` populate the committed artifacts   | Needs network; the parser is ready and tested                                                                                                                                                                                        |
-| ~~F8~~ | ~~Delete the orphaned `fixtures/e2e/VOCAB/teater_nested_vocab.json`~~ ✅ **done 2026-09-16** | Deleted. `fixtures/e2e/README.md` had described it as removed since 2026-08-19 while the file was still on disk.                                                                                                                     |
+| #      | Item                                                                                        | Why not now                                                                                                                                                                                                                                                                                                                                                                     |
+|--------|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ~~F1~~ | ~~Take the V-1 fix~~ ✅ **done 2026-09-25**                                                  | Taken. `DROP_CATEGORIES` now filters on `UNTRUSTWORTHY_LINE_CATEGORIES`, so `Trash` is dropped on the OCR path. **This changes what the model is shown.** Pinned by `test_convert_drops_trash_lines_on_the_ocr_path`. (This row said "done 2026-09-16" before the code carried it; atrium-alto-postprocess#31 found the constant unchanged and the test missing on 2026-09-25.) |
+| ~~F2~~ | ~~Fix V-2 by filtering to directories~~ ✅ **done 2026-09-23**                               | Taken. `collect_images()` filters to directories, so the shipped `small_data_samples/` no longer raises and class indices cannot silently shift. Three tests in `TestCollectImages`.                                                                                                                                                                                            |
+| F3     | Retire the translator's duplicate harvester in favour of nlp-enrich's artifacts             | ⚠️ **partly taken 2026-09-16** — see below. Full retirement still needs a release plan.                                                                                                                                                                                                                                                                                         |
+| F4     | Add verified CNEC 2.0 glosses as `skos:definition`                                          | Needs the CNEC reference; inventing them would be worse than omitting                                                                                                                                                                                                                                                                                                           |
+| F5     | Register the `w3id.org/atrium` redirect                                                     | Optional; blocks nothing                                                                                                                                                                                                                                                                                                                                                        |
+| ~~F6~~ | ~~Add `*_uri` fields and populate `teater_category_uri`~~ ✅ **done 2026-09-16**             | `enrichment.items[].teater_category_uri` added (additive, no bump) and populated from `vocab_manager.concept_index()` — never through `nested_keep`, so the prompt is untouched. The crate now uses it as the term's `@id`; see V-5.                                                                                                                                            |
+| F7     | Re-harvest so `close_match`/`broad_match`/`citation_uri` populate the committed artifacts   | Needs network; the parser is ready and tested                                                                                                                                                                                                                                                                                                                                   |
+| ~~F8~~ | ~~Delete the orphaned `fixtures/e2e/VOCAB/teater_nested_vocab.json`~~ ✅ **done 2026-09-16** | Deleted. `fixtures/e2e/README.md` had described it as removed since 2026-08-19 while the file was still on disk.                                                                                                                                                                                                                                                                |
 
 ### F3, the half that was taken (2026-09-16)
 

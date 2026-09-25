@@ -38,7 +38,7 @@ RETRY_ATTEMPTS = 3
 RETRY_WAIT_S = 10
 TIMEOUT_S = 300  # tune per service, see module docstring
 
-KNOWN_PIPELINE_SUFFIXES = [
+KNOWN_PIPELINE_SUFFIXES = [  # mirror of atrium_document.KNOWN_PIPELINE_SUFFIXES
     ".document.json",
     ".categories.json",
     ".teitok.xml",
@@ -50,6 +50,38 @@ KNOWN_PIPELINE_SUFFIXES = [
     ".md",
     ".csv",
     ".txt",
+    ".pdf",
+    ".docx",
+    ".docm",
+    ".dotx",
+    ".odt",
+    ".ods",
+    ".odp",
+    ".xlsx",
+    ".xlsm",
+    ".pptx",
+    ".pptm",
+    ".epub",
+    ".rtf",
+    ".html",
+    ".htm",
+    ".xhtml",
+    ".hocr",
+    ".tei",
+    ".jsonl",
+    ".ndjson",
+    ".tsv",
+    ".tab",
+    ".markdown",
+    ".mdown",
+    ".text",
+    ".log",
+    ".srt",
+    ".vtt",
+    ".eml",
+    ".mbox",
+    ".mbx",
+    ".zip",
 ]
 
 

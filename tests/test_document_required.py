@@ -6,7 +6,7 @@ properties -- so a stage that ran, wrote nothing, and emitted a two-key file pas
 the ecosystem.
 
 Tightening a validator is only safe if you can name every producer it must keep accepting, and
-the answer is not derivable from the schema: it lives in ten call sites across five repos, each
+the answer is not derivable from the schema: it lives in the call sites across five repos, each
 of which emits a different subset of blocks. This file is that enumeration, executable. The
 POSITIVE cases are the record shapes production code actually writes, traced from those call
 sites; the NEGATIVE cases are the four defect classes the freeze exists to catch.
@@ -78,6 +78,15 @@ def _stamp(*names: str) -> Dict[str, Any]:
     }
 
 
+def _unstamped() -> Dict[str, Any]:
+    """`assembled` as a record that only ever had set_source() carries it: no `blocks` key at all
+    (checked against a real alto-postprocess page_split/text_split record)."""
+    return {
+        "had_baseline": False,
+        "note": "Blocks reflect CONTRIBUTED steps only; a block is absent until its tool has run.",
+    }
+
+
 #: The five keys `DocumentRecord.to_dict()` emits on every path, with no branch that can skip one.
 #: `schema_version`/`record_type` are setdefault in __init__, `doc_id` is assigned there
 #: unconditionally, and `to_dict()` itself always assigns `provenance` and `assembled`.
@@ -91,11 +100,12 @@ _FLOOR: Dict[str, Any] = {
 
 # ── the shapes production code actually writes ────────────────────────────────
 #
-# Each entry names the call site it was traced from. If you change one of those call sites so it
-# emits a different shape, change it here in the same commit -- that is the whole point of the
-# file.
+# Each entry names the call site it was traced from, as <repo>/<file>::<function> (line numbers
+# drifted with every edit of the tools; the function does not). If you change one of those call
+# sites so it emits a different shape, change it here in the same commit -- that is the whole
+# point of the file.
 VALID_SHAPES = {
-    # alto-postprocess/page_split.py:540 -- the scanned originator. set_source() deliberately does
+    # alto-postprocess/page_split.py::main -- the scanned originator. set_source() deliberately does
     # NOT stamp, so this record has no `assembled.blocks` key at all. It is the reason the schema
     # says "source OR a stamped block" rather than "a stamped block".
     "alto page_split (source only, no stamp)": {
@@ -107,28 +117,68 @@ VALID_SHAPES = {
             "page_count": 1,
             "origin": "ABBYY-ALTO",
         },
-        "assembled": _stamp(),
+        "assembled": _unstamped(),
     },
-    # alto-postprocess/extract_ALTO_2_TXT.py:194 (and its three twins)
+    # alto-postprocess/page_split.py::main again, for --method json-keys: the same call with the
+    # JSON media type and the `ocr:generic` origin.
+    "alto page_split, json-keys (source only, no stamp)": {
+        **_FLOOR,
+        "source": {
+            "sha256": "d" * 64,
+            "filename": "CTX000000015.json",
+            "media_type": "application/json",
+            "page_count": 2,
+            "origin": "ocr:generic",
+        },
+        "assembled": _unstamped(),
+    },
+    # alto-postprocess/text_split.py::main -- the --method text-lines originator (atrium-alto-
+    # postprocess#31): source only, like page_split; `page_count` only for formats with real pages.
+    "alto text_split (source only, no stamp)": {
+        **_FLOOR,
+        "source": {
+            "sha256": "e" * 64,
+            "filename": "CTX000000012.pdf",
+            "media_type": "application/pdf",
+            "page_count": 1,
+            "origin": "ocr:pdf-text-layer",
+        },
+        "assembled": _unstamped(),
+    },
+    # alto-postprocess/text_split.py::main for a born-digital input: a `digital-born-*` origin
+    # hands the positional blocks to digital-convert, so every later stage of alto-postprocess
+    # holds them back and this `source` stays the record's only contribution from that repo.
+    "alto text_split, born-digital (source only, no positional block)": {
+        **_FLOOR,
+        "source": {
+            "sha256": "f" * 64,
+            "filename": "CTX000000010.docx",
+            "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "origin": "digital-born-docx",
+        },
+        "assembled": _unstamped(),
+    },
+    # alto-postprocess/extract_ALTO_2_TXT.py::main (and its four twins: extract_LytRdr_ALTO_2_TXT,
+    # extract_LLM_ALTO_2_TXT, extract_JSON_2_TXT and, for --method text-lines, extract_TEXT_2_TXT)
     "alto extract (pages + content)": {
         **_FLOOR,
         "assembled": _stamp("pages", "content"),
         "pages": [{"page": "1"}],
         "content": {"text": "Náčrt sondy."},
     },
-    # alto-postprocess/classify_TEXT.py:1109
+    # alto-postprocess/classify_TEXT.py::process_document
     "alto classify_TEXT (lines)": {
         **_FLOOR,
         "assembled": _stamp("lines"),
         "lines": [{"page": "1", "line": 0, "text": "Náčrt sondy.", "categ": "Clear"}],
     },
-    # alto-postprocess/aggregate_STAT.py:322
+    # alto-postprocess/aggregate_STAT.py::main
     "alto aggregate_STAT (pages)": {
         **_FLOOR,
         "assembled": _stamp("pages"),
         "pages": [{"page": "1", "quality_score": 0.9, "quality_band": "Clear"}],
     },
-    # page-classification/atrium_document_adapter.py:163 -- stage 1 of the scanned pipeline, and
+    # page-classification/atrium_document_adapter.py::_write_one -- stage 1 of the scanned pipeline, and
     # it never calls set_source(). This is why `source` is NOT in the floor.
     "page-classification standalone": {
         **_FLOOR,
@@ -137,7 +187,7 @@ VALID_SHAPES = {
         "page_categories": {"1": "TEXT"},
         "pages": [{"page": "1", "category": "TEXT", "category_confidence": 0.98}],
     },
-    # translator/main.py:414 -- add_derived_from() is unconditional inside the `with`, so a
+    # translator/main.py::process_single_file -- add_derived_from() is unconditional inside the `with`, so a
     # standalone translator record is seven keys, not six.
     "translator standalone": {
         **_FLOOR,
@@ -145,7 +195,7 @@ VALID_SHAPES = {
         "derived_from": {"translated_xml": "TRANSLATED/CTX000000001.alto.xml"},
         "translations": {"source_lang": "cs", "target_lang": "en", "backend": "lindat"},
     },
-    # nlp-enrich/api_util/document_hook.py:292 -- both merges are unconditional, so both blocks
+    # nlp-enrich/api_util/document_hook.py::run_document_hook -- both merges are unconditional, so both blocks
     # are present even when empty. An empty list is a contribution; no key is not.
     "nlp-enrich standalone (empty entities list)": {
         **_FLOOR,
@@ -153,7 +203,7 @@ VALID_SHAPES = {
         "entities": [],
         "pages": [],
     },
-    # llm-enrich/llm_client_shared.py:1190
+    # llm-enrich/llm_client_shared.py::write_document_record
     "llm-enrich standalone": {
         **_FLOOR,
         "assembled": _stamp("enrichment", "derived_from", "regenerable"),
@@ -161,7 +211,7 @@ VALID_SHAPES = {
         "regenerable": {"markdown": {"from": "CTX000000001.document.json", "converter": "json_to_md@1.0"}},
         "enrichment": {"items": [], "summary": None, "topics": []},
     },
-    # llm-enrich/api_util/digital_to_json.py:770 -- the digital-born originator, which DOES call
+    # llm-enrich/api_util/digital_to_json.py::to_record -- the digital-born originator, which DOES call
     # set_source() first, deliberately.
     "digital-convert originator": {
         **_FLOOR,
@@ -186,13 +236,13 @@ VALID_SHAPES = {
 
 # ── the defect classes the freeze exists to catch ─────────────────────────────
 INVALID_SHAPES = {
-    # What `required` accepted before the freeze. nlp-enrich/tests/test_run_pipeline.py:156 wrote
-    # literally this.
+    # What `required` accepted before the freeze. nlp-enrich/tests/test_run_pipeline.py (the
+    # `_fake_stage` of its --document-json-out test) wrote literally this.
     "today's two-key minimum": {"schema_version": "1.0", "doc_id": "CTX000000001"},
     # The issue's own words: "a stage that produces nothing still validates". finalize() already
     # prints WARNING - <program> contributed no block; this promotes it to a failure.
-    # Live instance: alto-postprocess/classify_TEXT.py:1109 on an empty CSV, whose hook call sits
-    # outside the `if not df.empty` guard.
+    # Live instance: alto-postprocess/classify_TEXT.py::process_document on an empty CSV, whose
+    # hook call sits outside the `if not df.empty` guard.
     "a stage that contributed nothing (no source, no stamp)": {**_FLOOR, "assembled": _stamp()},
     # A stamp is written by _stamp(), which only runs where the payload is written in the same
     # call -- so a stamp without a payload cannot come from the module. It means the record was
