@@ -222,6 +222,61 @@ VALID_SHAPES = {
         "content": {"text": "t"},
         "tables": [{"table_id": "t1", "page": "1"}],
     },
+    # llm-enrich/api_util/digital_to_json.py::to_record for a DOCX (llm-enrich#18), trimmed from a real
+    # rich.docx record: no bbox and no canvas (a DOCX has no page geometry), a counted page_count,
+    # and the layout cues in lines[].style -- heading_level, and `region` for the running header and
+    # the footnote. `region` was written before the schema declared it (additionalProperties: true);
+    # declaring it as a closed enum is only additive because this shape still validates.
+    "digital-convert originator, DOCX with layout cues": {
+        **_FLOOR,
+        "source": {
+            "sha256": "8" * 64,
+            "filename": "rich.docx",
+            "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "origin": "digital-born-docx",
+            "page_count": 2,
+        },
+        "assembled": _stamp("pages", "lines", "content", "tables"),
+        "pages": [
+            {"page": "1", "page_index": 1, "quality_score": 1.0, "quality_band": "Clear"},
+            {"page": "2", "page_index": 2, "quality_score": 1.0, "quality_band": "Clear"},
+        ],
+        "lines": [
+            {
+                "page": "1",
+                "line": 0,
+                "text": "Nálezová zpráva",
+                "group_id": "hdr0-0",
+                "style": {"region": "page_header"},
+            },
+            {"page": "1", "line": 1, "text": "Hradiště u Horní Mezi", "group_id": "p0", "style": {"heading_level": 1}},
+            {"page": "1", "line": 2, "text": "Sonda II", "group_id": "p1", "style": {"bold": True}},
+            {
+                "page": "1",
+                "line": 3,
+                "text": "Katalog je v archivu.",
+                "group_id": "fn1",
+                "style": {"region": "footnote"},
+            },
+            {"page": "2", "line": 0, "text": "Nálezy", "group_id": "tbl0-r0c0"},
+            {"page": "2", "line": 1, "text": "Strana 2", "group_id": "ftr0-0", "style": {"region": "page_footer"}},
+        ],
+        "content": {
+            "text": "Hradiště u Horní Mezi\n\nSonda II\n\nKatalog je v archivu.\n\nNálezy",
+            "reading_order": "layout",
+        },
+        "tables": [
+            {
+                "table_id": "t0",
+                "page": "2",
+                "caption": "",
+                "n_rows": 1,
+                "n_cols": 1,
+                "group_id": "tbl0",
+                "cells": [{"row": 0, "col": 0, "is_header": True, "group_id": "tbl0-r0c0"}],
+            }
+        ],
+    },
     # atrium_document.merge_document_records() -- record_type differs, and `blocks` may legitimately
     # be {} when every input was a source-only record. That is why minProperties lives inside the
     # anyOf branch rather than on assembled.blocks itself.
@@ -275,6 +330,23 @@ def test_defect_shapes_are_refused(label):
         f"{label!r} validates, but the #54 freeze exists to refuse it -- "
         f"the top-level required/anyOf/allOf has been widened"
     )
+
+
+def test_style_region_is_a_closed_enum():
+    """`lines[].style.region` (llm-enrich#18) is declared as a closed enum, so a misspelled value
+    is refused instead of silently rendering as body text.
+
+    json_to_md treats an unknown region as body, which is the safe fallback for a record written
+    before the declaration -- but for a producer it would hide the typo: the running header would
+    reach the model inline, and back into content.text. The freeze's rule makes the narrowing
+    additive: every producer already writes one of the three values (the DOCX shape above).
+    """
+    pytest.importorskip("jsonschema")
+    shape = json.loads(json.dumps(VALID_SHAPES["digital-convert originator, DOCX with layout cues"]))
+    assert _is_valid(shape)
+    for wrong in ("sidebar", "header", "Page_Header"):
+        shape["lines"][0]["style"]["region"] = wrong
+        assert not _is_valid(shape), f"style.region {wrong!r} validates -- the enum has been widened or dropped"
 
 
 def test_the_floor_is_what_to_dict_guarantees():

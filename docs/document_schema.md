@@ -184,8 +184,12 @@ engine ran, so "was this OCR'd" stays answerable.
 
 `quality_score` is one axis — **text trustworthiness, 0–1** — with two derivations. On the
 OCR path it is an engine-confidence proxy; on the digital-born path it is a decode-sanity
-score (Issue #10's vowel/consonant ratio and dictionary hit-rate over the embedded text
-layer). Which derivation produced a given value is answerable from `source.origin`, so the
+score over the embedded text layer: per line, the lower of the share of letters that are
+*not* a CP1250-read-as-CP1252 misread and the share of visible characters that are not
+U+FFFD, control or private-use; per page, the mean over its lines (`digital_to_json.py`
+`decode_sanity()` / `normalize()`). An earlier revision of this paragraph described a
+vowel/consonant ratio and a dictionary hit-rate — the Layer B sketch in llm-enrich's #18 plan,
+which was never built. Which derivation produced a given value is answerable from `source.origin`, so the
 field is not split. Consumers that filter on it (`json_to_md --min-quality`) are filtering
 the same thing either way: *do not show this line to the model*.
 
@@ -717,3 +721,81 @@ with).
    > * `fixtures/atrium_document.example.json`, which `tests/test_fixture_schema.py` validates
    > * `tests/test_document_required.py`, which enumerates every record shape production writes —
    >   a change to `required` that reds a case there is a behaviour change to a shipped tool
+
+## Changelog — 2026-09-25 (llm-enrich#18: `lines[].style.region`, CDLA-Permissive-2.0)
+
+atrium-llm-enrich#18 (the explicit PDF/DOCX → JSON converter, on llm-enrich `test` @ `c3575f5`)
+started writing one key the schema did not declare, and running one component whose licence
+`para_licenses.py` did not rank. This pass declares the first and ranks the second. **No
+`SCHEMA_VERSION` bump.**
+
+It is the **first change after the freeze tag** `doc-schema-v1` (`544298b`, cut 2026-09-25). The
+tag keeps naming the schema as frozen, and stays correct for every record: each one written
+before or after this pass — including every llm-enrich record that already carries `region` —
+validates against both.
+
+### `lines[].style.region` — declared, as a closed enum
+
+| Value         | The line is…                            | Written from                                                                   |
+|---------------|-----------------------------------------|--------------------------------------------------------------------------------|
+| `page_header` | the page's running header               | DOCX header parts · PDF lines repeating in the top margin · Docling's label    |
+| `page_footer` | the page's running footer               | DOCX footer parts · PDF lines repeating in the bottom margin · Docling's label |
+| `footnote`    | a footnote or endnote                   | DOCX footnote/endnote parts · Docling's label                                  |
+| *(absent)*    | body text — every line on the ALTO path | —                                                                              |
+
+**Consumer contract.** `api_util/json_to_md.py` renders each page as header, body, footnotes,
+footer: the header and footer inside the `HEADER_START`/`FOOTER_START` cues, footnotes as `[^n]:`
+definitions. `digital_to_json.py` keeps header and footer lines out of `content.text`, so a
+running header is not repeated into the text on every page. A misspelled value would undo both
+silently — the line would render as body text and reach `content.text` — which is why the value
+set is closed.
+
+**Why this is additive.** Versioning rule 1 covers the new optional key. The enum also *narrows*
+what the validator accepts, and #54's rule above applies: that is additive when the narrowed set
+still contains everything the producers produce. There is one producer, `digital-convert`, and
+its three values are module constants (`api_util/digital_ir.py` `REGIONS`). The enumeration is
+executable: `tests/test_document_required.py` gains the DOCX record shape with the layout cues
+(positive) and `test_style_region_is_a_closed_enum` (negative: `"sidebar"`, `"header"`,
+`"Page_Header"` are refused).
+
+**Why an enum here, when the freeze rejected enums on controlled-term fields** (rejected
+alternative 3 above). That rejection was about fields whose label sets come from data at run
+time and have several writers — `page_categories` is whatever folders page-classification finds
+— so an enum turns a naming slip into a stalled pipeline. `region` is the opposite case: one
+writer, a fixed set in code, and a writer that validates its own record before writing it
+(`digital_to_json.py` `_gate()`, run on every generated fixture by llm-enrich's tests). A slip
+turns llm-enrich's CI red; it cannot reach a pipeline. That puts `region` on the same footing as
+`pages[].quality_band` and `regenerable.*.detail`, the schema's other closed enums. It is
+not a SKOS scheme: it records a position on the page, not a descriptive term, so nothing is
+added to `atrium_vocab.py`.
+
+**No ownership change.** `style` was already granted to `digital-convert` alone
+(`BLOCK_FIELD_OWNERS`); a key inside a granted object is not a new grant, so the ownership table
+above is unchanged.
+
+**Also corrected in the schema:** the `style` description said heading-ness "is already carried
+by categ". It never was — `digital-convert`'s `categ` set is `Garbage`/`Inverted` — and it is
+`style.heading_level` that carries it.
+
+### `para_licenses.py` — CDLA-Permissive-2.0 ranked 1
+
+The converter's opt-in heavy engine (`--engine docling`) runs Docling's TableFormer weights,
+licensed CDLA-Permissive-2.0. The licence places no terms on *Results* (the output of a
+computation over the data), so it ranks with MIT and Apache-2.0. Unranked, it resolved as
+**unknown**, which `resolve_effective_license()` treats as maximally restrictive *in its terms
+too* — so every `--engine docling` record would have claimed non-commercial and share-alike. The
+light engine (pdfplumber, pypdfium2, python-docx) was never affected. Pinned in
+`test_para_licenses.py` (`test_cdla_permissive_model_weights_stay_permissive`).
+
+### Also in this pass
+
+* The `quality_score` paragraph under **Block ownership** described the digital-born derivation
+  as a vowel/consonant ratio and a dictionary hit-rate. That was never built; the paragraph now
+  says what `decode_sanity()` computes.
+* `tools/e2e/e2e_assert.py --expect-layout`, and three new cases in `e2e-digital-smoke.yml`
+  (`rich.docx`, `two_column.pdf`, and `ocr_layer.pdf`, which must be refused with exit 3). The
+  cases turn themselves on only when both the fixture generator and the image carry #18, so the
+  nightly on `:latest` (v0.7.0) skips them with a notice instead of failing.
+* **Distribution:** the schema, `para_licenses.py` and `test_para_licenses.py` are hub-canonical.
+  `scripts/revendor_shared.sh` copies them into the five tool repos, and `v1` has to move
+  before `para-drift` compares against them.

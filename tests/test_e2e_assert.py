@@ -19,7 +19,11 @@ So the cases below are deliberately the ones the nightly E2E cannot reach:
     single repo's tests can see);
   * a schema-invalid record — must FAIL on the schema, BEFORE any block assertion,
     because "which blocks are present" is meaningless for a record that is not a
-    valid record (D4).
+    valid record (D4);
+  * born-digital `--expect-layout` (llm-enrich#18) on a record without headings,
+    regions or joined tables — must FAIL, so the D1d/D1e smoke stages cannot pass on a
+    converter that flattened the layout; and on a scanned record — must FAIL rather than
+    silently check nothing.
 
 Run: pytest tests/test_e2e_assert.py
 """
@@ -388,3 +392,145 @@ def test_cli_accepts_teitok_dir(tmp_path, record):
     teitok_dir = _teitok(tmp_path)
     final = _write(tmp_path, "final.json", record)
     assert e2e_assert.main([final, "--llm-stage-ran", "true", "--teitok-dir", teitok_dir]) == 0
+
+
+# ── born-digital branch: --expect-layout (llm-enrich#18) ──────────────────────────────────
+
+
+def _digital_record():
+    """A valid digital-convert record with the layout cues, trimmed from a real rich.docx run.
+
+    The born-digital branch is chosen from `source.origin`, not a flag, so the shape has to be
+    a real originator's: `digital-born-docx` and `assembled.blocks.lines.program` =
+    `digital-convert`. No `enrichment`, so the cases below run with `llm_stage_ran=False`.
+    """
+
+    def stamp():
+        return {
+            "program": "digital-convert",
+            "run_id": "260925-000000",
+            "paradata_ref": "",
+            "updated_at": "2026-09-25T00:00:00+00:00",
+        }
+
+    return {
+        "schema_version": "1.0",
+        "record_type": "atrium-document",
+        "doc_id": "rich",
+        "provenance": {"license": "MIT", "license_url": "https://opensource.org/license/mit/", "contributors": []},
+        "source": {
+            "sha256": "8" * 64,
+            "filename": "rich.docx",
+            "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "origin": "digital-born-docx",
+            "page_count": 2,
+        },
+        "assembled": {
+            "blocks": {name: stamp() for name in ("pages", "lines", "content", "tables")},
+            "had_baseline": False,
+            "note": "Blocks reflect CONTRIBUTED steps only; a block is absent until its tool has run.",
+        },
+        "pages": [{"page": "1", "page_index": 1}, {"page": "2", "page_index": 2}],
+        "lines": [
+            {
+                "page": "1",
+                "line": 0,
+                "text": "Nálezová zpráva",
+                "group_id": "hdr0-0",
+                "style": {"region": "page_header"},
+            },
+            {"page": "1", "line": 1, "text": "Hradiště u Horní Mezi", "group_id": "p0", "style": {"heading_level": 1}},
+            {
+                "page": "1",
+                "line": 2,
+                "text": "Katalog je v archivu.",
+                "group_id": "fn1",
+                "style": {"region": "footnote"},
+            },
+            {"page": "2", "line": 0, "text": "Nálezy", "group_id": "tbl0-r0c0"},
+        ],
+        "content": {"text": "Hradiště u Horní Mezi\n\nKatalog je v archivu.\n\nNálezy", "reading_order": "layout"},
+        "tables": [
+            {
+                "table_id": "t0",
+                "page": "2",
+                "n_rows": 1,
+                "n_cols": 2,
+                "group_id": "tbl0",
+                # the second cell is empty: it keeps its group_id and has no line to join
+                "cells": [
+                    {"row": 0, "col": 0, "is_header": True, "group_id": "tbl0-r0c0"},
+                    {"row": 0, "col": 1, "is_header": True, "group_id": "tbl0-r0c1"},
+                ],
+            }
+        ],
+    }
+
+
+def test_born_digital_record_passes_without_the_layout_flag(tmp_path):
+    final = _write(tmp_path, "rich.json", _digital_record())
+    e2e_assert.assert_document_contract(final, llm_stage_ran=False)
+
+
+def test_layout_cues_pass_and_are_reported(tmp_path, capsys):
+    final = _write(tmp_path, "rich.json", _digital_record())
+    e2e_assert.assert_document_contract(final, llm_stage_ran=False, expect_layout=True)
+    out = capsys.readouterr().out
+    assert "1 heading line(s)" in out
+    assert "'footnote': 1" in out and "'page_header': 1" in out
+    assert "table 't0': 1 of 2 cell group(s) join lines[]" in out
+
+
+def test_layout_without_a_heading_fails(tmp_path):
+    record = _digital_record()
+    for line in record["lines"]:
+        (line.get("style") or {}).pop("heading_level", None)
+    final = _write(tmp_path, "flat.json", record)
+    with pytest.raises(AssertionError, match="heading_level"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=False, expect_layout=True)
+
+
+def test_layout_without_a_region_fails(tmp_path):
+    """The flattening this catches: the running header and the footnote read as body text."""
+    record = _digital_record()
+    for line in record["lines"]:
+        (line.get("style") or {}).pop("region", None)
+    final = _write(tmp_path, "flat.json", record)
+    with pytest.raises(AssertionError, match="style.region"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=False, expect_layout=True)
+
+
+def test_table_no_cell_of_which_joins_a_line_fails(tmp_path):
+    record = _digital_record()
+    record["lines"][-1]["group_id"] = "p9"
+    final = _write(tmp_path, "orphan.json", record)
+    with pytest.raises(AssertionError, match="table 't0' on page '2'"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=False, expect_layout=True)
+
+
+def test_minimal_pdf_shape_cannot_pass_the_layout_check(tmp_path):
+    """The check must not pass vacuously on a fixture without layout: minimal.pdf's record is
+    lines of plain body text, no style, no tables."""
+    record = _digital_record()
+    record["source"].update(
+        filename="minimal.pdf", media_type="application/pdf", origin="digital-born-pdf", page_count=1
+    )
+    record["lines"] = [{"page": "1", "line": 0, "text": "Zpráva o sondě."}]
+    record["content"] = {"text": "Zpráva o sondě.", "reading_order": "layout"}
+    del record["tables"], record["assembled"]["blocks"]["tables"]
+    final = _write(tmp_path, "minimal.json", record)
+    e2e_assert.assert_document_contract(final, llm_stage_ran=False)
+    with pytest.raises(AssertionError, match="heading_level"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=False, expect_layout=True)
+
+
+def test_layout_flag_on_a_scanned_record_fails_instead_of_doing_nothing(tmp_path, record):
+    final = _write(tmp_path, "5_llm.json", record)
+    with pytest.raises(AssertionError, match="born-digital branch only"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=True, expect_layout=True)
+
+
+def test_cli_accepts_expect_layout(tmp_path):
+    """The shape e2e-digital-smoke.yml's D1d/D1e stages pass."""
+    final = _write(tmp_path, "rich.json", _digital_record())
+    assert e2e_assert.main([final, "--llm-stage-ran", "false", "--expect-layout"]) == 0

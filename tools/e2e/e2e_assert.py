@@ -35,6 +35,11 @@ with tokens, and contain every id the record points into:
 ``pages[].teitok_surface`` → ``<surface id>`` and ``entities[]``/``lines[].teitok_ref``
 → an element ``id``. See `assert_teitok()`.
 
+On the born-digital branch, ``--expect-layout`` asks for the structure the
+converter recovers from a DOCX or a PDF with a layout (llm-enrich#18): a heading,
+page furniture or a footnote in ``lines[].style``, and tables whose cells join back
+into ``lines[]``. See `assert_layout()`.
+
 Usage:
     python tools/e2e/e2e_assert.py work/doc_json/5_llm.json \\
         --llm-stage-ran true \\
@@ -416,7 +421,62 @@ def assert_digital_contract(doc, json_path):
     return pages, needs_ocr_pages
 
 
-def assert_document_contract(json_path, llm_stage_ran="auto", stage_paths=(), expect_needs_ocr=False, teitok_dir=None):
+def assert_layout(doc):
+    """The born-digital layout cues (llm-enrich#18), for a fixture that has them.
+
+    The happy-path contract above holds for a converter that flattens every page to plain
+    lines, which is what digital_to_json did until #18. These are the three things that
+    flattening would lose. The first two cannot pass on a record without them; the third
+    only has something to check when the record carries tables[]:
+
+      * a heading — ``lines[].style.heading_level`` on at least one line;
+      * a non-body region — ``lines[].style.region`` on at least one line (running header,
+        running footer or footnote; the schema's enum has already vetted the value);
+      * tables that point at their text — every ``tables[]`` item has at least one cell
+        whose ``group_id`` is carried by a line. Cell text lives only in ``lines[]``
+        (the schema's "grid SHAPE only" rule), so a table none of whose cells joins is an
+        empty grid to every consumer. "At least one", not "every": an empty cell keeps
+        its ``group_id`` and has no line to join.
+
+    Only meaningful for a fixture built to carry these cues (``rich.docx``,
+    ``two_column.pdf``); ``minimal.pdf`` has none and must fail it.
+    """
+    lines = doc.get("lines") or []
+    headings = [ln for ln in lines if (ln.get("style") or {}).get("heading_level")]
+    assert headings, (
+        "❌ --expect-layout: no line carries style.heading_level. The converter recovered no "
+        "heading from a fixture built to have them — the layout is being flattened."
+    )
+    regions = {}
+    for line in lines:
+        region = (line.get("style") or {}).get("region")
+        if region:
+            regions[region] = regions.get(region, 0) + 1
+    assert regions, (
+        "❌ --expect-layout: no line carries style.region. The fixture's running header, footer "
+        "or footnote reached the record as body text, so it will also reach content.text and "
+        "the model inline."
+    )
+    print(f"✅ {len(headings)} heading line(s); regions {dict(sorted(regions.items()))}")
+
+    line_groups = {ln.get("group_id") for ln in lines if ln.get("group_id")}
+    tables = doc.get("tables") or []
+    for table in tables:
+        cell_groups = {cell.get("group_id") for cell in table.get("cells") or [] if cell.get("group_id")}
+        joined = cell_groups & line_groups
+        assert joined, (
+            f"❌ --expect-layout: table {table.get('table_id')!r} on page {table.get('page')!r} has "
+            f"{len(cell_groups)} cell group_id(s) and none of them is carried by a line. Cell text "
+            "lives only in lines[], so this grid is empty to every consumer."
+        )
+        print(f"✅ table {table.get('table_id')!r}: {len(joined)} of {len(cell_groups)} cell group(s) join lines[]")
+    if not tables:
+        print("ℹ️  no tables[] on this record — the table join is not exercised")
+
+
+def assert_document_contract(
+    json_path, llm_stage_ran="auto", stage_paths=(), expect_needs_ocr=False, teitok_dir=None, expect_layout=False
+):
     doc = _load(json_path)
 
     # 0. The contract itself, before any block-by-block check: a record that does
@@ -474,9 +534,19 @@ def assert_document_contract(json_path, llm_stage_ran="auto", stage_paths=(), ex
                 )
             print(f"✅ {len(pages)} page(s), all lines carry text, no page needs OCR")
 
+        if expect_layout:
+            assert_layout(doc)
+
         _assert_enrichment(doc, llm_stage_ran)
         print(f"✅ e2e_assert.py: born-digital contract verified for {json_path}")
         return
+
+    # A flag that silently does nothing would let a mis-wired stage pass: the layout cues are
+    # a digital-convert contract, and a scanned record has no writer for them.
+    assert not expect_layout, (
+        f"❌ --expect-layout applies to the born-digital branch only, but source.origin is "
+        f"{origin!r} (originator {originator!r}). The stage fed this check the wrong record."
+    )
 
     # ── the scanned branch (pc -> alto -> translate -> nlp -> llm) ──────────────
 
@@ -564,6 +634,13 @@ def main(argv=None):
         "needs OCR and every line carries text.",
     )
     parser.add_argument(
+        "--expect-layout",
+        action="store_true",
+        help="born-digital branch only: also require the layout cues llm-enrich#18 added — a "
+        "style.heading_level, a style.region, and tables whose cells join lines[]. For "
+        "fixtures built to carry them (rich.docx, two_column.pdf).",
+    )
+    parser.add_argument(
         "--stages",
         nargs="*",
         default=[],
@@ -587,6 +664,7 @@ def main(argv=None):
         stage_paths=args.stages,
         expect_needs_ocr=args.expect_needs_ocr,
         teitok_dir=args.teitok_dir,
+        expect_layout=args.expect_layout,
     )
     return 0
 

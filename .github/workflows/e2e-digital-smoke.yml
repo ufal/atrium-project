@@ -29,6 +29,14 @@
 # workflow it was covered only by unit tests inside a single repo. Case 2 below
 # asserts it against a real published image.
 #
+# ── And what llm-enrich#18 added (Cases 4-6) ────────────────────────────────────
+# The converter stopped flattening: DOCX pages, headings, running headers/footers and
+# footnotes in `lines[].style`, tables joined to their lines, two-column PDFs in
+# reading order, and a PDF whose text layer is a prior OCR run refused (exit 3) rather
+# than recorded as born-digital. Cases 4-6 smoke those through the published image.
+# They run only when BOTH halves carry #18 — the generator that makes the fixtures and
+# the image that converts them — because the two come from different places (below).
+#
 # ── Fixtures are GENERATED, never committed ─────────────────────────────────────
 # `atrium-llm-enrich/tests/fixtures/digital/make_fixtures.py` is a deterministic,
 # pure-stdlib PDF/DOCX generator with sha256-pinned outputs — same design as this
@@ -158,10 +166,19 @@ jobs:
 
       # llm-enrich is checked out ONLY for its fixture generator. The converter
       # itself runs from the published image, which is the thing under test.
+      #
+      # The ref follows the image CHANNEL (llm-enrich#18, 2026-09-25): `:test` is built
+      # from llm-enrich's `test` branch, so the generator comes from there too. Every
+      # other channel takes the default branch, which is NOT the same thing as `:latest`
+      # — `:latest` moves only on a release tag, and the default branch can run ahead of
+      # it (on 2026-09-25 `main` == `test` == c3575f5, while `:latest` is still v0.7.0).
+      # That gap is why Cases 4-6 below also probe the image instead of trusting the
+      # fixture list; an empty ref is the checkout action's default branch.
       - name: Checkout atrium-llm-enrich (fixture generator only)
         uses: actions/checkout@v7
         with:
           repository: ufal/atrium-llm-enrich
+          ref: ${{ env.IMAGE_TAG == 'test' && 'test' || '' }}
           path: work/llm-enrich-src
 
       - name: Gate on OPENROUTER_KEY
@@ -363,6 +380,111 @@ jobs:
         run: |
           python tools/e2e/e2e_assert.py work/doc_json/enrichable.document.json \
             --llm-stage-ran false
+
+      # ── Cases 4-6: the llm-enrich#18 layout and refusal contract ─────────────
+      # Two things must both be true, and they come from different places:
+      #
+      #   * the IMAGE converts them — probed from its own `--help`, because `--engine`
+      #     arrived with #18 and a tag name says nothing about what is inside it;
+      #   * the GENERATOR made the fixtures — rich.docx, two_column.pdf and ocr_layer.pdf
+      #     exist only from llm-enrich c3575f5 on.
+      #
+      # Either one missing SKIPS the case with a notice rather than failing: the nightly
+      # on `:latest` = v0.7.0 has the new generator (default branch) and the old image,
+      # and asserting #18 against a release that predates it would be red for a reason no
+      # commit could fix. Once a release carries #18, the probe turns the cases on by
+      # itself — nothing here needs editing.
+      - name: Probe the converter for the llm-enrich#18 contract
+        id: caps
+        run: |
+          set -uo pipefail
+          IN="${{ github.workspace }}/work/digital_in"
+          # Captured first, not piped: under pipefail, `grep -q` exiting on its first match
+          # can SIGPIPE the writer and turn a match into a failed condition.
+          help_text="$(docker run --rm "${DIGITAL_IMAGE}:${IMAGE_TAG}" --help 2>/dev/null || true)"
+          if grep -q -- '--engine' <<<"$help_text"; then
+            capable=true
+          else
+            capable=false
+            echo "::notice::${DIGITAL_IMAGE}:${IMAGE_TAG} predates llm-enrich#18 (no --engine in its --help) — Cases 4-6 are skipped."
+          fi
+          case_for() {  # $1 = output name, $2 = fixture
+            if [ "$capable" = true ] && [ -f "$IN/$2" ]; then
+              echo "$1=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "$1=false" >> "$GITHUB_OUTPUT"
+              if [ "$capable" = true ]; then
+                echo "::notice::$2 was not generated (the llm-enrich checkout predates #18) — its case is skipped."
+              fi
+            fi
+          }
+          case_for docx rich.docx
+          case_for columns two_column.pdf
+          case_for ocr_layer ocr_layer.pdf
+
+      # Case 4 — rich.docx: DOCX pages from three kinds of break, a title and localized
+      # headings, a running header and footer, a footnote, tracked changes and a table.
+      # `--expect-layout` requires a heading, a style.region and tables joined to
+      # lines[]; tests/test_e2e_assert.py pins that it fails on minimal.pdf's record,
+      # so this cannot pass vacuously.
+      - name: Stage D1d - digital-convert (DOCX layout)
+        if: steps.caps.outputs.docx == 'true'
+        run: >
+          docker run --rm -v ${{ github.workspace }}:/workspace
+          ${DIGITAL_IMAGE}:${IMAGE_TAG}
+          /workspace/work/digital_in/rich.docx
+          --document-json-out /workspace/work/doc_json/rich.document.json
+
+      - name: Assert the born-digital layout contract (DOCX)
+        if: steps.caps.outputs.docx == 'true'
+        run: |
+          python tools/e2e/e2e_assert.py work/doc_json/rich.document.json \
+            --llm-stage-ran false \
+            --expect-layout
+
+      # Case 5 — two_column.pdf: roman page labels, a running header and footer, a heading
+      # and two text columns that must come out in reading order.
+      - name: Stage D1e - digital-convert (two-column PDF)
+        if: steps.caps.outputs.columns == 'true'
+        run: >
+          docker run --rm -v ${{ github.workspace }}:/workspace
+          ${DIGITAL_IMAGE}:${IMAGE_TAG}
+          /workspace/work/digital_in/two_column.pdf
+          --document-json-out /workspace/work/doc_json/two_column.document.json
+
+      - name: Assert the born-digital layout contract (PDF)
+        if: steps.caps.outputs.columns == 'true'
+        run: |
+          python tools/e2e/e2e_assert.py work/doc_json/two_column.document.json \
+            --llm-stage-ran false \
+            --expect-layout
+
+      # Case 6 — ocr_layer.pdf: a page image under invisible (render mode 3) text, i.e. a
+      # prior OCR run. Not born-digital, so the converter must REFUSE it: exit 3 and no
+      # record. Its originator is alto-postprocess (`--method text-lines`, source.origin
+      # `ocr:pdf-text-layer`). A record here would be the §1a arbitration broken the
+      # other way round — OCR text claimed as a digital text layer.
+      - name: Stage D1f - digital-convert refuses a prior OCR layer
+        if: steps.caps.outputs.ocr_layer == 'true'
+        run: |
+          set -uo pipefail
+          out="work/doc_json/ocr_layer.document.json"
+          set +e
+          docker run --rm -v ${{ github.workspace }}:/workspace \
+            "${DIGITAL_IMAGE}:${IMAGE_TAG}" \
+            /workspace/work/digital_in/ocr_layer.pdf \
+            --document-json-out "/workspace/$out"
+          code=$?
+          set -e
+          if [ "$code" -ne 3 ]; then
+            echo "::error::ocr_layer.pdf: expected exit 3 (ocr_text_layer — not born-digital), got $code."
+            exit 1
+          fi
+          if [ -e "$out" ]; then
+            echo "::error::ocr_layer.pdf was refused but a record was written anyway: $out"
+            exit 1
+          fi
+          echo "✅ ocr_layer.pdf refused with exit 3 and no record written"
 
       # ── Stage D2: llm-enrich reads the record the converter produced ─────────
       # No new code path: openrouter_client.py takes the document-json pair, and

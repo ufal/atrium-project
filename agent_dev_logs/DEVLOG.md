@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 24 open issues. `test` = `main` = `8de7896` (2026-09-25, issue logs); tag `v1` = `c2b423a`; the 2026-09-21 divergence and its retag window are closed — `v1` carries #59/#60 and canonical file #17. Latest entry: 2026-09-25 (round 7, not yet pushed). CI green on `eec0682` (E2E pipeline smoke 35990199050, digital smoke 35990199010, fast-lane matrix 35990199041, docs site 35990199021)._
+> _Hub/planning repo. 24 open issues. `test` = `main` = `544298b` (2026-09-25, issue logs); tag `v1` = `2a47174`; freeze tag `doc-schema-v1` = `544298b` (#54); the 2026-09-21 divergence and its retag window are closed — `v1` carries #59/#60 and canonical file #17. Latest entry: 2026-09-25 (llm-enrich#18 follow-ups, not yet pushed). CI green on `eec0682` (E2E pipeline smoke 35990199050, digital smoke 35990199010, fast-lane matrix 35990199041, docs site 35990199021)._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0709.md` (prior: `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -1464,3 +1464,54 @@ need a git checkout); `workflow_lint.py --offline` OK.
 * Hub `pytest tests/` 184 passed, 1 skipped; shared tests 158 passed, 2 skipped; `ruff` clean. **Next (the user's):**
   merge, retag `v1`, re-vendor `atrium_document.py`, `atrium_document.schema.json` and `atrium_vocab.py` into the five
   tool repos together with page-classification's two tests. Not pushed: files delivered in chat.
+
+## 2026-09-25 — llm-enrich#18 follow-ups: `style.region` declared, CDLA ranked, the digital smoke grows three cases
+
+llm-enrich#18 (the explicit PDF/DOCX → JSON converter) is on llm-enrich `test` @ `c3575f5`, which is also its `main`;
+`:latest` is still v0.7.0. The converter left four hub follow-ups; this pass delivers them. It is the first change after
+the freeze tag `doc-schema-v1` (@ `544298b`), and it is additive.
+
+* **Schema (hub-canonical):** `lines[].style.region`, a closed enum `page_header`/`page_footer`/`footnote` (absent = body).
+  One writer (`digital-convert`), three module constants, validated by the writer's own output gate. #54's rule makes
+  the narrowing additive, and `tests/test_document_required.py` enumerates it: a DOCX layout shape, plus
+  `test_style_region_is_a_closed_enum`. The `style` description no longer claims heading-ness is carried by `categ`.
+  Not a SKOS scheme; `atrium_vocab.py` untouched. No `SCHEMA_VERSION` bump.
+* **`para_licenses.py` (hub-canonical):** CDLA-Permissive-2.0 at rank 1, with URL and aliases. Unranked, every
+  `--engine docling` record resolved as unknown, i.e. non-commercial and share-alike. Three new cases in
+  `test_para_licenses.py`.
+* **`tools/e2e/e2e_assert.py --expect-layout`:** born-digital only. It requires a heading, a region, and every table
+  joined to `lines[]` by at least one cell. Fails loudly on a scanned record. `tests/test_e2e_assert.py` gains the
+  branch's first cases (8), including a minimal.pdf-shaped record that must fail.
+* **`e2e-digital-smoke.yml`:**
+  * The generator checkout follows the image channel (`ref: test` on `:test`).
+  * A probe reads the image's `--help` for `--engine`.
+  * Cases 4–6: D1d `rich.docx` and D1e `two_column.pdf` with `--expect-layout`; D1f `ocr_layer.pdf` must exit 3 and
+    write no record.
+  * Each case skips with a notice unless both the fixture and the image carry #18, because the nightly pairs
+    `main`'s new generator with `:latest` = v0.7.0.
+  * actionlint (with shellcheck) finds nothing new: only the info-level SC2086 on the folded `docker run` lines,
+    which the existing stages share.
+* **Docs:**
+  * `document_schema.md` 2026-09-25 changelog, including why an enum here does not contradict the freeze's
+    rejected alternative 3.
+  * Its `quality_score` paragraph no longer describes a vowel/consonant ratio that was never built.
+  * Roadmap H11 closed.
+  * `docs_site/workflows/llm-enrich.md` (engines, route, MIT for the converter, Sources `test` @ `c3575f5`,
+    unreleased) and the pipelines W2 row (the OCR-layer refusal).
+* **Logs:**
+  * `4.plan.md` E: the converter licence item confirmed and fixed.
+  * `57.findings.md`: README converter section resolved @ `c3575f5`; the `pdf` prefix resolved @ `c2b423a`.
+  * `54.digest.md`/`54.plan.md`: freeze tag cut, post-freeze note.
+* **Left out on purpose:** llm-enrich's `agent-skill` branch drift predates this and is not a CI gate; not touched.
+* **Verified:**
+  * `pytest tests/` 194 passed, 1 skipped; `pytest docs/templates/shared` 161 passed, 2 skipped; `ruff` clean.
+  * `workflow_lint.py --offline` OK; `mkdocs build --strict` exit 0.
+  * `e2e_assert.py --expect-layout` passes on `rich.docx` and `two_column.pdf` records produced by llm-enrich
+    `c3575f5` in the light image's dependency set, and fails on `minimal.pdf`'s.
+  * `scripts/revendor_shared.sh` run locally into all five repos, then `--check` clean, and their shared tests pass.
+* **Next (the user's):**
+  1. Commit the hub files.
+  2. Run `scripts/revendor_shared.sh` (then `--check`), and commit the five tool repos in one window.
+  3. Move `v1`.
+
+  Not pushed: files delivered in chat.
