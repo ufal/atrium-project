@@ -1,6 +1,6 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 24 open issues. `test` = `main` = `6167803` (2026-09-26, #54 freeze check); tag `v1` = `6167803`; freeze tag `doc-schema-v1` = `544298b` (#54); the 2026-09-21 divergence and its retag window are closed — `v1` carries #59/#60 and canonical file #17. Latest entry: 2026-09-26 (later: para-drift red in all five tool repos — `test_schema_freeze.py` re-wrapped in the hub after vendoring; fix not yet pushed). CI green on `eec0682` (E2E pipeline smoke 35990199050, digital smoke 35990199010, fast-lane matrix 35990199041, docs site 35990199021)._
-> _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0709.md` (prior: `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
+> _Hub/planning repo. 25 open issues (#67 added 2026-09-26). `test` = `4f65b20` (2026-09-26, issue logs + #67); tag `v1` = `6167803`; freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-09-26 (AMČR baseline) — every digest+plan pair refreshed to AMČR's #67 buckets; the para-drift red of 09-26 is fixed (tool repos at blob `7c35fbf1`, hub `f9bfb1b`). CI green on `4f65b20` (Hub Self-Check 36256783734, pre-commit, CodeQL, Documentation Site)._
+> _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
 - **#4 SSH Open Marketplace records** — Opened by stranak: create SSHOMP records for every tool in our workflows (UDPipe ✅,
@@ -1632,5 +1632,44 @@ the freeze tag `doc-schema-v1` (@ `544298b`), and it is additive.
 * **Next (the user's):**
   1. Land Fix 1 in the five tool repos.
   2. Commit Fix 2 in the hub.
+
+  Not pushed: files delivered in chat.
+
+## 2026-09-26 (AMČR baseline) — #67 and fifteen thread comments; every digest+plan pair refreshed
+
+* **What arrived (motyc, 15:57–16:32):** [#67](https://github.com/ufal/atrium-project/issues/67) — AMČR's proposed
+  bucket for every open issue and seven pilot requests (R1 seeded record · R2 `CreateAction` paradata · R3
+  record-only mode · R4 `atrium_rocrate.py` on RO-Crate 1.2 / Process Run Crate 0.5 · R5 `keywords` block · R6
+  document quality summary, optional · R7 architecture cleanup) — plus fifteen comments carrying the thread-specific
+  asks: hub #4, #6, #18, #22, #40, #53, #54; llm-enrich #10, #13, #18, #24, #25; nlp-enrich #10, #38; translator #46.
+* **Adopted by ÚFAL as binding** (the user, 2026-09-26); the 30 September meeting may amend it, and each change is
+  then recorded with its reason and who agreed.
+* **Earlier the same day, landed:** Fix 1 and Fix 2 of the entry above — `tests/test_schema_freeze.py` re-vendored in
+  all five tool repos (blob `7c35fbf1`, 18:36–18:39) and the template's formatter exclusion in the hub (`f9bfb1b`).
+* **Dev logs (this repository):**
+  * new: `digests/67.digest.md`, `plans/67.plan.md` (the baseline table across six repositories; R1–R7 with the code
+    state, order and a per-repository work sheet); `digests/project_state_2609.md` (successor to `0709`);
+  * 🔒 close-outs: 18, 54 (the RO-Crate half → #67 R4; the CI roadmap → a new issue, draft in chat);
+  * ✅ finish: 6 (PyMuPDF, flexiconv licence), 32 (four of five CI defects fixed in the trees), 40 (branch protection
+    on all six, immutable releases, `uses:` pinned by commit — with the matching `hub-ref`), 53 (close order #58 →
+    #55 → #53; the factor III limits table, five services), 55, 58, 66;
+  * 🔧 reshape: 10 (one bounded, advisory LLM-review check);
+  * ⏸️ defer: 22 (OCR candidates out, Docling/MinerU → llm-enrich#10), 24, 51 (V-1 date corrected to 09-25), 56;
+  * ⛔ stop: 26, 27, 31 (spill-over into 32/53/55 and `agent_skill_branch_plan.md` marked);
+  * 🏛️ AMČR-owned: 4 (own-tool workflow records linking `0xSpVP`, no versions in the texts), 13, 15, 16, 17, 21
+    (the two-record re-release marked done, 07-20);
+  * 🧑‍⚖️ ÚFAL decides: 57 (three options; recommended: push rounds 7–8, clean up, close); `57.findings.md` rows
+    re-bucketed.
+* **Found while refreshing:**
+  * alto-postprocess `/process` and llm-enrich return the untouched seed record when the seed's `doc_id` differs
+    from the filename-derived id (`text_api.py:502,527-528`; `llm_client_shared.py:1248,1319`) — `finalize()` writes
+    `<seed id>.document.json` (`atrium_document.py:1002`). Read, not reproduced. First step of #67 R1; issue body in
+    chat.
+  * para-drift and workflow-lint check the hub out at `hub-ref` (default `v1`), so #40's commit pin needs a matching
+    `hub-ref`.
+* **Pairs to remove** (issues already closed): nlp-enrich `11.*`, `19.*`; alto-postprocess `37.*`;
+  page-classification `48.*`.
+* **Verified:** relative links in the changed files resolve; changed tables re-padded to the formatter's rule; no
+  trailing whitespace.
 
   Not pushed: files delivered in chat.
