@@ -1,0 +1,2306 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for the UFAL side of the ATRIUM project: the page classifier, the ALTO post-processor, the translator, and the NLP and LLM enrichers.">
+      
+      
+      
+        <link rel="canonical" href="https://ufal.github.io/atrium-project/tools/page-classification/guide/">
+      
+      
+        <link rel="prev" href="../">
+      
+      
+        <link rel="next" href="../reference/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>page-classification — Guide - ATRIUM — UFAL documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#page-classification--guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="ATRIUM — UFAL documentation" class="md-header__button md-logo" aria-label="ATRIUM — UFAL documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ATRIUM — UFAL documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              page-classification — Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ufal/atrium-project" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ufal/atrium-project
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="ATRIUM — UFAL documentation" class="md-nav__button md-logo" aria-label="ATRIUM — UFAL documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    ATRIUM — UFAL documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ufal/atrium-project" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ufal/atrium-project
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipelines
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../workflows/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflows
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Workflows
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../workflows/page-classification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    page-classification
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../workflows/alto-postprocess/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    alto-postprocess
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../workflows/translator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    translator
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../workflows/nlp-enrich/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    nlp-enrich
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../workflows/llm-enrich/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    llm-enrich
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../external-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    External tools & services
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ecosystem
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Ecosystem
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ecosystem/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ecosystem/repository-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository map
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ecosystem/document-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The document contract
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contracts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contracts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contracts/rocrate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RO-Crate export
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contracts/skos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SKOS & the ATRIUM vocabulary
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contracts/schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schemas
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../agent-skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent skills
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributing-standards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing standards
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tools
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tools
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10_1" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    page-classification
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_10_1" id="__nav_10_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_10_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    page-classification
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1--local-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1 · Local install
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2--classify-something" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2 · Classify something
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2 · Classify something">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#preparing-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preparing input
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reading-the-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading the output
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3--run-it-as-a-container" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3 · Run it as a container
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4--run-it-as-one-stage-of-the-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4 · Run it as one stage of the pipeline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5--train-or-evaluate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5 · Train or evaluate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6--use-it-from-a-coding-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6 · Use it from a coding agent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../translator/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    translator
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_10_2" id="__nav_10_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    translator
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../translator/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../translator/reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../translator/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../translator/history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../development-history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development history
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1--local-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1 · Local install
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2--classify-something" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2 · Classify something
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2 · Classify something">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#preparing-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preparing input
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reading-the-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading the output
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3--run-it-as-a-container" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3 · Run it as a container
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4--run-it-as-one-stage-of-the-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4 · Run it as one stage of the pipeline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5--train-or-evaluate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5 · Train or evaluate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6--use-it-from-a-coding-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6 · Use it from a coding agent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="page-classification--guide">page-classification — Guide<a class="headerlink" href="#page-classification--guide" title="Permanent link">&para;</a></h1>
+<p>Get it running — from a local checkout, from a container, or as one stage of the
+pipeline — without reading the code. Every flag mentioned here is listed in full on the
+<a href="../reference/">Reference</a> page.</p>
+<div class="admonition note">
+<p class="admonition-title">Branches</p>
+<p>The code lives on the default branch, <strong><code>vit</code></strong>. <code>master</code> is a short index pointing at
+the two model-family lines, <code>vit</code> and <code>clip</code> — <code>clip</code> is a separate CLIP-based
+classifier with its own Hugging Face repository — and <code>agent-skill</code> holds the Agent
+Skill packaging. See <a href="../history/#branches">History → Branches</a>.</p>
+</div>
+<h2 id="1--local-install">1 · Local install<a class="headerlink" href="#1--local-install" title="Permanent link">&para;</a></h2>
+<p>Python <strong>3.11</strong> — the version the container images and CI use across all six ATRIUM
+repositories. numpy is pinned below 2.5, because 2.5 requires Python 3.12.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/ufal/atrium-page-classification.git
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>atrium-page-classification
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>setup/requirements.txt
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>python3<span class="w"> </span>run.py<span class="w"> </span>--hf<span class="w">          </span><span class="c1"># pulls the model from the Hugging Face hub</span>
+</code></pre></div>
+<p>There is no <code>pip install .</code> — the repository ships no <code>pyproject.toml</code> and no console
+script. Every invocation is <code>python3 run.py</code> from the repository root.</p>
+<p><code>model/</code>, <code>result/</code> and <code>checkpoint/</code> are runtime directories — downloaded weights,
+result tables and training checkpoints — created on first run and mounted as volumes
+under Docker.</p>
+<p><strong>Choosing a model.</strong> <code>-rev</code> pins one revision of <code>ufal/vit-historical-page</code> —
+<code>-rev v4.4</code> is the recommended single model, small and the most accurate of its
+generation — and <code>--best</code> runs the five-model ensemble instead. Name a revision
+explicitly rather than relying on the repository's <code>main</code> branch; the
+<a href="../#the-models">Overview</a> explains the revision names.</p>
+<h2 id="2--classify-something">2 · Classify something<a class="headerlink" href="#2--classify-something" title="Permanent link">&para;</a></h2>
+<p><strong>One page:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python3<span class="w"> </span>run.py<span class="w"> </span>-f<span class="w"> </span>/full/path/to/page.png<span class="w">            </span><span class="c1"># Top-3, printed to the console</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>python3<span class="w"> </span>run.py<span class="w"> </span>-f<span class="w"> </span>/full/path/to/page.png<span class="w"> </span>-tn<span class="w"> </span><span class="m">1</span><span class="w">      </span><span class="c1"># single best guess</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>python3<span class="w"> </span>run.py<span class="w"> </span>-f<span class="w"> </span>/full/path/to/page.png<span class="w"> </span>--best<span class="w">     </span><span class="c1"># all five models, averaged</span>
+</code></pre></div>
+<p><strong>A directory</strong> — pass <code>-d &lt;path&gt;</code>, or <code>--dir</code> to use the preset in
+<code>[INPUT] FOLDER_INPUT</code>. Input is selected only by <code>-f</code>, <code>-d</code> or <code>--dir</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python3<span class="w"> </span>run.py<span class="w"> </span>-d<span class="w"> </span>/data/pages<span class="w"> </span>--inner<span class="w">                      </span><span class="c1"># recurse into subfolders</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>python3<span class="w"> </span>run.py<span class="w"> </span>--dir<span class="w"> </span>--inner<span class="w"> </span>--best<span class="w">                        </span><span class="c1"># ensemble over the config default</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>python3<span class="w"> </span>run.py<span class="w"> </span>--dir<span class="w"> </span>--inner<span class="w"> </span>--best<span class="w"> </span>--parallel<span class="w">             </span><span class="c1"># memory-aware, CUDA only</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>python3<span class="w"> </span>run.py<span class="w"> </span>--dir<span class="w"> </span>--inner<span class="w"> </span>--raw<span class="w">                         </span><span class="c1"># per-class scores, all 11 columns</span>
+</code></pre></div>
+<p>Directory processing runs in batches (<code>[SETUP] batch</code>, default 16). Memory use grows
+with the batch: roughly 2 GB at 4, 5 GB at 16 and 17 GB at 64, on CPU or GPU alike — below
+12 is safe on an office desktop. Above roughly half a million files, simply <em>listing</em> the
+tree takes noticeable time before any inference starts.</p>
+<p>Results land in <code>[OUTPUT] FOLDER_RESULTS</code> (default <code>./result</code>) as timestamped CSVs —
+see <a href="#reading-the-output">Reading the output</a> below, and
+<a href="../reference/#outputs-and-their-columns">Reference → Outputs</a> for every column schema.</p>
+<h3 id="preparing-input">Preparing input<a class="headerlink" href="#preparing-input" title="Permanent link">&para;</a></h3>
+<p>The classifier reads <strong>page images</strong>, one file per page. Scanned PDFs are split first with
+the bundled converter, which renders every page at 300 dpi with poppler's <code>pdftoppm</code>, in
+parallel, into one sub-folder per PDF:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>data_scripts/unix/pdf2png.sh<span class="w"> </span>--dir<span class="w"> </span>/data/pdfs<span class="w"> </span>--output<span class="w"> </span>/data/pages<span class="w">      </span><span class="c1"># PDFs are kept</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>data_scripts/unix/pdf2png.sh<span class="w"> </span>--dir<span class="w"> </span>/data/pdfs<span class="w"> </span>--format<span class="w"> </span>jpg<span class="w"> </span>--dpi<span class="w"> </span><span class="m">200</span><span class="w">    </span><span class="c1"># other options</span>
+</code></pre></div>
+<p><code>data_scripts/windows/pdf2png.bat</code> does the same with ImageMagick and Ghostscript, one file
+at a time. The HTTP service needs neither: <code>POST /predict_document</code> takes the PDF itself
+and renders it at the same 300 dpi.</p>
+<p><strong>The file name carries the page number.</strong> A page image is expected to be named
+<code>&lt;document&gt;-&lt;page&gt;.png</code> or <code>&lt;document&gt;_&lt;page&gt;.png</code>; the tool splits on the <em>last</em> separator,
+so <code>report_2021_003.png</code> is document <code>report_2021</code>, page 3. Those two halves become the
+<code>FILE</code> and <code>PAGE</code> columns of every result table and the key of the document record. A name
+without a trailing page number is treated as page 1, with a warning.</p>
+<h3 id="reading-the-output">Reading the output<a class="headerlink" href="#reading-the-output" title="Permanent link">&para;</a></h3>
+<p>A Top-3 run produces one row per page, best guess first; scores are normalised
+probabilities, rounded to three decimals. These rows are from a <code>v4.3</code> run committed in the
+tool repository as <code>result/tables/20260530-1220_model_v43_TOP-3.csv</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>FILE,PAGE,CLASS-1,CLASS-2,CLASS-3,SCORE-1,SCORE-2,SCORE-3
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>atrium,1,TEXT,LINE_P,TEXT_P,0.981,0.017,0.002
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>atrium,2,LINE_P,TEXT,TEXT_P,1.0,0.0,0.0
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>atrium,4,LINE_P,TEXT,TEXT_P,0.799,0.146,0.055
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>atrium,23,TEXT_P,TEXT,PHOTO,0.549,0.451,0.0
+</code></pre></div>
+<p><code>CLASS-1</code> is the category to act on; a low <code>SCORE-1</code> with a close <code>CLASS-2</code> — page 23
+above — marks a page worth a human look. <code>--raw</code> adds a table with one probability column per category, which
+is convenient for review because ambiguous pages spread their probability across several
+columns. With <code>--best</code> the run also writes one Top-1 vote per model, so disagreement
+between the five models is visible page by page.</p>
+<p>When a record is requested, the same Top-1 lands in the <a href="../../../ecosystem/document-contract/">document record</a>:
+<code>page_categories</code> maps each page number to its label, and <code>pages[].category</code> /
+<code>pages[].category_confidence</code> carry the label and <code>SCORE-1</code>.</p>
+<h2 id="3--run-it-as-a-container">3 · Run it as a container<a class="headerlink" href="#3--run-it-as-a-container" title="Permanent link">&para;</a></h2>
+<p>Two images are published to GHCR from the same Dockerfile. <code>&lt;version&gt;</code> is the release without its
+leading <code>v</code> — <code>1.8.0-beta</code> — or <code>latest</code>; see <a href="../../../operations/#images-and-tags">Operations</a> for
+when each tag moves.</p>
+<table>
+<thead>
+<tr>
+<th>Image</th>
+<th>Stage</th>
+<th>Entry point</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ghcr.io/ufal/atrium-page-classification:&lt;version&gt;</code></td>
+<td><code>base</code></td>
+<td><code>python3 /app/entrypoint.py</code> → <code>run.py</code></td>
+<td>the batch CLI</td>
+</tr>
+<tr>
+<td><code>ghcr.io/ufal/atrium-page-classification-api:&lt;version&gt;</code></td>
+<td><code>api</code></td>
+<td><code>python -m service.api</code></td>
+<td>the HTTP service on port 8000</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>-api</code> suffix belongs to the image <strong>name</strong>: pull
+<code>atrium-page-classification-api:&lt;version&gt;</code> for the service. An image built locally with Compose
+carries its own local tag.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># batch, over ./data/input, writing to ./data/output</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>classify
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># the HTTP service</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>--profile<span class="w"> </span>api<span class="w"> </span>up<span class="w"> </span>--build<span class="w">      </span><span class="c1"># → http://localhost:8000/info</span>
+</code></pre></div>
+<p><strong>On a GPU</strong>, overlay the second compose file and rebuild against the CUDA wheel index:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.yml<span class="w"> </span>-f<span class="w"> </span>docker-compose.gpu.yml<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>classify
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="c1">#   build with: --build-arg TORCH_INDEX_URL=https://download.pytorch.org/whl/cu126</span>
+</code></pre></div>
+<p>Volumes worth knowing: <code>./data:/data</code>, <code>./data/output:/app/result</code>, and the named
+volumes <code>page-model:/app/model</code> and <code>hf-cache:/cache/huggingface</code> — the last one is what
+stops every container start re-downloading the weights.</p>
+<p>The container runs as non-root <code>atrium</code>, <strong>uid 10001</strong>. If the host directory you mount
+is not writable by that uid, the run fails with <code>EACCES</code> before any inference happens.</p>
+<div class="admonition note">
+<p class="admonition-title">Exit code 143 is a clean stop, not a crash</p>
+<p>The <code>api</code> stage sets <code>STOPSIGNAL SIGTERM</code> and drains for <code>GRACEFUL_SHUTDOWN_S</code>
+(default 20 s). A clean shutdown therefore exits <strong>143</strong> (128 + SIGTERM). Kubernetes
+and Compose both report that as a non-zero exit; it is the expected value.</p>
+</div>
+<h2 id="4--run-it-as-one-stage-of-the-pipeline">4 · Run it as one stage of the pipeline<a class="headerlink" href="#4--run-it-as-one-stage-of-the-pipeline" title="Permanent link">&para;</a></h2>
+<p>Each pipeline stage runs as its own container, and the document record passed between
+them with <code>--document-json</code> / <code>--document-json-out</code> is the handoff. The hub's end-to-end
+smoke workflow is the reference sequence; this is its page-classification stage:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>-v<span class="w"> </span><span class="s2">"</span><span class="nv">$PWD</span><span class="s2">"</span>:/workspace<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>-v<span class="w"> </span><span class="s2">"</span><span class="nv">$PWD</span><span class="s2">/hf-cache"</span>:/cache/huggingface<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span>-e<span class="w"> </span>HF_TOKEN<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span>ghcr.io/ufal/atrium-page-classification:latest<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span>-f<span class="w"> </span>/workspace/work/input/CTX000000003-1.png<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span>-m<span class="w"> </span>timm/regnety_160.swag_ft_in1k<span class="w"> </span>--hf<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span>--document-json-out<span class="w"> </span>/workspace/work/doc_json/1_pc.json
+</code></pre></div>
+<p><code>HF_TOKEN</code> is optional: public models need none, but anonymous Hugging Face downloads are
+rate-limited, so automated runs should pass one. The <code>--document-json-out</code> flag is what
+makes the stage write an ATRIUM document record for the next stage to accrete onto — see
+<a href="../../../pipelines/">Pipelines</a>.</p>
+<h2 id="5--train-or-evaluate">5 · Train or evaluate<a class="headerlink" href="#5--train-or-evaluate" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>python3<span class="w"> </span>run.py<span class="w"> </span>--train<span class="w">                                     </span><span class="c1"># config-driven training</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>python3<span class="w"> </span>run.py<span class="w"> </span>--eval<span class="w"> </span>-rev<span class="w"> </span>v4.4<span class="w">                            </span><span class="c1"># score one revision</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>python3<span class="w"> </span>run.py<span class="w"> </span>--train<span class="w"> </span>--folds<span class="w"> </span><span class="m">5</span><span class="w">                           </span><span class="c1"># 5-fold cross-validation, 80/10/10</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>python3<span class="w"> </span>run.py<span class="w"> </span>--train<span class="w"> </span>--folds_csv<span class="w"> </span>folds.csv<span class="w"> </span>--fold_column<span class="w"> </span>fold1
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>python3<span class="w"> </span>run.py<span class="w"> </span>--average<span class="w"> </span>-ap<span class="w"> </span><span class="s1">'model_v4'</span><span class="w">                    </span><span class="c1"># average existing fold weights</span>
+</code></pre></div>
+<p><code>--folds_csv</code> reproduces a model's <em>original</em> split rather than regenerating one — pages
+absent from the CSV are excluded. Omit <code>--fold_column</code> and it is resolved per revision
+from <code>REVISION_BEST_FOLDS</code>. The CSV is staged by the maintainer and is deliberately not
+committed.</p>
+<p>Hyperparameters live in <code>setup/config.txt</code> <code>[TRAIN]</code>: <code>epochs = 3</code>, <code>lr = 5e-5</code>,
+<code>test_size = 0.1</code>, <code>max_categ = 14000</code>. Augmentation is colour jitter, sharpness and
+Gaussian blur at 50 % each — <strong>no rotation, reshaping or flipping</strong>, because page
+orientation is part of what the model is being asked to read.</p>
+<p>Training data is a folder per category, named exactly as the 11 labels; the category
+list is read from those folder names, so the tree must hold the category folders and
+nothing else at that level. How a labelled tree is produced from a classified one is
+described in <a href="../../../pipelines/#w12--annotation-round-trip-page-classifications-half">Pipelines → W12</a>.</p>
+<h2 id="6--use-it-from-a-coding-agent">6 · Use it from a coding agent<a class="headerlink" href="#6--use-it-from-a-coding-agent" title="Permanent link">&para;</a></h2>
+<p>The <code>agent-skill</code> branch packages the HTTP service as an Agent Skill, so a coding agent can
+classify a page or a PDF by calling the running service rather than reading this manual.
+Installation and the contract it relies on are on the <a href="../../../agent-skills/">Agent skills</a>
+page.</p>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Container reports healthy but nothing can reach it</td>
+<td><code>HOST=127.0.0.1</code> binds inside the container only</td>
+<td>leave <code>HOST</code> unset (defaults to <code>0.0.0.0</code>)</td>
+</tr>
+<tr>
+<td>Every browser request is blocked, no error in the log</td>
+<td><code>ALLOWED_ORIGINS</code> set to the <strong>empty string</strong> means "no origins"; <em>omitting</em> it means <code>*</code></td>
+<td>set it explicitly, or remove the line entirely</td>
+</tr>
+<tr>
+<td>Browser works from <code>localhost:8080</code> but not <code>127.0.0.1:8080</code></td>
+<td>they are different origins to a browser</td>
+<td>list both, as the compose default does</td>
+</tr>
+<tr>
+<td><code>pip install</code> aborts with "No matching distribution found" for numpy</td>
+<td>numpy ≥ 2.5 requires Python 3.12</td>
+<td>stay on 3.11 and keep the <code>&lt;2.5</code> pin; <code>dependabot.yml</code> already ignores the bump</td>
+</tr>
+<tr>
+<td>Crash on meta device when loading a <code>timm</code> base</td>
+<td><code>transformers</code> 5.x has no meta kernel for these bases</td>
+<td>pin below 5.0 — <code>dependabot.yml</code> ignores that bump for the same reason</td>
+</tr>
+<tr>
+<td>First service call for a revision is slow</td>
+<td>only the ensemble revisions <code>v1.4</code>–<code>v5.4</code> are loaded at start-up; others download on use</td>
+<td>request one of <code>v1.4</code>–<code>v5.4</code>, or accept one slow first call</td>
+</tr>
+<tr>
+<td><code>EACCES</code> writing results under Docker</td>
+<td>host directory not writable by uid 10001</td>
+<td><code>chown 10001</code> the mounted directory, or mount one that is group-writable</td>
+</tr>
+<tr>
+<td>Container exits 143</td>
+<td>clean SIGTERM drain</td>
+<td>expected; not a failure</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sources">Sources<a class="headerlink" href="#sources" title="Permanent link">&para;</a></h2>
+<p>Read from <code>ufal/atrium-page-classification</code> at branch <strong><code>vit</code></strong>, commit <code>adee922</code>
+(2026-09-23). This table records <strong>provenance</strong>, not a build instruction.</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>What was taken from it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>README.md</code> §§ How to install, How to run prediction, Data preparation</td>
+<td>the install, invocation and conversion sequences; memory table</td>
+</tr>
+<tr>
+<td><code>utils.py</code> (<code>doc_id_and_page</code>, <code>dataframe_results</code>)</td>
+<td>the file-name convention and the result-table rows</td>
+</tr>
+<tr>
+<td><code>result/tables/20260530-1220_model_v43_TOP-3.csv</code></td>
+<td>the sample rows</td>
+</tr>
+<tr>
+<td><code>data_scripts/unix/pdf2png.sh</code>, <code>data_scripts/windows/pdf2png.bat</code></td>
+<td>PDF rasterisation options and defaults</td>
+</tr>
+<tr>
+<td><code>Dockerfile</code>, <code>docker-compose.yml</code>, <code>docker-compose.gpu.yml</code></td>
+<td>image targets, volumes, uid, healthcheck and shutdown behaviour</td>
+</tr>
+<tr>
+<td><code>setup/config.txt</code></td>
+<td>training and batching defaults</td>
+</tr>
+<tr>
+<td><code>.env.example</code></td>
+<td>the <code>ALLOWED_ORIGINS</code> and <code>HOST</code> behaviour</td>
+</tr>
+<tr>
+<td><code>.github/dependabot.yml</code></td>
+<td>the numpy and <code>transformers</code> ignore rules, and why they exist</td>
+</tr>
+<tr>
+<td><code>atrium-project/.github/workflows/e2e-pipeline-smoke.yml</code></td>
+<td>the pipeline-stage invocation</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Developed by UFAL, Charles University · funded by ATRIUM · MIT licensed
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.sections", "navigation.top", "navigation.indexes", "navigation.tracking", "search.highlight", "search.suggest", "content.code.copy", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,2333 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for the UFAL side of the ATRIUM project: the page classifier, the ALTO post-processor, the translator, and the NLP and LLM enrichers.">
+      
+      
+      
+        <link rel="canonical" href="https://ufal.github.io/atrium-project/contracts/skos/">
+      
+      
+        <link rel="prev" href="../rocrate/">
+      
+      
+        <link rel="next" href="../schemas/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>SKOS & the ATRIUM vocabulary - ATRIUM — UFAL documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#skos--the-atrium-vocabulary" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="ATRIUM — UFAL documentation" class="md-header__button md-logo" aria-label="ATRIUM — UFAL documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ATRIUM — UFAL documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              SKOS & the ATRIUM vocabulary
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ufal/atrium-project" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ufal/atrium-project
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="ATRIUM — UFAL documentation" class="md-nav__button md-logo" aria-label="ATRIUM — UFAL documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    ATRIUM — UFAL documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ufal/atrium-project" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ufal/atrium-project
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipelines
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../workflows/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflows
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Workflows
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workflows/page-classification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    page-classification
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workflows/alto-postprocess/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    alto-postprocess
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workflows/translator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    translator
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workflows/nlp-enrich/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    nlp-enrich
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workflows/llm-enrich/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    llm-enrich
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../external-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    External tools & services
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ecosystem
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Ecosystem
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ecosystem/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ecosystem/repository-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository map
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ecosystem/document-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The document contract
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contracts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contracts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rocrate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RO-Crate export
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SKOS & the ATRIUM vocabulary
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SKOS & the ATRIUM vocabulary
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-skos-is-doing-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What SKOS is doing here
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-a-uri-is-minted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How a URI is minted
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-six-vocabularies-at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The six vocabularies at a glance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#page-category-in-full" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        page-category, in full
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="page-category, in full">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#facets-are-collections-not-a-hierarchy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Facets are collections, not a hierarchy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-page-classification-uses-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How page-classification uses it
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-translator-and-its-glossary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The translator and its glossary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#broader-means-two-things" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "broader means two things"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#getting-the-vocabulary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Getting the vocabulary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schemas
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent skills
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing-standards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing standards
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tools
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tools
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10_1" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../tools/page-classification/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    page-classification
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_10_1" id="__nav_10_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    page-classification
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/page-classification/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/page-classification/reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/page-classification/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/page-classification/history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../tools/translator/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    translator
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_10_2" id="__nav_10_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    translator
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/translator/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/translator/reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/translator/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/translator/history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development-history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development history
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-skos-is-doing-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What SKOS is doing here
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-a-uri-is-minted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How a URI is minted
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-six-vocabularies-at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The six vocabularies at a glance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#page-category-in-full" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        page-category, in full
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="page-category, in full">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#facets-are-collections-not-a-hierarchy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Facets are collections, not a hierarchy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-page-classification-uses-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How page-classification uses it
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-translator-and-its-glossary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The translator and its glossary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#broader-means-two-things" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "broader means two things"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#getting-the-vocabulary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Getting the vocabulary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="skos--the-atrium-vocabulary">SKOS &amp; the ATRIUM vocabulary<a class="headerlink" href="#skos--the-atrium-vocabulary" title="Permanent link">&para;</a></h1>
+<p>How ATRIUM names its controlled labels with stable identifiers, what the <code>page-category</code>
+vocabulary contains in full, and how page-classification and the translator use it.</p>
+<div class="admonition info">
+<p class="admonition-title">Scope</p>
+<p>The registry holds six vocabularies; one of them belongs to page-classification, and the
+translator uses none. The other five belong to alto-postprocess and nlp-enrich.
+<a href="https://github.com/ufal/atrium-project/blob/main/docs/skos_strategy.md"><code>docs/skos_strategy.md</code></a>
+is the normative text.</p>
+</div>
+<h2 id="what-skos-is-doing-here">What SKOS is doing here<a class="headerlink" href="#what-skos-is-doing-here" title="Permanent link">&para;</a></h2>
+<p>SKOS — the W3C's <em>Simple Knowledge Organization System</em> — is a small RDF vocabulary for writing
+down a controlled list: each term is a <code>skos:Concept</code> with a stable URI, a label, and a place in a
+<code>skos:ConceptScheme</code>. ATRIUM uses it for one purpose: <strong>so that a bare string in a record — <code>TEXT_HW</code>
+in <code>page_categories</code> — can be resolved to one unambiguous, documented concept.</strong></p>
+<p>It is an internal alignment framework, and deliberately modest:</p>
+<ul>
+<li><strong>Nothing is published.</strong> No external service is contacted, and no vocabulary registration is a
+  prerequisite for any of it.</li>
+<li><strong>No namespace was requested.</strong> A request for a DARIAH vocabulary namespace was set aside as a
+  long-horizon item; using SKOS to align the data internally was judged worth doing without it.</li>
+<li><strong>Source vocabularies keep their own URIs.</strong> AMCR and TEATER already mint resolvable identifiers,
+  and ATRIUM does not re-mint them.</li>
+<li><strong>ATRIUM mints URIs only for what it authors</strong> — and roots them all in one constant, so the day a
+  real namespace exists, one line changes.</li>
+</ul>
+<p>The registry is <code>atrium_vocab.py</code>, one of the <a href="../../ecosystem/architecture/#what-is-canonical-and-what-is-vendored">19 shared files</a>,
+vendored byte-identically into both documented tools.</p>
+<h2 id="how-a-uri-is-minted">How a URI is minted<a class="headerlink" href="#how-a-uri-is-minted" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>SKOS_BASE = https://w3id.org/atrium/
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>scheme      https://w3id.org/atrium/scheme/&lt;scheme&gt;
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>concept     https://w3id.org/atrium/&lt;scheme&gt;/&lt;notation&gt;
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>collection  https://w3id.org/atrium/&lt;scheme&gt;/collection/&lt;name&gt;
+</code></pre></div>
+<p>The notation is kept <strong>case-preserving</strong> — letters, digits, <code>_</code> and <code>.</code> survive; any other run of
+characters becomes one <code>-</code>. So:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>URI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>the scheme</td>
+<td><code>https://w3id.org/atrium/scheme/page-category</code></td>
+</tr>
+<tr>
+<td>one concept</td>
+<td><code>https://w3id.org/atrium/page-category/TEXT_HW</code></td>
+</tr>
+<tr>
+<td>one collection</td>
+<td><code>https://w3id.org/atrium/page-category/collection/tabular</code></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Identifiers first, locators second</p>
+<p>An ATRIUM URI is a stable <strong>identifier</strong>: records and crates can use it whether or not
+anything answers at that address. Making it a resolvable <strong>locator</strong> is a matter of a
+<code>w3id.org</code> redirect to a published copy of the registry, which changes no data and no
+code.</p>
+</div>
+<p>In Turtle, as <code>python atrium_vocab.py --turtle</code> writes it, one concept reads:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nn">a-page-category</span><span class="p">:</span><span class="nt">TEXT_HW</span> <span class="nn">rdf</span><span class="p">:</span><span class="nt">type</span> <span class="nn">skos</span><span class="p">:</span><span class="nt">Concept</span> <span class="p">;</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="nn">skos</span><span class="p">:</span><span class="nt">definition</span> <span class="s">"only handwritten text in paragraph or block form (non-tabular)"</span><span class="o">@</span><span class="ge">en</span> <span class="p">;</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="nn">skos</span><span class="p">:</span><span class="nt">inScheme</span> <span class="nn">atrium-scheme</span><span class="p">:</span><span class="nt">page-category</span> <span class="p">;</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="nn">skos</span><span class="p">:</span><span class="nt">notation</span> <span class="s">"TEXT_HW"</span> <span class="p">;</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="nn">skos</span><span class="p">:</span><span class="nt">prefLabel</span> <span class="s">"TEXT_HW"</span><span class="o">@</span><span class="ge">en</span> <span class="p">.</span>
+</code></pre></div>
+<h2 id="the-six-vocabularies-at-a-glance">The six vocabularies at a glance<a class="headerlink" href="#the-six-vocabularies-at-a-glance" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Scheme</th>
+<th>Concepts</th>
+<th>Authority</th>
+<th>Record field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>page-category</code></strong></td>
+<td><strong>11</strong></td>
+<td>page-classification — <code>model_registry.py</code> <code>CATEGORIES</code></td>
+<td><code>page_categories</code>, <code>pages[].category</code></td>
+</tr>
+<tr>
+<td><code>line-category</code></td>
+<td>7</td>
+<td>alto-postprocess and digital-convert</td>
+<td><code>lines[].categ</code></td>
+</tr>
+<tr>
+<td><code>quality-band</code></td>
+<td>3</td>
+<td>alto-postprocess</td>
+<td><code>pages[].quality_band</code></td>
+</tr>
+<tr>
+<td><code>entity-type</code></td>
+<td>4</td>
+<td>nlp-enrich</td>
+<td><code>entities[].type_teitok</code></td>
+</tr>
+<tr>
+<td><code>cnec</code></td>
+<td>28</td>
+<td>nlp-enrich (CNEC 2.0)</td>
+<td><code>entities[].type_cnec</code></td>
+</tr>
+<tr>
+<td><code>theme</code></td>
+<td>11</td>
+<td>nlp-enrich's taxonomy</td>
+<td><code>enrichment.items[].teater_category</code>, via the facet</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The translator appears in none of them</strong> — see <a href="#the-translator-and-its-glossary">below</a>.</p>
+<h2 id="page-category-in-full"><code>page-category</code>, in full<a class="headerlink" href="#page-category-in-full" title="Permanent link">&para;</a></h2>
+<p>The eleven concepts, in the order <code>model_registry.CATEGORIES</code> declares them. <strong>The order is
+load-bearing</strong>: it is the label-to-index binding the models were trained with, and the registry's
+<code>PAGE_CATEGORIES</code> must match it exactly.</p>
+<table>
+<thead>
+<tr>
+<th>Notation</th>
+<th>URI</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DRAW</code></td>
+<td><code>…/page-category/DRAW</code></td>
+<td>drawings, maps, paintings, schematics, or graphics, potentially containing some text labels or captions</td>
+</tr>
+<tr>
+<td><code>DRAW_L</code></td>
+<td><code>…/page-category/DRAW_L</code></td>
+<td>drawings, etc but presented within a table-like layout or includes a legend formatted as a table</td>
+</tr>
+<tr>
+<td><code>LINE_HW</code></td>
+<td><code>…/page-category/LINE_HW</code></td>
+<td>handwritten text organized in a tabular or form-like structure</td>
+</tr>
+<tr>
+<td><code>LINE_P</code></td>
+<td><code>…/page-category/LINE_P</code></td>
+<td>printed text organized in a tabular or form-like structure</td>
+</tr>
+<tr>
+<td><code>LINE_T</code></td>
+<td><code>…/page-category/LINE_T</code></td>
+<td>machine-typed text organized in a tabular or form-like structure</td>
+</tr>
+<tr>
+<td><code>PHOTO</code></td>
+<td><code>…/page-category/PHOTO</code></td>
+<td>photographs or photographic cutouts, potentially with text captions</td>
+</tr>
+<tr>
+<td><code>PHOTO_L</code></td>
+<td><code>…/page-category/PHOTO_L</code></td>
+<td>photos presented within a table-like layout or accompanied by tabular annotations</td>
+</tr>
+<tr>
+<td><code>TEXT</code></td>
+<td><code>…/page-category/TEXT</code></td>
+<td>mixtures of printed, handwritten, and/or typed text, potentially with minor graphical elements</td>
+</tr>
+<tr>
+<td><code>TEXT_HW</code></td>
+<td><code>…/page-category/TEXT_HW</code></td>
+<td>only handwritten text in paragraph or block form (non-tabular)</td>
+</tr>
+<tr>
+<td><code>TEXT_P</code></td>
+<td><code>…/page-category/TEXT_P</code></td>
+<td>only printed text in paragraph or block form (non-tabular)</td>
+</tr>
+<tr>
+<td><code>TEXT_T</code></td>
+<td><code>…/page-category/TEXT_T</code></td>
+<td>only machine-typed text in paragraph or block form (non-tabular)</td>
+</tr>
+</tbody>
+</table>
+<p>Each concept's <code>prefLabel</code> is its notation.</p>
+<h3 id="facets-are-collections-not-a-hierarchy">Facets are collections, not a hierarchy<a class="headerlink" href="#facets-are-collections-not-a-hierarchy" title="Permanent link">&para;</a></h3>
+<p>The categories cut across three independent criteria — graphical content, kind of text, tabular
+layout — so they do not form a tree. The registry says so by modelling each criterion as a
+<code>skos:Collection</code>, which states membership without implying that one concept is <em>narrower</em> than
+another:</p>
+<table>
+<thead>
+<tr>
+<th>Collection</th>
+<th>Label</th>
+<th>Members</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>graphical</code></td>
+<td>carries graphical elements</td>
+<td><code>DRAW</code> · <code>DRAW_L</code> · <code>PHOTO</code> · <code>PHOTO_L</code> · <code>TEXT</code></td>
+</tr>
+<tr>
+<td><code>tabular</code></td>
+<td>laid out as a table, form or legend</td>
+<td><code>DRAW_L</code> · <code>LINE_HW</code> · <code>LINE_P</code> · <code>LINE_T</code> · <code>PHOTO_L</code></td>
+</tr>
+<tr>
+<td><code>handwritten</code></td>
+<td>contains handwritten text</td>
+<td><code>LINE_HW</code> · <code>TEXT</code> · <code>TEXT_HW</code></td>
+</tr>
+<tr>
+<td><code>printed</code></td>
+<td>contains printed text</td>
+<td><code>LINE_P</code> · <code>TEXT</code> · <code>TEXT_P</code></td>
+</tr>
+<tr>
+<td><code>typed</code></td>
+<td>contains machine-typed text</td>
+<td><code>LINE_T</code> · <code>TEXT</code> · <code>TEXT_T</code></td>
+</tr>
+</tbody>
+</table>
+<p>There is no <code>skos:broader</code> anywhere in the scheme and no top concept. <code>TEXT</code> belongs to four
+collections — it is the one mixed category — and <code>PHOTO</code> and <code>DRAW</code> belong to <code>graphical</code> only.</p>
+<h2 id="how-page-classification-uses-it">How page-classification uses it<a class="headerlink" href="#how-page-classification-uses-it" title="Permanent link">&para;</a></h2>
+<p><code>model_registry.CATEGORIES</code> is the authority: the tool writes exactly those eleven strings.
+When <code>model_registry.py</code> is imported, it compares <code>CATEGORIES</code> with the registry's
+<code>page-category</code> labels and prints a note if the two sets ever differ; it never changes
+<code>CATEGORIES</code> and never stops a run. Training and evaluation, which read the category list from
+the folder names of the training tree, do the same comparison for that tree.</p>
+<p>Records carry the bare label. To get from a label to its concept:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">atrium_vocab</span><span class="w"> </span><span class="kn">import</span> <span class="n">concept_uri</span><span class="p">,</span> <span class="n">validate_labels</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">concept_uri</span><span class="p">(</span><span class="s2">"page-category"</span><span class="p">,</span> <span class="s2">"TEXT_HW"</span><span class="p">)</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># 'https://w3id.org/atrium/page-category/TEXT_HW'</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">validate_labels</span><span class="p">(</span><span class="s2">"page-category"</span><span class="p">,</span> <span class="p">[</span><span class="s2">"TEXT"</span><span class="p">,</span> <span class="s2">"Text"</span><span class="p">,</span> <span class="s2">"Plate"</span><span class="p">])</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># reports that "Text" differs from TEXT only in case, and that "Plate" is not in the scheme</span>
+</code></pre></div>
+<p><code>validate_labels()</code> reports rather than raises — the same advisory stance as the missing
+<code>enum</code> in the <a href="../schemas/#page_categories--written-by-page-classification">schema</a>.
+<code>model_registry.category_uri(label)</code> is the tool's own shortcut for <code>concept_uri</code>.</p>
+<h2 id="the-translator-and-its-glossary">The translator and its glossary<a class="headerlink" href="#the-translator-and-its-glossary" title="Permanent link">&para;</a></h2>
+<p>The translator does <strong>not</strong> import <code>atrium_vocab</code> and writes no field that carries a scheme. Its
+controlled vocabulary is something else: a <strong>translation glossary</strong>,
+<code>data_samples/vocabulary.csv</code>, with five columns — <code>source_lemma,target_translation,source,source_id,uri</code>
+— harvested by <code>load_vocab.py</code> from AMCR (over OAI-PMH) and TEATER (over GraphQL). The
+<code>source_id</code> and <code>uri</code> columns point back at the source vocabulary's own concept — for example
+<code>https://api.aiscr.cz/id/HES-000497</code> for AMCR's <em>(polo)zemnice</em>, "pit house" — so a protected
+term stays traceable without ATRIUM minting a URI for it. The glossary protects terms during
+translation; it does not label anything in the record. See
+<a href="../../tools/translator/guide/#6--use-the-vocabulary">translator → Guide</a>.</p>
+<h2 id="broader-means-two-things">"<code>broader</code> means two things"<a class="headerlink" href="#broader-means-two-things" title="Permanent link">&para;</a></h2>
+<p><code>skos_strategy.md</code> §5.2 records a modelling decision about the <strong>source</strong> vocabularies: AMCR's
+<code>hierarchie_vyse</code> edges all cross from one scheme to another and so become <code>skos:related</code>, while
+TEATER's <code>broader</code> edges stay within one scheme and become real <code>skos:broader</code>. That concerns the
+vocabularies nlp-enrich builds from AMCR and TEATER. <strong>It does not touch <code>page-category</code></strong>, which
+asserts no <code>broader</code> at all.</p>
+<h2 id="getting-the-vocabulary">Getting the vocabulary<a class="headerlink" href="#getting-the-vocabulary" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python<span class="w"> </span>atrium_vocab.py<span class="w"> </span>--jsonld<span class="w">           </span><span class="c1"># the whole registry as JSON-LD</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>python<span class="w"> </span>atrium_vocab.py<span class="w"> </span>--turtle<span class="w">           </span><span class="c1"># … or as Turtle</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>python<span class="w"> </span>atrium_vocab.py<span class="w"> </span>--labels<span class="w"> </span>page-category
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>python<span class="w"> </span>atrium_vocab.py<span class="w"> </span>--selftest
+</code></pre></div>
+<p>Run from either tool's checkout, where the file sits at the repository root. The JSON-LD output is
+what <a href="../schemas/#atrium_vocabschemajson"><code>atrium_vocab.schema.json</code></a> describes.</p>
+<h2 id="sources">Sources<a class="headerlink" href="#sources" title="Permanent link">&para;</a></h2>
+<p>This table records <strong>provenance</strong>: what this page was written from, not a build instruction.</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>What was taken from it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>atrium-project/docs/templates/shared/atrium_vocab.py</code> — run, not only read</td>
+<td><code>SKOS_BASE</code>, the minting rules, the six schemes, the concepts and collections, the Turtle excerpt, <code>validate_labels()</code> output</td>
+</tr>
+<tr>
+<td><code>atrium-project/docs/skos_strategy.md</code> §§0, 5.2, 6, 7</td>
+<td>the design decisions</td>
+</tr>
+<tr>
+<td><code>atrium-page-classification@vit</code> <code>adee922</code> — <code>model_registry.py</code>, <code>utils.py</code></td>
+<td>the authority list, the advisory comparison, <code>category_uri</code></td>
+</tr>
+<tr>
+<td><code>atrium-translator@master</code> <code>71feaef</code> — <code>load_vocab.py</code>, <code>data_samples/vocabulary.csv</code>, <code>processors/vocab.py</code></td>
+<td>the glossary, its columns and its harvester</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Developed by UFAL, Charles University · funded by ATRIUM · MIT licensed
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.top", "navigation.indexes", "navigation.tracking", "search.highlight", "search.suggest", "content.code.copy", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

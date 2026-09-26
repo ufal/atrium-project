@@ -1,0 +1,2342 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for the UFAL side of the ATRIUM project: the page classifier, the ALTO post-processor, the translator, and the NLP and LLM enrichers.">
+      
+      
+      
+        <link rel="canonical" href="https://ufal.github.io/atrium-project/development-history/">
+      
+      
+        <link rel="prev" href="../tools/translator/history/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Development history - ATRIUM — UFAL documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#development-history" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="ATRIUM — UFAL documentation" class="md-header__button md-logo" aria-label="ATRIUM — UFAL documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ATRIUM — UFAL documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Development history
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ufal/atrium-project" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ufal/atrium-project
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="ATRIUM — UFAL documentation" class="md-nav__button md-logo" aria-label="ATRIUM — UFAL documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    ATRIUM — UFAL documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ufal/atrium-project" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ufal/atrium-project
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipelines
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../workflows/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflows
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Workflows
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/page-classification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    page-classification
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/alto-postprocess/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    alto-postprocess
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/translator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    translator
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/nlp-enrich/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    nlp-enrich
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/llm-enrich/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    llm-enrich
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../external-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    External tools & services
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ecosystem
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Ecosystem
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecosystem/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecosystem/repository-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository map
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecosystem/document-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The document contract
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contracts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contracts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/rocrate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RO-Crate export
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/skos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SKOS & the ATRIUM vocabulary
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schemas
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent skills
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing-standards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing standards
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tools
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tools
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10_1" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../tools/page-classification/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    page-classification
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_10_1" id="__nav_10_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    page-classification
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/page-classification/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/page-classification/reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/page-classification/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/page-classification/history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../tools/translator/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    translator
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_10_2" id="__nav_10_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    translator
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/translator/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/translator/reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/translator/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/translator/history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development history
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development history
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#per-repository-histories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-repository histories
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-cross-repository-chronology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The cross-repository chronology
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The cross-repository chronology">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#march--mid-june-2026--one-run-logger-one-licence-rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        March → mid-June 2026 · one run logger, one licence rule
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mid-june--mid-july--the-workflow-federation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mid-June → mid-July · the workflow federation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#17--31-july--a-service-contract-agent-skills-the-record-and-v1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        17 → 31 July · a service contract, agent skills, the record, and v1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#august--end-to-end-the-partner-border-two-hardening-rounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        August · end to end, the partner border, two hardening rounds
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3--16-september--twelve-factor-kubernetes-skos-ro-crate-the-manifest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3 → 16 September · twelve-factor, Kubernetes, SKOS, RO-Crate, the manifest
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#september--this-site" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        September · this site
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-record-keeps-repeating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the record keeps repeating
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-the-raw-records-are-not-published-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why the raw records are not published here
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#per-repository-histories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-repository histories
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-cross-repository-chronology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The cross-repository chronology
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The cross-repository chronology">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#march--mid-june-2026--one-run-logger-one-licence-rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        March → mid-June 2026 · one run logger, one licence rule
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mid-june--mid-july--the-workflow-federation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mid-June → mid-July · the workflow federation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#17--31-july--a-service-contract-agent-skills-the-record-and-v1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        17 → 31 July · a service contract, agent skills, the record, and v1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#august--end-to-end-the-partner-border-two-hardening-rounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        August · end to end, the partner border, two hardening rounds
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3--16-september--twelve-factor-kubernetes-skos-ro-crate-the-manifest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3 → 16 September · twelve-factor, Kubernetes, SKOS, RO-Crate, the manifest
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#september--this-site" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        September · this site
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-record-keeps-repeating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the record keeps repeating
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-the-raw-records-are-not-published-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why the raw records are not published here
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="development-history">Development history<a class="headerlink" href="#development-history" title="Permanent link">&para;</a></h1>
+<p>How the ecosystem got here, across all six repositories.</p>
+<h2 id="per-repository-histories">Per-repository histories<a class="headerlink" href="#per-repository-histories" title="Permanent link">&para;</a></h2>
+<p>Each tool's own history page condenses that repository's <code>DEVLOG.md</code> — the decisions and the
+milestones that shaped it — and links the raw records rather than republishing them.</p>
+<table>
+<thead>
+<tr>
+<th>Repository</th>
+<th>History page</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>atrium-page-classification</code></td>
+<td><strong><a href="../tools/page-classification/history/">page-classification → History</a></strong></td>
+</tr>
+<tr>
+<td><code>atrium-alto-postprocess</code></td>
+<td><a href="https://github.com/ufal/atrium-alto-postprocess/blob/master/agent_dev_logs/DEVLOG.md"><code>DEVLOG.md</code></a> on GitHub</td>
+</tr>
+<tr>
+<td><code>atrium-translator</code></td>
+<td><strong><a href="../tools/translator/history/">translator → History</a></strong></td>
+</tr>
+<tr>
+<td><code>atrium-nlp-enrich</code></td>
+<td><a href="https://github.com/ufal/atrium-nlp-enrich/blob/master/agent_dev_logs/DEVLOG.md"><code>DEVLOG.md</code></a> on GitHub</td>
+</tr>
+<tr>
+<td><code>atrium-llm-enrich</code></td>
+<td><a href="https://github.com/ufal/atrium-llm-enrich/blob/main/agent_dev_logs/DEVLOG.md"><code>DEVLOG.md</code></a> on GitHub</td>
+</tr>
+<tr>
+<td><code>atrium-project</code> (hub)</td>
+<td><strong><a href="#the-cross-repository-chronology">the cross-repository chronology</a></strong>, below</td>
+</tr>
+</tbody>
+</table>
+<h2 id="the-cross-repository-chronology">The cross-repository chronology<a class="headerlink" href="#the-cross-repository-chronology" title="Permanent link">&para;</a></h2>
+<p>The hub's <code>DEVLOG.md</code> is the timeline of work done in or through the hub — the shared code, the CI
+federation, the contracts every tool meets — with the per-issue detail in its <code>digests/</code> and
+<code>plans/</code>. What follows is that timeline condensed to what shaped <strong>page-classification</strong> and the
+<strong>translator</strong>. Dates are the DEVLOG's; the commits behind them are listed under
+<a href="#sources">Sources</a>.</p>
+<p>In one line: a shared run logger and licence rule first; then one CI federation for all
+repositories; then the service contract, the agent skills and the document record; then
+end-to-end testing and hardening; and finally the standards layer — twelve-factor
+configuration, Kubernetes, SKOS, RO-Crate — and this site.</p>
+<div class="admonition info">
+<p class="admonition-title">Scope</p>
+<p>Work that concerns only the other three tools, the project's papers, the data-storage
+inventory, the document-understanding benchmark and the large-model GPU experiments is left to
+those tools' sections. So is <code>atrium-llm-enrich</code>'s arrival as the sixth repository in early
+July.</p>
+</div>
+<h3 id="march--mid-june-2026--one-run-logger-one-licence-rule">March → mid-June 2026 · one run logger, one licence rule<a class="headerlink" href="#march--mid-june-2026--one-run-logger-one-licence-rule" title="Permanent link">&para;</a></h3>
+<p>Before any CI existed, the hub's first shared code was the run logger, and its first public output
+was the tools' catalogue entries.</p>
+<table>
+<thead>
+<tr>
+<th>When</th>
+<th>What happened</th>
+<th>Why it matters here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>03-13 → 06-12</td>
+<td>One <code>atrium_paradata.py</code> shared by every repository (03-15); single-file run records (05-28); a licence resolved per run, <strong>the translator and page-classification first</strong> (06-02); every checklist item done by 06-12</td>
+<td>every run of either tool has recorded its effective licence since. The <code>ATRIUM_RUNNER_IMAGE</code> / <code>_REPO</code> / <code>_REF</code> variables it reads are what later made the published containers self-identifying</td>
+</tr>
+<tr>
+<td>03-15 → 07-12</td>
+<td>SSH Open Marketplace records: the page classifier first (03-15), all four tool records live with licence tables by 07-12</td>
+<td>the tools' first public registration</td>
+</tr>
+<tr>
+<td>03-15 → 06-26</td>
+<td>The LLM code-review rounds begin (#10). Review-edited releases on 06-15 — page-classification <code>v1.4.0-beta</code>, translator <code>v0.6.0</code>; the 06-21 round finds <code>/info</code> version drift and a diverged, untested <code>para_licenses.py</code></td>
+<td>the umbrella both later hardening rounds ran under</td>
+</tr>
+</tbody>
+</table>
+<h3 id="mid-june--mid-july--the-workflow-federation">Mid-June → mid-July · the workflow federation<a class="headerlink" href="#mid-june--mid-july--the-workflow-federation" title="Permanent link">&para;</a></h3>
+<p>One reusable workflow, a thin caller in every repository, and a guard that the shared files stay
+byte-identical.</p>
+<table>
+<thead>
+<tr>
+<th>When</th>
+<th>What happened</th>
+<th>Why it matters here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>06-15 → 06-16</td>
+<td>"One reusable workflow template plus thin per-repo callers" is proposed once the translator and page-classification pass GitHub Actions first; the hub lands <code>docker-tool.reusable.yml</code>, the caller example and the shared <code>.coveragerc</code> and <code>ruff.toml</code></td>
+<td>the origin of the CI files both tools run</td>
+</tr>
+<tr>
+<td>06-25 → 06-27</td>
+<td><code>agent_dev_logs/</code> created in every repository, seeded from the issue history (#29); the first cross-repository snapshot; an end-to-end smoke test proposed, because no issue yet tracked pipeline-wide regressions</td>
+<td>the records this page condenses, and the origin of <a href="../pipelines/#w6--e2e-smoke-the-integration-contract">W6</a></td>
+</tr>
+<tr>
+<td>07-12</td>
+<td><code>paradata-drift</code> becomes <code>para-drift.reusable.yml</code>, with licence-parity checks on by default: the shared licence files are diffed byte-for-byte against the hub's <code>docs/templates/shared/</code></td>
+<td>the mechanism that, extended file by file, holds every vendored file in step (<a href="../ecosystem/architecture/">Architecture</a>)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="17--31-july--a-service-contract-agent-skills-the-record-and-v1">17 → 31 July · a service contract, agent skills, the record, and <code>v1</code><a class="headerlink" href="#17--31-july--a-service-contract-agent-skills-the-record-and-v1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>When</th>
+<th>What happened</th>
+<th>Why it matters here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>07-17 → 07-22</td>
+<td>The agent-skill standard is written and rolled out to five <code>agent-skill</code> branches, with <strong>page-classification as the hardened exemplar</strong> — four defects fixed, <code>/health</code> and <code>/info</code> added. The translator gets its first <code>service/README.md</code>, frontend and <code>/health</code>, and 422 instead of 400 for bad input. The callers had to follow the reusable workflow they call, not precede it</td>
+<td>the <a href="../agent-skills/">Agent skills</a> both tools ship — and the practice of re-aligning each skill branch with its default branch (07-29, 09-09, 09-16)</td>
+</tr>
+<tr>
+<td>07-23</td>
+<td>The shared <code>service/atrium_service.py</code>, the <code>/info</code> envelope and <code>/health</code> everywhere, harmonised error codes, <code>api-contract.reusable.yml</code> and a hermetic contract test per repository — landed the same day</td>
+<td>the first hub-owned <em>runtime</em> module in both services</td>
+</tr>
+<tr>
+<td>07-25 → 08-04</td>
+<td>The document record: <code>document_schema.md</code> (07-25); <code>atrium_document</code> integrated as a draft everywhere, page-classification <code>v1.7.0-beta</code> and translator <code>v0.10.0</code> among them (07-26); the module and its schema promoted into the shared set under para-drift; formats settled 08-01</td>
+<td>the <a href="../ecosystem/document-contract/">record</a> both tools accrete onto. Its decision thread is <code>atrium-llm-enrich#13</code>, not the hub's #13</td>
+</tr>
+<tr>
+<td>07-30</td>
+<td>A full GitHub Actions and Docker audit. <strong>page-classification's <code>release.yml</code> shipped <code>run.py</code> without the nine modules it imports</strong>; the E2E's last stage had skipped silently every night behind a misnamed secret while the run reported success; <code>check_version.py</code> vendored; the image scan moved onto the immutable digest</td>
+<td>the release bundle both tools publish, and the version gate on every tag</td>
+</tr>
+<tr>
+<td>07-31</td>
+<td><strong>Tag <code>v1</code> created</strong> and referenced from every caller; <code>test</code> merged into each default branch; releases cut, page-classification <code>v1.7.2-beta</code> and translator <code>v0.10.2</code> among them</td>
+<td>the pin every tool's caller workflows use</td>
+</tr>
+</tbody>
+</table>
+<h3 id="august--end-to-end-the-partner-border-two-hardening-rounds">August · end to end, the partner border, two hardening rounds<a class="headerlink" href="#august--end-to-end-the-partner-border-two-hardening-rounds" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>When</th>
+<th>What happened</th>
+<th>Why it matters here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>08-01</td>
+<td>The E2E rewritten to thread one record through all five stages</td>
+<td><a href="../pipelines/#w6--e2e-smoke-the-integration-contract">W6</a> as it runs</td>
+</tr>
+<tr>
+<td>08-02</td>
+<td>The ruling that this project's CI must not reach into partner environments: the handoff is a Docker image, built in the partners' own fork and run on their own Kubernetes</td>
+<td>why <a href="../operations/">Operations</a> is written as a handoff</td>
+</tr>
+<tr>
+<td>08-05 → 08-06</td>
+<td>"The 08-06 round": five P0 defects, each invisible to the repository that owned it. Found while fixing them: <strong>the translator's <code>service/api.py</code> omitted <code>backend</code>, so every real <code>/translate</code> upload returned HTTP 500</strong> — uncaught because every test mocked the pipeline. <code>canonical_doc_id()</code> and <code>validate_document()</code> put on every write path</td>
+<td>the translator service in <a href="../pipelines/#w4--containerised-service--api-workflow">W4</a>; schema validation on every record either tool writes</td>
+</tr>
+<tr>
+<td>08-18 → 08-19</td>
+<td>"The 08-19 round": nine findings, six of them mechanisms that were present, green, and checking something other than the thing that mattered — among them a concurrency rule that let a push silently cancel a scheduled run, now a check in <code>workflow_lint.py</code>. <code>v1</code> moved; shared-code parity verified by blob hash rather than by para-drift's own badge</td>
+<td>the lint both tools' workflows pass</td>
+</tr>
+</tbody>
+</table>
+<h3 id="3--16-september--twelve-factor-kubernetes-skos-ro-crate-the-manifest">3 → 16 September · twelve-factor, Kubernetes, SKOS, RO-Crate, the manifest<a class="headerlink" href="#3--16-september--twelve-factor-kubernetes-skos-ro-crate-the-manifest" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>When</th>
+<th>What happened</th>
+<th>Why it matters here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>09-04 → 09-08</td>
+<td>The SKOS registry <code>atrium_vocab.py</code> and its schema, vendored into every tool; publication under an ATRIUM namespace deferred to an external project (#51)</td>
+<td><a href="../contracts/skos/">SKOS</a> and the URIs it mints</td>
+</tr>
+<tr>
+<td>09-06 → 09-07</td>
+<td>#55: <code>/ready</code> separate from <code>/health</code>, <code>ServiceState</code>, a graceful SIGTERM drain, <code>healthcheck.py</code>, the Kubernetes template and deployment guide; <code>docker-build-smoke</code> now <em>runs</em> the image it builds — the first CI job in the ecosystem to start one of these containers. Measuring the repositories also found that four of five services, these two included, had <strong>no runnable API image</strong>, only a compose override on the batch image</td>
+<td>the <code>-api</code> images, probes and shutdown behaviour in <a href="../operations/">Operations</a></td>
+</tr>
+<tr>
+<td>09-09</td>
+<td>#54: the schema tightened and <code>atrium_rocrate.py</code> added — an exporter run as its own step over finished records</td>
+<td><a href="../contracts/rocrate/">RO-Crate export</a></td>
+</tr>
+<tr>
+<td>09-11 → 09-14</td>
+<td>#62 retires the E2E's entrypoint overrides; #58 makes every service honour <code>$PORT</code>; #59 replaces the hand-kept shared-file lists with one <code>MANIFEST.json</code>.</td>
+<td>the manifest behind <a href="../ecosystem/architecture/">Architecture</a></td>
+</tr>
+<tr>
+<td>09-13 → 09-16</td>
+<td><strong>The base-image CVE.</strong> The translator's <code>v1.0.0-beta</code> release was blocked by three CRITICAL CVEs in the floating <code>python:3.11-slim</code> (09-13) and released as <code>v1.1.0-beta</code> once patched (09-14); the same gate then blocked a second repository, the fix was ported to the other four, and its test became canonical file #17 (09-16). Page-classification <code>v1.8.0-beta</code> (09-16) moves its ensemble to the <code>v*.4</code> generation once the published revisions are verified distinct, and brings SKOS and RO-Crate into the tool</td>
+<td><a href="../tools/translator/history/#the-base-image-that-blocked-a-release">translator → The base image that blocked a release</a>; <a href="../tools/page-classification/changelog/#v180-beta">page-classification → v1.8.0-beta</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="september--this-site">September · this site<a class="headerlink" href="#september--this-site" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>When</th>
+<th>What happened</th>
+<th>Why it matters here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>09-16 → 09-23</td>
+<td>The documentation site: MkDocs Material, built with <code>mkdocs build --strict</code> from <code>docs_site/</code> and published to the hub's <code>gh-pages</code>, with a landing card per repository. Pages are written rather than generated, so that each says something no single repository can say</td>
+<td>why this site builds from <code>docs_site/</code> only</td>
+</tr>
+</tbody>
+</table>
+<h2 id="what-the-record-keeps-repeating">What the record keeps repeating<a class="headerlink" href="#what-the-record-keeps-repeating" title="Permanent link">&para;</a></h2>
+<p>The same four lessons recur across six months of entries, in different words each time:</p>
+<ol>
+<li><strong>Measure live state; do not assert it.</strong> A record that says what is deployed, released or
+   passing goes stale within hours of the commit that changes it. The corrections that recur most
+   in the DEVLOG are claims "derived rather than measured".</li>
+<li><strong>Trust a guard only after watching it fail.</strong> New checks are broken deliberately before they
+   are believed — which is how several turned out never to have been able to fire.</li>
+<li><strong>Green is not the same as checked.</strong> The stage that skipped every night while the run passed;
+   the tests that mocked away the one call that failed in production; the concurrency rule that
+   cancelled runs without reporting a failure.</li>
+<li><strong>One manifest instead of many hand-kept lists.</strong> <code>MANIFEST.json</code> replaced fourteen enumerations
+   of the shared files; the next canonical file cost one manifest row and one <code>ruff.toml</code> entry.</li>
+</ol>
+<h2 id="why-the-raw-records-are-not-published-here">Why the raw records are not published here<a class="headerlink" href="#why-the-raw-records-are-not-published-here" title="Permanent link">&para;</a></h2>
+<p><code>agent_dev_logs/</code> across the six repositories holds issue digests, plans, verbatim issue
+exports, periodic <code>project_state_*</code> snapshots and one <code>DEVLOG.md</code> timeline per repository. They
+stay in their repositories and on GitHub, for two reasons:</p>
+<ol>
+<li><strong>Volume.</strong> Publishing them would multiply this site's page count several times over with
+   material written for a different audience.</li>
+<li><strong>Content.</strong> Several issue exports are open memos addressed to named individuals, and some
+   snapshots carry personal addresses. Publishing the set wholesale is a disclosure problem as
+   well as a volume one.</li>
+</ol>
+<p>The history pages are therefore <strong>condensed and written</strong>, with every raw record linked, and
+each cites the commit it was written from.</p>
+<h2 id="sources">Sources<a class="headerlink" href="#sources" title="Permanent link">&para;</a></h2>
+<p>Condensed from each repository's <code>agent_dev_logs/DEVLOG.md</code>. This table records
+<strong>provenance</strong>, not a build instruction.</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>What was taken from it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>atrium-page-classification/agent_dev_logs/DEVLOG.md</code> @ <code>vit</code> <code>adee922</code></td>
+<td>the page-classification history page</td>
+</tr>
+<tr>
+<td><code>atrium-translator/agent_dev_logs/DEVLOG.md</code> @ <code>master</code> <code>71feaef</code></td>
+<td>the translator history page</td>
+</tr>
+<tr>
+<td><code>atrium-project/agent_dev_logs/DEVLOG.md</code> @ <code>main</code> <code>7b0b84e</code></td>
+<td>the cross-repository chronology, and the four lessons</td>
+</tr>
+<tr>
+<td><code>atrium-project/agent_dev_logs/digests/{53,59}.digest.md</code></td>
+<td>the 09-11 → 09-14 dates, which the DEVLOG does not record</td>
+</tr>
+<tr>
+<td>hub commits <code>676a1fe</code> (<code>docker-tool.reusable.yml</code>), <code>f54983e</code> (<code>v1</code> after the 08-19 round), <code>bbc8fde</code> (<code>atrium_rocrate.py</code>)</td>
+<td>the commits behind the cited changes</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Developed by UFAL, Charles University · funded by ATRIUM · MIT licensed
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "navigation.indexes", "navigation.tracking", "search.highlight", "search.suggest", "content.code.copy", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

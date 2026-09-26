@@ -1,0 +1,3997 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for the UFAL side of the ATRIUM project: the page classifier, the ALTO post-processor, the translator, and the NLP and LLM enrichers.">
+      
+      
+      
+        <link rel="canonical" href="https://ufal.github.io/atrium-project/external-tools/">
+      
+      
+        <link rel="prev" href="../workflows/llm-enrich/">
+      
+      
+        <link rel="next" href="../ecosystem/architecture/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>External tools & services - ATRIUM — UFAL documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#external-tools--services" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="ATRIUM — UFAL documentation" class="md-header__button md-logo" aria-label="ATRIUM — UFAL documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ATRIUM — UFAL documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              External tools & services
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ufal/atrium-project" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ufal/atrium-project
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="ATRIUM — UFAL documentation" class="md-nav__button md-logo" aria-label="ATRIUM — UFAL documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    ATRIUM — UFAL documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ufal/atrium-project" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ufal/atrium-project
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipelines
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../workflows/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflows
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Workflows
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/page-classification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    page-classification
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/alto-postprocess/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    alto-postprocess
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/translator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    translator
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/nlp-enrich/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    nlp-enrich
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/llm-enrich/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    llm-enrich
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    External tools & services
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    External tools & services
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#terms-used-across-this-site" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Terms used across this site
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data--ocr-formats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data &amp; OCR formats
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data &amp; OCR formats">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#alto-xml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ALTO XML
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#amcr-metadata-xml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AMCR metadata XML
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oai-pmh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OAI-PMH
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conll-u-and-universal-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CoNLL-U and Universal Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pdf-and-the-three-tools-that-rasterise-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PDF, and the three tools that rasterise it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#formats-used-by-the-other-stages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Formats used by the other stages
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Models
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Models">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hugging-face-hub" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hugging Face Hub
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ufalvit-historical-page" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ufal/vit-historical-page
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timmregnety_160swag_ft_in1k" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        timm/regnety_160.swag_ft_in1k
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#facebookfasttext-language-identification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        facebook/fasttext-language-identification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cubbitt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CUBBITT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#udpipe-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UDPipe 2
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-teater-thesaurus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The TEATER thesaurus
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-page-classification-ml-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The page-classification ML stack
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#translation-back-ends-beyond-cubbitt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Translation back-ends beyond CUBBITT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sacrebleu-and-comet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sacreBLEU and COMET
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#models-used-by-the-other-stages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Models used by the other stages
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hosting-repository--registration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hosting, repository &amp; registration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hosting, repository &amp; registration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lindatclariah-cz" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LINDAT/CLARIAH-CZ
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-handle-system-and-persistent-identifiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Handle System, and persistent identifiers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ghcr--the-github-container-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GHCR — the GitHub Container Registry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssh-open-marketplace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSH Open Marketplace
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tadirah" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TaDiRAH
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#galaxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Galaxy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflowhub-and-workflow-ro-crate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WorkflowHub, and Workflow RO-Crate
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metadata-standards--serialisations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata standards &amp; serialisations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metadata standards &amp; serialisations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#skos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SKOS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ro-crate-11-and-the-process-run-crate-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RO-Crate 1.1, and the Process Run Crate profile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json-ld" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JSON-LD
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schemaorg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        schema.org
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#turtle-and-rdf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Turtle and RDF
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dublin-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dublin Core
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JSON Schema
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spdx-and-creative-commons" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SPDX and Creative Commons
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#orcid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ORCID
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#citationcff" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CITATION.cff
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#w3idorg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        w3id.org
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#domain-vocabularies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain vocabularies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runtime--infrastructure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime &amp; infrastructure
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Runtime &amp; infrastructure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker-and-compose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker and Compose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#github-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GitHub Actions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fastapi-and-uvicorn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FastAPI and uvicorn
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ruff-pre-commit-and-dependabot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ruff, pre-commit and Dependabot
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trivy-codeql-sarif-and-codecov" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trivy, CodeQL, SARIF and Codecov
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#buildkit-sbom-and-provenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BuildKit SBOM and provenance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#infrastructure-used-by-the-other-stages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Infrastructure used by the other stages
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-atrium-project-itself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The ATRIUM project itself
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The ATRIUM project itself">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dariah-ariadne-clarin-and-operas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DARIAH, ARIADNE, CLARIN and OPERAS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#úfal-charles-university" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ÚFAL, Charles University
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#arúp-and-arúb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ARÚP and ARÚB
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ais-cr--aiscrcz" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AIS CR — aiscr.cz
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-data-management-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The data management plan
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#named-in-the-dmp-deliberately-not-implemented" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Named in the DMP, deliberately not implemented
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ecosystem
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Ecosystem
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecosystem/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecosystem/repository-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository map
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecosystem/document-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The document contract
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contracts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contracts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/rocrate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RO-Crate export
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/skos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SKOS & the ATRIUM vocabulary
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schemas
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent skills
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing-standards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing standards
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tools
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tools
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10_1" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../tools/page-classification/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    page-classification
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_10_1" id="__nav_10_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    page-classification
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/page-classification/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/page-classification/reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/page-classification/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/page-classification/history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../tools/translator/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    translator
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_10_2" id="__nav_10_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    translator
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/translator/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/translator/reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/translator/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/translator/history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development-history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development history
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#terms-used-across-this-site" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Terms used across this site
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data--ocr-formats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data &amp; OCR formats
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data &amp; OCR formats">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#alto-xml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ALTO XML
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#amcr-metadata-xml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AMCR metadata XML
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oai-pmh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OAI-PMH
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conll-u-and-universal-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CoNLL-U and Universal Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pdf-and-the-three-tools-that-rasterise-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PDF, and the three tools that rasterise it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#formats-used-by-the-other-stages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Formats used by the other stages
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Models
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Models">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hugging-face-hub" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hugging Face Hub
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ufalvit-historical-page" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ufal/vit-historical-page
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timmregnety_160swag_ft_in1k" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        timm/regnety_160.swag_ft_in1k
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#facebookfasttext-language-identification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        facebook/fasttext-language-identification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cubbitt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CUBBITT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#udpipe-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UDPipe 2
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-teater-thesaurus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The TEATER thesaurus
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-page-classification-ml-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The page-classification ML stack
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#translation-back-ends-beyond-cubbitt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Translation back-ends beyond CUBBITT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sacrebleu-and-comet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sacreBLEU and COMET
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#models-used-by-the-other-stages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Models used by the other stages
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hosting-repository--registration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hosting, repository &amp; registration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hosting, repository &amp; registration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lindatclariah-cz" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LINDAT/CLARIAH-CZ
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-handle-system-and-persistent-identifiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Handle System, and persistent identifiers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ghcr--the-github-container-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GHCR — the GitHub Container Registry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssh-open-marketplace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSH Open Marketplace
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tadirah" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TaDiRAH
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#galaxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Galaxy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflowhub-and-workflow-ro-crate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WorkflowHub, and Workflow RO-Crate
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metadata-standards--serialisations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata standards &amp; serialisations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metadata standards &amp; serialisations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#skos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SKOS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ro-crate-11-and-the-process-run-crate-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RO-Crate 1.1, and the Process Run Crate profile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json-ld" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JSON-LD
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schemaorg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        schema.org
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#turtle-and-rdf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Turtle and RDF
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dublin-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dublin Core
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JSON Schema
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spdx-and-creative-commons" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SPDX and Creative Commons
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#orcid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ORCID
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#citationcff" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CITATION.cff
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#w3idorg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        w3id.org
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#domain-vocabularies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain vocabularies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runtime--infrastructure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime &amp; infrastructure
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Runtime &amp; infrastructure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker-and-compose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker and Compose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#github-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GitHub Actions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fastapi-and-uvicorn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FastAPI and uvicorn
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ruff-pre-commit-and-dependabot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ruff, pre-commit and Dependabot
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trivy-codeql-sarif-and-codecov" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trivy, CodeQL, SARIF and Codecov
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#buildkit-sbom-and-provenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BuildKit SBOM and provenance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#infrastructure-used-by-the-other-stages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Infrastructure used by the other stages
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-atrium-project-itself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The ATRIUM project itself
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The ATRIUM project itself">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dariah-ariadne-clarin-and-operas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DARIAH, ARIADNE, CLARIN and OPERAS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#úfal-charles-university" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ÚFAL, Charles University
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#arúp-and-arúb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ARÚP and ARÚB
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ais-cr--aiscrcz" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AIS CR — aiscr.cz
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-data-management-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The data management plan
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#named-in-the-dmp-deliberately-not-implemented" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Named in the DMP, deliberately not implemented
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="external-tools--services">External tools &amp; services<a class="headerlink" href="#external-tools--services" title="Permanent link">&para;</a></h1>
+<p>Every external standard, service, model and institution ATRIUM depends on, in a couple of
+sentences each, with a pointer to where it is actually used. Written for someone who has
+never met SKOS, LINDAT or ALTO — if a name in this documentation is unfamiliar, it should be
+explained here.</p>
+<div class="admonition info">
+<p class="admonition-title">Scope</p>
+<p>Every entry page-classification and the translator depend on, including the shared
+standards and infrastructure both tools vendor, and the platforms all five tools'
+workflows are published on. Entries that only the other three tools use are named at the
+end of each section.</p>
+</div>
+<p><strong>On this page:</strong>
+<a href="#terms-used-across-this-site">Terms used across this site</a> ·
+<a href="#data--ocr-formats">Data &amp; OCR formats</a> ·
+<a href="#models">Models</a> ·
+<a href="#hosting-repository--registration">Hosting, repository &amp; registration</a> ·
+<a href="#metadata-standards--serialisations">Metadata standards &amp; serialisations</a> ·
+<a href="#domain-vocabularies">Domain vocabularies</a> ·
+<a href="#runtime--infrastructure">Runtime &amp; infrastructure</a> ·
+<a href="#the-atrium-project-itself">The ATRIUM project itself</a> ·
+<a href="#named-in-the-dmp-deliberately-not-implemented">Named in the DMP, deliberately not implemented</a></p>
+<h2 id="terms-used-across-this-site">Terms used across this site<a class="headerlink" href="#terms-used-across-this-site" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>OCR</strong> / <strong>HTR</strong></td>
+<td>optical character recognition (printed or typed text) / handwritten text recognition — different engines, which is why pages are classified first</td>
+</tr>
+<tr>
+<td><strong>NMT</strong></td>
+<td>neural machine translation — a model trained to translate whole sentences, such as CUBBITT</td>
+</tr>
+<tr>
+<td><strong>record</strong></td>
+<td>the <code>atrium_document</code> JSON file that travels through the pipeline, one per document — see <a href="../ecosystem/document-contract/">The document contract</a></td>
+</tr>
+<tr>
+<td><strong>block</strong></td>
+<td>one top-level part of the record, written by exactly one tool — <code>page_categories</code>, <code>translations</code>, …</td>
+</tr>
+<tr>
+<td><strong>accretion</strong></td>
+<td>how the record grows: each stage adds its own block and carries every other block forward unchanged</td>
+</tr>
+<tr>
+<td><strong>paradata</strong></td>
+<td>data about the <em>process</em>: which program, version and configuration produced an output, when, and under which licence — one JSON file per run</td>
+</tr>
+<tr>
+<td><strong>provenance</strong></td>
+<td>the record's account of who contributed what: per-block stamps plus a list of contributing runs</td>
+</tr>
+<tr>
+<td><strong>FAIR</strong></td>
+<td>Findable, Accessible, Interoperable, Reusable — the principles research data publication aims at; RO-Crate export is ATRIUM's route to them</td>
+</tr>
+<tr>
+<td><strong><code>PAGE_ALTO/</code></strong></td>
+<td>alto-postprocess's output: one ALTO file per page, <code>&lt;doc&gt;/&lt;doc&gt;-N.alto.xml</code> — what the translator reads</td>
+</tr>
+<tr>
+<td><strong><code>DOC_LINE_CATEG/</code></strong></td>
+<td>alto-postprocess's per-line table: every text line with its quality category — what nlp-enrich and llm-enrich read</td>
+</tr>
+<tr>
+<td><strong>TEITOK</strong></td>
+<td>a corpus format and platform built on TEI XML, keeping tokens linked to their position on the page — nlp-enrich's output</td>
+</tr>
+<tr>
+<td><strong>GraphQL</strong></td>
+<td>a query language for web APIs, in which the client names exactly the fields it wants — how TEATER is queried</td>
+</tr>
+<tr>
+<td><strong>originator</strong></td>
+<td>the program that creates the positional plane (<code>pages</code>, <code>content</code>, <code>lines</code>, <code>tables</code>) of a record: alto-postprocess for OCR, <code>digital-convert</code> otherwise</td>
+</tr>
+<tr>
+<td><strong>workflow narrative</strong></td>
+<td>a tool's workflow told step by step, with the formats in and out of every step — the text its SSH Open Marketplace and Galaxy records are built from; see <a href="../workflows/">Workflows</a></td>
+</tr>
+<tr>
+<td><strong>actionable workflow</strong></td>
+<td>a workflow described on the SSH Open Marketplace that can also be run — in ATRIUM, as a Galaxy workflow</td>
+</tr>
+</tbody>
+</table>
+<h2 id="data--ocr-formats">Data &amp; OCR formats<a class="headerlink" href="#data--ocr-formats" title="Permanent link">&para;</a></h2>
+<h3 id="alto-xml">ALTO XML<a class="headerlink" href="#alto-xml" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> <em>Analyzed Layout and Text Object</em> — an XML standard for the output of OCR,
+maintained by the Library of Congress. It records not just the recognised text but <em>where on
+the page each piece of it sits</em>: a document is <code>Page</code> → <code>TextBlock</code> → <code>TextLine</code> → <code>String</code>,
+and each <code>String</code> carries one token in a <code>CONTENT</code> attribute plus its bounding box.</p>
+<p><strong>Where ATRIUM uses it.</strong> It is the backbone format of the whole pipeline. <code>alto-postprocess</code>
+consumes OCR ALTO and emits per-page ALTO under <code>PAGE_ALTO/</code>; the
+<a href="../tools/translator/">translator</a> rewrites ALTO in place, preserving every coordinate;
+the E2E fixture is one ALTO v3 page. Versions v1–v4 are in scope, with one catch:
+alto-postprocess's ALTO methods split only v3 files (<code>page_split.py</code>), while its text-lines
+method and service read every version.</p>
+<p><strong>Why it is harder than it looks.</strong> Because ALTO stores text <em>spatially</em>, translating or
+rewriting it is not a text operation — see
+<a href="../tools/translator/reference/#alto-dual-pass-reconstruction">ALTO dual-pass reconstruction</a>
+for what preserving that structure actually costs.</p>
+<p><strong>Onward:</strong> <a href="https://www.loc.gov/standards/alto/">https://www.loc.gov/standards/alto/</a></p>
+<h3 id="amcr-metadata-xml">AMCR metadata XML<a class="headerlink" href="#amcr-metadata-xml" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> The record format of the <strong>Archaeological Map of the Czech Republic</strong>
+(<em>Archeologická mapa České republiky</em>) — the national database of archaeological
+investigations, finds and sites. Records describe a field investigation: its location,
+circumstances, finds and free-text notes.</p>
+<p><strong>Where ATRIUM uses it.</strong> The translator's second input mode. Ten XPath targets in
+<code>amcr-fields.txt</code> name the free-text fields that get translated — <code>popis</code>, <code>poznamka</code>,
+<code>lokalizace</code>, <code>lokalizace_okolnosti</code>, <code>souhrn_upresneni</code> and the protected-data fields.
+<code>load_vocab.py</code> also harvests AMCR's controlled vocabulary (<em>heslář</em>) to build the
+translation glossary.</p>
+<p><strong>One detail worth carrying.</strong> AMCR's own thesaurus already expresses bilingual pairs as
+sibling elements — <code>heslo</code> / <code>heslo_en</code> — which is exactly the shape the translator's
+<code>append</code> output mode adopts rather than inventing a new one.</p>
+<p><strong>Onward:</strong> <a href="https://amcr-info.cz/">https://amcr-info.cz/</a></p>
+<h3 id="oai-pmh">OAI-PMH<a class="headerlink" href="#oai-pmh" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> The <em>Open Archives Initiative Protocol for Metadata Harvesting</em> — a small,
+very old, very stable HTTP protocol for pulling metadata records out of a repository in bulk.
+You ask for <code>GetRecord</code> or <code>ListRecords</code>, optionally since a date, and get XML back. It is how
+digital libraries have exchanged catalogue data for twenty years.</p>
+<p><strong>Where ATRIUM uses it.</strong> AMCR is harvested over OAI-PMH: <code>amcr-inputs.txt</code> holds sample
+<code>GetRecord</code> URLs against <code>https://api.aiscr.cz/2.2/oai</code> — the records in <code>my_documents/</code> — and <code>load_vocab.py</code> walks the same endpoint with <code>ListRecords</code> to build
+the vocabulary (<a href="../pipelines/#w7--vocabulary-harvesting--review-the-translators-half">W7</a>). The
+translator's metadata mode finds the AMCR and OAI-PMH namespaces anywhere in a file, so that it
+can translate fields <em>inside</em> an OAI-PMH envelope as well as in a bare record.</p>
+<p><strong>Why it is listed here.</strong> Three repositories harvest AMCR over it — the translator, nlp-enrich
+and llm-enrich.</p>
+<p><strong>Onward:</strong> <a href="https://www.openarchives.org/pmh/">https://www.openarchives.org/pmh/</a></p>
+<h3 id="conll-u-and-universal-dependencies">CoNLL-U and Universal Dependencies<a class="headerlink" href="#conll-u-and-universal-dependencies" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> Universal Dependencies (UD) is a cross-lingual framework for annotating grammar —
+lemmas, parts of speech, morphological features, syntax — with treebanks in well over a hundred
+languages. CoNLL-U is its file format: one token per line, ten tab-separated columns.</p>
+<p><strong>Where ATRIUM uses it.</strong> The translator's lemmatiser sends text to <a href="#udpipe-2">UDPipe</a> in
+4,000-character chunks and reads the CoNLL-U that comes back: the FORM and LEMMA columns, and the
+<code>Number=</code> feature from FEATS — which is what lets the vocabulary skip plural tokens
+(<a href="../pipelines/#w7--vocabulary-harvesting--review-the-translators-half">W7</a>). Comment lines,
+multi-word token ranges and empty nodes are skipped. There are eight UD 2.15 models: cs, sk, pl,
+de, fr, en, ru, uk.</p>
+<p><strong>Worth knowing.</strong> A language outside those eight is <strong>not lemmatised</strong>: the single-word
+vocabulary pass is skipped for it, with one warning per language. Requests ask only for the
+tokenizer and tagger, since the dependency parse is not needed.</p>
+<p><strong>Onward:</strong> <a href="https://universaldependencies.org/format.html">https://universaldependencies.org/format.html</a></p>
+<h3 id="pdf-and-the-three-tools-that-rasterise-it">PDF, and the three tools that rasterise it<a class="headerlink" href="#pdf-and-the-three-tools-that-rasterise-it" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> A PDF page has to become an image before a vision model can classify it, and the
+choice of rasteriser and resolution decides what the model sees.</p>
+<p><strong>Where ATRIUM uses it.</strong> page-classification rasterises PDFs in three different places, with three
+different tools:</p>
+<table>
+<thead>
+<tr>
+<th>Where</th>
+<th>Tool</th>
+<th>Resolution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>the service's <code>POST /predict_document</code></td>
+<td>PyMuPDF (<code>fitz</code>), <code>page.get_pixmap()</code></td>
+<td>300 dpi (<code>PDF_RENDER_DPI</code>); at most 50 pages (<code>service/api.py</code>)</td>
+</tr>
+<tr>
+<td>dataset preparation on Unix (<a href="../pipelines/#w12--annotation-round-trip-page-classifications-half">W12</a>)</td>
+<td>poppler's <code>pdftoppm</code></td>
+<td>300 dpi by default</td>
+</tr>
+<tr>
+<td>dataset preparation on Windows</td>
+<td>ImageMagick with Ghostscript</td>
+<td>300 dpi by default</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Worth knowing.</strong> The service renders PDF pages at 300 dpi, the resolution the training pages
+were made at, rather than PyMuPDF's own 72 dpi default. <code>poppler-utils</code> is needed only on the
+machine that prepares a dataset: only <code>pdf2png.sh</code> calls <code>pdftoppm</code>. PyMuPDF is distributed
+under AGPL-3.0 or a commercial licence, and Ghostscript under AGPL-3.0.</p>
+<p><strong>Onward:</strong> <a href="https://pymupdf.readthedocs.io/">https://pymupdf.readthedocs.io/</a> · <a href="https://poppler.freedesktop.org/">https://poppler.freedesktop.org/</a></p>
+<h3 id="formats-used-by-the-other-stages">Formats used by the other stages<a class="headerlink" href="#formats-used-by-the-other-stages" title="Permanent link">&para;</a></h3>
+<p>PAGE XML and hOCR (other OCR output formats), METS (a packaging standard for digitised
+objects), TEI P5 and TEITOK (text-encoding formats), and IOB2 (a token-level tagging scheme for
+named entities) belong to alto-postprocess and nlp-enrich. TEITOK in particular: nlp-enrich
+writes it (its "format 2" follows the conventions of the TEITOK tools — flexiconv, flexipipe,
+xmltokenizer, teitok-tools — and is tested against flexiconv's reader); llm-enrich and
+alto-postprocess read it.</p>
+<p>Each has a reference in the repository that uses it:</p>
+<ul>
+<li><strong>OCR and text input formats</strong> — ALTO, PAGE XML, hOCR, ABBYY FineReader XML, DjVuXML,
+  Tesseract TSV, OCR JSON, PDF text layers, TEI/TEITOK, office, e-mail and plain-text files: the
+  standard behind each, the tools that write it and what alto-postprocess keeps of it, in
+  <a href="https://github.com/ufal/atrium-alto-postprocess/blob/master/docs/text_inputs.md#formats-and-their-standards">Formats and their standards</a>.</li>
+<li><strong>TEITOK as an output</strong> — the standards it builds on, how nlp-enrich composes a file from the
+  line table, UDPipe, NameTag and the ALTO layout, the tools that write or read it, and the
+  pitfalls: nlp-enrich's README, from
+  <a href="https://github.com/ufal/atrium-nlp-enrich#the-format-and-the-standards-it-builds-on">The format and the standards it builds on</a>
+  to <a href="https://github.com/ufal/atrium-nlp-enrich#pitfalls">Pitfalls</a>.</li>
+</ul>
+<h2 id="models">Models<a class="headerlink" href="#models" title="Permanent link">&para;</a></h2>
+<h3 id="hugging-face-hub">Hugging Face Hub<a class="headerlink" href="#hugging-face-hub" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> The de-facto public registry for machine-learning models, datasets and the
+code to run them — think of it as a package index where the packages are model weights. A
+model is addressed as <code>owner/name</code>, optionally at a <code>revision</code> (a branch or tag), and pulled
+by the <code>huggingface_hub</code> library into a local cache.</p>
+<p><strong>Where ATRIUM uses it.</strong> Everywhere a model is loaded. It is the single most-referenced
+external service in the ecosystem. The classifier pulls its weights with <code>--hf</code>; the translator
+pulls the FastText language-identification model; <code>HF_HOME</code> is set to <code>/cache/huggingface</code> in
+every container so the cache survives restarts, and <code>HF_TOKEN</code> lifts the rate limit that applies
+to anonymous downloads.</p>
+<p><strong>Onward:</strong> <a href="https://huggingface.co/">https://huggingface.co/</a></p>
+<h3 id="ufalvit-historical-page"><code>ufal/vit-historical-page</code><a class="headerlink" href="#ufalvit-historical-page" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> ATRIUM's own published model repository — the fine-tuned page classifiers,
+one revision per generation.</p>
+<p><strong>Where ATRIUM uses it.</strong> <code>setup/config.txt</code> <code>[HF] repo_name</code>, and the HTTP service. The
+service warms revisions <code>v1.4</code>–<code>v5.4</code>, the five-model canonical ensemble. Revisions are named
+<code>vX.Y</code> — model slot and data generation; see
+<a href="../tools/page-classification/#the-models">page-classification → The models</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Name a revision</p>
+<p>Pass the revision you mean — <code>-rev v4.4</code> for the recommended single model, or <code>--best</code> for
+the ensemble — rather than relying on the repository's <code>main</code> branch.</p>
+</div>
+<p><strong>Onward:</strong> <a href="https://huggingface.co/ufal/vit-historical-page">https://huggingface.co/ufal/vit-historical-page</a></p>
+<h3 id="timmregnety_160swag_ft_in1k"><code>timm/regnety_160.swag_ft_in1k</code><a class="headerlink" href="#timmregnety_160swag_ft_in1k" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> A RegNetY-16GF convolutional image classifier from the <code>timm</code> library,
+pre-trained with Meta's SWAG weakly-supervised method and fine-tuned on ImageNet-1k. About
+84 M parameters.</p>
+<p><strong>Where ATRIUM uses it.</strong> The default <code>[SETUP] base_model</code>, and the base of the best-performing
+published revision — <code>v4.3</code> at 99.16 % top-1 and 100 % top-3. It is also what the E2E smoke
+test passes as <code>-m</code>. Notable because it beats every ViT variant tried while being a quarter the
+size of the largest.</p>
+<p><strong>Onward:</strong> <a href="https://huggingface.co/timm/regnety_160.swag_ft_in1k">https://huggingface.co/timm/regnety_160.swag_ft_in1k</a></p>
+<h3 id="facebookfasttext-language-identification"><code>facebook/fasttext-language-identification</code><a class="headerlink" href="#facebookfasttext-language-identification" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> A tiny, extremely fast language classifier from Meta's FastText project. It
+takes a string and returns an ISO 639-3 code with a confidence score, over 200 languages, with
+no GPU and essentially no latency.</p>
+<p><strong>Where ATRIUM uses it.</strong> The translator's <code>--source_lang auto</code> path. It maps FastText's 639-3
+output to the 639-1 codes translation services expect, and uses a guess only when the text has
+at least 20 letters, the score is at least 0.5 and the language is one the backend translates;
+otherwise the element's own language label, the document's language and a default (<code>cs</code>)
+decide — see <a href="../tools/translator/reference/#languages">the translator's language rules</a>. In ALTO
+mode it runs once per <code>TextBlock</code> so every line in a block is translated consistently.</p>
+<p><strong>Two things to know.</strong> Its weights are <strong>CC BY-NC 4.0</strong>, so auto-detection alone makes a run's
+output non-commercial — passing <code>--source_lang</code> explicitly avoids that. And if the model fails
+to load, nothing is detected — the fallbacks decide every block — and the service reports the
+failure on <code>GET /health?deep=true</code>.</p>
+<p><strong>Onward:</strong> <a href="https://huggingface.co/facebook/fasttext-language-identification">https://huggingface.co/facebook/fasttext-language-identification</a></p>
+<h3 id="cubbitt">CUBBITT<a class="headerlink" href="#cubbitt" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> <em>Charles University Block-Backtranslation-Improved Transformer Translation</em> — a
+neural machine translation system developed at the Institute of Formal and Applied Linguistics,
+best known for reaching professional-level quality on Czech↔English news translation. It is
+served publicly by LINDAT as a REST API.</p>
+<p><strong>Where ATRIUM uses it.</strong> It is the translator's <strong>default backend</strong> (<code>lindat</code>). Model names are
+fetched live from the API and composed as <code>&lt;src&gt;-&lt;tgt&gt;</code>; the endpoint is attachable through
+<code>TRANSLATION_URL</code>, so a self-hosted instance or a local stub substitutes with no code change.</p>
+<p><strong>Licence consequence.</strong> CUBBITT's models are <strong>CC BY-NC-SA 4.0</strong>, which is why a default
+translator run resolves to CC BY-NC-SA 4.0 — see
+<a href="../tools/translator/reference/#licence-is-computed-not-declared">translator → Licence</a>.</p>
+<p><strong>Onward:</strong> <a href="https://lindat.mff.cuni.cz/services/translation/">https://lindat.mff.cuni.cz/services/translation/</a></p>
+<h3 id="udpipe-2">UDPipe 2<a class="headerlink" href="#udpipe-2" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> A trainable pipeline for tokenisation, tagging, lemmatisation and dependency
+parsing, trained on Universal Dependencies treebanks and served as a REST API by LINDAT. Given a
+sentence it returns CoNLL-U — one line per token, with its lemma and morphological features.</p>
+<p><strong>Where ATRIUM uses it.</strong> Lemma matching for the translator's controlled vocabulary: a glossary
+term is matched against a document by <em>lemma</em> rather than surface form, so an inflected Czech
+word still matches its dictionary entry. Models are named per language
+(<code>czech-pdt-ud-2.15-241121</code>, <code>slovak-snk-ud-2.15-241121</code>, and six more). <code>nlp-enrich</code> calls the same service,
+with the same <code>UDPIPE_URL</code> variable name.</p>
+<p><strong>Licence consequence.</strong> The <strong>engine</strong> is MPL 2.0, but the <strong>models</strong> are CC BY-NC-SA 4.0 —
+they are separate entries in the licence table for exactly that reason.</p>
+<p><strong>Onward:</strong> <a href="https://lindat.mff.cuni.cz/services/udpipe/">https://lindat.mff.cuni.cz/services/udpipe/</a></p>
+<h3 id="the-teater-thesaurus">The TEATER thesaurus<a class="headerlink" href="#the-teater-thesaurus" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> A thesaurus of archaeological terminology with Czech and English names for
+each concept, organised in a tree of categories and served from <code>teater.aiscr.cz</code> over GraphQL
+rather than OAI-PMH.</p>
+<p><strong>Where ATRIUM uses it.</strong> Together with the AMCR <em>heslář</em>, it is one of the two sources
+<code>load_vocab.py</code> unions into the translation glossary, and
+<code>llm-enrich</code> builds a nested union of both for its category enum. Its data is CC BY-NC 4.0, so
+loading the vocabulary makes a run non-commercial.</p>
+<p><strong>Onward:</strong> <a href="https://teater.aiscr.cz/">https://teater.aiscr.cz/</a></p>
+<h3 id="the-page-classification-ml-stack">The page-classification ML stack<a class="headerlink" href="#the-page-classification-ml-stack" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> PyTorch runs the models; Hugging Face <code>transformers</code> loads and fine-tunes them;
+<code>timm</code> supplies the vision architectures — RegNetY, EfficientNetV2 — behind the <code>timm/…</code>
+checkpoints; Ultralytics provides YOLO classifiers as an alternative model family; scikit-learn
+computes the evaluation reports.</p>
+<p><strong>Where ATRIUM uses it.</strong> The pins that carry a reason, from <code>setup/requirements.txt</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Pin</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>torch</code> / <code>torchvision</code></td>
+<td><code>==2.7.1</code> / <code>==0.22.1</code></td>
+<td>installed first, from the CPU wheel index unless <code>TORCH_INDEX_URL</code> points at a CUDA one; Dependabot ignores both</td>
+</tr>
+<tr>
+<td><code>transformers</code></td>
+<td><code>&gt;=4.57.6,&lt;5</code></td>
+<td>5.x constructs models on the <code>meta</code> device, which crashes the timm builders for the RegNetY and EfficientNetV2 checkpoints <code>--best</code> loads</td>
+</tr>
+<tr>
+<td><code>numpy</code></td>
+<td><code>&gt;=2.4.6,&lt;2.5</code></td>
+<td>2.5 requires Python ≥ 3.12 and every image runs 3.11; a Dependabot ignore rule holds the ceiling</td>
+</tr>
+<tr>
+<td><code>ultralytics</code></td>
+<td><code>&gt;=8.4.155</code></td>
+<td>the <code>--yolo</code> path, off by default (<code>[YOLO] use_yolo = False</code>)</td>
+</tr>
+<tr>
+<td><code>timm</code></td>
+<td><code>&gt;=1.0.29</code></td>
+<td>never imported directly — the <code>timm/…</code> checkpoints load through <code>transformers</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Worth knowing.</strong> Ultralytics distributes its package and base weights under AGPL-3.0.
+<code>para_config.txt</code> declares it as the conditional component <code>ultralytics</code>, and <code>run.py</code> logs it on
+every <code>--yolo</code> run, so a <code>--yolo</code> inference run resolves to AGPL-3.0; with <code>--train</code>, the resolver
+ranks the dataset's CC BY-NC 4.0 above it. The <code>transformers&lt;5</code> pin lives in
+<code>setup/requirements.txt</code> only — <code>service/requirements.txt</code> deliberately leaves the model stack out,
+and the image installs both files.</p>
+<p><strong>Onward:</strong> <a href="https://pytorch.org/">https://pytorch.org/</a> · <a href="https://huggingface.co/docs/transformers">https://huggingface.co/docs/transformers</a> ·
+<a href="https://huggingface.co/docs/timm">https://huggingface.co/docs/timm</a> · <a href="https://docs.ultralytics.com/">https://docs.ultralytics.com/</a></p>
+<h3 id="translation-back-ends-beyond-cubbitt">Translation back-ends beyond CUBBITT<a class="headerlink" href="#translation-back-ends-beyond-cubbitt" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> The translator chooses its engine through a registry (<code>processors/backend.py</code>), so
+the same pipeline — ALTO reconstruction, vocabulary protection, the record — can run against a
+different model.</p>
+<p><strong>Where ATRIUM uses it.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Back-end</th>
+<th>Status</th>
+<th>Licence component</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lindat</code> — <a href="#cubbitt">CUBBITT</a></td>
+<td>the default</td>
+<td><code>lindat_cubbitt</code>, CC BY-NC-SA 4.0</td>
+</tr>
+<tr>
+<td><code>openai_compatible</code> — any OpenAI-style chat-completions API; the code's examples are OpenRouter, Gemini, Mistral, Groq and a local Ollama</td>
+<td>registered; plain REST over <code>requests</code>, no SDK</td>
+<td><code>llm_api</code> = "LLM provider ToS", unrecognised on purpose</td>
+</tr>
+<tr>
+<td><code>ct2</code> — CTranslate2 running EuroLLM, MADLAD-400, NLLB or OPUS-MT</td>
+<td>registered; <code>ctranslate2</code> and <code>sentencepiece</code> load on first use, from <code>requirements-ct2.txt</code></td>
+<td><code>ctranslate2</code> MIT; <code>eurollm</code>, <code>madlad400</code> Apache-2.0; <code>opus_mt</code> CC BY 4.0; <code>nllb200</code> <strong>CC BY-NC 4.0</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Worth knowing.</strong> CT2's default compute type is <code>int8</code>, which runs on every device; a compute
+type the device cannot run is refused before the model loads, with the list of valid ones. The model
+licence follows <code>CT2_MODEL_FAMILY</code>, so an NLLB run is non-commercial. An LLM run's licence
+resolves to the unrecognised provider-terms string; see <a href="#spdx-and-creative-commons">SPDX and Creative
+Commons</a>.</p>
+<p><strong>Onward:</strong> <a href="https://opennmt.net/CTranslate2/">https://opennmt.net/CTranslate2/</a> · <a href="https://huggingface.co/utter-project">https://huggingface.co/utter-project</a> ·
+<a href="https://huggingface.co/google/madlad400-3b-mt">https://huggingface.co/google/madlad400-3b-mt</a></p>
+<h3 id="sacrebleu-and-comet">sacreBLEU and COMET<a class="headerlink" href="#sacrebleu-and-comet" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> sacreBLEU computes reproducible BLEU and chrF scores against reference
+translations. COMET is a neural metric that tracks human judgement more closely.</p>
+<p><strong>Where ATRIUM uses it.</strong> <code>eval/bakeoff.py</code>, the translator's comparison of back-ends. It
+always reports reference-less signals — length ratio, number preservation, glossary hit rate,
+empty outputs and failures (counted apart), and each back-end's similarity to the first one
+listed — and, given <code>--refs</code>, chrF and BLEU per segment and per corpus (sacreBLEU) plus COMET
+(<code>--comet-model</code>, default <code>Unbabel/wmt22-comet-da</code>). COMET-QE is opt-in with <code>--comet-qe-model</code>.
+Per-segment rows go to <code>--out</code>, one row per back-end to <code>--summary-out</code>.</p>
+<p><strong>Worth knowing.</strong> Both scorers are imported lazily: without sacreBLEU or <code>unbabel-comet</code> the run
+warns and leaves those columns blank. <code>eval/requirements-eval.txt</code> installs sacreBLEU and lists
+<code>unbabel-comet</code> as an opt-in line, because it pulls in torch and downloads large checkpoints.</p>
+<p><strong>Onward:</strong> <a href="https://github.com/mjpost/sacrebleu">https://github.com/mjpost/sacrebleu</a> · <a href="https://unbabel.github.io/COMET/">https://unbabel.github.io/COMET/</a></p>
+<h3 id="models-used-by-the-other-stages">Models used by the other stages<a class="headerlink" href="#models-used-by-the-other-stages" title="Permanent link">&para;</a></h3>
+<p><code>Qwen/Qwen2.5-0.5B</code>, <code>hantian/layoutreader</code>, <code>THUDM/glm-4v-9b</code>, NameTag 3 (LINDAT's named-entity
+recogniser), Korektor (its spelling corrector) and the keyword extractors belong to nlp-enrich
+and llm-enrich.</p>
+<h2 id="hosting-repository--registration">Hosting, repository &amp; registration<a class="headerlink" href="#hosting-repository--registration" title="Permanent link">&para;</a></h2>
+<h3 id="lindatclariah-cz">LINDAT/CLARIAH-CZ<a class="headerlink" href="#lindatclariah-cz" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> The Czech national research infrastructure for language and cultural-heritage
+data, hosted at the Institute of Formal and Applied Linguistics (ÚFAL), Charles University. It is
+two things at once, and confusing them is easy: a <strong>repository</strong> that stores and issues persistent
+identifiers for datasets, and a <strong>service host</strong> that runs public APIs — translation, UDPipe,
+NameTag, Korektor.</p>
+<p><strong>Where ATRIUM uses it.</strong> Both roles. The page-classification training dataset is published there;
+the translator's default backend and its lemmatiser are LINDAT-hosted APIs. Every Agent Skill
+client takes its base URL from one environment variable, so a hosted deployment of the ATRIUM
+services can be used without changing any code.</p>
+<p><strong>Onward:</strong> <a href="https://lindat.cz/">https://lindat.cz/</a></p>
+<h3 id="the-handle-system-and-persistent-identifiers">The Handle System, and persistent identifiers<a class="headerlink" href="#the-handle-system-and-persistent-identifiers" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> A system for naming digital objects with an identifier that survives the object
+moving. A handle looks like <code>20.500.12800/1-6184</code> and resolves through a proxy —
+<code>hdl.handle.net/20.500.12800/1-6184</code> — so the citation stays valid when the hosting URL changes.
+DOIs are handles with extra rules on top.</p>
+<p><strong>Where ATRIUM uses it.</strong> <code>hdl.handle.net/20.500.12800/1-6184</code> is the <strong>primary citation for the
+page-classification training dataset</strong>, 48,499 pages from 37,328 documents — the identifier to
+cite wherever the dataset is used.</p>
+<p><strong>Onward:</strong> <a href="https://www.handle.net/">https://www.handle.net/</a></p>
+<h3 id="ghcr--the-github-container-registry">GHCR — the GitHub Container Registry<a class="headerlink" href="#ghcr--the-github-container-registry" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> GitHub's Docker registry, addressed as <code>ghcr.io/&lt;owner&gt;/&lt;image&gt;:&lt;tag&gt;</code>. Images
+inherit the repository's visibility and can be pulled anonymously when it is public.</p>
+<p><strong>Where ATRIUM uses it.</strong> Every tool publishes two images per release — a batch image and a
+<code>-api</code> image — from one Dockerfile with two stages. The E2E smoke test pulls them by tag, which
+is what makes <code>image-tag</code> the most consequential input in that workflow.</p>
+<div class="admonition note">
+<p class="admonition-title"><code>:latest</code> moves only on a version tag</p>
+<p>Only a push to the <code>test</code> branch publishes, as <code>sha-*</code> and <code>:test</code>; pushes to other branches
+publish nothing. <code>:latest</code> and the version tag move only on a <code>v*</code> tag, and only after the
+release gate passes — <code>-beta</code> tags included. So <code>:latest</code> means <em>the most recent release that
+passed the gate</em>, not <em>the most recent build</em> — which matters when reading an E2E result. See
+<a href="../pipelines/#w6--e2e-smoke-the-integration-contract">W6</a> and <a href="../operations/#images-and-tags">Operations</a>.</p>
+</div>
+<p><strong>Onward:</strong> <a href="https://docs.github.com/packages">https://docs.github.com/packages</a></p>
+<h3 id="ssh-open-marketplace">SSH Open Marketplace<a class="headerlink" href="#ssh-open-marketplace" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> A discovery portal for the social sciences and humanities that lists tools and
+services, training materials, datasets and workflows. Records are contributed by their authors
+and published once a moderator approves them, and every item keeps a persistent identifier — the
+short code in its address, such as <code>RER7Fw</code>. A <strong>workflow</strong> record is a narrative: a description
+followed by ordered steps, where each step can name its activity, its input and output formats,
+and the tools or services it uses as related records.</p>
+<p><strong>Where ATRIUM uses it.</strong> Every ÚFAL tool has a tool-or-service record under the keyword
+<code>ATRIUM catalogue</code> — <a href="https://marketplace.sshopencloud.eu/tool-or-service/RER7Fw"><code>RER7Fw</code></a>
+(page-classification), <a href="https://marketplace.sshopencloud.eu/tool-or-service/YParYU"><code>YParYU</code></a>
+(alto-postprocess), <a href="https://marketplace.sshopencloud.eu/tool-or-service/CizIUW"><code>CizIUW</code></a>
+(translator), <a href="https://marketplace.sshopencloud.eu/tool-or-service/EMhu3X"><code>EMhu3X</code></a>
+(nlp-enrich), <a href="https://marketplace.sshopencloud.eu/tool-or-service/j9fqxo"><code>j9fqxo</code></a>
+(llm-enrich). The translator's workflow has its own record,
+<a href="https://marketplace.sshopencloud.eu/workflow/13eHAZ"><code>13eHAZ</code></a>, and the AMČR text workflow,
+<a href="https://marketplace.sshopencloud.eu/workflow/0xSpVP"><code>0xSpVP</code></a>, strings the tools together.
+The text these records are built from is on <a href="../workflows/">Workflows</a>.</p>
+<p><strong>Onward:</strong> <a href="https://marketplace.sshopencloud.eu/">https://marketplace.sshopencloud.eu/</a></p>
+<h3 id="tadirah">TaDiRAH<a class="headerlink" href="#tadirah" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> The <em>Taxonomy of Digital Research Activities in the Humanities</em> — a controlled
+list of what researchers do with digital methods: collecting, converting, enriching, analysing,
+translating and so on. The SSH Open Marketplace names the <em>activity</em> of a tool, and of each step
+of a workflow, with terms based on it.</p>
+<p><strong>Where ATRIUM uses it.</strong> Each step of a <a href="../workflows/">workflow narrative</a> names its
+activity with the term the marketplace offers — <em>Converting</em>, <em>Extracting</em>, <em>Translating</em>,
+<em>Named Entity Recognition</em> — so the step can be copied into a workflow record as it stands.</p>
+<p><strong>Onward:</strong> <a href="https://vocabs.dariah.eu/tadirah/">https://vocabs.dariah.eu/tadirah/</a></p>
+<h3 id="galaxy">Galaxy<a class="headerlink" href="#galaxy" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> An open web platform for running analysis tools and chaining them into
+workflows without programming. A Galaxy <strong>tool</strong> is a command-line program described by an XML
+wrapper that declares its inputs, outputs and parameters, each input and output with a Galaxy
+<strong>datatype</strong> (<code>alto</code>, <code>tei</code>, <code>xml</code>, <code>tabular</code>, <code>json</code>, <code>pdf</code>, <code>png</code>, …); the program runs from a
+package or a container. A <strong>workflow</strong> chains tools and is shared as a <code>.ga</code> file, with an
+annotation, a creator, a licence and labelled inputs and outputs. Tools are published through
+the Galaxy <strong>ToolShed</strong> and tested with <strong>Planemo</strong>; public servers such as usegalaxy.eu install
+them. <a href="https://ssh.usegalaxy.eu/">ssh.usegalaxy.eu</a> is usegalaxy.eu's entry point for the social
+sciences and humanities, with the same tools and a Digital Humanities section. The Intergalactic
+Workflow Commission (<strong>IWC</strong>) curates reviewed workflows.</p>
+<p><strong>Where ATRIUM uses it.</strong> An <em>actionable workflow</em> is one that is described on the SSH Open
+Marketplace and can also be run — in ATRIUM, as a Galaxy workflow. DARIAH keeps ATRIUM's Galaxy
+tool wrappers and workflows in the
+<a href="https://github.com/DARIAH-ERIC/atrium-galaxy-tools"><code>atrium-galaxy-tools</code></a> repository. Each
+<a href="../workflows/">workflow narrative</a> carries a Galaxy sheet for its tool: the datatypes of
+its inputs and outputs, its container, compute and network needs, and its test data.</p>
+<p><strong>Onward:</strong> <a href="https://galaxyproject.org/">https://galaxyproject.org/</a> · <a href="https://planemo.readthedocs.io/">https://planemo.readthedocs.io/</a></p>
+<h3 id="workflowhub-and-workflow-ro-crate">WorkflowHub, and Workflow RO-Crate<a class="headerlink" href="#workflowhub-and-workflow-ro-crate" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> A registry for computational workflows. It gives each workflow a citable
+identifier and stores it as a <strong>Workflow RO-Crate</strong> — an <a href="#ro-crate-11-and-the-process-run-crate-profile">RO-Crate</a>
+whose main entity is the workflow itself, with its inputs, outputs, creator and licence. Galaxy
+workflows reviewed by the IWC, and those of the Galaxy Training Network, are deposited there
+automatically.</p>
+<p><strong>Where ATRIUM uses it.</strong> When a Galaxy workflow of an ATRIUM tool is published, WorkflowHub is
+where it becomes citable; the <a href="../workflows/#one-text-three-platforms">field table on Workflows</a>
+shows which part of a narrative fills which field of the crate. It is a different crate from the
+one the tools export for their records, which describes a document and the runs that produced it.</p>
+<p><strong>Onward:</strong> <a href="https://workflowhub.eu/">https://workflowhub.eu/</a></p>
+<h2 id="metadata-standards--serialisations">Metadata standards &amp; serialisations<a class="headerlink" href="#metadata-standards--serialisations" title="Permanent link">&para;</a></h2>
+<h3 id="skos">SKOS<a class="headerlink" href="#skos" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> The W3C's <em>Simple Knowledge Organization System</em> — an RDF vocabulary for thesauri
+and controlled lists. A concept has a preferred label, a definition and a notation; concepts are
+grouped into schemes and collections, and linked to other vocabularies by mapping properties.</p>
+<p><strong>Where ATRIUM uses it.</strong> <code>atrium_vocab.py</code>, vendored into both tools, is ATRIUM's registry of six
+controlled label sets. page-classification's eleven categories are one of them, <code>page-category</code>,
+and its model registry is checked against that scheme at import time. The translator carries the
+file but does not import it; its glossary is a CSV. The full picture is on
+<a href="../contracts/skos/">SKOS &amp; the ATRIUM vocabulary</a>.</p>
+<p><strong>Onward:</strong> <a href="https://www.w3.org/TR/skos-reference/">https://www.w3.org/TR/skos-reference/</a></p>
+<h3 id="ro-crate-11-and-the-process-run-crate-profile">RO-Crate 1.1, and the Process Run Crate profile<a class="headerlink" href="#ro-crate-11-and-the-process-run-crate-profile" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> A convention for packaging research data. A folder becomes a crate when it holds
+one JSON-LD file, <code>ro-crate-metadata.json</code>, saying what is in the folder, who made it, with which
+software and under which licence. <em>Profiles</em> add rules for particular kinds of crate; the Process
+Run Crate profile is for "these tools were run over these inputs".</p>
+<p><strong>Where ATRIUM uses it.</strong> <code>atrium_rocrate.py</code>, vendored into every tool and run as its own step, writes
+RO-Crate 1.1. A run crate also declares the profile <code>https://w3id.org/ro/wfrun/process/0.5</code>. See
+<a href="../pipelines/#w13--ro-crate-export--fair-publication">W13</a> and
+<a href="../contracts/rocrate/">RO-Crate export</a>.</p>
+<p><strong>Worth knowing.</strong> Profiles are versioned independently of RO-Crate itself, so a crate names both:
+RO-Crate 1.1 for the container, and the profile version for what the crate claims to describe.</p>
+<p><strong>Onward:</strong> <a href="https://www.researchobject.org/ro-crate/">https://www.researchobject.org/ro-crate/</a></p>
+<h3 id="json-ld">JSON-LD<a class="headerlink" href="#json-ld" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> JSON with an <code>@context</code> that maps its keys onto web vocabularies, so the same file
+is ordinary JSON to a program and linked data to an RDF tool.</p>
+<p><strong>Where ATRIUM uses it.</strong> Two outputs, both written with the Python standard library alone: the
+RO-Crate descriptor, and <code>atrium_vocab.py --jsonld</code>. <code>atrium_vocab.schema.json</code> describes the
+shape of the latter.</p>
+<p><strong>Worth knowing.</strong> JSON-LD is kept <em>off</em> the extraction path (<code>rocrate_export.md</code> §3): nothing
+writes JSON-LD while a document is being processed; the exporter produces it afterwards, from
+records already on disk.</p>
+<p><strong>Onward:</strong> <a href="https://json-ld.org/">https://json-ld.org/</a></p>
+<h3 id="schemaorg">schema.org<a class="headerlink" href="#schemaorg" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> The shared vocabulary search engines and catalogues use to describe things on the
+web — <code>Dataset</code>, <code>Person</code>, <code>SoftwareApplication</code>, <code>CreateAction</code>, <code>DefinedTerm</code>, and so on.</p>
+<p><strong>Where ATRIUM uses it.</strong> Implicitly, through RO-Crate's context. Every entity in an ATRIUM crate
+is typed with schema.org terms: a <code>DefinedTerm</code> per page category, a <code>CreateAction</code> per run, a
+<code>SoftwareApplication</code> per tool. The string <code>schema.org</code> never appears in the code — the RO-Crate
+context supplies it.</p>
+<p><strong>Onward:</strong> <a href="https://schema.org/">https://schema.org/</a></p>
+<h3 id="turtle-and-rdf">Turtle and RDF<a class="headerlink" href="#turtle-and-rdf" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> RDF is the W3C data model of subject–predicate–object triples that SKOS is written
+in; Turtle is its most readable text serialisation.</p>
+<p><strong>Where ATRIUM uses it.</strong> <code>atrium_vocab.py --turtle</code> writes the whole registry as Turtle — six
+schemes and their concepts — without <code>rdflib</code> or any other dependency.</p>
+<p><strong>Worth knowing.</strong> The output is byte-stable (two runs compare equal), sorted, and free of blank
+nodes, and it uses one prefix per scheme (<code>a-page-category:</code>, <code>a-theme:</code>, …) because, as the code
+notes, a Turtle local name cannot carry a <code>/</code>.</p>
+<p><strong>Onward:</strong> <a href="https://www.w3.org/TR/turtle/">https://www.w3.org/TR/turtle/</a></p>
+<h3 id="dublin-core">Dublin Core<a class="headerlink" href="#dublin-core" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> A small set of general-purpose metadata terms — title, creator, date, source and
+the like — maintained by DCMI. <code>dct:</code> is the usual prefix for its RDF namespace.</p>
+<p><strong>Where ATRIUM uses it.</strong> In the SKOS output only: every scheme carries <code>dct:title</code> and
+<code>dct:description</code>, and the schemes taken from an outside authority carry a <code>dct:source</code>.</p>
+<p><strong>Onward:</strong> <a href="https://www.dublincore.org/specifications/dublin-core/dcmi-terms/">https://www.dublincore.org/specifications/dublin-core/dcmi-terms/</a></p>
+<h3 id="json-schema">JSON Schema<a class="headerlink" href="#json-schema" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> A vocabulary for describing what a valid JSON document looks like, and the
+validators that check a document against that description.</p>
+<p><strong>Where ATRIUM uses it.</strong> <code>atrium_document.schema.json</code> (draft 2020-12) is the contract of the
+<a href="../ecosystem/document-contract/">document record</a>, and <code>validate_document()</code> runs on every record
+either tool writes.</p>
+<p><strong>Worth knowing.</strong> Without the <code>jsonschema</code> library installed, validation <strong>raises</strong> rather than
+passing silently — a gate that quietly becomes a no-op cannot be told apart from one that
+passed. Both tools list <code>jsonschema</code> among their requirements.</p>
+<p><strong>Onward:</strong> <a href="https://json-schema.org/">https://json-schema.org/</a></p>
+<h3 id="spdx-and-creative-commons">SPDX and Creative Commons<a class="headerlink" href="#spdx-and-creative-commons" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> SPDX is the standard list of software and data licence identifiers — <code>MIT</code>,
+<code>Apache-2.0</code>, <code>CC-BY-NC-4.0</code>. Creative Commons licences govern most of the data and models used
+here; their building blocks are BY (attribution), NC (non-commercial) and SA (share-alike).</p>
+<p><strong>Where ATRIUM uses it.</strong> <code>para_licenses.py</code>, vendored into both tools, ranks every licence a run
+touched and reports the most restrictive one as the run's licence:</p>
+<table>
+<thead>
+<tr>
+<th>Rank</th>
+<th>Licences</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Public Domain, CC0</td>
+</tr>
+<tr>
+<td>1</td>
+<td>MIT, Apache-2.0, BSD-3-Clause, CC BY 4.0</td>
+</tr>
+<tr>
+<td>2</td>
+<td>MPL 2.0</td>
+</tr>
+<tr>
+<td>3</td>
+<td>LGPL-3.0, CC BY-SA 4.0</td>
+</tr>
+<tr>
+<td>4</td>
+<td>GPL-3.0, AGPL-3.0</td>
+</tr>
+<tr>
+<td>5</td>
+<td>CC BY-NC 4.0, glm-4</td>
+</tr>
+<tr>
+<td>6</td>
+<td>CC BY-NC-SA 4.0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Worth knowing.</strong></p>
+<ul>
+<li>The keys mix SPDX identifiers with display names. <strong>SPDX spellings</strong> resolve through the alias
+  table (<code>CC0-1.0</code>, <code>CC-BY-SA-4.0</code>, the <code>-only</code> / <code>-or-later</code> GPL forms), and every catalogued key
+  also resolves in any casing (<code>bsd-3-clause</code>, <code>lgpl-3.0</code>).</li>
+<li>An unrecognised licence is treated as the most restrictive, and so <strong>becomes the run's effective
+  licence</strong>: its raw string, an empty URL, <strong>both</strong> the non-commercial and share-alike flags set,
+  and a warning in the notes. The translator's <code>llm_api = LLM provider ToS</code> is unrecognised on
+  purpose, so a run on the LLM back-end resolves to that string; a component missing from
+  <code>para_config.txt</code> is logged as <code>UNKNOWN</code> and resolves the same way.</li>
+<li>A run that logs no component at all falls back conservatively to CC BY-NC 4.0.</li>
+</ul>
+<p><strong>Onward:</strong> <a href="https://spdx.org/licenses/">https://spdx.org/licenses/</a> · <a href="https://creativecommons.org/licenses/">https://creativecommons.org/licenses/</a></p>
+<h3 id="orcid">ORCID<a class="headerlink" href="#orcid" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> Persistent identifiers for researchers, of the form <code>https://orcid.org/0000-…</code>.</p>
+<p><strong>Where ATRIUM uses it.</strong> Both tools' <code>CITATION.cff</code> files list the project's authors, each with
+an ORCID. The RO-Crate exporter uses those ORCIDs as the <code>@id</code>s of its <code>Person</code> entities.</p>
+<p><strong>Onward:</strong> <a href="https://orcid.org/">https://orcid.org/</a></p>
+<h3 id="citationcff">CITATION.cff<a class="headerlink" href="#citationcff" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> A small YAML file that tells GitHub, Zenodo and reference managers how to cite a
+repository.</p>
+<p><strong>Where ATRIUM uses it.</strong> Every tool carries one (<code>cff-version: 1.2.0</code>), with the current version
+and release date. It is also a <strong>release gate</strong>:
+<code>check_version.py</code> reads the first column-0 <code>version:</code>, strips a leading <code>v</code>, and fails unless it
+equals <code>para_config.txt</code>'s <code>[tool] version</code> — and, on a tag push, the tag. <code>security.reusable.yml</code>
+runs it in CI, and each tool's release workflow runs it again. GitHub renders the file as the
+repository's <em>Cite this repository</em> button.</p>
+<p><strong>Onward:</strong> <a href="https://citation-file-format.github.io/">https://citation-file-format.github.io/</a></p>
+<h3 id="w3idorg">w3id.org<a class="headerlink" href="#w3idorg" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> A community-run permanent-identifier service: <code>https://w3id.org/&lt;name&gt;/…</code>
+redirects to wherever the content currently lives, so an identifier outlives a change of host.</p>
+<p><strong>Where ATRIUM uses it.</strong> <code>https://w3id.org/atrium/</code> is the root of every ATRIUM concept URI
+(<code>atrium_vocab.py</code>'s <code>SKOS_BASE</code>), and RO-Crate's own context and profiles live under
+<code>w3id.org/ro/</code>.</p>
+<p><strong>Worth knowing.</strong> A w3id identifier works as an identifier whether or not its redirect is in
+place; registering the redirect — a one-file pull request to the w3id repository — is what
+makes it dereferenceable. See <a href="../contracts/skos/#how-a-uri-is-minted">SKOS</a>.</p>
+<p><strong>Onward:</strong> <a href="https://w3id.org/">https://w3id.org/</a></p>
+<h2 id="domain-vocabularies">Domain vocabularies<a class="headerlink" href="#domain-vocabularies" title="Permanent link">&para;</a></h2>
+<p>AMCR, TEATER and OAI-PMH are described above. Two more belong to nlp-enrich's part of the
+pipeline:</p>
+<ul>
+<li><strong>CNEC 2.0</strong> — the <em>Czech Named Entity Corpus</em> type hierarchy, used for the named-entity
+  types nlp-enrich assigns (<code>entities[].type_cnec</code>).</li>
+<li><strong>Getty AAT</strong> — the <em>Art &amp; Architecture Thesaurus</em>, a structured vocabulary for describing
+  cultural heritage objects; the registry declares its namespace and the record schema has an
+  <code>entities[].pid.aat</code> slot for linking an entity to an AAT concept.</li>
+</ul>
+<h2 id="runtime--infrastructure">Runtime &amp; infrastructure<a class="headerlink" href="#runtime--infrastructure" title="Permanent link">&para;</a></h2>
+<h3 id="docker-and-compose">Docker and Compose<a class="headerlink" href="#docker-and-compose" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> Docker packages a program with everything it needs into an image; Compose describes
+how to run one or more containers from those images.</p>
+<p><strong>Where ATRIUM uses it.</strong> One <code>Dockerfile</code> per tool with two targets: <code>base</code>, the batch image, and
+<code>api</code>, which runs <code>python -m service.api</code>. Both build on <code>python:3.11-slim</code>, run as uid
+10001, and keep the Hugging Face cache at <code>/cache/huggingface</code>. Compose runs the batch service by
+default and the HTTP service under the <code>api</code> profile.</p>
+<p><strong>Worth knowing.</strong> page-classification's <code>api</code> service <code>extends</code> the batch one, so it has to re-set
+<code>ATRIUM_RUNNER_IMAGE</code>, which it would otherwise inherit from the batch image; the translator
+defines its two services separately. Details, including the image tags, are in
+<a href="../operations/">Operations</a>.</p>
+<p><strong>Onward:</strong> <a href="https://docs.docker.com/compose/">https://docs.docker.com/compose/</a></p>
+<h3 id="kubernetes">Kubernetes<a class="headerlink" href="#kubernetes" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> The container orchestrator the partner institutions run the services on.</p>
+<p><strong>Where ATRIUM uses it.</strong> Not in either tool repository. The hub ships the template,
+<code>docs/templates/k8s/atrium-service.deployment.yaml</code>: <code>startupProbe</code> and <code>readinessProbe</code> on
+<code>/ready</code>, <code>livenessProbe</code> on <code>/health</code>, a 60-second termination grace. The probe table,
+environment and sizing for each tool are on <a href="../operations/">Operations</a>.</p>
+<p><strong>Worth knowing.</strong> A service image is named <code>atrium-&lt;tool&gt;-api:&lt;version&gt;</code> — see
+<a href="../operations/#images-and-tags">Operations → Images and tags</a>.</p>
+<p><strong>Onward:</strong> <a href="https://kubernetes.io/docs/">https://kubernetes.io/docs/</a></p>
+<h3 id="github-actions">GitHub Actions<a class="headerlink" href="#github-actions" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> GitHub's built-in CI: workflows in <code>.github/workflows/</code>, and <em>reusable</em> workflows
+that one repository can call from another.</p>
+<p><strong>Where ATRIUM uses it.</strong> Each tool calls seven hub reusables at <code>@v1</code> — <code>api-contract</code>, <code>codeql</code>,
+<code>docker-tool</code>, <code>para-drift</code>, <code>pre-commit</code>, <code>security</code>, <code>workflow-lint</code> — plus workflows of its own.
+See <a href="../ecosystem/architecture/#the-ci-federation">Architecture → The CI federation</a>.</p>
+<p><strong>Worth knowing.</strong> <code>v1</code> is a movable major tag, so the hub can update every caller at once.
+Third-party actions are pinned by commit SHA instead — <code>trivy-action</code>, <code>build-push-action</code>,
+<code>action-gh-release</code> — so a moved upstream tag cannot change what runs.</p>
+<p><strong>Onward:</strong> <a href="https://docs.github.com/actions">https://docs.github.com/actions</a></p>
+<h3 id="fastapi-and-uvicorn">FastAPI and uvicorn<a class="headerlink" href="#fastapi-and-uvicorn" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> FastAPI is a Python web framework; uvicorn is the ASGI server that runs it.</p>
+<p><strong>Where ATRIUM uses it.</strong> Both HTTP services are FastAPI applications started by <code>uvicorn.run()</code> in
+<code>service/api.py</code>, with uvicorn's <code>[standard]</code> extras, declared in each tool's
+<code>service/requirements.txt</code>.</p>
+<p><strong>Onward:</strong> <a href="https://fastapi.tiangolo.com/">https://fastapi.tiangolo.com/</a> · <a href="https://www.uvicorn.org/">https://www.uvicorn.org/</a></p>
+<h3 id="ruff-pre-commit-and-dependabot">ruff, pre-commit and Dependabot<a class="headerlink" href="#ruff-pre-commit-and-dependabot" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> ruff is a Python linter and formatter; pre-commit runs such checks before each
+commit and in CI; Dependabot opens pull requests when a pinned dependency has a newer version.</p>
+<p><strong>Where ATRIUM uses it.</strong> Both tools run pre-commit-hooks and ruff (page-classification adds
+shellcheck for its data scripts), with ruff at line length 120, Python 3.11, rules <code>E</code>, <code>F</code>,
+<code>W</code>, <code>I</code>. Dependabot in page-classification watches GitHub Actions and pip in <code>/setup</code> and
+<code>/service</code>; in the translator it watches GitHub Actions, pip in <code>/</code>, <code>/service</code> and <code>/eval</code>
+(ignoring numpy ≥ 2.0, which fasttext-wheel 0.9.2 cannot run on) and the <code>docker</code> base image.</p>
+<p><strong>Worth knowing.</strong> A <code>docker</code> ecosystem only helps with a <strong>digest-pinned</strong> base: a bare
+<code>python:3.11-slim</code> never changes name, so there is nothing to propose. Pinning the base by
+digest and declaring the ecosystem turns a base-image update into a reviewed pull request; the
+hub's <code>docs/templates/Dockerfile</code> and example Dependabot configuration do both. The background
+is <a href="../tools/translator/history/#the-base-image-that-blocked-a-release">the base image that blocked a release</a>.</p>
+<p><strong>Onward:</strong> <a href="https://docs.astral.sh/ruff/">https://docs.astral.sh/ruff/</a> · <a href="https://pre-commit.com/">https://pre-commit.com/</a> ·
+<a href="https://docs.github.com/code-security/dependabot">https://docs.github.com/code-security/dependabot</a></p>
+<h3 id="trivy-codeql-sarif-and-codecov">Trivy, CodeQL, SARIF and Codecov<a class="headerlink" href="#trivy-codeql-sarif-and-codecov" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> Trivy scans container images for known vulnerabilities; CodeQL analyses source code
+for security flaws; SARIF is the file format both use to report findings to GitHub; Codecov
+collects test-coverage reports.</p>
+<p><strong>Where ATRIUM uses it.</strong> All in the hub reusables:</p>
+<ul>
+<li><strong>Trivy</strong> scans every published image by digest — CRITICAL and HIGH, fixed-only, report-only —
+  and fails a release on a fixable CRITICAL, on tag pushes only. The action is pinned to a commit
+  SHA because its tags were compromised in March 2026 (GHSA-69fq-xp46-6x23).</li>
+<li><strong>CodeQL</strong> analyses Python with <code>build-mode: none</code>.</li>
+<li>Both upload <strong>SARIF</strong> to GitHub code scanning.</li>
+<li><strong>Codecov</strong> receives coverage only when a token is configured. What fails a build is each
+  repository's own <code>.coveragerc</code> <code>fail_under</code> floor.</li>
+</ul>
+<p><strong>Onward:</strong> <a href="https://trivy.dev/">https://trivy.dev/</a> · <a href="https://codeql.github.com/">https://codeql.github.com/</a> ·
+<a href="https://docs.oasis-open.org/sarif/sarif/v2.1.0/">https://docs.oasis-open.org/sarif/sarif/v2.1.0/</a> · <a href="https://about.codecov.io/">https://about.codecov.io/</a></p>
+<h3 id="buildkit-sbom-and-provenance">BuildKit SBOM and provenance<a class="headerlink" href="#buildkit-sbom-and-provenance" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> A software bill of materials lists what an image contains; a provenance attestation
+records how it was built. BuildKit can attach both to an image as it is pushed.</p>
+<p><strong>Where ATRIUM uses it.</strong> <code>docker/build-push-action</code> with <code>sbom: true</code> and <code>provenance: true</code>, on
+every published image. It replaced a separate SBOM job that could race the image it described.</p>
+<p><strong>Onward:</strong> <a href="https://docs.docker.com/build/metadata/attestations/">https://docs.docker.com/build/metadata/attestations/</a></p>
+<h3 id="infrastructure-used-by-the-other-stages">Infrastructure used by the other stages<a class="headerlink" href="#infrastructure-used-by-the-other-stages" title="Permanent link">&para;</a></h3>
+<p>vLLM and Ollama (servers for running large language models locally) belong to llm-enrich;
+alto-tools (ALTO utilities, vendored as <code>alto_tools.py</code>) to alto-postprocess. flexiconv (UFAL's
+converter of PDF, DOCX, PAGE XML, hOCR, … into TEITOK; GPL-3.0-or-later, optional, pinned at
+v0.3.10) belongs to nlp-enrich, whose <code>api_flexiconv.sh</code> runs it on the command line only — no
+service image contains it; llm-enrich vendors the same adapter.</p>
+<h2 id="the-atrium-project-itself">The ATRIUM project itself<a class="headerlink" href="#the-atrium-project-itself" title="Permanent link">&para;</a></h2>
+<h3 id="dariah-ariadne-clarin-and-operas">DARIAH, ARIADNE, CLARIN and OPERAS<a class="headerlink" href="#dariah-ariadne-clarin-and-operas" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> Four European research infrastructures: arts and humanities (DARIAH), archaeology
+(ARIADNE), language technologies (CLARIN), and open scholarly communication (OPERAS). ATRIUM —
+<em>Advancing fronTier Research In the arts and hUManities</em> — is the EU project that bridges them.</p>
+<p><strong>Where ATRIUM uses it.</strong> Not in the two tools' code. The hub README states the project's purpose,
+and the shared modules mention two of them: the SKOS registry leaves the externally published,
+DARIAH-namespaced SKOS version of the AMCR and TEATER vocabularies to a separate project, and the
+record schema describes <code>entities[].pid</code> as "the ARIADNE/GoTriple hook".</p>
+<p><strong>Onward:</strong> <a href="https://atrium-research.eu/">https://atrium-research.eu/</a> · <a href="https://www.dariah.eu/">https://www.dariah.eu/</a> ·
+<a href="https://www.ariadne-research-infrastructure.eu/">https://www.ariadne-research-infrastructure.eu/</a> · <a href="https://www.clarin.eu/">https://www.clarin.eu/</a> ·
+<a href="https://operas-eu.org/">https://operas-eu.org/</a></p>
+<h3 id="úfal-charles-university">ÚFAL, Charles University<a class="headerlink" href="#úfal-charles-university" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> The Institute of Formal and Applied Linguistics at Charles University, Prague — the
+developer of this tool chain, and the host of <a href="#lindatclariah-cz">LINDAT/CLARIAH-CZ</a>.</p>
+<p><strong>Where ATRIUM uses it.</strong> Both tools' <code>LICENSE</code> ("Copyright (c) 2025 UFAL"), their READMEs'
+acknowledgements, and this site's footer.</p>
+<p><strong>Onward:</strong> <a href="https://ufal.mff.cuni.cz/">https://ufal.mff.cuni.cz/</a></p>
+<h3 id="arúp-and-arúb">ARÚP and ARÚB<a class="headerlink" href="#arúp-and-arúb" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> The Institutes of Archaeology of the Czech Academy of Sciences — <em>Archeologický
+ústav AV ČR</em> — in Prague (ARÚP) and Brno (ARÚB). They hold the collections these tools were built
+for, and they are the partners the services are handed to.</p>
+<p><strong>Where ATRIUM uses it.</strong> In the data: the AMCR sample records name
+<code>Archeologický ústav AV ČR, Praha, v.v.i.</code> as the responsible organisation. In page-classification's
+results: <code>result/ARUP_averaged_SHORT.csv</code> and <code>result/ARUB_averaged_SHORT.csv</code> are ensemble
+classifications of each institute's pages. And at the deployment boundary: the handoff is a Docker
+image that the partners run on their own Kubernetes (<a href="../operations/">Operations</a>).</p>
+<p><strong>Onward:</strong> <a href="https://www.arup.cas.cz/">https://www.arup.cas.cz/</a> · <a href="https://www.arub.cz/">https://www.arub.cz/</a></p>
+<h3 id="ais-cr--aiscrcz">AIS CR — <code>aiscr.cz</code><a class="headerlink" href="#ais-cr--aiscrcz" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> The Czech archaeological information infrastructure that publishes the AMCR
+database and the TEATER thesaurus, under the <code>aiscr.cz</code> domain. Its OAI-PMH endpoint identifies
+itself as <em>Archaeological Map of the Czech Republic (AMCR)</em> and licenses its metadata under
+CC BY-NC 4.0.</p>
+<p><strong>Where ATRIUM uses it.</strong> <code>aiscr.cz</code> hosts everything the translator harvests or links to: the AMCR
+OAI-PMH endpoint <code>api.aiscr.cz/2.2/oai</code>, AMCR's identifier namespace <code>api.aiscr.cz/id/</code> (also a
+prefix in the SKOS registry), the AMCR XML schema under <code>api.aiscr.cz/schema/amcr/2.2/</code>, and TEATER
+at <code>teater.aiscr.cz</code> — GraphQL at <code>/api/graphql</code>, identifiers under <code>/id/</code>.</p>
+<p><strong>Onward:</strong> <a href="https://www.aiscr.cz/">https://www.aiscr.cz/</a></p>
+<h3 id="the-data-management-plan">The data management plan<a class="headerlink" href="#the-data-management-plan" title="Permanent link">&para;</a></h3>
+<p><strong>What it is.</strong> The project's data management plan (DMP), which names the standards the project
+commits to.</p>
+<p><strong>Where ATRIUM uses it.</strong> Cited in the hub documentation — <code>rocrate_export.md</code> §3 quotes its
+standards list, and <code>atrium_rocrate.py</code> is designed for "a corpus the DMP sizes at 1.2 million"
+pages. The plan itself is a project document, not part of the code repositories.</p>
+<h2 id="named-in-the-dmp-deliberately-not-implemented">Named in the DMP, deliberately not implemented<a class="headerlink" href="#named-in-the-dmp-deliberately-not-implemented" title="Permanent link">&para;</a></h2>
+<p>The DMP's standards column names RO-Crate alongside CIDOC CRM, SKOS, PeriodO, Getty AAT, TEI,
+DataCite and IIIF (<code>rocrate_export.md</code> §3). SKOS and RO-Crate are implemented (above), and AAT is
+a declared namespace. The design keeps heavyweight semantic models — CIDOC CRM, PROV-O, JSON-LD —
+off the raw-extraction path: a corpus of more than a million pages is processed as plain JSON
+records, and richer views such as an RO-Crate are derived from them afterwards.</p>
+<table>
+<thead>
+<tr>
+<th>Standard</th>
+<th>What it is</th>
+<th>Status here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CIDOC CRM</td>
+<td>the ISO ontology for cultural-heritage information — events, objects, actors, places</td>
+<td>not used; ruled off the extraction path by §3</td>
+</tr>
+<tr>
+<td>W3C PROV-O</td>
+<td>the W3C ontology for provenance</td>
+<td>not used; <code>atrium_paradata.py</code> and the record's <code>provenance</code> block are the provenance record, and the exporter maps them to RO-Crate rather than to a second provenance model</td>
+</tr>
+<tr>
+<td>PeriodO</td>
+<td>a gazetteer of scholarly definitions of historical periods</td>
+<td>not used in these tools</td>
+</tr>
+<tr>
+<td>DataCite</td>
+<td>the metadata schema of the DOI registration agency</td>
+<td>not used in these tools; releases are cited through <code>CITATION.cff</code></td>
+</tr>
+<tr>
+<td>IIIF</td>
+<td>the International Image Interoperability Framework, for serving and annotating images</td>
+<td>not used in these tools</td>
+</tr>
+<tr>
+<td>TEI</td>
+<td>the Text Encoding Initiative's XML for encoding texts</td>
+<td>not in these two tools; nlp-enrich writes TEITOK, a TEI-based format</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sources">Sources<a class="headerlink" href="#sources" title="Permanent link">&para;</a></h2>
+<p>Written from the tree at the refs below, plus the public documentation each entry links to.
+This table records <strong>provenance</strong>, not a build instruction.</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>What was taken from it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>atrium-translator</code> <code>v1.2.1-beta</code> — <code>processors/{backend,identifier,language,translator,lemmatizer,llm_translator,ct2_translator}.py</code>, <code>config.txt</code>, <code>para_config.txt</code>, <code>docs/translation-backends.md</code>, <code>amcr-inputs.txt</code>, <code>load_vocab.py</code>, <code>eval/</code>, <code>service/requirements.txt</code>, <code>.github/dependabot.yml</code>, <code>CITATION.cff</code>, <code>data_samples/my_documents/</code></td>
+<td>CUBBITT, UDPipe, FastText, AMCR, OAI-PMH, TEATER, CoNLL-U, the back-ends, sacreBLEU / COMET, FastAPI, AIS CR hosts, and every licence consequence</td>
+</tr>
+<tr>
+<td><code>atrium-page-classification</code> @ <code>vit</code> <code>adee922</code> — <code>setup/{requirements,para_config,config}.txt</code>, <code>service/{api.py,inference.py,requirements.txt}</code>, <code>Dockerfile</code>, <code>docker-compose.yml</code>, <code>.github/dependabot.yml</code>, <code>.coveragerc</code>, <code>.pre-commit-config.yaml</code>, <code>data_scripts/</code>, <code>result/</code>, <code>README.md</code>, <code>CITATION.cff</code></td>
+<td>Hugging Face, <code>ufal/vit-historical-page</code>, <code>regnety_160</code>, the ML stack, PDF rasterisation, Docker, the LINDAT dataset handle, ARÚP/ARÚB result files</td>
+</tr>
+<tr>
+<td>the shared files both tools vendor — <code>atrium_vocab.py</code>, <code>atrium_rocrate.py</code>, <code>atrium_document.py</code> + schema, <code>atrium_paradata.py</code>, <code>para_licenses.py</code>, <code>check_version.py</code></td>
+<td>every metadata-standards entry; the licence and Turtle behaviour</td>
+</tr>
+<tr>
+<td><code>atrium-project</code> @ <code>main</code> <code>7b0b84e</code> — <code>docker-tool.reusable.yml</code>, <code>security.reusable.yml</code>, <code>codeql.reusable.yml</code>, <code>docs/templates/Dockerfile</code>, <code>docs/templates/workflows/dependabot.example.yml</code>, <code>docs/rocrate_export.md</code> §3, <code>docs/skos_strategy.md</code></td>
+<td>Trivy, CodeQL, SBOM, GHCR tagging, Dependabot, the DMP standards</td>
+</tr>
+<tr>
+<td><code>atrium-alto-postprocess</code> @ <code>test</code> <code>2e2794d</code> — <code>page_split.py</code>, <code>text_formats.py</code>; its <code>docs/text_inputs.md</code> and <code>atrium-nlp-enrich</code>'s <code>README.md</code> § "TEITOK XML" as extended on 2026-09-24</td>
+<td>the ALTO version note; the two format references</td>
+</tr>
+<tr>
+<td>SSH Open Marketplace records <code>RER7Fw</code>, <code>YParYU</code>, <code>CizIUW</code>, <code>EMhu3X</code>, <code>j9fqxo</code>, <code>13eHAZ</code>, <code>0xSpVP</code>, <code>IrpmkB</code>; <code>SSHOC/sshoc-marketplace-frontend</code> (metadata guidelines); <code>DARIAH-ERIC/atrium-galaxy-tools</code>; <code>usegalaxy-eu/infrastructure-playbook</code>, <code>usegalaxy-eu/usegalaxy-eu-tools</code>; <code>galaxyproject/galaxy</code> (<code>datatypes_conf.xml.sample</code>); <code>galaxyproject/iwc</code>, <code>galaxyproject/planemo</code></td>
+<td>SSH Open Marketplace, TaDiRAH, Galaxy, WorkflowHub</td>
+</tr>
+<tr>
+<td><code>https://api.aiscr.cz/2.2/oai?verb=Identify</code></td>
+<td>the AMCR endpoint's self-description and metadata licence</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Developed by UFAL, Charles University · funded by ATRIUM · MIT licensed
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "navigation.indexes", "navigation.tracking", "search.highlight", "search.suggest", "content.code.copy", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

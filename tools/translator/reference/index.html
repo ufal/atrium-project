@@ -1,0 +1,3200 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for the UFAL side of the ATRIUM project: the page classifier, the ALTO post-processor, the translator, and the NLP and LLM enrichers.">
+      
+      
+      
+        <link rel="canonical" href="https://ufal.github.io/atrium-project/tools/translator/reference/">
+      
+      
+        <link rel="prev" href="../guide/">
+      
+      
+        <link rel="next" href="../changelog/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>translator — Reference - ATRIUM — UFAL documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#translator--reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="ATRIUM — UFAL documentation" class="md-header__button md-logo" aria-label="ATRIUM — UFAL documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ATRIUM — UFAL documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              translator — Reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ufal/atrium-project" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ufal/atrium-project
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="ATRIUM — UFAL documentation" class="md-nav__button md-logo" aria-label="ATRIUM — UFAL documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    ATRIUM — UFAL documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ufal/atrium-project" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ufal/atrium-project
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipelines
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../workflows/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflows
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Workflows
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../workflows/page-classification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    page-classification
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../workflows/alto-postprocess/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    alto-postprocess
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../workflows/translator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    translator
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../workflows/nlp-enrich/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    nlp-enrich
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../workflows/llm-enrich/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    llm-enrich
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../external-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    External tools & services
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ecosystem
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Ecosystem
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ecosystem/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ecosystem/repository-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository map
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ecosystem/document-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The document contract
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contracts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contracts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contracts/rocrate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RO-Crate export
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contracts/skos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SKOS & the ATRIUM vocabulary
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contracts/schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schemas
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../agent-skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent skills
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributing-standards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing standards
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tools
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tools
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10_1" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../page-classification/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    page-classification
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_10_1" id="__nav_10_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    page-classification
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../page-classification/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../page-classification/reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../page-classification/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../page-classification/history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10_2" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    translator
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_10_2" id="__nav_10_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_10_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    translator
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#cli--mainpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI — main.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CLI — main.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#other-entry-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Other entry points
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration--configtxt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration — config.txt
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#http-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP service
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="HTTP service">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#post-translate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /translate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alto-dual-pass-reconstruction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ALTO dual-pass reconstruction
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#degenerate-output-guard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Degenerate-output guard
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metadata-amcr-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata (AMCR) mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vocabulary-protection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vocabulary protection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Outputs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Outputs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-lands-in-the-document-record" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What lands in the document record
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#licence-is-computed-not-declared" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Licence is computed, not declared
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#languages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Languages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Code map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design limits
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../development-history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development history
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#cli--mainpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI — main.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CLI — main.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#other-entry-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Other entry points
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration--configtxt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration — config.txt
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#http-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP service
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="HTTP service">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#post-translate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /translate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alto-dual-pass-reconstruction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ALTO dual-pass reconstruction
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#degenerate-output-guard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Degenerate-output guard
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metadata-amcr-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata (AMCR) mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vocabulary-protection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vocabulary protection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Outputs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Outputs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-lands-in-the-document-record" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What lands in the document record
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#licence-is-computed-not-declared" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Licence is computed, not declared
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#languages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Languages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Code map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design limits
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="translator--reference">translator — Reference<a class="headerlink" href="#translator--reference" title="Permanent link">&para;</a></h1>
+<p>Look something up and stop reading. Every value here is taken from the code; the files it
+was read from are listed under <a href="#sources">Sources</a>. For what the tool is and how a
+translation is made, start at the <a href="../">Overview</a>.</p>
+<h2 id="cli--mainpy">CLI — <code>main.py</code><a class="headerlink" href="#cli--mainpy" title="Permanent link">&para;</a></h2>
+<p>Run as <code>python main.py [input_path] [flags]</code> from the repository root. <code>input_path</code> is
+positional and optional; omitted, it falls back to <code>config.txt</code>'s <code>input_path</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>input_path</code></td>
+<td><code>config.txt</code> <code>input_path</code></td>
+<td>File or directory to translate</td>
+</tr>
+<tr>
+<td><code>--output</code>, <code>-o</code></td>
+<td><code>config.txt</code> <code>output</code></td>
+<td>Output directory</td>
+</tr>
+<tr>
+<td><code>--source_lang</code>, <code>-src</code></td>
+<td><strong><code>auto</code></strong> via <code>config.txt</code></td>
+<td>Source language, or <code>auto</code> for FastText detection under the rules in <a href="#languages">Languages</a></td>
+</tr>
+<tr>
+<td><code>--default-source-lang</code></td>
+<td><code>cs</code> via <code>config.txt</code> <code>default_source_lang</code></td>
+<td>With <code>auto</code>: the language used where detection cannot be trusted. Then <code>DEFAULT_SOURCE_LANG</code>, then <code>cs</code></td>
+</tr>
+<tr>
+<td><code>--target_lang</code>, <code>-tgt</code></td>
+<td><code>en</code></td>
+<td>Target language</td>
+</tr>
+<tr>
+<td><code>--formats</code></td>
+<td><code>alto.xml</code> via <code>config.txt</code></td>
+<td>Comma-separated extensions, e.g. <code>alto.xml,txt</code></td>
+</tr>
+<tr>
+<td><code>--config</code>, <code>-c</code></td>
+<td><code>config.txt</code></td>
+<td>Configuration file</td>
+</tr>
+<tr>
+<td><code>--alto</code></td>
+<td>off</td>
+<td>ALTO in-place mode. <strong>Auto-enabled</strong> when <code>--formats</code> contains <code>alto.xml</code></td>
+</tr>
+<tr>
+<td><code>--xpaths</code></td>
+<td><code>amcr-fields.txt</code> via <code>config.txt</code> <code>fields</code></td>
+<td>File listing the AMCR XPath targets</td>
+</tr>
+<tr>
+<td><code>--xsd</code></td>
+<td>—</td>
+<td>URL or path to an XSD for output validation, warn-only. <strong>Metadata mode only</strong>; a harvested record is validated inside its OAI-PMH envelope</td>
+</tr>
+<tr>
+<td><code>--vocabulary</code></td>
+<td><code>data_samples/vocabulary.csv</code> via config</td>
+<td>Vocabulary CSV (<code>source_lemma,target_translation</code>)</td>
+</tr>
+<tr>
+<td><code>--document-json</code></td>
+<td>—</td>
+<td>Baseline ATRIUM record to accrete onto</td>
+</tr>
+<tr>
+<td><code>--document-json-out</code></td>
+<td>—</td>
+<td>Where to write the updated record</td>
+</tr>
+<tr>
+<td><code>--download-dir</code></td>
+<td><code>&lt;output&gt;/downloaded_inputs</code></td>
+<td>Where URL-ingested inputs land</td>
+</tr>
+<tr>
+<td><code>--output-mode</code></td>
+<td><code>replace</code></td>
+<td><code>replace</code> or <code>append</code></td>
+</tr>
+<tr>
+<td><code>--fast-align</code></td>
+<td>off</td>
+<td>ALTO only: distribute block tokens by source word count instead of translating each line as an anchor. Far fewer API calls, slightly coarser splits</td>
+</tr>
+<tr>
+<td><code>--backend</code></td>
+<td><code>lindat</code></td>
+<td><code>lindat</code>, <code>openai_compatible</code> or <code>ct2</code> — see <a href="../#the-three-backends">Overview → The three backends</a></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Exit codes:</strong> <code>0</code> OK · <code>1</code> usage · <code>2</code> no input · <code>3</code> failed — so a Kubernetes <code>Job</code> or a
+CI step sees a run that translated nothing as a failure.</p>
+<p><strong>Precedence</strong> for <code>--backend</code> and <code>--output-mode</code>: CLI flag → <code>config.txt</code> key → env var
+→ built-in default.</p>
+<h3 id="other-entry-points">Other entry points<a class="headerlink" href="#other-entry-points" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Purpose</th>
+<th>Key flags</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>load_vocab.py</code></td>
+<td>Harvest the vocabulary from AMCR (OAI-PMH) and TEATER (GraphQL)</td>
+<td><code>--out</code>, <code>--delay</code>, <code>--skip-amcr</code>, <code>--skip-teater</code></td>
+</tr>
+<tr>
+<td><code>eval/bakeoff.py</code></td>
+<td>Backend comparison: reference-based and reference-free metrics</td>
+<td><code>--samples</code>, <code>--backends</code>, <code>--refs</code>, <code>--limit</code>, <code>--out</code></td>
+</tr>
+<tr>
+<td><code>eval/langid_report.py</code></td>
+<td>Per-block report: FastText's guesses beside the resolved language</td>
+<td><code>--xpaths</code>, <code>--languages</code></td>
+</tr>
+<tr>
+<td><code>eval/lindat_probe.py</code></td>
+<td>Sends one text N times to the live endpoint, prints the good/bad pattern</td>
+<td><code>--n</code>, <code>--text</code>, <code>--model</code>, <code>--pause</code></td>
+</tr>
+<tr>
+<td><code>check_version.py</code></td>
+<td>Release gate: tag == <code>CITATION.cff</code> == <code>para_config.txt</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>atrium_rocrate.py</code></td>
+<td>RO-Crate 1.1 export, its own CLI</td>
+<td><code>--out-dir</code></td>
+</tr>
+<tr>
+<td><code>service/healthcheck.py</code></td>
+<td>Docker healthcheck; stdlib only, always probes loopback</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="configuration--configtxt">Configuration — <code>config.txt</code><a class="headerlink" href="#configuration--configtxt" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Shipped value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>input_path</code></td>
+<td><code>./data_samples/my_documents</code></td>
+</tr>
+<tr>
+<td><code>source_lang</code></td>
+<td><code>auto</code></td>
+</tr>
+<tr>
+<td><code>target_lang</code></td>
+<td><code>en</code></td>
+</tr>
+<tr>
+<td><code>default_source_lang</code></td>
+<td><code>cs</code></td>
+</tr>
+<tr>
+<td><code>formats</code></td>
+<td><code>alto.xml</code></td>
+</tr>
+<tr>
+<td><code>output</code></td>
+<td><code>./data_samples/in-place_translated_files/alto</code></td>
+</tr>
+<tr>
+<td><code>fields</code></td>
+<td><code>amcr-fields.txt</code></td>
+</tr>
+<tr>
+<td><code>vocabulary</code></td>
+<td><code>data_samples/vocabulary.csv</code></td>
+</tr>
+<tr>
+<td><code>translation_backend</code></td>
+<td><code>lindat</code></td>
+</tr>
+<tr>
+<td><code>output_mode</code></td>
+<td><code>replace</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>TRANSLATION_URL</code> and <code>UDPIPE_URL</code> are deliberately <strong>not</strong> keys here — they are
+environment variables, because they vary per deployment rather than per run.</p>
+<p><code>amcr-fields.txt</code> holds ten AMCR XPaths (<code>popis</code>, <code>poznamka</code>, <code>lokalizace</code>,
+<code>lokalizace_okolnosti</code>, <code>souhrn_upresneni</code>, two <code>nalez_*/poznamka</code>, and the three
+<code>lokalita/chranene_udaje/*</code> fields). <code>amcr-inputs.txt</code> holds sample OAI-PMH <code>GetRecord</code>
+URLs against <code>https://api.aiscr.cz/2.2/oai</code>; a URL passed as input is downloaded to
+<code>--download-dir</code> and translated like a local file.</p>
+<h2 id="http-service">HTTP service<a class="headerlink" href="#http-service" title="Permanent link">&para;</a></h2>
+<p>Started by <code>python -m service.api</code>. <code>MAX_UPLOAD_MB</code> defaults to <strong>50</strong>, sized for ALTO XML
+in and ALTO XML out.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST</code></td>
+<td><code>/translate</code></td>
+<td>the translated document</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/info</code></td>
+<td><code>service</code>, <code>version</code>, <code>endpoints</code>, <code>limits</code> (<code>max_upload_mb: 50</code>), <code>supported_formats: ["ALTO XML", "AMCR Metadata XML"]</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/health</code></td>
+<td><code>{"status":"ok"}</code>, always 200</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/health?deep=true</code></td>
+<td>503 with detail when degraded or draining — <strong>this is where a failed FastText load is reported</strong></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/ready</code></td>
+<td>503 <code>starting</code> until warm-up completes → 200 <code>ready</code> → 503 <code>draining</code> after SIGTERM</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/docs</code>, <code>/openapi.json</code></td>
+<td>FastAPI built-ins</td>
+</tr>
+</tbody>
+</table>
+<h3 id="post-translate"><code>POST /translate</code><a class="headerlink" href="#post-translate" title="Permanent link">&para;</a></h3>
+<p>Multipart. Every scalar is accepted as <strong>either a form field or a query parameter</strong>, so both
+client conventions work.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>file</code></td>
+<td>upload</td>
+<td>required; the filename must end <code>.xml</code></td>
+</tr>
+<tr>
+<td><code>document_json</code></td>
+<td>upload</td>
+<td>optional baseline ATRIUM record</td>
+</tr>
+<tr>
+<td><code>source_lang</code></td>
+<td>form/query</td>
+<td><code>auto</code></td>
+</tr>
+<tr>
+<td><code>target_lang</code></td>
+<td>form/query</td>
+<td><code>en</code></td>
+</tr>
+<tr>
+<td><code>is_alto</code></td>
+<td>form/query</td>
+<td><code>true</code></td>
+</tr>
+<tr>
+<td><code>output_mode</code></td>
+<td>form/query</td>
+<td><code>OUTPUT_MODE</code> env, else <code>replace</code></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>curl<span class="w"> </span>-sf<span class="w"> </span>-F<span class="w"> </span><span class="s2">"file=@page.alto.xml"</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">     </span><span class="s2">"localhost:8000/translate?source_lang=cs&amp;target_lang=en&amp;is_alto=true"</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">     </span>-o<span class="w"> </span>page_en.alto.xml
+</code></pre></div>
+<p><strong>Response — 200</strong>, <code>Content-Type: application/xml</code>, with
+<code>Content-Disposition: attachment; filename="&lt;doc&gt;_&lt;lang&gt;.alto.xml"</code>. The body is the
+translated document. There is <strong>no JSON envelope on success, by design</strong>: the document is
+the payload, so the endpoint composes with <code>curl -o</code>.</p>
+<p>When <code>document_json</code> is supplied the response is instead <strong><code>multipart/mixed</code></strong> with a
+uuid4 boundary — the translated XML first, then the updated record, each with its own
+<code>Content-Disposition</code> filename.</p>
+<h3 id="errors">Errors<a class="headerlink" href="#errors" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>413</code></td>
+<td>Over <code>MAX_UPLOAD_MB</code>, or the declared envelope exceeds the cap. Enforced <strong>during</strong> the read, so an oversized body is refused rather than buffered</td>
+</tr>
+<tr>
+<td><code>415</code></td>
+<td><code>Content-Type</code> is neither <code>multipart/form-data</code> nor <code>application/json</code></td>
+</tr>
+<tr>
+<td><code>422</code></td>
+<td>Missing filename, a filename not ending <code>.xml</code>, or metadata mode with no readable <code>AMCR_FIELDS_PATH</code></td>
+</tr>
+<tr>
+<td><code>500</code></td>
+<td>The pipeline raised — malformed XML, or the backend failed after retries</td>
+</tr>
+<tr>
+<td><code>503</code></td>
+<td>Warming up, or draining after SIGTERM. <strong>Retryable</strong> against another replica</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title"><code>detail</code> is not always a string</p>
+<p>Error bodies are FastAPI's <code>{"detail": ...}</code>. <code>detail</code> is a <strong>string</strong> for the errors
+this service raises itself, and a <strong>list of validation objects</strong> when FastAPI rejects
+the request before the handler runs — a <code>POST</code> with <code>Content-Type: application/json</code>
+and no <code>file</code> part returns <code>422</code> in that second shape. A client must not assume a
+string.</p>
+</div>
+<h3 id="environment">Environment<a class="headerlink" href="#environment" title="Permanent link">&para;</a></h3>
+<p><code>.env.example</code> lists every variable with its default and a comment. The ones that change
+behaviour:</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PORT</code> / <code>HOST</code></td>
+<td><code>8000</code> / <code>0.0.0.0</code></td>
+<td>Bind address. <code>127.0.0.1</code> makes the container unreachable</td>
+</tr>
+<tr>
+<td><code>MAX_UPLOAD_MB</code></td>
+<td><code>50</code></td>
+<td>Upload cap</td>
+</tr>
+<tr>
+<td><code>GRACEFUL_SHUTDOWN_S</code></td>
+<td><code>20</code></td>
+<td>Drain window</td>
+</tr>
+<tr>
+<td><code>LOG_LEVEL</code></td>
+<td><code>INFO</code></td>
+<td>Service log level</td>
+</tr>
+<tr>
+<td><code>ALLOWED_ORIGINS</code></td>
+<td><code>*</code></td>
+<td>Blank string means <em>no</em> origins</td>
+</tr>
+<tr>
+<td><code>TRANSLATION_BACKEND</code></td>
+<td><code>lindat</code></td>
+<td>Backend selection</td>
+</tr>
+<tr>
+<td><code>OUTPUT_MODE</code></td>
+<td><code>replace</code></td>
+<td>Default output mode</td>
+</tr>
+<tr>
+<td><code>AMCR_FIELDS_PATH</code></td>
+<td><code>amcr-fields.txt</code></td>
+<td>XPath targets; unreadable ⇒ 422 in metadata mode</td>
+</tr>
+<tr>
+<td><code>TRANSLATION_URL</code> / <code>UDPIPE_URL</code></td>
+<td>LINDAT</td>
+<td>Attachable backing services</td>
+</tr>
+<tr>
+<td><code>LINDAT_MIN_INTERVAL_S</code> / <code>LINDAT_MAX_RETRIES</code> / <code>LINDAT_BACKOFF_BASE_S</code></td>
+<td><code>0.0</code> / <code>4</code> / <code>1.0</code></td>
+<td>Transport policy</td>
+</tr>
+<tr>
+<td><code>LINDAT_GUARD_RETRIES</code></td>
+<td><code>2</code></td>
+<td>Re-requests of a degenerate HTTP-200 reply; the first is immediate</td>
+</tr>
+<tr>
+<td><code>TRANSLATION_RERUN_ROUNDS</code> / <code>TRANSLATION_RERUN_DELAY_S</code></td>
+<td><code>1</code> / <code>10.0</code></td>
+<td>End-of-document re-run of flagged segments; <code>0</code> rounds keeps them as source at once</td>
+</tr>
+<tr>
+<td><code>DEFAULT_SOURCE_LANG</code></td>
+<td><code>cs</code></td>
+<td>The fallback source language under <code>auto</code></td>
+</tr>
+<tr>
+<td><code>LANG_ID_MIN_CONFIDENCE</code> / <code>LANG_ID_MIN_LETTERS</code> / <code>LANG_ID_LANGUAGES</code></td>
+<td><code>0.5</code> / <code>20</code> / —</td>
+<td>When a FastText guess is used; <code>LANG_ID_LANGUAGES</code> narrows the accepted codes</td>
+</tr>
+<tr>
+<td><code>LLM_BASE_URL</code> / <code>LLM_MODEL</code> / <code>LLM_API_KEY</code> / <code>LLM_PROVIDER</code> / <code>LLM_LANGUAGES</code></td>
+<td>—</td>
+<td>Required by <code>openai_compatible</code>; <code>LLM_API_KEY</code> is a secret</td>
+</tr>
+<tr>
+<td><code>LLM_MAX_GLOSSARY_TERMS</code></td>
+<td><code>40</code></td>
+<td>Vocabulary terms injected into one prompt</td>
+</tr>
+<tr>
+<td><code>CT2_MODEL_DIR</code> / <code>CT2_MODEL_FAMILY</code></td>
+<td>— / <code>eurollm</code></td>
+<td>Converted model and its family: <code>eurollm</code>, <code>madlad</code>, <code>nllb</code>, <code>opus</code></td>
+</tr>
+<tr>
+<td><code>CT2_SP_MODEL</code> / <code>CT2_DEVICE</code> / <code>CT2_COMPUTE_TYPE</code> / <code>CT2_LANGUAGES</code></td>
+<td>— / <code>cpu</code> / <code>int8</code> / —</td>
+<td>SentencePiece model, device, precision, language list</td>
+</tr>
+<tr>
+<td><code>*_GUARD_MIN_RATIO</code> / <code>*_GUARD_MAX_RATIO</code></td>
+<td><code>0.25</code> / <code>4.0</code></td>
+<td><code>LLM_</code> and <code>CT2_</code>: reject output shorter or longer than this multiple of the source</td>
+</tr>
+</tbody>
+</table>
+<p>Each remote backend retries a network error, HTTP 429 or 5xx up to <code>*_MAX_RETRIES</code> times,
+sleeping <code>*_BACKOFF_BASE_S × 2^attempt</code> plus jitter, and spaces requests at least
+<code>*_MIN_INTERVAL_S</code> apart.</p>
+<h2 id="alto-dual-pass-reconstruction">ALTO dual-pass reconstruction<a class="headerlink" href="#alto-dual-pass-reconstruction" title="Permanent link">&para;</a></h2>
+<p>Why translated ALTO looks the way it does. ALTO stores a page as blocks of lines of words,
+each word a <code>String</code> with its own coordinates. A translation cannot keep a one-to-one word
+correspondence — languages differ in word count and order — so the tool translates a
+whole block for fluency and uses per-line translations only to decide where each line's
+words go.</p>
+<pre class="mermaid"><code>flowchart LR
+    B["TextBlock&lt;br/&gt;lines of Czech Strings"] --&gt; G["gather + join&lt;br/&gt;block text"]
+    G --&gt; D["resolve the source&lt;br/&gt;language, once per block"]
+    D --&gt; P1["Pass 1&lt;br/&gt;translate the block"]
+    D --&gt; P2["Pass 2&lt;br/&gt;translate each line&lt;br/&gt;(anchors only)"]
+    P1 --&gt; C["check every reply&lt;br/&gt;against its source"]
+    P2 --&gt; C
+    C --&gt; A["align: split Pass-1 tokens&lt;br/&gt;into one bucket per line"]
+    A --&gt; W["write tokens into the Strings:&lt;br/&gt;CONTENT or ALTERNATIVE"]</code></pre>
+<p>Per <code>TextBlock</code>:</p>
+<ol>
+<li><strong>Gather</strong> — reconstruct each <code>TextLine</code>'s text by joining its <code>String</code> <code>CONTENT</code> values.</li>
+<li><strong>Aggregate</strong> — concatenate the block's lines into one string.</li>
+<li><strong>Resolve the language</strong> — once for the whole block, so the block is internally consistent
+   (see <a href="#languages">Languages</a>).</li>
+<li><strong>Pass 1</strong> — translate the whole block. This is the text that is written back.</li>
+<li><strong>Pass 2</strong> — translate each non-empty line of a block with two or more lines. These are
+   <strong>never written</strong>; they are structural anchors telling the aligner how many words each
+   physical line should get.</li>
+<li><strong>Check</strong> — every block translation and every anchor is checked against its own source by
+   the <a href="#degenerate-output-guard">degenerate-output guard</a>. A block or anchor that fails is
+   flagged and re-run at the end of the document; a block that never recovers keeps its
+   source text and is not redistributed.</li>
+<li><strong>Align</strong> — the Pass-1 tokens are partitioned into one bucket per line. A usable anchor
+   drives a search over a ±50 % window around its word count, picking the split that
+   maximises <code>difflib.SequenceMatcher</code> similarity against that anchor; a line whose anchor
+   is unusable gets a share of the remaining tokens by its source word count and is logged
+   <code>approx_alignment</code>. No line with text is left empty while tokens remain, and the last
+   line with text takes the remainder.</li>
+<li><strong>Write</strong> — within a line, tokens are distributed greedily 1-to-1 across the <code>String</code>
+   elements, and <strong>the last <code>String</code> absorbs everything left over</strong>. In <code>replace</code> mode the
+   values go into <code>CONTENT</code> (and an existing block <code>LANG</code> becomes the target language); in
+   <code>append</code> mode <code>CONTENT</code> is untouched and each <code>String</code> gains
+   <code>&lt;ALTERNATIVE PURPOSE="translation:&lt;target&gt;"&gt;</code> holding the same value.</li>
+</ol>
+<p><strong>A block with fewer translated words than lines.</strong> A table column whose repeated cells the
+model merged — forty-two numbers coming back as thirty-nine — cannot be split: a split only
+cuts the translation, never inserts into it, so every cell after a missing word would show
+its neighbour's value. Such a block takes each line's own translation (its anchor) instead;
+a line without a usable one keeps its source text and is logged <code>untranslated</code>. Prose never
+reaches this rule, because its lines hold many words each.</p>
+<p>Guarantees: translated words never cross line boundaries, every <code>String</code> keeps its original
+position, and no Pass-1 token is lost.</p>
+<p><strong>Consequence.</strong> Because tokens are bucketed per line, a <code>String</code> can end up empty or holding
+several words; no box is ever resized. The word-to-box correspondence in the output is
+<strong>manufactured by the bucketing, not observed</strong> — true of the <code>ALTERNATIVE</code> in <code>append</code> mode as
+much as of <code>CONTENT</code> in <code>replace</code> mode: it says which English landed on that box, not what that
+word means. Read translated ALTO line by line, not word by word. <code>append</code> keeps the scanned
+<code>CONTENT</code> so the source text and its geometry survive beside the translation; ALTO 3.1 declares
+<code>ALTERNATIVE</code> with a free-text <code>PURPOSE</code> for exactly this, so the output stays schema-valid.</p>
+<p><strong><code>--fast-align</code></strong> skips Pass 2: each line gets a share of the block's tokens proportional to
+its source word count. It makes no per-line translation calls, at the price of slightly
+coarser line splits; a block with fewer words than lines has every line logged
+<code>approx_alignment</code>.</p>
+<p><strong>Cost.</strong> A page's blocks go out as one call and its lines as another, separated so they can
+be split again afterwards. A reply is accepted only when its line count matches <strong>and</strong> every
+item passes the guard; otherwise each item is requested on its own. Each document's log ends
+with a summary counting clean batches, line-count mismatches, implausible replies, transport
+errors, flagged and recovered segments, and lines placed by word count — at <code>WARNING</code> whenever
+anything other than clean batching happened — so a slow run explains itself.</p>
+<h2 id="degenerate-output-guard">Degenerate-output guard<a class="headerlink" href="#degenerate-output-guard" title="Permanent link">&para;</a></h2>
+<p>A translation service can answer HTTP 200 with text that is not a translation — one word
+repeated until a length cap, an empty string, a reply cut short. Every reply is checked
+against its own source by <code>processors/quality.py</code> before it is used:</p>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Rejects</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>empty</td>
+<td>no text for a non-empty source</td>
+</tr>
+<tr>
+<td>runaway</td>
+<td>more than three times the source's tokens plus eight</td>
+</tr>
+<tr>
+<td>truncated</td>
+<td>under a fifth of the source's tokens, for a source of ten tokens or more</td>
+</tr>
+<tr>
+<td>repetition</td>
+<td>a run of a 1–3-token unit repeated four or more times, or dominating it</td>
+</tr>
+<tr>
+<td>all identical</td>
+<td>every token the same, for a source that is not</td>
+</tr>
+</tbody>
+</table>
+<p>What happens to a rejected reply:</p>
+<ol>
+<li><strong>Re-requested at once</strong> by the <code>lindat</code> backend, up to <code>LINDAT_GUARD_RETRIES</code> times (the
+   first immediately, later ones after a back-off). The <code>openai_compatible</code> and <code>ct2</code>
+   backends apply the same check and their own length guards. Each document logs one line
+   counting the re-requests, and paradata records <code>lindat_degenerate_replies</code>.</li>
+<li><strong>Flagged</strong>, if still unusable, and <strong>re-run once the whole document is done</strong>
+   (<code>TRANSLATION_RERUN_ROUNDS</code> rounds, each after <code>TRANSLATION_RERUN_DELAY_S</code>), one segment per
+   request. A recovered segment is logged <code>rerun</code>.</li>
+<li><strong>Kept as source</strong>, if it never recovers: the element or the block's <code>String</code>s keep their
+   source text, nothing is appended, and the log row is <code>untranslated</code> with an empty target.</li>
+</ol>
+<h2 id="metadata-amcr-mode">Metadata (AMCR) mode<a class="headerlink" href="#metadata-amcr-mode" title="Permanent link">&para;</a></h2>
+<p>Used for any XML that is not ALTO — in practice AMCR records, bare or inside an OAI-PMH
+<code>GetRecord</code> envelope.</p>
+<ol>
+<li><strong>Parse safely.</strong> The parser resolves no entities, loads no DTD and makes no network
+   requests, so an uploaded file cannot pull in external content.</li>
+<li><strong>Find the namespaces.</strong> The whole tree is scanned for the AMCR and OAI-PMH namespace
+   URIs, which are bound to the prefixes <code>amcr:</code> and <code>oai:</code> whatever prefixes the file itself
+   uses — so the same XPaths work on a bare record and on one wrapped in an envelope.</li>
+<li><strong>Select the fields.</strong> Each XPath from <code>amcr-fields.txt</code> (or <code>--xpaths</code>) is evaluated;
+   every matching element with non-empty text is one unit of translation.</li>
+<li><strong>Resolve the language, per field.</strong> With <code>auto</code>, the record's language is resolved once
+   from all of its targeted fields, and each field on its own under the same rules — a
+   field too short or too ambiguous inherits the record's language (see <a href="#languages">Languages</a>).</li>
+<li><strong>Write back.</strong> In <code>replace</code> mode the element's text is overwritten. In <code>append</code> mode a
+   sibling with the same tag and attributes is inserted after it, marked
+   <code>xml:lang="&lt;target&gt;"</code>, and the original is marked with its source language if it had no
+   <code>xml:lang</code> — the same bilingual shape AMCR uses for its own thesaurus. Every reply passes
+   the <a href="#degenerate-output-guard">degenerate-output guard</a> first; a field that never recovers
+   is left untouched.</li>
+<li><strong>Save.</strong> Everything else — other elements, attributes, comments, whitespace — is left as
+   it was; the file is written without re-indentation, so a diff against the source shows only
+   the translated fields.</li>
+</ol>
+<p><strong><code>append</code> is idempotent.</strong> A field that already has a target-language sibling, or is itself
+one, is skipped without an API call, so re-running over an appended file changes nothing.
+<code>replace</code> output carries no such marker. <strong><code>--xsd</code></strong> validates the finished metadata file
+against a schema and reports failures as warnings — for an OAI-PMH response, each record inside
+the envelope — and resolves the schema's own imports itself, including the W3C XML-namespace
+schema AMCR's imports for <code>xml:lang</code>. ALTO output is not validated.</p>
+<p><strong>AMCR 2.2 does not accept the <code>append</code> shape.</strong> Its free-text fields (<code>nazev</code>, <code>popis</code>,
+<code>poznamka</code>, <code>lokalizace_okolnosti</code>, …) neither declare <code>xml:lang</code> nor allow a second
+occurrence, so an appended AMCR record fails validation on both halves of the pair, while the
+same record in <code>replace</code> output validates. A run that appends to AMCR records logs one warning
+saying so. Where a schema-valid AMCR record is required, translate with <code>replace</code>.</p>
+<h2 id="vocabulary-protection">Vocabulary protection<a class="headerlink" href="#vocabulary-protection" title="Permanent link">&para;</a></h2>
+<p>Archaeological terms have fixed English equivalents that a general translation model does
+not know. The translator keeps them fixed by one of two mechanisms, chosen by backend:</p>
+<p><strong>Tag-and-Protect</strong> — <code>lindat</code>:</p>
+<ol>
+<li><strong>Phrases.</strong> Multi-word vocabulary entries are found case-insensitively, longest first,
+   and each occurrence is replaced by a sentinel such as <code>Xtermzzz0z</code> — a purely alphabetic
+   token that translation models copy through unchanged.</li>
+<li><strong>Words.</strong> The text is lemmatised with UDPipe, and each single word whose lemma is in the
+   vocabulary is replaced by a sentinel too — unless the word is plural, because the
+   vocabulary stores singular English terms and freezing one onto a plural would break
+   agreement; plurals are left for the model to translate.</li>
+<li><strong>Translate</strong> the protected text.</li>
+<li><strong>Restore</strong> each sentinel to its English term: exactly, then case-insensitively, then
+   tolerating spaces the model inserted inside it. Any sentinel debris left over is removed
+   before the text is written or logged.</li>
+</ol>
+<p><strong>Glossary in the prompt</strong> — <code>openai_compatible</code>, and <code>ct2</code> with EuroLLM: the vocabulary
+entries found in the text (at most <code>LLM_MAX_GLOSSARY_TERMS</code>, longest first) are sent with
+the request as <code>source = target</code> lines, with an instruction to use exactly those terms.</p>
+<p>The <code>ct2</code> NMT families — MADLAD-400, NLLB-200 and Opus-MT — translate without vocabulary
+control.</p>
+<p>The vocabulary is a CSV of <code>source_lemma,target_translation</code>, optionally followed by
+<code>source,source_id,uri</code> — which harvest a term came from and the URI of its concept, so a
+protected term stays traceable. Both the two-column and the five-column form load. How
+the file is built is described in <a href="../../../pipelines/#w7--vocabulary-harvesting--review-the-translators-half">Pipelines → W7</a>.</p>
+<h2 id="outputs">Outputs<a class="headerlink" href="#outputs" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Artefact</th>
+<th>Name</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Translated document</td>
+<td><code>&lt;stem&gt;_&lt;target_lang&gt;&lt;suffix&gt;</code> — e.g. <code>MTX201501307_anon_en.alto.xml</code></td>
+<td>the same document, same tags, same coordinates</td>
+</tr>
+<tr>
+<td>Translation log</td>
+<td><code>&lt;original_filename&gt;_log.csv</code></td>
+<td><code>file, page_num, line_num, text_&lt;source_lang&gt;, text_&lt;target_lang&gt;, status</code> — <strong>the two text column names are built from the run's languages</strong>, so a header may read <code>text_auto, text_en</code>. ALTO: <code>page_num</code> is the 1-based page, <code>line_num</code> the <code>TextLine</code> element id. Metadata: <code>page_num</code> empty, <code>line_num</code> the full XPath. <code>status</code> is <code>ok</code>, <code>rerun</code>, <code>approx_alignment</code> or <code>untranslated</code>. Rows come in document order; the file is written as <code>&lt;name&gt;_log.csv.partial</code> and moved into place when the document is done, so a reader never sees an empty or half-written log</td>
+</tr>
+<tr>
+<td>Paradata</td>
+<td><code>YYMMDD-HHmmss_translator.json</code></td>
+<td>schema 2.0 — tool version, run id, resolved licence with its full component derivation, timings, config (including <code>chunk_limit: 4000</code>, the language-ID model, the translation API, the source-language rules in force, protected-term and re-requested-reply counts per document), statistics, and skipped files</td>
+</tr>
+<tr>
+<td>Document record</td>
+<td><code>&lt;doc_id&gt;.document.json</code></td>
+<td>see below</td>
+</tr>
+<tr>
+<td>RO-Crate</td>
+<td><code>ro-crate-metadata.json</code></td>
+<td>only from <code>atrium_rocrate.py</code>'s own CLI</td>
+</tr>
+</tbody>
+</table>
+<h3 id="what-lands-in-the-document-record">What lands in the document record<a class="headerlink" href="#what-lands-in-the-document-record" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">"translations"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">"source_lang"</span><span class="p">:</span><span class="w"> </span><span class="s2">"auto"</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">"target_lang"</span><span class="p">:</span><span class="w"> </span><span class="s2">"en"</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">"backend"</span><span class="p">:</span><span class="w"> </span><span class="s2">"lindat"</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">"output_mode"</span><span class="p">:</span><span class="w"> </span><span class="s2">"replace"</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">"detected_source_lang"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cs"</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">}</span>
+</code></pre></div>
+<p><code>output_mode</code> and <code>detected_source_lang</code> ride along because <code>additionalProperties</code> is true on
+this block. A consumer that finds English in a field needs to know whether the Czech was kept
+beside it or overwritten; and with <code>source_lang: "auto"</code> the literal says nothing about the
+record, so the language the document resolved to is recorded beside it (only when detection
+ran).</p>
+<p>The translated <strong>text</strong> is not stored in the record. It persists as
+<code>derived_from.translated_xml</code>, plus a licence-detail entry. <code>entities[].translation_en</code> is
+declared for this tool in the schema but not produced: entities are written by nlp-enrich,
+which runs after the translator. The record's <code>doc_id</code> is
+<strong>inherited</strong> from the baseline and never re-derived from the input filename, because the
+input is a page (<code>&lt;doc&gt;-1.alto.xml</code>), not the document. The output is validated before
+<code>finalize()</code>, so a failed record is never emitted. Its licence detail is the run's full
+resolution: the backend's components are recorded before the record takes it, so the record
+of a one-file run — one pipeline stage, one <code>/translate</code> call — states the same licence as any
+record of a batch.</p>
+<h2 id="licence-is-computed-not-declared">Licence is computed, not declared<a class="headerlink" href="#licence-is-computed-not-declared" title="Permanent link">&para;</a></h2>
+<p><code>para_config.txt</code> declares each component, its licence and whether it is <code>always</code> or
+<code>conditional</code>; <code>para_licenses</code> resolves the run.</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Licence</th>
+<th>Counts when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fasttext</code></td>
+<td>CC BY-NC 4.0</td>
+<td>language auto-detection actually ran</td>
+</tr>
+<tr>
+<td><code>lindat_cubbitt</code></td>
+<td>CC BY-NC-SA 4.0</td>
+<td>the <code>lindat</code> backend was used</td>
+</tr>
+<tr>
+<td><code>udpipe2_engine</code></td>
+<td>MPL 2.0</td>
+<td>vocabulary lemma matching ran</td>
+</tr>
+<tr>
+<td><code>udpipe2_models</code></td>
+<td>CC BY-NC-SA 4.0</td>
+<td>as above</td>
+</tr>
+<tr>
+<td><code>amcr_vocab</code></td>
+<td>CC BY-NC 4.0</td>
+<td>the AMCR vocabulary was loaded</td>
+</tr>
+<tr>
+<td><code>teater_data</code></td>
+<td>CC BY-NC 4.0</td>
+<td>the TEATER thesaurus was loaded</td>
+</tr>
+<tr>
+<td><code>llm_api</code></td>
+<td><em>"LLM provider ToS"</em></td>
+<td>the <code>openai_compatible</code> backend was used</td>
+</tr>
+<tr>
+<td><code>ctranslate2</code></td>
+<td>MIT</td>
+<td>CT2 backend</td>
+</tr>
+<tr>
+<td><code>eurollm</code> / <code>madlad400</code></td>
+<td>Apache-2.0</td>
+<td>CT2 models</td>
+</tr>
+<tr>
+<td><code>opus_mt</code></td>
+<td>CC BY 4.0</td>
+<td>CT2 model (tc-big line; older Apache-2.0)</td>
+</tr>
+<tr>
+<td><code>nllb200</code></td>
+<td>CC BY-NC 4.0</td>
+<td>CT2 model — <strong>non-commercial</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>A default run resolves to CC BY-NC-SA 4.0.</strong> <code>llm_api</code> deliberately carries an
+unrecognised licence string, so <code>para_licenses</code> treats it as maximally restrictive —
+ranked highest, with both the non-commercial and share-alike flags set — and warns: the
+safe default for a prototype backend whose provider terms are not a CC or OSS licence.
+Every <code>CT2_MODEL_FAMILY</code> maps to one of the model rows above; an undeclared component
+would be logged as <code>UNKNOWN</code>, which resolves the same way.</p>
+<p><strong>The permissive recipe</strong> — all three parts are required:</p>
+<ol>
+<li><code>--backend ct2</code> with a permissive model — EuroLLM or MADLAD-400 (Apache-2.0) or
+   Opus-MT (CC BY 4.0), <strong>not</strong> NLLB-200 — see <a href="../#the-three-backends">Overview</a>;</li>
+<li>an explicit <code>--source_lang</code>, so FastText never loads and its CC BY-NC weights never count;</li>
+<li>a permissive or empty vocabulary, so AMCR and TEATER never count.</li>
+</ol>
+<h2 id="languages">Languages<a class="headerlink" href="#languages" title="Permanent link">&para;</a></h2>
+<p>Detection model: <code>facebook/fasttext-language-identification</code>. Its ISO 639-3 labels are mapped
+to ISO 639-1 by <code>processors/language.py</code> (<code>ces→cs</code>, <code>slk→sk</code>, <code>deu→de</code>, <code>eng→en</code>, … — 43
+languages: those of Europe that FastText distinguishes, plus Latin, Esperanto and Hindi); a
+label outside the map is never used as a language code. Only letters are scored: the text is
+lower-cased, and everything that is not a letter becomes a space.</p>
+<p>With <code>--source_lang auto</code>, each block (ALTO) or field (metadata) resolves to the first of:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Basis</th>
+<th>Used when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>detected</code></td>
+<td>the text has at least <code>LANG_ID_MIN_LETTERS</code> (20) letters, FastText's best guess scores at least <code>LANG_ID_MIN_CONFIDENCE</code> (0.5), and it is a language the backend can translate into the target</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>hint</code></td>
+<td>the element's own label — ALTO <code>LANG</code> / <code>language</code>, metadata <code>xml:lang</code> — names a language the backend can translate</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>context</code></td>
+<td>the language of the whole document, resolved once, up front, by rule 1 over its first ~20 000 characters</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>default</code></td>
+<td><code>--default-source-lang</code> → <code>default_source_lang</code> → <code>DEFAULT_SOURCE_LANG</code> → <code>cs</code></td>
+</tr>
+</tbody>
+</table>
+<p>The languages "the backend can translate" are those it offers into the target (the <code>lindat</code>
+model list, or <code>LLM_LANGUAGES</code> / <code>CT2_LANGUAGES</code>), narrowed by <code>LANG_ID_LANGUAGES</code> when set.
+Each document logs what was detected and what was overridden; paradata records the rules in
+force; the document record gets <code>translations.detected_source_lang</code>. If the model cannot be
+loaded, nothing is detected and rules 2–4 decide; the service reports the failure on
+<code>/health?deep=true</code>. Passing <code>--source_lang</code> skips detection entirely.</p>
+<p>UDPipe lemmatisation models are named per language — <code>czech-pdt-ud-2.15-241121</code>,
+<code>slovak-snk-ud-2.15-241121</code>, <code>polish-pdb-ud-2.15-241121</code>, <code>german-gsd-ud-2.15-241121</code>,
+<code>french-gsd-ud-2.15-241121</code>, <code>russian-syntagrus-ud-2.15-241121</code>,
+<code>ukrainian-iu-ud-2.15-241121</code>, <code>english-ewt-ud-2.15-241121</code>. Any other source language is
+not lemmatised: the single-word vocabulary pass is skipped for it, with one warning.
+Multi-word vocabulary phrases are still protected.</p>
+<p>Which language <strong>pairs</strong> are available depends on the backend: <code>lindat</code> reads the model
+list from the LINDAT API's <code>/models</code> endpoint and offers the <code>&lt;src&gt;-&lt;tgt&gt;</code> pairs it finds —
+falling back to a built-in list of six pairs into English when the API cannot be reached;
+<code>openai_compatible</code> and <code>ct2</code> offer the languages listed in <code>LLM_LANGUAGES</code> /
+<code>CT2_LANGUAGES</code>.</p>
+<h2 id="code-map">Code map<a class="headerlink" href="#code-map" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>main.py</code></td>
+<td>the CLI: argument parsing, input discovery and URL download, per-file loop, record, paradata</td>
+</tr>
+<tr>
+<td><code>utils.py</code></td>
+<td>ALTO dual-pass processing, metadata processing, XSD validation, output modes</td>
+</tr>
+<tr>
+<td><code>processors/backend.py</code></td>
+<td>the <code>TranslationBackend</code> protocol and the backend registry</td>
+</tr>
+<tr>
+<td><code>processors/translator.py</code></td>
+<td><code>LindatTranslator</code> — CUBBITT over HTTP, with Tag-and-Protect</td>
+</tr>
+<tr>
+<td><code>processors/llm_translator.py</code></td>
+<td><code>LLMTranslator</code> — any OpenAI-compatible chat API, glossary in the prompt</td>
+</tr>
+<tr>
+<td><code>processors/ct2_translator.py</code></td>
+<td><code>CT2Translator</code> — self-hosted CTranslate2 models</td>
+</tr>
+<tr>
+<td><code>processors/identifier.py</code></td>
+<td>FastText language identification</td>
+</tr>
+<tr>
+<td><code>processors/language.py</code></td>
+<td>the ISO 639-3 → 639-1 map and the source-language rules</td>
+</tr>
+<tr>
+<td><code>processors/quality.py</code></td>
+<td>the degenerate-output check applied to every reply</td>
+</tr>
+<tr>
+<td><code>processors/lemmatizer.py</code></td>
+<td>UDPipe lemmatisation over HTTP</td>
+</tr>
+<tr>
+<td><code>processors/vocab.py</code></td>
+<td>vocabulary CSV loading and term matching</td>
+</tr>
+<tr>
+<td><code>processors/chunking.py</code>, <code>http_retry.py</code></td>
+<td>text chunking and the shared retry / throttle policy</td>
+</tr>
+<tr>
+<td><code>service/api.py</code></td>
+<td>the FastAPI service around the same processing functions</td>
+</tr>
+<tr>
+<td><code>load_vocab.py</code></td>
+<td>vocabulary harvesting from AMCR and TEATER</td>
+</tr>
+</tbody>
+</table>
+<h2 id="design-limits">Design limits<a class="headerlink" href="#design-limits" title="Permanent link">&para;</a></h2>
+<p>These follow from how the tool works, and are worth knowing before relying on its output:</p>
+<ul>
+<li><strong>Word boxes in translated ALTO are approximate.</strong> Line boundaries are exact; the placement
+  of words within a line is manufactured (see above).</li>
+<li><strong>Output is not validated for ALTO.</strong> <code>--xsd</code> applies to metadata output only. (ALTO output
+  of either mode is valid against ALTO 3.1.)</li>
+<li><strong>AMCR <code>append</code> output is not AMCR-2.2-valid.</strong> Use <code>replace</code> where the record must validate.</li>
+<li><strong>No RO-Crate is produced by a run.</strong> <code>atrium_rocrate.py</code> is a separate step, run over
+  finished records; see <a href="../../../contracts/rocrate/">RO-Crate export</a>.</li>
+<li><strong>Language coverage is the backend's.</strong> CUBBITT is Czech-centric; other pairs need another
+  backend.</li>
+<li><strong><code>entities[].translation_en</code> is not produced</strong>, since entities are created later in the
+  pipeline.</li>
+</ul>
+<h2 id="sources">Sources<a class="headerlink" href="#sources" title="Permanent link">&para;</a></h2>
+<p>Read from <code>ufal/atrium-translator</code> at release <strong><code>v1.2.1-beta</code></strong> — branch <strong><code>master</code></strong>:
+<code>v1.2.0-beta</code> (<code>3f2f1b6</code>) plus the record-licence, <code>--xsd</code> and image-name fixes; the AMCR
+and ALTO schema results were produced by validating the repository's <code>data_samples/</code> against
+the published AMCR 2.2 and ALTO 3.1 schemas. This table records <strong>provenance</strong>, not a build
+instruction.</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>What was taken from it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>main.py</code> (<code>parse_arguments</code>, <code>main</code>)</td>
+<td>the flag table, defaults and exit codes</td>
+</tr>
+<tr>
+<td><code>config.txt</code>, <code>para_config.txt</code>, <code>amcr-fields.txt</code></td>
+<td>configuration and the licence component table</td>
+</tr>
+<tr>
+<td><code>service/api.py</code>, <code>service/README.md</code></td>
+<td>limits, request fields, response shapes, errors</td>
+</tr>
+<tr>
+<td><code>.env.example</code></td>
+<td>the environment table and transport policy</td>
+</tr>
+<tr>
+<td><code>utils.py</code></td>
+<td>ALTO alignment, batching, metadata mode, XSD validation, the record block</td>
+</tr>
+<tr>
+<td><code>processors/quality.py</code>, <code>processors/language.py</code></td>
+<td>the degenerate-output guard, the source-language rules</td>
+</tr>
+<tr>
+<td><code>processors/translator.py</code>, <code>llm_translator.py</code>, <code>vocab.py</code></td>
+<td>Tag-and-Protect, the prompt glossary, the vocabulary format</td>
+</tr>
+<tr>
+<td><code>processors/backend.py</code>, <code>identifier.py</code>, <code>lemmatizer.py</code></td>
+<td>the registry, language identification, UDPipe models</td>
+</tr>
+<tr>
+<td><code>README.md</code> §§ Logic Overview, ALTO Dual-Pass Reconstruction</td>
+<td>the six-stage algorithm</td>
+</tr>
+<tr>
+<td><code>docs/translation-backends.md</code></td>
+<td>backend comparison and the permissive recipe</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Developed by UFAL, Charles University · funded by ATRIUM · MIT licensed
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.sections", "navigation.top", "navigation.indexes", "navigation.tracking", "search.highlight", "search.suggest", "content.code.copy", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

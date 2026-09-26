@@ -1,0 +1,2839 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for the UFAL side of the ATRIUM project: the page classifier, the ALTO post-processor, the translator, and the NLP and LLM enrichers.">
+      
+      
+      
+        <link rel="canonical" href="https://ufal.github.io/atrium-project/pipelines/">
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../workflows/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Pipelines - ATRIUM — UFAL documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#pipelines" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="ATRIUM — UFAL documentation" class="md-header__button md-logo" aria-label="ATRIUM — UFAL documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ATRIUM — UFAL documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Pipelines
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ufal/atrium-project" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ufal/atrium-project
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="ATRIUM — UFAL documentation" class="md-nav__button md-logo" aria-label="ATRIUM — UFAL documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    ATRIUM — UFAL documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ufal/atrium-project" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ufal/atrium-project
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipelines
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipelines
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-stages-connect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the stages connect
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How the stages connect">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#layer-1--the-file-dag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 1 — the file DAG
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#layer-2--the-record-accretion-chain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 2 — the record accretion chain
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The workflows
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The workflows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#w1--scanned--ocr-document-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        W1 — Scanned / OCR document pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#w4--containerised-service--api-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        W4 — Containerised service / API workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#w5--agent-skill-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        W5 — Agent-Skill workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#w6--e2e-smoke-the-integration-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        W6 — E2E smoke: the integration contract
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#w7--vocabulary-harvesting--review-the-translators-half" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        W7 — Vocabulary harvesting &amp; review (the translator's half)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#w8--training-and-evaluation-page-classification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        W8 — Training and evaluation (page-classification)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#w12--annotation-round-trip-page-classifications-half" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        W12 — Annotation round trip (page-classification's half)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#w13--ro-crate-export--fair-publication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        W13 — RO-Crate export / FAIR publication
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#other-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Other workflows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../workflows/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflows
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Workflows
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/page-classification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    page-classification
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/alto-postprocess/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    alto-postprocess
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/translator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    translator
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/nlp-enrich/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    nlp-enrich
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/llm-enrich/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    llm-enrich
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../external-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    External tools & services
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ecosystem
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Ecosystem
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecosystem/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecosystem/repository-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository map
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecosystem/document-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The document contract
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contracts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contracts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/rocrate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RO-Crate export
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/skos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SKOS & the ATRIUM vocabulary
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schemas
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent skills
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing-standards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing standards
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tools
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tools
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10_1" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../tools/page-classification/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    page-classification
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_10_1" id="__nav_10_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    page-classification
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/page-classification/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/page-classification/reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/page-classification/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/page-classification/history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../tools/translator/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    translator
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_10_2" id="__nav_10_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    translator
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/translator/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/translator/reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/translator/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/translator/history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development-history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development history
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-stages-connect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the stages connect
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How the stages connect">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#layer-1--the-file-dag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 1 — the file DAG
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#layer-2--the-record-accretion-chain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 2 — the record accretion chain
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The workflows
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The workflows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#w1--scanned--ocr-document-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        W1 — Scanned / OCR document pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#w4--containerised-service--api-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        W4 — Containerised service / API workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#w5--agent-skill-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        W5 — Agent-Skill workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#w6--e2e-smoke-the-integration-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        W6 — E2E smoke: the integration contract
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#w7--vocabulary-harvesting--review-the-translators-half" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        W7 — Vocabulary harvesting &amp; review (the translator's half)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#w8--training-and-evaluation-page-classification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        W8 — Training and evaluation (page-classification)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#w12--annotation-round-trip-page-classifications-half" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        W12 — Annotation round trip (page-classification's half)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#w13--ro-crate-export--fair-publication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        W13 — RO-Crate export / FAIR publication
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#other-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Other workflows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="pipelines">Pipelines<a class="headerlink" href="#pipelines" title="Permanent link">&para;</a></h1>
+<p>What the tools do, end to end: what goes in, what each stage does, what comes out, and what
+the point of it is.</p>
+<div class="admonition info">
+<p class="admonition-title">Scope</p>
+<p>Every workflow that runs through <strong>page-classification</strong> or the <strong>translator</strong> is
+described in full. The five that belong only to alto-postprocess, nlp-enrich and
+llm-enrich are listed under <a href="#other-workflows">Other workflows</a>.</p>
+</div>
+<p>This page follows the tools together. Each tool's <strong>own</strong> workflow — its steps, formats and
+licence, told the way its SSH Open Marketplace and Galaxy records tell it — is on
+<a href="../workflows/">Workflows</a>.</p>
+<p><strong>The workflows at a glance:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Workflow</th>
+<th>In one line</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>W1</td>
+<td><a href="#w1--scanned--ocr-document-pipeline">Scanned / OCR document pipeline</a></td>
+<td>a scanned page in, a searchable, enriched, documented record out</td>
+</tr>
+<tr>
+<td>W2</td>
+<td>Born-digital pipeline</td>
+<td>the same, for PDFs and DOCX files that already have a text layer</td>
+</tr>
+<tr>
+<td>W3</td>
+<td>Digital → OCR re-origination</td>
+<td>handing a born-digital document back to OCR when its text layer is unusable</td>
+</tr>
+<tr>
+<td>W4</td>
+<td><a href="#w4--containerised-service--api-workflow">Containerised service / API</a></td>
+<td>any tool, over HTTP, one document per request</td>
+</tr>
+<tr>
+<td>W5</td>
+<td><a href="#w5--agent-skill-workflow">Agent Skill</a></td>
+<td>a coding agent using a tool through its service</td>
+</tr>
+<tr>
+<td>W6</td>
+<td><a href="#w6--e2e-smoke-the-integration-contract">E2E smoke</a></td>
+<td>the automated test that runs the whole chain</td>
+</tr>
+<tr>
+<td>W7</td>
+<td><a href="#w7--vocabulary-harvesting--review-the-translators-half">Vocabulary harvesting</a></td>
+<td>building the term list that keeps translations consistent</td>
+</tr>
+<tr>
+<td>W8</td>
+<td><a href="#w8--training-and-evaluation-page-classification">Training and evaluation</a></td>
+<td>making and scoring a page-classification model</td>
+</tr>
+<tr>
+<td>W9</td>
+<td>Parameter optimisation</td>
+<td>tuning alto-postprocess's line-categorisation rules</td>
+</tr>
+<tr>
+<td>W10</td>
+<td>Document-understanding benchmark</td>
+<td>comparing models on sampled documents</td>
+</tr>
+<tr>
+<td>W11</td>
+<td>Format adaptation</td>
+<td>bringing PDF, office files, PAGE XML, hOCR, … in: as line tables (alto-postprocess) or as TEITOK (flexiconv)</td>
+</tr>
+<tr>
+<td>W12</td>
+<td><a href="#w12--annotation-round-trip-page-classifications-half">Annotation round trip</a></td>
+<td>turning PDFs into a labelled training set, and corrections back into it</td>
+</tr>
+<tr>
+<td>W13</td>
+<td><a href="#w13--ro-crate-export--fair-publication">RO-Crate export</a></td>
+<td>packaging finished records for a repository or catalogue</td>
+</tr>
+</tbody>
+</table>
+<h2 id="how-the-stages-connect">How the stages connect<a class="headerlink" href="#how-the-stages-connect" title="Permanent link">&para;</a></h2>
+<p>A pipeline diagram with five boxes in a row suggests five file handoffs. The files actually
+move differently:</p>
+<ul>
+<li><strong>page-classification informs a routing decision.</strong> Its categories tell a person or a
+  script which pages go to OCR, HTR, table or image extraction; the next stage,
+  alto-postprocess, works from the OCR output and does not read <code>page_categories</code>.</li>
+<li><strong>alto-postprocess is where the files fan out.</strong> It writes per-page ALTO (<code>PAGE_ALTO/</code>) for
+  the translator and a per-line table (<code>DOC_LINE_CATEG/</code>) for nlp-enrich and llm-enrich.</li>
+<li><strong>The translator's output is an end product.</strong> <code>TRANSLATED/</code> holds English editions for
+  readers; no later stage reads it.</li>
+<li><strong>nlp-enrich reads <code>DOC_LINE_CATEG/</code> and the original <code>ALTO/</code></strong>, and writes <code>TEITOK/</code>,
+  which llm-enrich reads.</li>
+</ul>
+<p>So there are three file handoffs — <code>PAGE_ALTO/</code>, <code>DOC_LINE_CATEG/</code> and <code>TEITOK/</code> — and one
+thing that does run through every stage in order: the <strong>record</strong>. This page draws both
+layers.</p>
+<h3 id="layer-1--the-file-dag">Layer 1 — the file DAG<a class="headerlink" href="#layer-1--the-file-dag" title="Permanent link">&para;</a></h3>
+<p>It fans out from <code>alto-postprocess</code> and terminates at the translator.</p>
+<pre class="mermaid"><code>flowchart LR
+  SCAN[Scanned page image] --&gt; PC[page-classification]
+  PC -. informs a human&lt;br/&gt;routing decision .-&gt; ALTO[alto-postprocess]
+  OCR[ALTO XML from OCR] --&gt; ALTO
+  ALTO --&gt; PA[PAGE_ALTO/]
+  ALTO --&gt; DLC[DOC_LINE_CATEG/]
+  PA --&gt; TR[translator]
+  TR --&gt; TXL[TRANSLATED/]
+  TXL --&gt; END(((end product)))
+  DLC --&gt; NLP[nlp-enrich]
+  OCR --&gt; NLP
+  DLC --&gt; LLM[llm-enrich]
+  NLP --&gt; TT[TEITOK/]
+  TT --&gt; LLM</code></pre>
+<h3 id="layer-2--the-record-accretion-chain">Layer 2 — the record accretion chain<a class="headerlink" href="#layer-2--the-record-accretion-chain" title="Permanent link">&para;</a></h3>
+<p>Each stage takes <code>--document-json</code> in, writes <strong>only the block it owns</strong>, deep-copies
+everything else, and stamps <code>assembled.blocks[&lt;block&gt;]</code> with its <code>program</code>, <code>run_id</code> and
+<code>paradata_ref</code>. Licences are merged through <code>para_licenses</code>, so the record carries the
+resolved licence of the whole chain rather than of the last writer.</p>
+<pre class="mermaid"><code>flowchart LR
+  P1["1_pc.json&lt;br/&gt;page_categories"] --&gt; P2["2_alto.json&lt;br/&gt;pages · content · lines · tables"]
+  P2 --&gt; P3["3_translate.json&lt;br/&gt;translations"]
+  P3 --&gt; P4["4_nlp.json&lt;br/&gt;entities"]
+  P4 --&gt; P5["5_llm.json&lt;br/&gt;enrichment"]</code></pre>
+<p>Who may write what is declared once, in the hub-canonical <code>BLOCK_OWNERS</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Block</th>
+<th>Owner</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pages</code>, <code>content</code>, <code>lines</code>, <code>tables</code></td>
+<td><code>alto-postprocess</code> <strong>or</strong> <code>digital-convert</code>, decided by <code>source.origin</code></td>
+</tr>
+<tr>
+<td><code>page_categories</code></td>
+<td><code>page-classification</code></td>
+</tr>
+<tr>
+<td><code>translations</code></td>
+<td><code>translator</code></td>
+</tr>
+<tr>
+<td><code>entities</code></td>
+<td><code>nlp-enrich</code></td>
+</tr>
+<tr>
+<td><code>enrichment</code>, <code>forms</code></td>
+<td><code>llm-enrich</code></td>
+</tr>
+</tbody>
+</table>
+<p>That table authorises <strong>writes</strong>. The read-time answer to "who wrote this block in <em>this</em>
+record" is <code>assembled.blocks[&lt;block&gt;].program</code>, and for a field-split block
+<code>provenance.contributors[]</code> — the stamp names only the most recent writer.</p>
+<h2 id="the-workflows">The workflows<a class="headerlink" href="#the-workflows" title="Permanent link">&para;</a></h2>
+<h3 id="w1--scanned--ocr-document-pipeline">W1 — Scanned / OCR document pipeline<a class="headerlink" href="#w1--scanned--ocr-document-pipeline" title="Permanent link">&para;</a></h3>
+<p><strong>Purpose.</strong> Take a scanned archival page and end with a searchable, enriched, FAIR record
+of the document it belongs to.</p>
+<p><strong>Inputs.</strong> A page image, and — for every stage after the first — the ALTO XML produced by
+OCR.</p>
+<p><strong>Stages.</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Stage</th>
+<th>Reads</th>
+<th>Writes</th>
+<th>Block</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><a href="../tools/page-classification/">page-classification</a></td>
+<td>the page image</td>
+<td>a Top-N CSV</td>
+<td><code>page_categories</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>alto-postprocess</td>
+<td><code>ALTO/</code></td>
+<td><code>PAGE_ALTO/</code>, <code>DOC_LINE_CATEG/</code></td>
+<td><code>pages</code>, <code>content</code>, <code>lines</code>, <code>tables</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td><a href="../tools/translator/">translator</a></td>
+<td><code>PAGE_ALTO/&lt;doc&gt;/&lt;doc&gt;-N.alto.xml</code></td>
+<td><code>TRANSLATED/</code></td>
+<td><code>translations</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>nlp-enrich</td>
+<td><code>DOC_LINE_CATEG/</code> + the original <code>ALTO/</code></td>
+<td><code>TEITOK/</code></td>
+<td><code>entities</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>llm-enrich</td>
+<td><code>DOC_LINE_CATEG/</code>, <code>TEITOK/</code></td>
+<td>enrichment output</td>
+<td><code>enrichment</code></td>
+</tr>
+</tbody>
+</table>
+<p>alto-postprocess also takes OCR output that is not ALTO — PAGE XML, hOCR, ABBYY FineReader XML,
+DjVuXML, Tesseract TSV, OCR JSON, a PDF's OCR layer — through its text-lines and json-keys
+methods (<a href="#other-workflows">W11</a>). Those give the same <code>DOC_LINE_CATEG/</code> table, but no
+<code>PAGE_ALTO/</code> for the translator and no page layout for nlp-enrich's TEITOK, which takes its
+boxes from the ALTO file (or from a flexiconv conversion). Its ALTO methods split ALTO v3 files
+only; v2 and v4 go through text-lines. The formats, their standards and what is kept of each are
+in alto-postprocess's
+<a href="https://github.com/ufal/atrium-alto-postprocess/blob/master/docs/text_inputs.md">input formats reference</a>.</p>
+<p><strong>Outputs.</strong> The translated document, the TEITOK XML, and one <code>atrium_document</code> record that
+has accreted every stage's block — which <code>atrium_rocrate.py</code> can then map, granularity
+intact, into an RO-Crate.</p>
+<p><strong>What the user actually gets.</strong> A routing decision for each page (stage 1), a cleaned
+positional text layer with per-line quality scores (stage 2), an English reading of the
+document (stage 3), linguistic annotation and named entities (stage 4), and
+vocabulary-linked enrichment (stage 5) — with a provenance record that says which program,
+at which version, produced each of them.</p>
+<div class="admonition note">
+<p class="admonition-title">Running the whole chain</p>
+<p>Each stage runs as its own container, and the stages are joined by the files above and
+the record passed with <code>--document-json</code> / <code>--document-json-out</code>. The
+<a href="#w6--e2e-smoke-the-integration-contract">E2E workflow (W6)</a> is the reference sequence of
+<code>docker run</code> invocations; the two stages documented here are reproduced in
+<a href="../tools/page-classification/guide/#4--run-it-as-one-stage-of-the-pipeline">page-classification → Guide</a>
+and <a href="../tools/translator/guide/#5--run-it-as-one-stage-of-the-pipeline">translator → Guide</a>.</p>
+</div>
+<h3 id="w4--containerised-service--api-workflow">W4 — Containerised service / API workflow<a class="headerlink" href="#w4--containerised-service--api-workflow" title="Permanent link">&para;</a></h3>
+<p><strong>Purpose.</strong> Use a tool without installing it, over HTTP, one document at a time — the mode
+a web frontend, an Agent Skill or another service uses.</p>
+<p><strong>Inputs.</strong> One file per request, uploaded as multipart, optionally with a baseline
+<code>document_json</code> to accrete onto.</p>
+<p><strong>Stages.</strong> Every one of the five tools publishes an <code>atrium-&lt;tool&gt;-api</code> image from the same
+Dockerfile as its batch image, and every one exposes the same meta-contract:</p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Guarantee</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /info</code></td>
+<td><code>service</code>, <code>version</code>, <code>endpoints</code> (the live route set), <code>limits</code> — plus per-tool extras</td>
+</tr>
+<tr>
+<td><code>GET /health</code></td>
+<td>200 while the process is alive</td>
+</tr>
+<tr>
+<td><code>GET /health?deep=true</code></td>
+<td>503 with detail when a dependency is degraded, or when draining</td>
+</tr>
+<tr>
+<td><code>GET /ready</code></td>
+<td>503 <code>starting</code> → 200 <code>ready</code> → 503 <code>draining</code> on SIGTERM</td>
+</tr>
+</tbody>
+</table>
+<p>The tool-specific endpoints for the two repositories documented here:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Endpoints</th>
+<th>Upload cap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>page-classification</td>
+<td><code>POST /predict_image</code>, <code>POST /predict_document</code></td>
+<td>10 MB, 50 PDF pages</td>
+</tr>
+<tr>
+<td>translator</td>
+<td><code>POST /translate</code></td>
+<td>50 MB, because ALTO XML goes in and ALTO XML comes out</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Outputs.</strong> JSON for the classifier; for the translator, the <strong>document itself</strong> as an XML
+attachment, or <code>multipart/mixed</code> when a record was supplied. The translator is the one
+service that does not answer with a JSON envelope, by design — it composes with <code>curl -o</code>.</p>
+<p><strong>What the user actually gets.</strong> A stateless, horizontally scalable stage: nothing is
+retained between requests, so a Kubernetes <code>Deployment</code> can scale on queue depth. Error
+codes are harmonised across all five services — <code>413</code> too large, <code>400</code> or <code>415</code> a wrong
+content type, <code>422</code> unusable input, <code>500</code> a processing failure, <code>503</code> warming up or
+draining — so a client can treat them uniformly — with the one caveat that FastAPI's <code>detail</code> is a string
+for a service-raised error and a list of validation objects when FastAPI rejects the request
+first.</p>
+<p>A clean shutdown exits <strong>143</strong> (128 + SIGTERM) after draining for <code>GRACEFUL_SHUTDOWN_S</code>.
+That is success, not failure.</p>
+<p>See <a href="../operations/">Operations</a> for deployment, and <a href="../agent-skills/">Agent skills</a> for the
+clients that sit on top of these endpoints.</p>
+<h3 id="w5--agent-skill-workflow">W5 — Agent-Skill workflow<a class="headerlink" href="#w5--agent-skill-workflow" title="Permanent link">&para;</a></h3>
+<p><strong>Purpose.</strong> Let an AI agent use a tool the way a person uses a web service — find it, ask what
+it offers, send a file, read the answer — without importing the tool's code or installing its
+dependencies.</p>
+<p><strong>Inputs.</strong> Files on the agent's side — page images or PDFs for the classifier, ALTO pages or
+AMCR records for the translator — and a service to send them to: a local one, or a hosted one
+named by a single environment variable.</p>
+<p><strong>Stages.</strong> Each <code>agent-skill</code> branch ships a <code>SKILL.md</code> and a standard-library-only client;
+the agent follows the same five steps with either tool.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Stage</th>
+<th>page-classification</th>
+<th>translator</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Find a service</td>
+<td><code>$ATRIUM_PC_URL</code>, else a local one started with <code>scripts/server.sh</code></td>
+<td><code>$ATRIUM_TR_URL</code>, else a local one started with <code>scripts/server.sh</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Ask what it offers</td>
+<td><code>atrium_classify.py --info</code> — models, categories, limits</td>
+<td><code>atrium_translate.py --info</code> — capabilities and limits</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Send the file</td>
+<td><code>/predict_image</code> or <code>/predict_document</code>, by suffix; the client checks 10 MB and 50 pages first</td>
+<td><code>/translate</code>, <code>.xml</code> only; the client checks 50 MB first</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Read the answer</td>
+<td><code>FILE, PAGE, RANK, LABEL, SCORE</code> as a table, CSV or JSON</td>
+<td>the translated file (<code>page.alto.xml</code> → <code>page_en.alto.xml</code>), plus the updated record when a baseline was sent with it</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Decide what next</td>
+<td>the exit code</td>
+<td>the exit code</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Outputs.</strong> Whatever the service returns, saved or printed by the client — and an exit code
+that is the agent's whole decision table: <code>0</code> done; <code>1</code> a file not found or nothing produced;
+<code>2</code> nothing listening, so start the server and retry once; <code>3</code> an HTTP error after three
+attempts ten seconds apart, so read <code>/health?deep=true</code> and the logs.</p>
+<p><strong>What the user actually gets.</strong> The same instructions work against a laptop and against a
+hosted endpoint: switching is one variable, so when the services are hosted no skill has to
+change. The agent never holds a model or a GPU — the classifier's weights live in the service
+container, and the translator's model runs at LINDAT.</p>
+<h3 id="w6--e2e-smoke-the-integration-contract">W6 — E2E smoke: the integration contract<a class="headerlink" href="#w6--e2e-smoke-the-integration-contract" title="Permanent link">&para;</a></h3>
+<p><strong>Purpose.</strong> Prove that the five tools still compose. This is the only place the whole chain
+runs, and it is therefore the de-facto specification of the pipeline.</p>
+<p><strong>Inputs.</strong> One synthetic single-page Czech document, <code>CTX000000003</code> — ALTO v3,
+<code>LANG="cs"</code>, one page, two lines. There is <strong>no committed page image</strong>: the
+page-classification stage renders one from the ALTO at run time, keeping the whole smoke
+test anchored to a single fixture.</p>
+<p><strong>Stages.</strong> Five <code>docker run</code> invocations, each mounting one shared workspace and threading
+the record forward: <code>1_pc.json</code> → <code>2_alto.json</code> → <code>3_translate.json</code> → <code>4_nlp.json</code> →
+<code>5_llm.json</code>. Triggered on push to <code>main</code>, on dispatch, and on a cron every third day.</p>
+<p><strong>The <code>DOC_LINE_CATEG</code> bridge.</strong> The E2E config sets <code>SKIP_CLASSIFY = true</code> for
+alto-postprocess, and the hub commits that stage's real output as a fixture instead —
+<code>DOC_LINE_CATEG/CTX000000003.csv</code>, in alto-postprocess's 37-column <code>CSV_HEADER</code> format, one
+<code>Clear</code> line and one <code>Non-text</code> line.</p>
+<p>The reason is hardware: alto-postprocess's line-categorisation step (<code>langID_classify.py</code>)
+<strong>hard-requires CUDA</strong>, and GitHub-hosted runners have no GPU. Skipping the stage and
+committing its output is what lets the remaining four stages be exercised at all — stages 4
+and 5 read the bridge file directly. It is a <em>pinned</em> fixture, unlike the vocabulary, because
+the assertions depend on its content.</p>
+<div class="admonition note">
+<p class="admonition-title">How to read a green run</p>
+<p>Each stage runs a <strong>published image</strong>, selected by the workflow's <code>image-tag</code> input,
+together with files checked out from each tool repository's <strong>default branch</strong>;
+the hub's own files come from its <code>v1</code> tag. A green run therefore says that the
+default-branch configuration works with that image tag.</p>
+</div>
+<p>Assertions check <strong>formats and contracts, never model quality</strong>. Every job boundary in the
+workflow is one cross-repository interface, which is the point.</p>
+<h3 id="w7--vocabulary-harvesting--review-the-translators-half">W7 — Vocabulary harvesting &amp; review (the translator's half)<a class="headerlink" href="#w7--vocabulary-harvesting--review-the-translators-half" title="Permanent link">&para;</a></h3>
+<p><strong>Purpose.</strong> Make domain terms translate the same way every time. An archaeological term such as
+<em>(polo)zemnice</em> has one agreed English rendering, <em>pit house</em>; a general translation model does
+not know that, and may render it differently in every document. W7 builds the list of agreed
+pairs and enforces it at translation time.</p>
+<p><strong>Inputs.</strong> Two public vocabularies, both served from <code>aiscr.cz</code>: the AMCR <em>heslář</em> — the
+controlled keyword lists of the Archaeological Map of the Czech Republic — over OAI-PMH, and the
+TEATER thesaurus over GraphQL. No credentials.</p>
+<p><strong>Stages.</strong> <code>load_vocab.py</code> does 1–3 once; the translator does 4–6 on every run given
+<code>--vocabulary</code>.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Stage</th>
+<th>What actually happens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Harvest AMCR</td>
+<td><code>ListRecords</code> with <code>metadataPrefix=oai_amcr&amp;set=heslo</code> against <code>https://api.aiscr.cz/2.2/oai</code>, following resumption tokens and sleeping <code>--delay</code> (0.3 s) between pages. Each <code>heslo</code> block gives its Czech term and its <code>heslo_en</code> sibling when both are non-empty. A network or XML error ends the harvest and <strong>keeps what was collected so far</strong></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Harvest TEATER</td>
+<td>Introspect the schema at <code>https://teater.aiscr.cz/api/graphql</code>. <code>exportAll</code> returns the export's URL (as the API's internal <code>http://localhost:8080/api/export</code>, rewritten to the public host); the download is a JSON <code>categories</code> tree, and every concept with a Czech and an English name gives a pair keyed by its TEATER id. A label shared by two concepts keeps the last. Only if that yields nothing does the fallback run: <code>search(value: "", limit: 99999)</code> in Czech and in English, joined on <code>id</code>. Every TEATER request is spaced by <code>--delay</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Merge and write</td>
+<td>TEATER first, then AMCR over it, so <strong>AMCR wins</strong> a collision. Keys are lower-cased and rows sorted, so a re-harvest gives a stable diff. Five columns: <code>source_lemma, target_translation, source, source_id, uri</code>. Nothing harvested → exit <code>2</code>, and the existing file is left alone; <code>--skip-amcr</code> together with <code>--skip-teater</code> is refused as a usage error</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Load</td>
+<td><code>processors/vocab.py</code> reads the 2-column form or the 5-column one, with or without a header row. A later duplicate key wins. An unreadable file prints a warning and loads <strong>nothing</strong> — the run carries on without a vocabulary</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Tag and protect</td>
+<td>Before each translation call: multi-word phrases, longest first, case-insensitive, whole words only — <strong>every occurrence</strong> gets its own sentinel; then single words by UDPipe lemma (only for languages with a UDPipe model), <strong>skipping plural tokens</strong> so the model can inflect the English. Each match becomes an <code>Xtermzzz&lt;N&gt;z</code> sentinel; after translation it is restored — exact, then case-insensitive, then fuzzy — as the agreed term</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Account</td>
+<td>Paradata records <code>vocabulary_protected_terms</code> per document plus a total, and the run's licence gains <code>udpipe2_engine</code>, <code>udpipe2_models</code>, <code>amcr_vocab</code> and <code>teater_data</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Outputs.</strong> <code>data_samples/vocabulary.csv</code> (the default <code>--out</code>), and translated documents in
+which every protected term carries its agreed rendering.</p>
+<p><strong>What the user actually gets.</strong> Consistent terminology across every translated document, with
+a count of protected terms per document in the paradata, and a glossary whose every row points
+back at the thesaurus concept it came from. A translation run with the vocabulary resolves to
+<strong>CC BY-NC-SA 4.0</strong>, determined by CUBBITT and the UDPipe models — the vocabulary adds two
+CC BY-NC 4.0 sources, but a CUBBITT run is already the more restrictive licence.</p>
+<p><strong>Worth knowing.</strong> The same Czech label can recur across AMCR's keyword lists, so the number
+of pairs is smaller than the number of AMCR records. The glossary is written in the five-column
+form; a two-column <code>source_lemma,target_translation</code> file loads just as well. Harvest with TLS
+verification on — if a certificate chain is incomplete, add the missing intermediate through
+<code>REQUESTS_CA_BUNDLE</code> rather than disabling verification.</p>
+<p><strong>The review half</strong> belongs to nlp-enrich, which builds the reviewed SKOS vocabulary from the same
+two sources with its own harvester. The files are prefix-compatible by design — these five columns
+are the first five of nlp-enrich's <code>*_flat.csv</code> — but they are separate harvests, each from the
+live sources at the time it was run. See
+<a href="../contracts/skos/#the-translator-and-its-glossary">SKOS → The translator and its glossary</a>.</p>
+<h3 id="w8--training-and-evaluation-page-classification">W8 — Training and evaluation (page-classification)<a class="headerlink" href="#w8--training-and-evaluation-page-classification" title="Permanent link">&para;</a></h3>
+<p><strong>Purpose.</strong> Fine-tune, cross-validate and score a page classifier — the only workflow in the
+ecosystem that produces a model rather than consuming one.</p>
+<p><strong>Inputs.</strong> A directory tree of page images, one folder per category — training reads the
+label list from the sorted sub-directory names. Optionally an explicit folds CSV.</p>
+<p><strong>Stages.</strong></p>
+<ol>
+<li><strong>Split</strong> — deterministic periodic sampling with a randomised offset, not a shuffle;
+   80/10/10, or read from <code>--folds_csv</code> to reproduce a model's original split exactly, with
+   pages absent from the CSV excluded.</li>
+<li><strong>Train</strong> — <code>--train</code>, three epochs at 5e-5, batch 8, <code>load_best_model_at_end</code> on
+   accuracy. Augmentation is colour jitter, sharpness and Gaussian blur at 50 % each, and
+   deliberately <strong>no rotation or flipping</strong>: page orientation is part of what is being read.</li>
+<li><strong>Evaluate</strong> — <code>--eval</code> produces a Top-N CSV with a <code>TRUE</code> column, a raw per-class CSV and
+   a confusion-matrix plot at 300 dpi.</li>
+<li><strong>Average</strong> — <code>--average -ap &lt;pattern&gt;</code> averages fold weights; <code>--best</code> averages the five
+   published models' <em>probabilities</em> at inference time. These are different operations.</li>
+</ol>
+<p><strong>Outputs.</strong> Model weights, <code>{stamp}_{rev}_FOLD_{n}_DATASETS.txt</code> recording the split
+actually used, evaluation CSVs, confusion matrices, and paradata whose resolved licence is
+<strong>CC BY-NC 4.0</strong> rather than MIT — because training logs the LINDAT dataset, which
+<code>setup/para_config.txt</code> declares as CC BY-NC 4.0.</p>
+<p><strong>What the user actually gets.</strong> A reproducible model. The fold rule
+<code>splitN ↔ foldN ↔ seed 420+(N−1)</code> and <code>REVISION_BEST_FOLDS</code> mean a published revision can be
+retrained on the split it originally saw — which is how the <code>v*.4</code> generation was trained on
+the licensed subset and compared page by page with the generation before it; see
+<a href="../tools/page-classification/history/#2026-06--08--retraining-on-the-licensed-dataset-15">page-classification → History</a>.</p>
+<p>Full flag reference: <a href="../tools/page-classification/reference/#training-and-evaluation">page-classification → Reference</a>.</p>
+<h3 id="w12--annotation-round-trip-page-classifications-half">W12 — Annotation round trip (page-classification's half)<a class="headerlink" href="#w12--annotation-round-trip-page-classifications-half" title="Permanent link">&para;</a></h3>
+<p><strong>Purpose.</strong> Turn a pile of PDFs into a labelled training set, and feed what a reviewer finds back
+into it. Every page-classification model was trained on a set built this way.</p>
+<p><strong>Inputs.</strong> PDFs, and a person with a spreadsheet. No annotation tool is named or shipped — labels
+are typed into a CSV.</p>
+<p><strong>The one fact to hold on to: folder names are the labels.</strong> Training and evaluation read a
+directory tree with one folder per category, and take the category list from the sorted names of
+its sub-directories (<code>collect_images()</code> in <code>utils.py</code>); files and hidden entries at that level are
+ignored. A mistyped folder name is a new class, and an empty folder is one too.</p>
+<p><strong>Stages.</strong> The scripts live in <code>data_scripts/unix/</code> (<code>.sh</code>) and <code>data_scripts/windows/</code> (<code>.bat</code>),
+with the same flags in both, and in <code>supplementary/scripts/</code>.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Stage</th>
+<th>Script</th>
+<th>What actually happens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>PDF → page images</td>
+<td><code>pdf2png.sh</code> · <code>pdf2png.bat</code></td>
+<td>Unix: <code>pdftoppm</code>, one job per core, 300 dpi PNG by default, page numbers zero-padded (<code>doc-001.png</code>); <code>.pdf</code> and <code>.PDF</code> are both found. <strong>The PDFs are kept unless <code>--delete</code> (<code>/delete</code>) is given.</strong> Windows: ImageMagick + Ghostscript, one file at a time, unpadded (<code>doc-1.png</code>)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Gather one-pagers</td>
+<td><code>move_single.sh</code> · <code>.bat</code> <em>(optional)</em></td>
+<td>Every folder holding exactly one image is emptied into <code>./onepagers/</code> and removed; <code>-n</code> previews it. The default target is relative to <em>where you run it</em>, while <code>sort.sh</code> looks for <code>onepagers/</code> <em>inside its input directory</em> — run it from there, or pass <code>-t</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Annotate</td>
+<td>a spreadsheet</td>
+<td>A CSV with a header row and at least <code>FILE,PAGE,CLASS</code>, one row per page. Further columns are ignored, and <code>PAGE</code> may be zero-padded (<code>08</code>). <code>sort.sh</code> finds the columns by header name; <code>sort.bat</code> reads the first three by position. The README suggests keeping the categories roughly equal in size</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Route into label folders</td>
+<td><code>sort.sh</code> · <code>sort.bat</code></td>
+<td>Each row's page is copied — or <code>--move</code>d — into <code>&lt;out&gt;/&lt;CLASS&gt;/</code>, trying no padding, then 2-, 3- and 4-digit padding, in the document's folder or, when it has none, in <code>onepagers/</code>. A label folder is made only once a page is found for it; a row whose <code>PAGE</code> is not a number or whose <code>CLASS</code> is empty or holds <code>/</code> or <code>\</code> is reported and skipped. <code>sort.sh</code> also takes <code>CLASS-1</code>/<code>CATEGORY</code>, so a result table routes as-is. <code>--dry-run</code> (<code>/n</code>) previews it</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Train and evaluate</td>
+<td><code>run.py --train</code> · <code>--eval</code></td>
+<td><a href="#w8--training-and-evaluation-page-classification">W8</a>. <code>--folds_csv</code> fixes the split: it needs a <code>PNG</code> column holding the exact file name and <code>foldN</code> columns of <code>train</code> / <code>dev</code> / <code>test</code>; pages missing from it are left out</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Review</td>
+<td>the <code>--raw</code> and EVAL tables</td>
+<td>Raw tables are sorted by per-class probability, so the ambiguous pages gather where a reviewer looks; EVAL tables carry a <code>TRUE</code> column beside the prediction</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Correct</td>
+<td>a file manager</td>
+<td>Mislabelled pages are moved between label folders — the tree is the source of truth, not the CSV</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Re-sync the CSV</td>
+<td><code>filtering.py</code></td>
+<td>Keeps each row whose <code>(file, page, class)</code> still exists in the tree and <strong>relabels</strong> a row whose page now sits in exactly one other label folder; a page that is gone, or in several other folders, is dropped and reported. Reads <code>CLASS</code>, else <code>CLASS-1</code>, else <code>CATEGORY</code>; writes <code>&lt;stem&gt;_filtered.csv</code> beside the input. <code>--no-relabel</code> only drops</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Account for the split</td>
+<td><code>result/stats/unused.sh</code> · <code>dataset_stat.sh</code></td>
+<td>Which annotated pages no fold used, and per-set, per-category counts, read from the <code>*_FOLD_*_DATASETS.txt</code> split records</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What the loop still leaves to you.</strong> The scripts refuse what would misroute a page — a <code>PAGE</code>
+that is not a number, a label that is not a single folder name — and report it; they cannot tell a
+wrong label from a right one:</p>
+<ul>
+<li><strong>A mistyped <code>CLASS</code> is a new category.</strong> <code>sort.sh</code> routes <code>TEXt</code> into its own folder, and
+  training then counts twelve classes. Check the label list against the eleven in
+  <a href="../contracts/skos/#how-page-classification-uses-it">SKOS → How page-classification uses it</a>
+  before sorting; <code>collect_images()</code> prints a note when the folders and the declared labels differ.</li>
+<li><strong><code>filtering.py</code> keys on the <code>&lt;name&gt;-&lt;page&gt;.png</code> convention.</strong> A PNG renamed outside it is not
+  indexed — the script warns and counts it — so its row is reported as missing.</li>
+<li><strong><code>sort.bat</code> reads by position</strong>, unlike <code>sort.sh</code>: on Windows keep <code>FILE, PAGE, CLASS</code> as
+  the first three columns.</li>
+</ul>
+<p><strong>Helpers around the loop.</strong> <code>averaging.py</code> averages several result tables — only pages present in
+every input survive, and a wide per-model table counts one vote per model, which makes it a
+majority vote; <code>per_doc_split.py</code> splits a result table into one CSV per document;
+<code>result_analysis.sh</code> scores a directory of <code>*_EVAL.csv</code> files; <code>downscale.py</code> resizes a label tree.</p>
+<p><strong>Outputs.</strong> A label tree ready for W8, a CSV that agrees with it, and split records that say which
+page was used where.</p>
+<p><strong>What the user actually gets.</strong> The published training dataset — 48,499 page images from 37,328
+documents, cited as <code>hdl.handle.net/20.500.12800/1-6184</code> — is this loop's output. The <code>v*.4</code>
+generation is one complete round trip: the set was reduced to its licensed subset and the five
+models retrained on the same folds (<a href="#w8--training-and-evaluation-page-classification">W8</a>).</p>
+<h3 id="w13--ro-crate-export--fair-publication">W13 — RO-Crate export / FAIR publication<a class="headerlink" href="#w13--ro-crate-export--fair-publication" title="Permanent link">&para;</a></h3>
+<p><strong>Purpose.</strong> Hand a finished record to a repository or catalogue in a form it can read without
+knowing anything about ATRIUM.</p>
+<p><strong>Inputs.</strong> Records that have already been through the pipeline and, for a run crate, the run's
+paradata file.</p>
+<p><strong>Stages.</strong> One, run as its own step over finished records. The exporter, <code>atrium_rocrate.py</code>, is
+vendored into every tool:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>atrium_rocrate.py<span class="w"> </span>--document<span class="w"> </span>CTX000000003.document.json<span class="w"> </span>--out-dir<span class="w"> </span>crate/
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>python<span class="w"> </span>atrium_rocrate.py<span class="w"> </span>--run<span class="w"> </span><span class="m">1</span>.document.json<span class="w"> </span><span class="m">2</span>.document.json<span class="w"> </span>--paradata<span class="w"> </span>run.json<span class="w"> </span>--out-dir<span class="w"> </span>crate/
+</code></pre></div>
+<p><strong>Outputs.</strong> <code>ro-crate-metadata.json</code> — RO-Crate 1.1, sorted and byte-stable, written atomically.
+A run crate holds one sub-crate per document and also declares the Process Run Crate profile.</p>
+<p><strong>What the user actually gets.</strong> A catalogue-readable description with a separate creator and date
+for every block, so "who classified the pages" and "who translated them" have separate answers,
+and the record's computed licence. Per-page detail — which page carries which category, the
+language pair of a translation — stays in the record, which can travel inside the crate. The full
+mapping is under
+<a href="../contracts/rocrate/#what-happens-to-these-two-tools-blocks">RO-Crate export → What happens to these two tools' blocks</a>.</p>
+<h2 id="other-workflows">Other workflows<a class="headerlink" href="#other-workflows" title="Permanent link">&para;</a></h2>
+<p>These run through alto-postprocess, nlp-enrich and llm-enrich only; each tool's own README
+describes them, and the stable core of each tool's workflow is on its Workflows page —
+<a href="../workflows/alto-postprocess/">alto-postprocess</a>, <a href="../workflows/nlp-enrich/">nlp-enrich</a>,
+<a href="../workflows/llm-enrich/">llm-enrich</a>.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Workflow</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>W2</td>
+<td>Born-digital pipeline</td>
+<td>Two stages, not six — a digital-born PDF or DOCX already has a text layer, so <code>digital-convert</code> originates the positional plane directly and origin-consistency refuses a second originator. A PDF whose text layer is an earlier OCR run is not born-digital and is refused: its originator is alto-postprocess (<code>--method text-lines</code>, <code>ocr:pdf-text-layer</code>)</td>
+</tr>
+<tr>
+<td>W3</td>
+<td>Digital → OCR re-origination</td>
+<td>How a digital-born document that turns out to need OCR is re-authorised, through <code>needs_ocr: true</code> — the single exception that lets two originators coexist</td>
+</tr>
+<tr>
+<td>W9</td>
+<td>Parameter optimisation / rule coverage</td>
+<td>alto-postprocess's sweep over its categorisation rules</td>
+</tr>
+<tr>
+<td>W10</td>
+<td>Document-understanding benchmark</td>
+<td>llm-enrich's stratified sampling and model comparison</td>
+</tr>
+<tr>
+<td>W11</td>
+<td>Format adaptation</td>
+<td>Two routes for documents that are not ALTO. <strong>alto-postprocess</strong>'s <code>--method text-lines</code> reads them directly — PDF text layers, DOCX/ODT/XLSX/PPTX, EPUB, RTF, HTML, the OCR exports PAGE XML, hOCR, ABBYY FineReader XML, DjVuXML and Tesseract TSV, TEI/TEITOK, JSON, CSV, plain text — into the same per-line tables (<code>DOC_LINE_CATEG/</code>) nlp-enrich and llm-enrich read, with a truthful <code>source.origin</code> per format; it keeps text, not coordinates. <strong>nlp-enrich</strong>'s <code>api_flexiconv.sh</code> converts them (PDF, DOCX, PAGE XML, hOCR, …) <em>into</em> TEITOK; nlp-enrich then annotates them (<code>FLEXICONV_ANNOTATE</code>, or a converted file uploaded to <code>/enrich</code>) and llm-enrich reads them. flexiconv never writes ALTO</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sources">Sources<a class="headerlink" href="#sources" title="Permanent link">&para;</a></h2>
+<p>Written from the tree at the refs below. This table records <strong>provenance</strong>, not a build
+instruction.</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>What was taken from it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>atrium-project/.github/workflows/e2e-pipeline-smoke.yml</code></td>
+<td>W1's stage table, W6 in full, <code>SKIP_CLASSIFY = true</code></td>
+</tr>
+<tr>
+<td><code>atrium-project/fixtures/e2e/README.md</code></td>
+<td>the fixture description</td>
+</tr>
+<tr>
+<td><code>atrium-project/docs/templates/shared/atrium_document.py</code></td>
+<td><code>BLOCK_OWNERS</code></td>
+</tr>
+<tr>
+<td><code>atrium-project/docs/document_schema.md</code></td>
+<td>the write/read contract and the accretion rules</td>
+</tr>
+<tr>
+<td><code>atrium-project/docs/skills_catalog.md</code>, <code>docs/k8s_deployment.md</code></td>
+<td>W4's endpoint and limit tables</td>
+</tr>
+<tr>
+<td><code>atrium-page-classification</code> @ <code>vit</code> <code>adee922</code> — <code>run.py</code>, <code>setup/config.txt</code>, <code>setup/para_config.txt</code>, <code>model_registry.py</code>, <code>data_scripts/{unix,windows}/*</code>, <code>supplementary/scripts/*</code>, <code>result/stats/*.sh</code>, <code>utils.py</code>, <code>README.md</code> § Data preparation</td>
+<td>W8 and W12</td>
+</tr>
+<tr>
+<td><code>atrium-translator</code> @ <code>master</code> <code>71feaef</code> — <code>main.py</code>, <code>service/api.py</code>, <code>load_vocab.py</code>, <code>processors/{vocab,translator,lemmatizer}.py</code>, <code>data_samples/vocabulary.csv</code></td>
+<td>W1 stage 3, W4, W7</td>
+</tr>
+<tr>
+<td>both tools' <code>agent-skill</code> branches</td>
+<td>W5</td>
+</tr>
+<tr>
+<td><code>atrium-project/docs/templates/shared/atrium_rocrate.py</code></td>
+<td>W13</td>
+</tr>
+<tr>
+<td><code>atrium-alto-postprocess</code> @ <code>test</code> <code>2e2794d</code> — <code>text_formats.py</code> (<code>READERS</code>), <code>page_split.py</code> (<code>split_alto_xml</code>), <code>docs/text_inputs.md</code></td>
+<td>W11's alto-postprocess route; the note under W1's stage table</td>
+</tr>
+<tr>
+<td><code>atrium-llm-enrich</code> @ <code>test</code> <code>c3575f5</code> (unreleased) — <code>api_util/digital_to_json.py</code> (<code>sniff</code>, <code>_refuse_ocr_layer</code>)</td>
+<td>W2's refusal of a prior OCR layer</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Developed by UFAL, Charles University · funded by ATRIUM · MIT licensed
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "navigation.indexes", "navigation.tracking", "search.highlight", "search.suggest", "content.code.copy", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

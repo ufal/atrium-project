@@ -1,0 +1,2639 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for the UFAL side of the ATRIUM project: the page classifier, the ALTO post-processor, the translator, and the NLP and LLM enrichers.">
+      
+      
+      
+        <link rel="canonical" href="https://ufal.github.io/atrium-project/operations/">
+      
+      
+        <link rel="prev" href="../agent-skills/">
+      
+      
+        <link rel="next" href="../contributing-standards/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Operations - ATRIUM — UFAL documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#operations" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="ATRIUM — UFAL documentation" class="md-header__button md-logo" aria-label="ATRIUM — UFAL documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ATRIUM — UFAL documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Operations
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ufal/atrium-project" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ufal/atrium-project
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="ATRIUM — UFAL documentation" class="md-nav__button md-logo" aria-label="ATRIUM — UFAL documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    ATRIUM — UFAL documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ufal/atrium-project" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ufal/atrium-project
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipelines
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../workflows/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflows
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Workflows
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/page-classification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    page-classification
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/alto-postprocess/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    alto-postprocess
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/translator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    translator
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/nlp-enrich/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    nlp-enrich
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/llm-enrich/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    llm-enrich
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../external-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    External tools & services
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ecosystem
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Ecosystem
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecosystem/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecosystem/repository-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository map
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecosystem/document-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The document contract
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contracts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contracts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/rocrate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RO-Crate export
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/skos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SKOS & the ATRIUM vocabulary
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schemas
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent skills
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-deployment-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The deployment model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#images-and-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Images and tags
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Images and tags">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#running-the-batch-image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running the batch image
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-is-inside-each-image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is inside each image
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-release-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The release gate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-container-proves-before-it-is-published" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the container proves before it is published
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-on-kubernetes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running on Kubernetes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running on Kubernetes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#probes--three-endpoints-on-purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Probes — three endpoints, on purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shutdown-and-the-grace-period" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shutdown, and the grace period
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sizing-storage-and-egress" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sizing, storage and egress
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-the-health-endpoints-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the health endpoints report
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#acceptance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing-standards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing standards
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tools
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tools
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10_1" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../tools/page-classification/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    page-classification
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_10_1" id="__nav_10_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    page-classification
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/page-classification/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/page-classification/reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/page-classification/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/page-classification/history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../tools/translator/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    translator
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_10_2" id="__nav_10_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_10_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    translator
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/translator/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/translator/reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/translator/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/translator/history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--published"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development-history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development history
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--partial"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-deployment-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The deployment model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#images-and-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Images and tags
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Images and tags">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#running-the-batch-image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running the batch image
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-is-inside-each-image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is inside each image
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-release-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The release gate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-container-proves-before-it-is-published" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the container proves before it is published
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-on-kubernetes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running on Kubernetes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running on Kubernetes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#probes--three-endpoints-on-purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Probes — three endpoints, on purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shutdown-and-the-grace-period" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shutdown, and the grace period
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sizing-storage-and-egress" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sizing, storage and egress
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-the-health-endpoints-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the health endpoints report
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#acceptance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="operations">Operations<a class="headerlink" href="#operations" title="Permanent link">&para;</a></h1>
+<p>Build, ship and run the services: the images and their tags, the gate a release has to pass,
+what the container proves before it is published, and how to run it on Kubernetes.</p>
+<div class="admonition info">
+<p class="admonition-title">Scope</p>
+<p>The build and deployment machinery is shared by all five tools. The image, probe and
+environment details below are those of page-classification and the translator.</p>
+</div>
+<h2 id="the-deployment-model">The deployment model<a class="headerlink" href="#the-deployment-model" title="Permanent link">&para;</a></h2>
+<p>ÚFAL <strong>builds, gates and publishes</strong> the container images; the partner institutions <strong>run</strong>
+them, on their own infrastructure — typically Kubernetes — next to their own data. Nothing in
+the hub's CI reaches into a partner's environment: what crosses the boundary is a published
+image, pulled by tag, plus the configuration each deployment sets through environment
+variables. Every tool therefore behaves the same way wherever it runs, and every
+deployment-specific value — endpoints, limits, allowed origins — is an environment variable
+with a documented default.</p>
+<h2 id="images-and-tags">Images and tags<a class="headerlink" href="#images-and-tags" title="Permanent link">&para;</a></h2>
+<p>Every tool builds <strong>two images from one Dockerfile</strong> — a batch image from the <code>base</code> stage and an
+HTTP-service image from the <code>api</code> stage — and publishes them to GitHub's container registry.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Batch CLI (<code>base</code> stage)</th>
+<th>HTTP service (<code>api</code> stage)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>page-classification</td>
+<td><code>ghcr.io/ufal/atrium-page-classification</code></td>
+<td><code>ghcr.io/ufal/atrium-page-classification-api</code></td>
+</tr>
+<tr>
+<td>translator</td>
+<td><code>ghcr.io/ufal/atrium-translator</code></td>
+<td><code>ghcr.io/ufal/atrium-translator-api</code></td>
+</tr>
+</tbody>
+</table>
+<p>The <code>-api</code> suffix is part of the <strong>image name</strong>, not the tag: the hub's build workflow appends
+<code>-&lt;stage&gt;</code> to the image name for every stage except <code>base</code>.</p>
+<p><strong>Which tags exist, and when they move:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Tag</th>
+<th>Published when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sha-&lt;short&gt;</code></td>
+<td>every publishing build — immutable, the audit trail</td>
+</tr>
+<tr>
+<td><code>&lt;version&gt;</code>, e.g. <code>1.8.0-beta</code></td>
+<td>a <code>v*</code> git tag, <strong>after</strong> the release gate passes. The leading <code>v</code> is stripped</td>
+</tr>
+<tr>
+<td><code>latest</code></td>
+<td>the same moment, the same condition. <code>-beta</code> versions count, so <code>latest</code> is the newest release, beta or not</td>
+</tr>
+<tr>
+<td><code>test</code></td>
+<td>a push to the <code>test</code> branch — the moving pre-release channel the end-to-end tests can run against</td>
+</tr>
+</tbody>
+</table>
+<p><strong>A push to <code>vit</code> or <code>master</code> publishes nothing.</strong> Only a push to <code>test</code>, a version tag, or a
+published GitHub release triggers the build-and-push job.</p>
+<p>So a service image is always <code>atrium-&lt;tool&gt;-api:&lt;version&gt;</code>, and a batch image
+<code>atrium-&lt;tool&gt;:&lt;version&gt;</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>docker<span class="w"> </span>pull<span class="w"> </span>ghcr.io/ufal/atrium-page-classification-api:&lt;version&gt;
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>docker<span class="w"> </span>pull<span class="w"> </span>ghcr.io/ufal/atrium-translator-api:latest
+</code></pre></div>
+<h3 id="running-the-batch-image">Running the batch image<a class="headerlink" href="#running-the-batch-image" title="Permanent link">&para;</a></h3>
+<p>The batch images read from <code>/data/input</code> by default, so one mounted directory is enough:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># classify every page image under ./data/input; result tables land in ./data/output</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-v<span class="w"> </span><span class="s2">"</span><span class="nv">$PWD</span><span class="s2">/data:/data"</span><span class="w"> </span>-v<span class="w"> </span><span class="s2">"</span><span class="nv">$PWD</span><span class="s2">/data/output:/app/result"</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span>ghcr.io/ufal/atrium-page-classification:&lt;version&gt;
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># translate every ALTO file under ./data/input into ./data/output</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-v<span class="w"> </span><span class="s2">"</span><span class="nv">$PWD</span><span class="s2">/data:/data"</span><span class="w"> </span>ghcr.io/ufal/atrium-translator:&lt;version&gt;
+</code></pre></div>
+<p>Arguments after the image name replace the defaults listed below — any <code>run.py</code> or
+<code>main.py</code> flag works. Add <code>-v hf-cache:/cache/huggingface</code> to keep downloaded models between
+runs.</p>
+<h3 id="what-is-inside-each-image">What is inside each image<a class="headerlink" href="#what-is-inside-each-image" title="Permanent link">&para;</a></h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">page-classification</label><label for="__tabbed_1_2">translator</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>base</code></th>
+<th><code>api</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>From</td>
+<td><code>python:3.11-slim</code></td>
+<td><code>base</code></td>
+</tr>
+<tr>
+<td>System packages</td>
+<td><code>build-essential</code>, <code>g++</code>, <code>libgl1</code>, <code>libglib2.0-0</code>, <code>ca-certificates</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>PyTorch</td>
+<td><code>torch==2.7.1</code>, <code>torchvision==0.22.1</code> from <code>TORCH_INDEX_URL</code> (CPU wheels by default; pass <code>…/whl/cu126</code> for CUDA)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Python requirements</td>
+<td><code>setup/requirements.txt</code>, <code>service/requirements.txt</code> and <code>setup/requirements-test.txt</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>User</td>
+<td><code>atrium</code>, uid <strong>10001</strong>, owning <code>/app</code>, <code>/cache</code>, <code>/data</code></td>
+<td>same</td>
+</tr>
+<tr>
+<td>Entry point</td>
+<td><code>python3 /app/entrypoint.py</code> — a GPU probe that <code>exec</code>s <code>run.py</code>, so the process receives signals directly</td>
+<td><code>python -m service.api</code></td>
+</tr>
+<tr>
+<td>Default arguments</td>
+<td><code>-d /data/input --hf -rev &lt;revision&gt;</code> — classify <code>/data/input</code> with a published model</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Port, signal, drain</td>
+<td>—</td>
+<td><code>EXPOSE 8000</code> · <code>STOPSIGNAL SIGTERM</code> · <code>GRACEFUL_SHUTDOWN_S=20</code></td>
+</tr>
+<tr>
+<td>Healthcheck</td>
+<td>—</td>
+<td><code>python /app/service/healthcheck.py</code> every 30 s, 180 s start period, 3 retries</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="tabbed-block">
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>base</code></th>
+<th><code>api</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>From</td>
+<td><code>python:3.11-slim</code></td>
+<td><code>base</code></td>
+</tr>
+<tr>
+<td>System packages</td>
+<td>security upgrades only</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Python requirements</td>
+<td><code>requirements.txt</code>, <code>service/requirements.txt</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>User</td>
+<td><code>atrium</code>, uid <strong>10001</strong>, owning <code>/cache</code> and <code>/data</code> only — <code>/app</code> stays root-owned on purpose, so the source is immutable at run time</td>
+<td>same</td>
+</tr>
+<tr>
+<td>Entry point</td>
+<td><code>python main.py</code></td>
+<td><code>python -m service.api</code></td>
+</tr>
+<tr>
+<td>Default arguments</td>
+<td><code>/data/input --alto --formats alto.xml --target_lang en -o /data/output</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Port, signal, drain</td>
+<td>—</td>
+<td><code>EXPOSE 8000</code> · <code>STOPSIGNAL SIGTERM</code> · <code>GRACEFUL_SHUTDOWN_S=20</code></td>
+</tr>
+<tr>
+<td>Healthcheck</td>
+<td>—</td>
+<td>the same <code>healthcheck.py</code>, same timings</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<p>Both set <code>HF_HOME=/cache/huggingface</code>, so a mounted volume there keeps downloaded models across
+container restarts.</p>
+<h2 id="the-release-gate">The release gate<a class="headerlink" href="#the-release-gate" title="Permanent link">&para;</a></h2>
+<p>A version tag does not publish an image directly. The build pushes it <strong>by digest only</strong>, scans it,
+and promotes the version and <code>latest</code> tags afterwards — only if the scan allows:</p>
+<ol>
+<li>Build and push, tagged <code>sha-&lt;short&gt;</code> only, with <strong>SBOM and provenance attestations</strong> attached
+   (BuildKit's own; inspect them with <code>docker buildx imagetools inspect</code>).</li>
+<li>Trivy scans the pushed digest for fixable CRITICAL and HIGH vulnerabilities and uploads the
+   result to GitHub code scanning. This scan reports; it does not fail.</li>
+<li><strong>On a tag only</strong>, a second Trivy pass fails the job on any <em>fixable CRITICAL</em> vulnerability.</li>
+<li>Only then are <code>&lt;version&gt;</code> and <code>latest</code> applied to the digest.</li>
+</ol>
+<p><strong>A release blocked at step 3 still exists</strong> — as <code>sha-&lt;short&gt;</code>, by digest, with its attestations and
+scan results — but with no version tag and no <code>latest</code>. Nothing that pulls by tag sees it. This is
+what happened to the translator's <code>v1.0.0-beta</code> in September 2026: the floating <code>python:3.11-slim</code>
+base carried three fixable CRITICAL CVEs in <code>perl-base</code>, and the gate held the release back until a
+rebuilt image passed. The story is told in full on
+<a href="../tools/translator/history/#the-base-image-that-blocked-a-release">translator → History</a>.</p>
+<p>The same incident produced the rule every Dockerfile follows and a vendored test enforces: the
+<code>apt-get upgrade</code> layer must sit <strong>below</strong> the <code>ENV</code> line that embeds <code>ATRIUM_RUNNER_REF</code> (unique
+per release tag, so it busts the layer cache on every release) and <strong>above</strong> <code>USER atrium</code>. With
+the build cache enabled, an upgrade layer in the wrong place is served from cache, looks correct,
+and patches nothing.</p>
+<h2 id="what-the-container-proves-before-it-is-published">What the container proves before it is published<a class="headerlink" href="#what-the-container-proves-before-it-is-published" title="Permanent link">&para;</a></h2>
+<p>On every pull request, every push to <code>test</code> and every version tag, the hub's build workflow starts
+the <code>api</code> image and checks it from the outside:</p>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Passes when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>It becomes healthy</td>
+<td>Docker's own <code>HEALTHCHECK</code> reports <code>healthy</code> within 330 s</td>
+</tr>
+<tr>
+<td>It serves</td>
+<td><code>GET /health</code> answers over the published port; the <code>/ready</code> status is logged</td>
+</tr>
+<tr>
+<td>It logs in the agreed shape</td>
+<td>at least one record in the shared log format reaches stdout</td>
+</tr>
+<tr>
+<td>It stops cleanly</td>
+<td><code>docker stop --time 30</code> completes inside 30 s and the exit code is <code>143</code> or <code>0</code></td>
+</tr>
+<tr>
+<td>It honours <code>PORT</code></td>
+<td>started with <code>PORT=9000</code>, it becomes healthy on 9000</td>
+</tr>
+<tr>
+<td>It honours <code>HOST</code></td>
+<td>started with <code>HOST=127.0.0.1</code>, the published port must <strong>not</strong> answer — the container is healthy and unreachable, exactly as configured</td>
+</tr>
+<tr>
+<td>It honours <code>LOG_LEVEL</code></td>
+<td>started with <code>LOG_LEVEL=WARNING</code>, no INFO record appears</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Exit code 143 is a clean stop.</strong> It is 128 + SIGTERM: the service caught the signal, drained and
+exited. Compose and Kubernetes both display it as a non-zero exit; it is the expected value.</p>
+<h2 id="running-on-kubernetes">Running on Kubernetes<a class="headerlink" href="#running-on-kubernetes" title="Permanent link">&para;</a></h2>
+<p>The hub ships one reference manifest for all five services,
+<code>docs/templates/k8s/atrium-service.deployment.yaml</code>; <code>docs/k8s_deployment.md</code> is the full guide.
+What matters for these two services:</p>
+<h3 id="probes--three-endpoints-on-purpose">Probes — three endpoints, on purpose<a class="headerlink" href="#probes--three-endpoints-on-purpose" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Probe</th>
+<th>Path</th>
+<th>Timing</th>
+<th>Why this path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>startupProbe</code></td>
+<td><code>/ready</code></td>
+<td>every 5 s, up to 60 failures</td>
+<td>up to five minutes for a first-run model download before the other probes start</td>
+</tr>
+<tr>
+<td><code>readinessProbe</code></td>
+<td><code>/ready</code></td>
+<td>every 5 s, 2 failures, 3 s timeout</td>
+<td>takes a draining pod out of the Service without restarting it</td>
+</tr>
+<tr>
+<td><code>livenessProbe</code></td>
+<td><code>/health</code></td>
+<td>every 15 s, 3 failures, 5 s timeout</td>
+<td>restarts the pod only if the process itself is wedged</td>
+</tr>
+</tbody>
+</table>
+<p><code>/health?deep=true</code> is deliberately not wired to any probe: a degraded dependency is a reason to
+look, not to restart.</p>
+<h3 id="shutdown-and-the-grace-period">Shutdown, and the grace period<a class="headerlink" href="#shutdown-and-the-grace-period" title="Permanent link">&para;</a></h3>
+<p>On <code>SIGTERM</code> the pod runs <code>preStop: sleep 5</code> (time for the endpoint removal to propagate), the
+service flips <code>/ready</code> to 503 and refuses new work with 503, uvicorn drains for
+<code>GRACEFUL_SHUTDOWN_S</code> (20 s), and the shared lifecycle waits up to 25 s more for in-flight work.
+<strong>5 + 20 + 25 = 50 s</strong>, inside the manifest's <code>terminationGracePeriodSeconds: 60</code>.</p>
+<p>A single request longer than that chain is cut — for these two services, a 50-page PDF through the
+classifier, or a large ALTO file through the translator's per-chunk LINDAT calls. Raise
+<code>GRACEFUL_SHUTDOWN_S</code> and <code>terminationGracePeriodSeconds</code> together.</p>
+<h3 id="sizing-storage-and-egress">Sizing, storage and egress<a class="headerlink" href="#sizing-storage-and-egress" title="Permanent link">&para;</a></h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">page-classification</label><label for="__tabbed_2_2">translator</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<ul>
+<li><strong>Memory.</strong> The service warms all five ensemble models at start — about <strong>2.44 GB of
+  weights</strong> (<code>v1.4</code>–<code>v5.4</code>, from 213 MB to 1.21 GB each). The template's <code>limits.memory: 4Gi</code> is
+  a floor, not a comfortable fit.</li>
+<li><strong>Storage.</strong> Weights are saved under <code>/app/model</code>. Compose mounts a <code>page-model</code> volume
+  there; on Kubernetes, mount a volume at <code>/app/model</code> as well as the <code>/cache/huggingface</code>
+  one, or every new pod downloads the weights again.</li>
+<li><strong>Egress.</strong> <code>huggingface.co</code> only — the <code>ufal/vit-historical-page</code> revisions and the base
+  model configurations. No LINDAT call.</li>
+<li><strong>Limits.</strong> <code>MAX_UPLOAD_MB</code> defaults to <strong>10</strong>; a PDF is further capped at <strong>50 pages</strong>, which is
+  hard-coded rather than configurable.</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<ul>
+<li><strong>Memory.</strong> Light — one FastText language-identification model. The work is remote.</li>
+<li><strong>Egress.</strong> The LINDAT translation API, <strong>one retried call per text chunk</strong> (4,000 characters);
+  <code>huggingface.co</code> once at start for FastText; LINDAT's UDPipe only when a vocabulary is loaded;
+  <code>LLM_BASE_URL</code> when the <code>openai_compatible</code> backend is selected. In an egress-restricted
+  cluster, expect <code>/ready</code> to answer 200 while <code>/health?deep=true</code> reports the FastText download
+  failure; <code>source_lang=auto</code> then falls back to each element's language label and the default
+  source language (<code>cs</code>) instead of detecting.</li>
+<li><strong>Limits.</strong> <code>MAX_UPLOAD_MB</code> defaults to <strong>50</strong>, because ALTO goes in and ALTO comes out;
+  set it explicitly when deploying from the shared template, whose example value is lower.</li>
+</ul>
+</div>
+</div>
+</div>
+<p>Both services are stateless per request — each works inside its own temporary directory — so
+raising <code>replicas</code> is safe. Each page-classification replica loads its own copy of the five models.</p>
+<h3 id="environment">Environment<a class="headerlink" href="#environment" title="Permanent link">&para;</a></h3>
+<p>Beyond the variables every service shares — <code>PORT</code>, <code>HOST</code>, <code>GRACEFUL_SHUTDOWN_S</code>,
+<code>ALLOWED_ORIGINS</code>, <code>MAX_UPLOAD_MB</code>, <code>LOG_LEVEL</code> — <strong>page-classification reads none</strong>: its service
+layer is configured entirely by those. The translator reads:</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TRANSLATION_BACKEND</code></td>
+<td><code>lindat</code></td>
+<td><code>lindat</code> (CUBBITT), <code>openai_compatible</code> or <code>ct2</code></td>
+</tr>
+<tr>
+<td><code>TRANSLATION_URL</code></td>
+<td>LINDAT's public host</td>
+<td>attach a self-hosted translation service; <code>LINDAT_BASE_URL</code> is accepted as an alias</td>
+</tr>
+<tr>
+<td><code>UDPIPE_URL</code></td>
+<td>LINDAT's public host</td>
+<td>lemma matching for the vocabulary</td>
+</tr>
+<tr>
+<td><code>LINDAT_MIN_INTERVAL_S</code> / <code>LINDAT_MAX_RETRIES</code> / <code>LINDAT_BACKOFF_BASE_S</code></td>
+<td><code>0.0</code> / <code>4</code> / <code>1.0</code></td>
+<td>rate-limits this deployment against a shared public service</td>
+</tr>
+<tr>
+<td><code>LINDAT_GUARD_RETRIES</code></td>
+<td><code>2</code></td>
+<td>re-requests of a reply that is not a translation (looping, empty, runaway)</td>
+</tr>
+<tr>
+<td><code>TRANSLATION_RERUN_ROUNDS</code> / <code>TRANSLATION_RERUN_DELAY_S</code></td>
+<td><code>1</code> / <code>10.0</code></td>
+<td>end-of-document re-run of segments that stayed bad; a long request grows by the delay</td>
+</tr>
+<tr>
+<td><code>DEFAULT_SOURCE_LANG</code></td>
+<td><code>cs</code></td>
+<td>the source language <code>auto</code> falls back to</td>
+</tr>
+<tr>
+<td><code>LANG_ID_MIN_CONFIDENCE</code> / <code>LANG_ID_MIN_LETTERS</code> / <code>LANG_ID_LANGUAGES</code></td>
+<td><code>0.5</code> / <code>20</code> / —</td>
+<td>when a FastText guess is trusted</td>
+</tr>
+<tr>
+<td><code>OUTPUT_MODE</code></td>
+<td><code>replace</code></td>
+<td>the default <code>replace</code> / <code>append</code> mode for <code>/translate</code></td>
+</tr>
+<tr>
+<td><code>AMCR_FIELDS_PATH</code></td>
+<td><code>amcr-fields.txt</code></td>
+<td>the XPath targets for metadata mode — unreadable means a 422</td>
+</tr>
+<tr>
+<td><code>LLM_BASE_URL</code>, <code>LLM_MODEL</code>, <code>LLM_API_KEY</code></td>
+<td>—</td>
+<td>required by <code>openai_compatible</code>; the key belongs in a Secret</td>
+</tr>
+<tr>
+<td><code>CT2_MODEL_DIR</code>, <code>CT2_MODEL_FAMILY</code>, <code>CT2_DEVICE</code>, …</td>
+<td>—</td>
+<td>required by <code>ct2</code>; see <a href="../tools/translator/reference/#environment">translator → Reference</a></td>
+</tr>
+</tbody>
+</table>
+<p>Three settings behave in ways worth knowing before the first deployment:</p>
+<ul>
+<li><code>ALLOWED_ORIGINS</code> <strong>unset</strong> means <code>*</code>; set to the <strong>empty string</strong>, it allows no origin at all.
+  page-classification's compose file narrows it to <code>http://localhost:8080,http://127.0.0.1:8080</code>;
+  the translator's does not narrow it.</li>
+<li><code>HOST=127.0.0.1</code> produces a pod that is healthy and unreachable: the healthcheck probes
+  <code>127.0.0.1</code> from inside and never reads <code>HOST</code>.</li>
+<li>An <strong>empty</strong> <code>PORT</code>, <code>GRACEFUL_SHUTDOWN_S</code> or <code>LOG_LEVEL</code> fails at start-up rather than falling
+  back to the default.</li>
+</ul>
+<h3 id="what-the-health-endpoints-report">What the health endpoints report<a class="headerlink" href="#what-the-health-endpoints-report" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>page-classification</th>
+<th>translator</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/health</code></td>
+<td>200 while the process lives</td>
+<td>200 while the process lives</td>
+</tr>
+<tr>
+<td><code>/health?deep=true</code></td>
+<td>503 while draining</td>
+<td>503 when the backend is not warmed, when the FastText model failed to load, or while draining</td>
+</tr>
+<tr>
+<td><code>/ready</code></td>
+<td>200 once the five models are warm</td>
+<td>200 once the backend is warm</td>
+</tr>
+</tbody>
+</table>
+<p>Warm-up happens before the service accepts connections, so a client waiting for a service to
+come up should treat a refused connection the same as <code>503 starting</code>, and keep polling.</p>
+<h2 id="acceptance">Acceptance<a class="headerlink" href="#acceptance" title="Permanent link">&para;</a></h2>
+<p>Two hub runbooks define "it works", and both apply to these services unchanged:</p>
+<p><strong>On Kubernetes</strong> (<code>docs/k8s_acceptance_runbook.md</code>): apply the manifest with the tool name and
+version substituted; wait for the rollout; confirm <code>healthcheck.py</code> passes inside the pod; then,
+with a slow request in flight, restart the deployment and confirm <strong>the request completes</strong> — no
+in-flight request may be dropped. The slowest request shape for each: a multi-page PDF to
+<code>POST /predict_document</code>, and a large ALTO file to <code>POST /translate</code>. Then prove the configuration
+reaches the process: <code>PORT=9000</code>, <code>LOG_LEVEL=DEBUG</code>, an <code>ALLOWED_ORIGINS</code> value that is honoured and
+one that is refused, and <code>MAX_UPLOAD_MB=1</code> answering a 2 MB upload with 413.</p>
+<p><strong>As a skill</strong> (<code>docs/skill_acceptance_runbook.md</code>): clone the <code>agent-skill</code> branch, start the
+server, check <code>/info</code>, <code>/health</code> and <code>/health?deep=true</code>, run the client on the branch's sample
+files — <code>small_data_samples/TEXT/atrium-01.png</code> for the classifier,
+<code>small_data_samples/MTX201501307_anon.alto.xml</code> for the translator — and finally hand a fresh agent
+session only the task, with no instructions, and see it succeed. See <a href="../agent-skills/">Agent skills</a>.</p>
+<h2 id="sources">Sources<a class="headerlink" href="#sources" title="Permanent link">&para;</a></h2>
+<p>This table records <strong>provenance</strong>: what this page was written from, not a build instruction.</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>What was taken from it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>atrium-project/.github/workflows/docker-tool.reusable.yml</code></td>
+<td>image names, tag rules, the gate, the container smoke</td>
+</tr>
+<tr>
+<td><code>atrium-page-classification@vit</code> <code>adee922</code> and <code>atrium-translator</code> <code>v1.2.1-beta</code> — <code>Dockerfile</code>, <code>docker-compose*.yml</code>, <code>docker.yml</code>, <code>service/api.py</code>, <code>service/inference.py</code></td>
+<td>image contents, defaults, limits, health checks, weights path</td>
+</tr>
+<tr>
+<td><code>atrium-project/docs/templates/k8s/atrium-service.deployment.yaml</code></td>
+<td>probes, grace period, resources</td>
+</tr>
+<tr>
+<td><code>atrium-project/docs/k8s_deployment.md</code>, <code>docs/k8s_acceptance_runbook.md</code>, <code>docs/skill_acceptance_runbook.md</code></td>
+<td>the deployment guide and the acceptance procedures</td>
+</tr>
+<tr>
+<td><code>atrium-project/docs/templates/shared/atrium_service.py</code>, <code>healthcheck.py</code></td>
+<td>the shared lifecycle and probe</td>
+</tr>
+<tr>
+<td><code>atrium-page-classification/model_registry.py</code></td>
+<td>the checkpoint sizes behind the memory figure</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Developed by UFAL, Charles University · funded by ATRIUM · MIT licensed
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "navigation.indexes", "navigation.tracking", "search.highlight", "search.suggest", "content.code.copy", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
