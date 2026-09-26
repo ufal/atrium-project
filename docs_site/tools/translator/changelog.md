@@ -2,7 +2,7 @@
 title: translator — Changelog
 nav_order: 53
 status: published
-round: 6
+round: 8
 issue: 57
 repo: atrium-translator
 role: changelog
@@ -19,7 +19,7 @@ Releases are numbered as pre-releases in the project's own sense — `0.x`, then
 and from `v0.10.1` on each one publishes its container images through the release gate
 described on [Operations](../../operations.md#the-release-gate).
 
-## The four arcs
+## The five arcs
 
 **1 · Getting XML in and out intact** (`v0.0.2` → `v0.4.1`). The early releases narrow the
 problem. `v0.0.2` accepts almost anything — txt, pdf, xml — and `v0.1.0` adds a draft AMCR
@@ -48,15 +48,69 @@ at `@v1`, and then two releases that are about behaviour rather than features:
 `v1.0.0-beta` makes five announced-but-inert contracts real, and `v1.1.0-beta` adds the
 replace/append switch and fixes three defects that only appeared under real use.
 
+**5 · Trusting the output** (`v1.2.0-beta` → `v1.2.1-beta`). The first sample refresh against
+the live service found replies that were not translations, an aligner that trusted them, and
+an `append` mode for ALTO that lost the source. `v1.2.0-beta` checks every reply against its
+source, re-runs and keeps-as-source what fails, keeps the scanned text in ALTO `append`,
+makes `--source_lang auto` fall back instead of guessing, and gives the log a `status` per
+line. `v1.2.1-beta` makes each document record state the run's licence, makes `--xsd` work
+on AMCR records — which settles that AMCR 2.2 accepts `replace` output and not `append` — and
+corrects the published API image name in the documentation.
+
+## v1.2.1-beta — licence in every record, `--xsd` on AMCR
+
+* **Every document record states the run's licence.** The record took its licence block
+  before the backend's components were recorded, so the record of a one-file run — one
+  pipeline stage, one `/translate` call — and the first record of a batch named only
+  FastText, or no component at all, and resolved to CC BY-NC 4.0 instead of the run's
+  CC BY-NC-SA 4.0.
+* **`--xsd` works on AMCR records.** The AMCR 2.2 schema imports the W3C XML-namespace schema
+  over `http://`, which lxml's libxml2 cannot fetch, so loading it always failed; imports are
+  resolved by the tool now. A harvested record is validated inside its OAI-PMH envelope, not
+  the envelope itself.
+* **The answer it gives:** AMCR 2.2 accepts the records as source and as `replace` output,
+  and rejects `append` output — `xml:lang` is not declared on the free-text fields and the
+  repeated element is not allowed. `append` on AMCR records logs a warning; ALTO in either
+  mode validates against ALTO 3.1.
+* **Image name.** The API image is `ghcr.io/ufal/atrium-translator-api:<version>`; the README
+  and the compose file named a tag that is never published.
+
+## v1.2.0-beta — trusting the output
+
+**The degenerate-output guard.** Every reply — block, line anchor, metadata field — is
+checked against its own source for being empty, far too long, cut short or stuck in a loop.
+A bad reply is requested again; a segment that still fails is re-run once the whole document
+is done; one that never recovers keeps its source text and is logged `untranslated`. A
+batched reply is accepted only when every item in it passes.
+
+**ALTO alignment restored.** Line anchors are checked before they steer the split, a line
+with an unusable anchor is placed by word count (`approx_alignment`), no line with text is
+starved while words remain, and a table column whose repeated cells the model merged is
+placed line by line from each cell's own translation.
+
+**ALTO `append` keeps the source.** `CONTENT` stays as scanned; each `String` gains
+`<ALTERNATIVE PURPOSE="translation:<target>">`. `replace` moves an existing block `LANG` to the
+target language.
+
+**Source language.** A FastText guess is used only when the text is long enough, the score
+high enough and the language one the backend translates; otherwise the element's label, the
+document's language, then `--default-source-lang` (`cs`). The record gets
+`translations.detected_source_lang`.
+
+**The log.** A sixth column, `status` (`ok` / `rerun` / `approx_alignment` / `untranslated`);
+rows in document order; written beside the output and moved into place when the document is
+done. Also: `ct2` registered as a backend, vocabulary provenance columns, a metadata-mode
+directory scan that leaves `*.alto.xml` out.
+
 ## v1.1.0-beta — the replace/append switch
 
 **The replace/append switch.** `--output-mode replace|append` — also a `config.txt` key, an
 `OUTPUT_MODE` environment variable and a `/translate` field — decides whether the
 source-language field is overwritten or kept beside an `xml:lang`-marked sibling, the shape
-AMCR's own thesaurus already uses for `heslo` / `heslo_en`. In ALTO mode it **labels rather
-than duplicates**: a per-`String` append would multiply a word-to-box alignment that is
-manufactured rather than observed. `replace` stays the default, and its output is
-byte-identical across all 16 shipped samples.
+AMCR's own thesaurus already uses for `heslo` / `heslo_en`. In ALTO mode this release
+labelled the block rather than adding a per-`String` alternative (`v1.2.0-beta` replaced that
+with an `ALTERNATIVE` per `String`, keeping the scanned text). `replace` stays the default,
+and its output is byte-identical across all 16 shipped samples.
 
 **Three fixes that only real use could find:**
 
@@ -89,6 +143,8 @@ reintroducing the defect and watching the new guard go red.
 
 | Version         | What changed                                                                                                                                                                                                                                                     |
 |-----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **v1.2.1-beta** | Every document record states the run's licence; `--xsd` loads the AMCR schema and validates the record inside an OAI-PMH envelope — AMCR 2.2 accepts `replace`, rejects `append`; API image name corrected                                                       |
+| **v1.2.0-beta** | Degenerate-output guard with end-of-document re-run; ALTO alignment restored; ALTO `append` keeps `CONTENT` and adds `ALTERNATIVE`; safer `--source_lang auto`; log `status` column; `ct2` registered                                                            |
 | **v1.1.0-beta** | The replace/append switch; `/translate` metadata 422; body *and* query parameters accepted; batch-fallback instrumentation                                                                                                                                       |
 | **v1.0.0-beta** | Pre-production hardening — five announced-but-inert contracts made real. **Breaking:** non-zero CLI exit on failure                                                                                                                                              |
 | **v0.10.5**     | Re-vendored `atrium_document.py`; `.coveragerc` stops omitting `service/*` — where a `backend`-less `/translate` HTTP 500 had been hiding — floor held at 81 % against a re-measured 82.87 %                                                                     |
@@ -115,8 +171,8 @@ reintroducing the defect and watching the new guard go red.
 
 ## Sources
 
-Read from `ufal/atrium-translator` at branch **`master`**, commit `71feaef` (2026-09-23).
-The arcs are written here, not taken from a source. This table records **provenance**, not a
+Read from `ufal/atrium-translator` at release **`v1.2.1-beta`** (branch **`master`**). The arcs
+are written here, not taken from a source. This table records **provenance**, not a
 build instruction.
 
 | Source                                  | What was taken from it                              |

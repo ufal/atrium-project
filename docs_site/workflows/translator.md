@@ -2,7 +2,7 @@
 title: translator workflow
 nav_order: 17
 status: published
-round: 7
+round: 8
 issue: 57
 repo: atrium-translator
 role: workflow
@@ -38,15 +38,15 @@ rendered the same way in every document.
 
 ## Steps
 
-| # | Step                                   | What happens                                                                                                                                                                                                                                                                                                                                                               | In → out    | Activity    |
-|---|----------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|-------------|
-| 1 | Prepare a domain vocabulary (optional) | The bundled harvester collects Czech–English term pairs from the AMČR vocabularies (over OAI-PMH) and the TEATER thesaurus, each pair pointing back to the concept it came from; a vocabulary of one's own in the same CSV form works as well.                                                                                                                             | → CSV       | Collecting  |
-| 2 | Choose the mode and the fields         | ALTO transcriptions are translated in ALTO mode, which works on the words of each text line. For metadata records, the fields to translate are listed as XPaths; namespaces and OAI-PMH envelopes are handled by the tool.                                                                                                                                                 | ALTO, XML   | —           |
-| 3 | Identify the source language           | A language-identification model detects the language of each text block (ALTO) or field (metadata), so a record that mixes languages is handled piece by piece. Naming the source language skips detection.                                                                                                                                                                | —           | —           |
-| 4 | Protect domain terms (optional)        | Vocabulary terms found in the text are replaced by placeholders before translation and restored as their agreed translations afterwards; multi-word terms are matched first, single words by lemma. Language-model backends receive the vocabulary as a glossary instead.                                                                                                  | CSV         | Lemmatizing |
-| 5 | Translate                              | The text goes to the chosen backend: the LINDAT translation service (CUBBITT, the default), a self-hosted CTranslate2 model, or an OpenAI-compatible language-model API. Long texts are split at sentence boundaries first.                                                                                                                                                | —           | Translating |
-| 6 | Rebuild and validate the document      | ALTO: each text block is translated as a whole and line by line; the fluent whole-block translation is then divided among the original lines and written into the original word elements. Metadata: the translation replaces the source text, or is added beside it with language labels. Metadata output can be validated against an XSD schema, such as the AMČR schema. | → ALTO, XML | —           |
-| 7 | Review and record provenance           | A translation log beside each output pairs source and target text line by line or field by field, for review. The paradata log records what was run and the licence it resolved to; the document record, on request, notes the languages, the backend and the translated file.                                                                                             | → CSV, JSON | —           |
+| # | Step                                   | What happens                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | In → out    | Activity    |
+|---|----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|-------------|
+| 1 | Prepare a domain vocabulary (optional) | The bundled harvester collects Czech–English term pairs from the AMČR vocabularies (over OAI-PMH) and the TEATER thesaurus, each pair pointing back to the concept it came from; a vocabulary of one's own in the same CSV form works as well.                                                                                                                                                                                                                                                | → CSV       | Collecting  |
+| 2 | Choose the mode and the fields         | ALTO transcriptions are translated in ALTO mode, which works on the words of each text line. For metadata records, the fields to translate are listed as XPaths; namespaces and OAI-PMH envelopes are handled by the tool.                                                                                                                                                                                                                                                                    | ALTO, XML   | —           |
+| 3 | Identify the source language           | A language-identification model detects the language of each text block (ALTO) or field (metadata), so a record that mixes languages is handled piece by piece. A guess is used only when it is confident and names a language the backend translates; otherwise the element's own language label, the document's language, then a configured default decide. Naming the source language skips detection.                                                                                     | —           | —           |
+| 4 | Protect domain terms (optional)        | Vocabulary terms found in the text are replaced by placeholders before translation and restored as their agreed translations afterwards; multi-word terms are matched first, single words by lemma. Language-model backends receive the vocabulary as a glossary instead.                                                                                                                                                                                                                     | CSV         | Lemmatizing |
+| 5 | Translate                              | The text goes to the chosen backend: the LINDAT translation service (CUBBITT, the default), a self-hosted CTranslate2 model, or an OpenAI-compatible language-model API. Long texts are split at sentence boundaries first. Every reply is checked against its source: one that is empty, runaway, cut short or looping is requested again, re-run at the end of the document if it still fails, and never written.                                                                           | —           | Translating |
+| 6 | Rebuild and validate the document      | ALTO: each text block is translated as a whole and line by line; the fluent whole-block translation is then divided among the original lines and written into the original word elements — replacing their text, or added beside it as an alternative. Metadata: the translation replaces the source text, or is added beside it with language labels. Metadata output can be validated against an XSD schema, such as the AMČR schema, which accepts replaced records and not appended ones. | → ALTO, XML | —           |
+| 7 | Review and record provenance           | A translation log beside each output pairs source and target text line by line or field by field, with a status saying whether each was translated normally, recovered by a re-run, placed approximately or kept as source. The paradata log records what was run and the licence it resolved to; the document record, on request, notes the languages, the backend, the translated file and the same licence.                                                                                | → CSV, JSON | —           |
 
 The vocabulary step is its own workflow on Pipelines —
 [W7, vocabulary harvesting and review](../pipelines.md#w7--vocabulary-harvesting--review-the-translators-half).
@@ -55,7 +55,8 @@ The vocabulary step is its own workflow on Pipelines —
 
 * **The same document in another language** — `<name>_<target language>.<extension>`, every tag
   and namespace in place; for ALTO, every line where it was.
-* **A review log** — `<name>_log.csv`, with the source and the translated text side by side.
+* **A review log** — `<name>_log.csv`, with the source and the translated text side by side, and a
+  status per line that points a reviewer at what was recovered, approximated or left untranslated.
 * **Consistent terminology** — every protected term carries its agreed translation, and the
   paradata counts the protected terms per document.
 * **A provenance record** — the paradata log of the run, with the licence it resolved to.
@@ -70,7 +71,10 @@ refers to it.
   words of a line are spread over its word elements is constructed, because a translation has
   a different number of words.
 * **Schema validation applies to metadata output.** ALTO output keeps the structure of its
-  input but is not validated against the ALTO schema.
+  input — and is valid ALTO in either mode — but is not validated by the tool.
+* **Appended AMČR records are not valid AMČR.** The AMČR schema allows neither a language label
+  on the translated fields nor a second copy of them; a record that must validate is translated
+  in replace mode.
 * **Language coverage is the backend's.** CUBBITT is centred on Czech; other language pairs
   need another backend.
 * **Placeholders protect terms only for the LINDAT backend.** Language-model backends get a
@@ -134,8 +138,8 @@ seven above. Related records: LINDAT Translation, UDPipe.
 
 ## Sources
 
-Read from `ufal/atrium-translator` at release **`v1.1.0-beta`** (branch **`master`**, commit
-`a5d2213`) and from this site's translator section. This table records **provenance**, not a
+Read from `ufal/atrium-translator` at release **`v1.2.1-beta`** (branch **`master`**) and from
+this site's translator section. This table records **provenance**, not a
 build instruction.
 
 | Source                                                                                            | What was taken from it                                |

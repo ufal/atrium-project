@@ -2,7 +2,7 @@
 title: translator — Guide
 nav_order: 51
 status: published
-round: 6
+round: 8
 issue: 57
 repo: atrium-translator
 role: guide
@@ -60,14 +60,23 @@ python main.py /data/amcr --output-mode append -o /data/translated
 `append` inserts a same-tag sibling carrying `xml:lang="<target>"`, which is the shape
 AMCR's own thesaurus already uses for `heslo` / `heslo_en`, and stamps the source element
 with its own `xml:lang`. Re-running is then a no-op rather than a double translation,
-because the pair is detectable. In ALTO mode `append` **labels rather than duplicates** —
-it sets `LANG` on the `TextBlock` and leaves the `String` inventory 1:1 with the source.
+because the pair is detectable. In ALTO mode `append` keeps every `String`'s `CONTENT` — the
+scanned text and its geometry — and adds the English placed on that box as an
+`<ALTERNATIVE PURPOSE="translation:<target>">` inside the `String`.
 [Reference → Metadata mode](reference.md#metadata-amcr-mode) walks through the steps.
 
-!!! tip "Validate `append` output against the AMCR schema"
-    `--xsd <url-or-path>` validates the finished metadata file and reports any failure as a
-    warning — the way to confirm that a target schema accepts the added sibling elements.
-    It applies to metadata output only, not to ALTO.
+!!! warning "AMCR records that must stay schema-valid: use `replace`"
+    The AMCR 2.2 schema does not allow a repeated free-text element, nor `xml:lang` on one,
+    so an AMCR record in `append` shape does not validate; a run that appends to AMCR records
+    logs one warning saying so. `replace` output validates, and so does ALTO in either mode.
+    `--xsd <url-or-path>` checks the finished metadata file — for a harvested record, the
+    record inside the OAI-PMH envelope — and reports any failure as a warning. It applies to
+    metadata output only, not to ALTO.
+
+```bash
+python main.py /data/amcr --formats xml --xpaths amcr-fields.txt --output-mode replace \
+    --xsd https://api.aiscr.cz/schema/amcr/2.2/amcr.xsd -o /data/translated
+```
 
 **Straight from AMCR** — an input may be an OAI-PMH `GetRecord` URL, like the samples in
 `amcr-inputs.txt`; it is downloaded to `--download-dir` first:
@@ -91,9 +100,12 @@ Four layers, highest first:
 
 !!! note "The source language defaults to detection"
     The shipped `config.txt` sets `source_lang = auto`, so FastText identifies the language
-    unless `--source_lang` is given. Pass `--source_lang cs` when the input is known to be
-    Czech: it saves the detection step and keeps the CC BY-NC FastText component out of
-    the run's resolved licence.
+    unless `--source_lang` is given. A guess is used only when the text is long enough, the
+    guess confident enough and the language one the backend translates; otherwise the
+    element's own label, then the document's language, then `--default-source-lang`
+    (`default_source_lang`, `DEFAULT_SOURCE_LANG`, `cs`) decide. Pass `--source_lang cs` when
+    the input is known to be Czech: it saves the detection step and keeps the CC BY-NC
+    FastText component out of the run's resolved licence.
 
 The endpoints are attachable, which is the point of `config.txt`'s own note on them: they
 are environment variables rather than config keys because they vary per deployment.
@@ -109,7 +121,7 @@ which is exactly what the repository's own integration tests do.
 ## 4 · Run it as a container
 
 Two images are published to GHCR from one Dockerfile. `<version>` is the release without its
-leading `v` — `1.1.0-beta` for release `v1.1.0-beta` — or `latest`; see [Operations](../../operations.md#images-and-tags) for
+leading `v` — `1.2.1-beta` for release `v1.2.1-beta` — or `latest`; see [Operations](../../operations.md#images-and-tags) for
 when each tag moves.
 
 | Image                                          | Stage  | Entry point             | What it is                    |
@@ -188,20 +200,24 @@ are on the [Agent skills](../../agent-skills.md) page.
 
 ## Troubleshooting
 
-| Symptom                                             | Cause                                                                                                  | Fix                                                                                                                 |
-|-----------------------------------------------------|--------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
-| `.env` values have no effect under `python main.py` | `.env` is read by Compose (`env_file`) for the container; `main.py` reads only the process environment | export the variables, or run through Compose                                                                        |
-| `EACCES` writing to `./data` under Docker           | host directory not writable by uid 10001                                                               | `chown 10001` the mounted directory                                                                                 |
-| Container reports healthy, nothing can reach it     | `HOST=127.0.0.1` binds inside the container only                                                       | leave `HOST` unset (defaults to `0.0.0.0`)                                                                          |
-| Every document is detected as English               | the FastText model could not be downloaded or loaded; detection then answers `en` for everything       | check `GET /health?deep=true`, which reports it; or pass `--source_lang` explicitly, which skips detection entirely |
-| `/translate` answers 422 for a metadata file        | no readable `AMCR_FIELDS_PATH`, so there are no fields to translate                                    | point `AMCR_FIELDS_PATH` at `amcr-fields.txt` or your own XPath list                                                |
-| A translation run is slow, with no error            | page batches fell back to one call per item, after a line-count mismatch or a transport error          | read the per-document `WARNING` summary, which counts each cause                                                    |
-| Container exits 143                                 | clean SIGTERM drain                                                                                    | expected; not a failure                                                                                             |
+| Symptom                                             | Cause                                                                                                               | Fix                                                                                                                 |
+|-----------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| `.env` values have no effect under `python main.py` | `.env` is read by Compose (`env_file`) for the container; `main.py` reads only the process environment              | export the variables, or run through Compose                                                                        |
+| `EACCES` writing to `./data` under Docker           | host directory not writable by uid 10001                                                                            | `chown 10001` the mounted directory                                                                                 |
+| Container reports healthy, nothing can reach it     | `HOST=127.0.0.1` binds inside the container only                                                                    | leave `HOST` unset (defaults to `0.0.0.0`)                                                                          |
+| Every block is translated as the default language   | the FastText model could not be downloaded or loaded, so nothing is detected and the fallbacks decide               | check `GET /health?deep=true`, which reports it; or pass `--source_lang` explicitly, which skips detection entirely |
+| `/translate` answers 422 for a metadata file        | no readable `AMCR_FIELDS_PATH`, so there are no fields to translate                                                 | point `AMCR_FIELDS_PATH` at `amcr-fields.txt` or your own XPath list                                                |
+| A translation run is slow, with no error            | page batches fell back to one call per item, after a line-count mismatch, an implausible reply or a transport error | read the per-document `WARNING` summary, which counts each cause                                                    |
+| `LINDAT: N degenerate reply(ies) re-requested`      | the translation service answered some requests with a looping or empty reply; each was asked again                  | nothing, if the log has no `untranslated` rows — the guard recovered them; it only costs time                       |
+| Rows marked `untranslated` in `_log.csv`            | a segment stayed degenerate after the end-of-document re-run; its source text was kept                              | re-run that document later; raise `LINDAT_GUARD_RETRIES` / `TRANSLATION_RERUN_ROUNDS` if it recurs                  |
+| `XSD validation failed` on an `append` AMCR record  | AMCR 2.2 accepts neither `xml:lang` on the translated field nor its repeated sibling                                | expected for `append`; use `replace` where the record must validate                                                 |
+| Container exits 143                                 | clean SIGTERM drain                                                                                                 | expected; not a failure                                                                                             |
 
 ## Sources
 
-Read from `ufal/atrium-translator` at branch **`master`**, commit `71feaef` (2026-09-23).
-This table records **provenance**, not a build instruction.
+Read from `ufal/atrium-translator` at release **`v1.2.1-beta`** — branch **`master`**:
+`v1.2.0-beta` (`3f2f1b6`) plus the record-licence, `--xsd` and image-name fixes. This table
+records **provenance**, not a build instruction.
 
 | Source                                                                       | What was taken from it                                                              |
 |------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|

@@ -2,7 +2,7 @@
 title: translator — History
 nav_order: 54
 status: published
-round: 6
+round: 8
 issue: 57
 repo: atrium-translator
 role: history
@@ -49,12 +49,41 @@ pass only as a ruler. It is the single most consequential design decision in the
 and it is the reason some output boxes end up empty or holding several words: the word-to-box
 correspondence in a translated ALTO is *manufactured by the bucketing*, not observed.
 
-That fact is what later settled the `append` question. A per-`String` English alternative
-would not be an alternative reading of that word — it would be whichever token the bucketing
-happened to land there. So `append` labels the block instead.
+That fact shaped the first `append` for ALTO: a per-`String` English alternative would not be
+an alternative reading of that word, but whichever token the bucketing happened to land
+there, so `v1.1.0-beta` labelled the block instead — and overwrote `CONTENT`, which lost the
+scanned text. `v1.2.0-beta` reversed that: the scanned `CONTENT` stays, and each `String`
+gains an `ALTERNATIVE` saying which English landed on that box — the same value `replace`
+writes, read the same way, line by line.
 
 `v0.8.0` then moved the API calls from per-block to per-page batches, which cut the number of
 calls by roughly a factor of twenty.
+
+## 2026-09 · Replace or append, and trusting the output (#46)
+
+Issue #46 asked two things at once: run the tool in production, and decide whether English
+should **replace** the Czech or be **appended** beside it. The design answer was a switch
+rather than a verdict — `--output-mode replace|append`, `replace` by default — so that a real
+corpus, not an argument, would decide.
+
+The first refresh of the shipped samples against the live service then showed why output
+has to be checked, not trusted. Some replies came back as one Czech word repeated to a
+length cap — deterministic for a given input, cured by asking again: the signature of one
+faulty server behind a load balancer. Nothing looked at reply content, so the garbage
+reached the documents and, through the never-logged line anchors, the alignment of whole
+pages. `v1.2.0-beta` answers with a guard on every reply, a re-run at the end of the
+document, and the rule that what never recovers keeps its source text and is marked in the
+log. The same refresh exposed FastText's guesses at rare languages for short OCR blocks,
+which is why detection now falls back rather than guesses.
+
+A production-readiness review before the run found three more things, fixed in
+`v1.2.1-beta`: document records were written before the backend's licence was recorded, so
+a one-page pipeline stage understated its output licence; `--xsd` could not load the AMCR
+schema at all; and the published API image was named wrongly in the documentation. With
+`--xsd` working, the schema answered the question the switch had left open: AMCR 2.2 accepts
+`replace` output and rejects `append` output for the free-text fields. ALTO in either mode
+is valid ALTO. Which mode production should use is still for its consumers to decide; where
+an AMCR record must validate, it is `replace`.
 
 ## 2026-09 · Twelve-factor work, driven from the hub
 
@@ -138,13 +167,13 @@ Not republished here. On GitHub:
 
 ## Sources
 
-Condensed from `ufal/atrium-translator` at branch **`master`**, commit `71feaef`
-(2026-09-23). This table records **provenance**, not a build instruction.
+Condensed from `ufal/atrium-translator` at release **`v1.2.1-beta`** (branch **`master`**). This
+table records **provenance**, not a build instruction.
 
-| Source                                                  | What was taken from it                                        |
-|---------------------------------------------------------|---------------------------------------------------------------|
-| `agent_dev_logs/DEVLOG.md`                              | the timeline, the base-image incident, the v1.0.0-beta review |
-| `agent_dev_logs/digests/4.digest.md`, `plans/4.plan.md` | the backend candidates and the resulting architecture         |
-| `agent_dev_logs/digests/46.digest.md`                   | the replace/append decision and the batching change           |
-| `CONTRIBUTING.md` § Release History                     | release dates and contents                                    |
-| `docs/translation-backends.md`                          | the candidate comparison                                      |
+| Source                                                    | What was taken from it                                         |
+|-----------------------------------------------------------|----------------------------------------------------------------|
+| `agent_dev_logs/DEVLOG.md`                                | the timeline, the base-image incident, the v1.0.0-beta review  |
+| `agent_dev_logs/digests/4.digest.md`, `plans/4.plan.md`   | the backend candidates and the resulting architecture          |
+| `agent_dev_logs/digests/46.digest.md`, `plans/46.plan.md` | the replace/append switch, the output guard, the schema answer |
+| `CONTRIBUTING.md` § Release History                       | release dates and contents                                     |
+| `docs/translation-backends.md`                            | the candidate comparison                                       |

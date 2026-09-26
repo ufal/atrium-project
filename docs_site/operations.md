@@ -200,7 +200,8 @@ classifier, or a large ALTO file through the translator's per-chunk LINDAT calls
       `huggingface.co` once at start for FastText; LINDAT's UDPipe only when a vocabulary is loaded;
       `LLM_BASE_URL` when the `openai_compatible` backend is selected. In an egress-restricted
       cluster, expect `/ready` to answer 200 while `/health?deep=true` reports the FastText download
-      failure.
+      failure; `source_lang=auto` then falls back to each element's language label and the default
+      source language (`cs`) instead of detecting.
     * **Limits.** `MAX_UPLOAD_MB` defaults to **50**, because ALTO goes in and ALTO comes out;
       set it explicitly when deploying from the shared template, whose example value is lower.
 
@@ -219,6 +220,10 @@ layer is configured entirely by those. The translator reads:
 | `TRANSLATION_URL`                                                        | LINDAT's public host | attach a self-hosted translation service; `LINDAT_BASE_URL` is accepted as an alias        |
 | `UDPIPE_URL`                                                             | LINDAT's public host | lemma matching for the vocabulary                                                          |
 | `LINDAT_MIN_INTERVAL_S` / `LINDAT_MAX_RETRIES` / `LINDAT_BACKOFF_BASE_S` | `0.0` / `4` / `1.0`  | rate-limits this deployment against a shared public service                                |
+| `LINDAT_GUARD_RETRIES`                                                   | `2`                  | re-requests of a reply that is not a translation (looping, empty, runaway)                 |
+| `TRANSLATION_RERUN_ROUNDS` / `TRANSLATION_RERUN_DELAY_S`                 | `1` / `10.0`         | end-of-document re-run of segments that stayed bad; a long request grows by the delay      |
+| `DEFAULT_SOURCE_LANG`                                                    | `cs`                 | the source language `auto` falls back to                                                   |
+| `LANG_ID_MIN_CONFIDENCE` / `LANG_ID_MIN_LETTERS` / `LANG_ID_LANGUAGES`   | `0.5` / `20` / —     | when a FastText guess is trusted                                                           |
 | `OUTPUT_MODE`                                                            | `replace`            | the default `replace` / `append` mode for `/translate`                                     |
 | `AMCR_FIELDS_PATH`                                                       | `amcr-fields.txt`    | the XPath targets for metadata mode — unreadable means a 422                               |
 | `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`                               | —                    | required by `openai_compatible`; the key belongs in a Secret                               |
@@ -267,11 +272,11 @@ session only the task, with no instructions, and see it succeed. See [Agent skil
 
 This table records **provenance**: what this page was written from, not a build instruction.
 
-| Source                                                                                                                                                                            | What was taken from it                                        |
-|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------|
-| `atrium-project/.github/workflows/docker-tool.reusable.yml`                                                                                                                       | image names, tag rules, the gate, the container smoke         |
-| `atrium-page-classification@vit` `adee922` and `atrium-translator@master` `71feaef` — `Dockerfile`, `docker-compose*.yml`, `docker.yml`, `service/api.py`, `service/inference.py` | image contents, defaults, limits, health checks, weights path |
-| `atrium-project/docs/templates/k8s/atrium-service.deployment.yaml`                                                                                                                | probes, grace period, resources                               |
-| `atrium-project/docs/k8s_deployment.md`, `docs/k8s_acceptance_runbook.md`, `docs/skill_acceptance_runbook.md`                                                                     | the deployment guide and the acceptance procedures            |
-| `atrium-project/docs/templates/shared/atrium_service.py`, `healthcheck.py`                                                                                                        | the shared lifecycle and probe                                |
-| `atrium-page-classification/model_registry.py`                                                                                                                                    | the checkpoint sizes behind the memory figure                 |
+| Source                                                                                                                                                                         | What was taken from it                                        |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------|
+| `atrium-project/.github/workflows/docker-tool.reusable.yml`                                                                                                                    | image names, tag rules, the gate, the container smoke         |
+| `atrium-page-classification@vit` `adee922` and `atrium-translator` `v1.2.1-beta` — `Dockerfile`, `docker-compose*.yml`, `docker.yml`, `service/api.py`, `service/inference.py` | image contents, defaults, limits, health checks, weights path |
+| `atrium-project/docs/templates/k8s/atrium-service.deployment.yaml`                                                                                                             | probes, grace period, resources                               |
+| `atrium-project/docs/k8s_deployment.md`, `docs/k8s_acceptance_runbook.md`, `docs/skill_acceptance_runbook.md`                                                                  | the deployment guide and the acceptance procedures            |
+| `atrium-project/docs/templates/shared/atrium_service.py`, `healthcheck.py`                                                                                                     | the shared lifecycle and probe                                |
+| `atrium-page-classification/model_registry.py`                                                                                                                                 | the checkpoint sizes behind the memory figure                 |

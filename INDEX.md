@@ -149,6 +149,28 @@ of a Workflow RO-Crate. The overview page holds that field table.
   llm-enrich lands on their workflow page instead of a missing tool section. The regenerated
   cards also carry alto-postprocess's multi-format tagline and nlp-enrich's current chips.
 
+## What round 8 changed
+
+**The translator section follows `v1.2.1-beta`.** Its five tool pages and its workflow page were
+written against `71feaef`/`v1.1.0-beta`, before issue #46's output guard, ALTO append rework and
+language rules existed; each claim was re-read against the code and corrected:
+
+- ALTO `append` is an `ALTERNATIVE` per `String` with `CONTENT` kept, not a block label;
+- the source-language rules (detected ≥ 0.5 and ≥ 20 letters, backend-supported → element
+  label → document language → default `cs`) replace the 0.2 threshold and the "answers `en`"
+  failure mode; `translations.detected_source_lang`;
+- the degenerate-output guard, the end-of-document re-run and the log's `status` column;
+- **AMCR 2.2 does not accept `append` output** — measured, not assumed: the shipped records
+  validate against the published schema as source (15/15) and `replace` output (15/15), not as
+  `append` output (0/15); ALTO of either mode is valid ALTO 3.1;
+- new flags and variables on Reference and Operations; `v1.2.0-beta` / `v1.2.1-beta` on the
+  Changelog, and #46 on History.
+
+**Deployment docs corrected.** The shared K8s manifest named the API image
+`atrium-<tool>:<version>-api`, which the release workflow never publishes; it is
+`atrium-<tool>-api:<version>`. `docs/k8s_deployment.md`'s translator rows gain `OUTPUT_MODE`,
+`AMCR_FIELDS_PATH`, `LINDAT_GUARD_RETRIES` and `DEFAULT_SOURCE_LANG`.
+
 ## Layout
 
 | Path                                    | What it is                                                                                                               |
@@ -172,7 +194,7 @@ of a Workflow RO-Crate. The overview page holds that field table.
 | `workflows/*`                                                                          | **written** — overview, 2 full narratives, 3 stable-core narratives (round 7)                                                      |
 | `development-history.md`                                                               | **partial** — per-repo index and the cross-repository chronology                                                                   |
 | `tools/page-classification/*`                                                          | **written** — 5 pages, from `vit` @ `adee922` (round 6)                                                                            |
-| `tools/translator/*`                                                                   | **written** — 5 pages, from `master` @ `71feaef` (round 6)                                                                         |
+| `tools/translator/*`                                                                   | **written** — 5 pages, from release `v1.2.1-beta` (round 8)                                                                        |
 | `ecosystem/repository-map.md`                                                          | **written** — six identity rows; depth for the two documented tools                                                                |
 | `ecosystem/{architecture,document-contract}.md`, `contracts/{schemas,skos,rocrate}.md` | **partial** — written for page-classification and translator                                                                       |
 | `agent-skills.md`, `operations.md`, `contributing-standards.md`                        | **partial** — written for page-classification and translator                                                                       |

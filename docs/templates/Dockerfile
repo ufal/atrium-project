@@ -118,7 +118,7 @@ ENTRYPOINT ["python", "run_pipeline.py"]
 CMD []
 
 
-# ── API surface — published as :<version>-api ────────────────────────────────────────
+# ── API surface — published as ghcr.io/ufal/atrium-<tool>-api:<version> ─────────────────
 FROM base AS api
 
 USER root

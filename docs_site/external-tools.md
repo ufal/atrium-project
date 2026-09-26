@@ -225,14 +225,16 @@ takes a string and returns an ISO 639-3 code with a confidence score, over 200 l
 no GPU and essentially no latency.
 
 **Where ATRIUM uses it.** The translator's `--source_lang auto` path. It maps FastText's 639-3
-output to the 639-1 codes the translation API expects, across
-[20 languages](tools/translator/reference.md#languages), with a confidence threshold of 0.2. In
-ALTO mode it runs once per `TextBlock` so every line in a block is translated consistently.
+output to the 639-1 codes translation services expect, and uses a guess only when the text has
+at least 20 letters, the score is at least 0.5 and the language is one the backend translates;
+otherwise the element's own language label, the document's language and a default (`cs`)
+decide — see [the translator's language rules](tools/translator/reference.md#languages). In ALTO
+mode it runs once per `TextBlock` so every line in a block is translated consistently.
 
 **Two things to know.** Its weights are **CC BY-NC 4.0**, so auto-detection alone makes a run's
 output non-commercial — passing `--source_lang` explicitly avoids that. And if the model fails
-to load, detection answers `en` with confidence 0.0 for every document, and the service reports
-the failure on `GET /health?deep=true`.
+to load, nothing is detected — the fallbacks decide every block — and the service reports the
+failure on `GET /health?deep=true`.
 
 **Onward:** <https://huggingface.co/facebook/fasttext-language-identification>
 
@@ -861,7 +863,7 @@ This table records **provenance**, not a build instruction.
 
 | Source                                                                                                                                                                                                                                                                                                                                                                                  | What was taken from it                                                                                                                              |
 |-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
-| `atrium-translator` @ `master` `71feaef` — `processors/{backend,identifier,translator,lemmatizer,llm_translator,ct2_translator}.py`, `config.txt`, `para_config.txt`, `docs/translation-backends.md`, `amcr-inputs.txt`, `load_vocab.py`, `eval/`, `service/requirements.txt`, `.github/dependabot.yml`, `CITATION.cff`, `data_samples/my_documents/`                                   | CUBBITT, UDPipe, FastText, AMCR, OAI-PMH, TEATER, CoNLL-U, the back-ends, sacreBLEU / COMET, FastAPI, AIS CR hosts, and every licence consequence   |
+| `atrium-translator` `v1.2.1-beta` — `processors/{backend,identifier,language,translator,lemmatizer,llm_translator,ct2_translator}.py`, `config.txt`, `para_config.txt`, `docs/translation-backends.md`, `amcr-inputs.txt`, `load_vocab.py`, `eval/`, `service/requirements.txt`, `.github/dependabot.yml`, `CITATION.cff`, `data_samples/my_documents/`                                 | CUBBITT, UDPipe, FastText, AMCR, OAI-PMH, TEATER, CoNLL-U, the back-ends, sacreBLEU / COMET, FastAPI, AIS CR hosts, and every licence consequence   |
 | `atrium-page-classification` @ `vit` `adee922` — `setup/{requirements,para_config,config}.txt`, `service/{api.py,inference.py,requirements.txt}`, `Dockerfile`, `docker-compose.yml`, `.github/dependabot.yml`, `.coveragerc`, `.pre-commit-config.yaml`, `data_scripts/`, `result/`, `README.md`, `CITATION.cff`                                                                       | Hugging Face, `ufal/vit-historical-page`, `regnety_160`, the ML stack, PDF rasterisation, Docker, the LINDAT dataset handle, ARÚP/ARÚB result files |
 | the shared files both tools vendor — `atrium_vocab.py`, `atrium_rocrate.py`, `atrium_document.py` + schema, `atrium_paradata.py`, `para_licenses.py`, `check_version.py`                                                                                                                                                                                                                | every metadata-standards entry; the licence and Turtle behaviour                                                                                    |
 | `atrium-project` @ `main` `7b0b84e` — `docker-tool.reusable.yml`, `security.reusable.yml`, `codeql.reusable.yml`, `docs/templates/Dockerfile`, `docs/templates/workflows/dependabot.example.yml`, `docs/rocrate_export.md` §3, `docs/skos_strategy.md`                                                                                                                                  | Trivy, CodeQL, SBOM, GHCR tagging, Dependabot, the DMP standards                                                                                    |

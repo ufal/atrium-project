@@ -1515,3 +1515,30 @@ the freeze tag `doc-schema-v1` (@ `544298b`), and it is additive.
   3. Move `v1`.
 
   Not pushed: files delivered in chat.
+
+## 2026-09-26 (round 8) — translator production readiness (#46), site section re-read at `v1.2.1-beta`
+
+* **Why:** translator #46's production run is next. The translator site section had been written at `71feaef`
+  (`v1.1.0-beta`), before `v1.2.0-beta` reworked ALTO append, language detection and output checking.
+* **Translator findings, fixed in the tool (`v1.2.1-beta`):**
+  * document records understated their licence (CC BY-NC 4.0 instead of CC BY-NC-SA 4.0) for every one-page
+    pipeline stage and every `/translate` call;
+  * `--xsd` could not load AMCR 2.2 — its `xml.xsd` import needs HTTP, which lxml 6.1.3's libxml2 2.14.6 lacks;
+  * `--xsd` validated the OAI-PMH envelope instead of the record.
+* **The question those fixes answered:** AMCR 2.2 accepts the shipped records as source (15/15) and `replace`
+  output (15/15), and rejects `append` output (0/15: `xml:lang` not declared on the free-text fields, repeated
+  element not allowed). ALTO source/replace/append all validate against ALTO 3.1. Decision: both modes stay,
+  `replace` stays the default, append on AMCR warns once per run.
+* **Hub pages:**
+  * `docs_site/tools/translator/{index,guide,reference,changelog,history}.md` and `docs_site/workflows/translator.md`
+    rewritten where the code changed (append shape, language rules, output guard, log `status`, AMCR schema limit,
+    new flags/variables, `v1.2.x` changelog, #46 history);
+  * `contracts/schemas.md` (`translations.detected_source_lang`), `operations.md` (translator variables, FastText
+    fallback), `external-tools.md` (FastText rules).
+* **Deployment docs:** `docs/templates/k8s/atrium-service.deployment.yaml` image →
+  `ghcr.io/ufal/atrium-<tool>-api:<version>` (the only name `docker-tool.reusable.yml` publishes); the template
+  `Dockerfile` comment likewise; `docs/k8s_deployment.md` translator rows extended.
+* **Logs:** `57.findings.md` translator section re-checked at `c4931a2` (11 rows resolved, round-8 rows added);
+  `INDEX.md` round 8.
+* **Not ours:** the translator's `live-backend` lane (0 dispatches), GitHub's `prerelease` flag on the beta
+  releases, the LINDAT replica report, and the production run itself.

@@ -61,7 +61,10 @@ spec:
       terminationGracePeriodSeconds: 60
       containers:
         - name: api
-          image: ghcr.io/ufal/atrium-<tool>:<version>-api   # e.g. …-nlp-enrich:v1.2.0-api
+          # The published API image: `-api` is part of the image NAME and the tag is the
+          # release without its leading `v` (docker-tool.reusable.yml: `<image>-<target>`,
+          # `type=semver`). `atrium-<tool>:<version>-api` is never published.
+          image: ghcr.io/ufal/atrium-<tool>-api:<version>   # e.g. ghcr.io/ufal/atrium-translator-api:1.2.1-beta
           ports:
             # containerPort and `env: PORT` below are the ONE pair that has to agree:
             # PORT is what the process binds (service/api.py's __main__ block reads it,

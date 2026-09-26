@@ -2,7 +2,7 @@
 title: translator — Reference
 nav_order: 52
 status: published
-round: 6
+round: 8
 issue: 57
 repo: atrium-translator
 role: reference
@@ -23,13 +23,14 @@ positional and optional; omitted, it falls back to `config.txt`'s `input_path`.
 |-------------------------|---------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
 | `input_path`            | `config.txt` `input_path`                   | File or directory to translate                                                                                                                      |
 | `--output`, `-o`        | `config.txt` `output`                       | Output directory                                                                                                                                    |
-| `--source_lang`, `-src` | **`auto`** via `config.txt`                 | Source language, or `auto` for FastText detection                                                                                                   |
+| `--source_lang`, `-src` | **`auto`** via `config.txt`                 | Source language, or `auto` for FastText detection under the rules in [Languages](#languages)                                                        |
+| `--default-source-lang` | `cs` via `config.txt` `default_source_lang` | With `auto`: the language used where detection cannot be trusted. Then `DEFAULT_SOURCE_LANG`, then `cs`                                             |
 | `--target_lang`, `-tgt` | `en`                                        | Target language                                                                                                                                     |
 | `--formats`             | `alto.xml` via `config.txt`                 | Comma-separated extensions, e.g. `alto.xml,txt`                                                                                                     |
 | `--config`, `-c`        | `config.txt`                                | Configuration file                                                                                                                                  |
 | `--alto`                | off                                         | ALTO in-place mode. **Auto-enabled** when `--formats` contains `alto.xml`                                                                           |
 | `--xpaths`              | `amcr-fields.txt` via `config.txt` `fields` | File listing the AMCR XPath targets                                                                                                                 |
-| `--xsd`                 | —                                           | URL or path to an XSD for output validation. **Metadata mode only**                                                                                 |
+| `--xsd`                 | —                                           | URL or path to an XSD for output validation, warn-only. **Metadata mode only**; a harvested record is validated inside its OAI-PMH envelope         |
 | `--vocabulary`          | `data_samples/vocabulary.csv` via config    | Vocabulary CSV (`source_lemma,target_translation`)                                                                                                  |
 | `--document-json`       | —                                           | Baseline ATRIUM record to accrete onto                                                                                                              |
 | `--document-json-out`   | —                                           | Where to write the updated record                                                                                                                   |
@@ -46,27 +47,30 @@ CI step sees a run that translated nothing as a failure.
 
 ### Other entry points
 
-| Script                   | Purpose                                                         | Key flags                                               |
-|--------------------------|-----------------------------------------------------------------|---------------------------------------------------------|
-| `load_vocab.py`          | Harvest the vocabulary from AMCR (OAI-PMH) and TEATER (GraphQL) | `--out`, `--delay`, `--skip-amcr`, `--skip-teater`      |
-| `eval/bakeoff.py`        | Backend comparison: reference-based and reference-free metrics  | `--samples`, `--backends`, `--refs`, `--limit`, `--out` |
-| `check_version.py`       | Release gate: tag == `CITATION.cff` == `para_config.txt`        |                                                         |
-| `atrium_rocrate.py`      | RO-Crate 1.1 export, its own CLI                                | `--out-dir`                                             |
-| `service/healthcheck.py` | Docker healthcheck; stdlib only, always probes loopback         |                                                         |
+| Script                   | Purpose                                                                  | Key flags                                               |
+|--------------------------|--------------------------------------------------------------------------|---------------------------------------------------------|
+| `load_vocab.py`          | Harvest the vocabulary from AMCR (OAI-PMH) and TEATER (GraphQL)          | `--out`, `--delay`, `--skip-amcr`, `--skip-teater`      |
+| `eval/bakeoff.py`        | Backend comparison: reference-based and reference-free metrics           | `--samples`, `--backends`, `--refs`, `--limit`, `--out` |
+| `eval/langid_report.py`  | Per-block report: FastText's guesses beside the resolved language        | `--xpaths`, `--languages`                               |
+| `eval/lindat_probe.py`   | Sends one text N times to the live endpoint, prints the good/bad pattern | `--n`, `--text`, `--model`, `--pause`                   |
+| `check_version.py`       | Release gate: tag == `CITATION.cff` == `para_config.txt`                 |                                                         |
+| `atrium_rocrate.py`      | RO-Crate 1.1 export, its own CLI                                         | `--out-dir`                                             |
+| `service/healthcheck.py` | Docker healthcheck; stdlib only, always probes loopback                  |                                                         |
 
 ## Configuration — `config.txt`
 
-| Key                   | Shipped value                     |
-|-----------------------|-----------------------------------|
-| `input_path`          | `./data_samples/my_documents`     |
-| `source_lang`         | `auto`                            |
-| `target_lang`         | `en`                              |
-| `formats`             | `alto.xml`                        |
-| `output`              | `./data_samples/translated_files` |
-| `fields`              | `amcr-fields.txt`                 |
-| `vocabulary`          | `data_samples/vocabulary.csv`     |
-| `translation_backend` | `lindat`                          |
-| `output_mode`         | `replace`                         |
+| Key                   | Shipped value                                   |
+|-----------------------|-------------------------------------------------|
+| `input_path`          | `./data_samples/my_documents`                   |
+| `source_lang`         | `auto`                                          |
+| `target_lang`         | `en`                                            |
+| `default_source_lang` | `cs`                                            |
+| `formats`             | `alto.xml`                                      |
+| `output`              | `./data_samples/in-place_translated_files/alto` |
+| `fields`              | `amcr-fields.txt`                               |
+| `vocabulary`          | `data_samples/vocabulary.csv`                   |
+| `translation_backend` | `lindat`                                        |
+| `output_mode`         | `replace`                                       |
 
 `TRANSLATION_URL` and `UDPIPE_URL` are deliberately **not** keys here — they are
 environment variables, because they vary per deployment rather than per run.
@@ -154,6 +158,10 @@ behaviour:
 | `AMCR_FIELDS_PATH`                                                              | `amcr-fields.txt`      | XPath targets; unreadable ⇒ 422 in metadata mode                                    |
 | `TRANSLATION_URL` / `UDPIPE_URL`                                                | LINDAT                 | Attachable backing services                                                         |
 | `LINDAT_MIN_INTERVAL_S` / `LINDAT_MAX_RETRIES` / `LINDAT_BACKOFF_BASE_S`        | `0.0` / `4` / `1.0`    | Transport policy                                                                    |
+| `LINDAT_GUARD_RETRIES`                                                          | `2`                    | Re-requests of a degenerate HTTP-200 reply; the first is immediate                  |
+| `TRANSLATION_RERUN_ROUNDS` / `TRANSLATION_RERUN_DELAY_S`                        | `1` / `10.0`           | End-of-document re-run of flagged segments; `0` rounds keeps them as source at once |
+| `DEFAULT_SOURCE_LANG`                                                           | `cs`                   | The fallback source language under `auto`                                           |
+| `LANG_ID_MIN_CONFIDENCE` / `LANG_ID_MIN_LETTERS` / `LANG_ID_LANGUAGES`          | `0.5` / `20` / —       | When a FastText guess is used; `LANG_ID_LANGUAGES` narrows the accepted codes       |
 | `LLM_BASE_URL` / `LLM_MODEL` / `LLM_API_KEY` / `LLM_PROVIDER` / `LLM_LANGUAGES` | —                      | Required by `openai_compatible`; `LLM_API_KEY` is a secret                          |
 | `LLM_MAX_GLOSSARY_TERMS`                                                        | `40`                   | Vocabulary terms injected into one prompt                                           |
 | `CT2_MODEL_DIR` / `CT2_MODEL_FAMILY`                                            | — / `eurollm`          | Converted model and its family: `eurollm`, `madlad`, `nllb`, `opus`                 |
@@ -175,47 +183,96 @@ words go.
 ```mermaid
 flowchart LR
     B["TextBlock<br/>lines of Czech Strings"] --> G["gather + join<br/>block text"]
-    G --> D["detect language<br/>once per block"]
+    G --> D["resolve the source<br/>language, once per block"]
     D --> P1["Pass 1<br/>translate the block"]
     D --> P2["Pass 2<br/>translate each line<br/>(anchors only)"]
-    P1 --> A["align: split Pass-1 tokens<br/>into one bucket per line"]
-    P2 --> A
-    A --> W["write tokens into<br/>the original Strings"]
+    P1 --> C["check every reply<br/>against its source"]
+    P2 --> C
+    C --> A["align: split Pass-1 tokens<br/>into one bucket per line"]
+    A --> W["write tokens into the Strings:<br/>CONTENT or ALTERNATIVE"]
 ```
 
 Per `TextBlock`:
 
 1. **Gather** — reconstruct each `TextLine`'s text by joining its `String` `CONTENT` values.
 2. **Aggregate** — concatenate the block's lines into one string.
-3. **Detect** — run FastText **once for the whole block**, so the block is internally consistent.
-4. **Pass 1** — translate the whole block in one call. This is the text that is written back.
-5. **Pass 2** — translate each non-empty line individually. These are **never written**; they
-   are structural anchors telling the aligner how many words each physical line should get.
-6. **Align** — `_align_tokens_to_lines` partitions the Pass-1 tokens into one bucket per line,
-   searching a ±50 % window around each line's expected word count and picking the split that
-   maximises `difflib.SequenceMatcher` similarity against that line's anchor. The last line takes
-   the remainder. Within a line, tokens are distributed greedily 1-to-1 across `String`
-   elements, and **the last `String` absorbs everything left over**.
+3. **Resolve the language** — once for the whole block, so the block is internally consistent
+   (see [Languages](#languages)).
+4. **Pass 1** — translate the whole block. This is the text that is written back.
+5. **Pass 2** — translate each non-empty line of a block with two or more lines. These are
+   **never written**; they are structural anchors telling the aligner how many words each
+   physical line should get.
+6. **Check** — every block translation and every anchor is checked against its own source by
+   the [degenerate-output guard](#degenerate-output-guard). A block or anchor that fails is
+   flagged and re-run at the end of the document; a block that never recovers keeps its
+   source text and is not redistributed.
+7. **Align** — the Pass-1 tokens are partitioned into one bucket per line. A usable anchor
+   drives a search over a ±50 % window around its word count, picking the split that
+   maximises `difflib.SequenceMatcher` similarity against that anchor; a line whose anchor
+   is unusable gets a share of the remaining tokens by its source word count and is logged
+   `approx_alignment`. No line with text is left empty while tokens remain, and the last
+   line with text takes the remainder.
+8. **Write** — within a line, tokens are distributed greedily 1-to-1 across the `String`
+   elements, and **the last `String` absorbs everything left over**. In `replace` mode the
+   values go into `CONTENT` (and an existing block `LANG` becomes the target language); in
+   `append` mode `CONTENT` is untouched and each `String` gains
+   `<ALTERNATIVE PURPOSE="translation:<target>">` holding the same value.
+
+**A block with fewer translated words than lines.** A table column whose repeated cells the
+model merged — forty-two numbers coming back as thirty-nine — cannot be split: a split only
+cuts the translation, never inserts into it, so every cell after a missing word would show
+its neighbour's value. Such a block takes each line's own translation (its anchor) instead;
+a line without a usable one keeps its source text and is logged `untranslated`. Prose never
+reaches this rule, because its lines hold many words each.
 
 Guarantees: translated words never cross line boundaries, every `String` keeps its original
 position, and no Pass-1 token is lost.
 
 **Consequence.** Because tokens are bucketed per line, a `String` can end up empty or holding
 several words; no box is ever resized. The word-to-box correspondence in the output is
-**manufactured by the bucketing, not observed**, which is why `append` mode labels the block
-rather than adding a per-`String` English alternative: that alternative would not be a reading
-of that word, but whichever token the bucketing happened to land there. Read translated ALTO
-line by line, not word by word.
+**manufactured by the bucketing, not observed** — true of the `ALTERNATIVE` in `append` mode as
+much as of `CONTENT` in `replace` mode: it says which English landed on that box, not what that
+word means. Read translated ALTO line by line, not word by word. `append` keeps the scanned
+`CONTENT` so the source text and its geometry survive beside the translation; ALTO 3.1 declares
+`ALTERNATIVE` with a free-text `PURPOSE` for exactly this, so the output stays schema-valid.
 
 **`--fast-align`** skips Pass 2: each line gets a share of the block's tokens proportional to
 its source word count. It makes no per-line translation calls, at the price of slightly
-coarser line splits.
+coarser line splits; a block with fewer words than lines has every line logged
+`approx_alignment`.
 
-**Cost.** `_translate_batch` sends a page's blocks as one call and its lines as another,
-separated so they can be split again afterwards; when the line count does not survive the
-round trip, it falls back to one call per item. Each document's log ends with a `WARNING`
-summary counting clean batches, line-count mismatches and transport errors, so a slow run
-explains itself.
+**Cost.** A page's blocks go out as one call and its lines as another, separated so they can
+be split again afterwards. A reply is accepted only when its line count matches **and** every
+item passes the guard; otherwise each item is requested on its own. Each document's log ends
+with a summary counting clean batches, line-count mismatches, implausible replies, transport
+errors, flagged and recovered segments, and lines placed by word count — at `WARNING` whenever
+anything other than clean batching happened — so a slow run explains itself.
+
+## Degenerate-output guard
+
+A translation service can answer HTTP 200 with text that is not a translation — one word
+repeated until a length cap, an empty string, a reply cut short. Every reply is checked
+against its own source by `processors/quality.py` before it is used:
+
+| Check         | Rejects                                                                  |
+|---------------|--------------------------------------------------------------------------|
+| empty         | no text for a non-empty source                                           |
+| runaway       | more than three times the source's tokens plus eight                     |
+| truncated     | under a fifth of the source's tokens, for a source of ten tokens or more |
+| repetition    | a run of a 1–3-token unit repeated four or more times, or dominating it  |
+| all identical | every token the same, for a source that is not                           |
+
+What happens to a rejected reply:
+
+1. **Re-requested at once** by the `lindat` backend, up to `LINDAT_GUARD_RETRIES` times (the
+   first immediately, later ones after a back-off). The `openai_compatible` and `ct2`
+   backends apply the same check and their own length guards. Each document logs one line
+   counting the re-requests, and paradata records `lindat_degenerate_replies`.
+2. **Flagged**, if still unusable, and **re-run once the whole document is done**
+   (`TRANSLATION_RERUN_ROUNDS` rounds, each after `TRANSLATION_RERUN_DELAY_S`), one segment per
+   request. A recovered segment is logged `rerun`.
+3. **Kept as source**, if it never recovers: the element or the block's `String`s keep their
+   source text, nothing is appended, and the log row is `untranslated` with an empty target.
 
 ## Metadata (AMCR) mode
 
@@ -229,12 +286,15 @@ Used for any XML that is not ALTO — in practice AMCR records, bare or inside a
    uses — so the same XPaths work on a bare record and on one wrapped in an envelope.
 3. **Select the fields.** Each XPath from `amcr-fields.txt` (or `--xpaths`) is evaluated;
    every matching element with non-empty text is one unit of translation.
-4. **Detect, per field.** With `auto`, each field is identified separately; a confidence at
-   or below 0.2 falls back to Czech.
+4. **Resolve the language, per field.** With `auto`, the record's language is resolved once
+   from all of its targeted fields, and each field on its own under the same rules — a
+   field too short or too ambiguous inherits the record's language (see [Languages](#languages)).
 5. **Write back.** In `replace` mode the element's text is overwritten. In `append` mode a
    sibling with the same tag and attributes is inserted after it, marked
    `xml:lang="<target>"`, and the original is marked with its source language if it had no
-   `xml:lang` — the same bilingual shape AMCR uses for its own thesaurus.
+   `xml:lang` — the same bilingual shape AMCR uses for its own thesaurus. Every reply passes
+   the [degenerate-output guard](#degenerate-output-guard) first; a field that never recovers
+   is left untouched.
 6. **Save.** Everything else — other elements, attributes, comments, whitespace — is left as
    it was; the file is written without re-indentation, so a diff against the source shows only
    the translated fields.
@@ -242,7 +302,15 @@ Used for any XML that is not ALTO — in practice AMCR records, bare or inside a
 **`append` is idempotent.** A field that already has a target-language sibling, or is itself
 one, is skipped without an API call, so re-running over an appended file changes nothing.
 `replace` output carries no such marker. **`--xsd`** validates the finished metadata file
-against a schema and reports failures as warnings; ALTO output is not validated.
+against a schema and reports failures as warnings — for an OAI-PMH response, each record inside
+the envelope — and resolves the schema's own imports itself, including the W3C XML-namespace
+schema AMCR's imports for `xml:lang`. ALTO output is not validated.
+
+**AMCR 2.2 does not accept the `append` shape.** Its free-text fields (`nazev`, `popis`,
+`poznamka`, `lokalizace_okolnosti`, …) neither declare `xml:lang` nor allow a second
+occurrence, so an appended AMCR record fails validation on both halves of the pair, while the
+same record in `replace` output validates. A run that appends to AMCR records logs one warning
+saying so. Where a schema-valid AMCR record is required, translate with `replace`.
 
 ## Vocabulary protection
 
@@ -280,8 +348,8 @@ the file is built is described in [Pipelines → W7](../../pipelines.md#w7--voca
 | Artefact            | Name                                                                  | Contents                                                                                                                                                                                                                                                                                                            |
 |---------------------|-----------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Translated document | `<stem>_<target_lang><suffix>` — e.g. `MTX201501307_anon_en.alto.xml` | the same document, same tags, same coordinates                                                                                                                                                                                                                                                                      |
-| Translation log     | `<original_filename>_log.csv`                                         | `file, page_num, line_num, text_<source_lang>, text_<target_lang>` — **the last two column names are built from the run's languages**, so a header may read `text_auto, text_en`. ALTO: `page_num` is the 1-based page, `line_num` the `TextLine` element id. Metadata: `page_num` empty, `line_num` the full XPath |
-| Paradata            | `YYMMDD-HHmmss_translator.json`                                       | schema 2.0 — tool version, run id, resolved licence with its full component derivation, timings, config (including `chunk_limit: 4000`, the language-ID model, the translation API and the 0.2 confidence threshold), statistics, and skipped files                                                                 |
+| Translation log     | `<original_filename>_log.csv`                                         | `file, page_num, line_num, text_<source_lang>, text_<target_lang>, status` — **the two text column names are built from the run's languages**, so a header may read `text_auto, text_en`. ALTO: `page_num` is the 1-based page, `line_num` the `TextLine` element id. Metadata: `page_num` empty, `line_num` the full XPath. `status` is `ok`, `rerun`, `approx_alignment` or `untranslated`. Rows come in document order; the file is written as `<name>_log.csv.partial` and moved into place when the document is done, so a reader never sees an empty or half-written log |
+| Paradata            | `YYMMDD-HHmmss_translator.json`                                       | schema 2.0 — tool version, run id, resolved licence with its full component derivation, timings, config (including `chunk_limit: 4000`, the language-ID model, the translation API, the source-language rules in force, protected-term and re-requested-reply counts per document), statistics, and skipped files |
 | Document record     | `<doc_id>.document.json`                                              | see below                                                                                                                                                                                                                                                                                                           |
 | RO-Crate            | `ro-crate-metadata.json`                                              | only from `atrium_rocrate.py`'s own CLI                                                                                                                                                                                                                                                                             |
 
@@ -289,16 +357,19 @@ the file is built is described in [Pipelines → W7](../../pipelines.md#w7--voca
 
 ```json
 "translations": {
-  "source_lang": "cs",
+  "source_lang": "auto",
   "target_lang": "en",
   "backend": "lindat",
-  "output_mode": "replace"
+  "output_mode": "replace",
+  "detected_source_lang": "cs"
 }
 ```
 
-`output_mode` rides along because `additionalProperties` is true on this block — and a
-consumer that finds English in a field needs to know whether the Czech was kept beside it
-or overwritten.
+`output_mode` and `detected_source_lang` ride along because `additionalProperties` is true on
+this block. A consumer that finds English in a field needs to know whether the Czech was kept
+beside it or overwritten; and with `source_lang: "auto"` the literal says nothing about the
+record, so the language the document resolved to is recorded beside it (only when detection
+ran).
 
 The translated **text** is not stored in the record. It persists as
 `derived_from.translated_xml`, plus a licence-detail entry. `entities[].translation_en` is
@@ -306,7 +377,10 @@ declared for this tool in the schema but not produced: entities are written by n
 which runs after the translator. The record's `doc_id` is
 **inherited** from the baseline and never re-derived from the input filename, because the
 input is a page (`<doc>-1.alto.xml`), not the document. The output is validated before
-`finalize()`, so a failed record is never emitted.
+`finalize()`, so a failed record is never emitted. Its licence detail is the run's full
+resolution: the backend's components are recorded before the record takes it, so the record
+of a one-file run — one pipeline stage, one `/translate` call — states the same licence as any
+record of a batch.
 
 ## Licence is computed, not declared
 
@@ -343,17 +417,27 @@ would be logged as `UNKNOWN`, which resolves the same way.
 
 ## Languages
 
-`processors/identifier.py` maps ISO 639-3 → ISO 639-1 for exactly twenty languages:
+Detection model: `facebook/fasttext-language-identification`. Its ISO 639-3 labels are mapped
+to ISO 639-1 by `processors/language.py` (`ces→cs`, `slk→sk`, `deu→de`, `eng→en`, … — 43
+languages: those of Europe that FastText distinguishes, plus Latin, Esperanto and Hindi); a
+label outside the map is never used as a language code. Only letters are scored: the text is
+lower-cased, and everything that is not a letter becomes a space.
 
-`ces→cs · eng→en · fra→fr · deu→de · rus→ru · pol→pl · ukr→uk · slk→sk · bul→bg · hrv→hr ·
-slv→sl · lav→lv · lit→lt · est→et · hun→hu · ron→ro · spa→es · ita→it · nld→nl · hin→hi`
+With `--source_lang auto`, each block (ALTO) or field (metadata) resolves to the first of:
 
-Detection model: `facebook/fasttext-language-identification`, confidence threshold **0.2**.
-Text is lower-cased and the first 2,000 characters are scored. In ALTO mode detection runs
-once per `TextBlock`; in metadata mode once per field, falling back to Czech at or below the
-threshold. If the model cannot be loaded at all, detection answers `en` with confidence 0.0
-and the service reports the failure on `/health?deep=true`. Passing `--source_lang` skips
-detection entirely.
+| # | Basis      | Used when                                                                                                                                                                                      |
+|---|------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1 | `detected` | the text has at least `LANG_ID_MIN_LETTERS` (20) letters, FastText's best guess scores at least `LANG_ID_MIN_CONFIDENCE` (0.5), and it is a language the backend can translate into the target |
+| 2 | `hint`     | the element's own label — ALTO `LANG` / `language`, metadata `xml:lang` — names a language the backend can translate                                                                           |
+| 3 | `context`  | the language of the whole document, resolved once, up front, by rule 1 over its first ~20 000 characters                                                                                       |
+| 4 | `default`  | `--default-source-lang` → `default_source_lang` → `DEFAULT_SOURCE_LANG` → `cs`                                                                                                                 |
+
+The languages "the backend can translate" are those it offers into the target (the `lindat`
+model list, or `LLM_LANGUAGES` / `CT2_LANGUAGES`), narrowed by `LANG_ID_LANGUAGES` when set.
+Each document logs what was detected and what was overridden; paradata records the rules in
+force; the document record gets `translations.detected_source_lang`. If the model cannot be
+loaded, nothing is detected and rules 2–4 decide; the service reports the failure on
+`/health?deep=true`. Passing `--source_lang` skips detection entirely.
 
 UDPipe lemmatisation models are named per language — `czech-pdt-ud-2.15-241121`,
 `slovak-snk-ud-2.15-241121`, `polish-pdb-ud-2.15-241121`, `german-gsd-ud-2.15-241121`,
@@ -378,7 +462,9 @@ falling back to a built-in list of six pairs into English when the API cannot be
 | `processors/translator.py`                | `LindatTranslator` — CUBBITT over HTTP, with Tag-and-Protect                                 |
 | `processors/llm_translator.py`            | `LLMTranslator` — any OpenAI-compatible chat API, glossary in the prompt                     |
 | `processors/ct2_translator.py`            | `CT2Translator` — self-hosted CTranslate2 models                                             |
-| `processors/identifier.py`                | FastText language identification and the ISO 639-3 → 639-1 map                               |
+| `processors/identifier.py`                | FastText language identification                                                             |
+| `processors/language.py`                  | the ISO 639-3 → 639-1 map and the source-language rules                                      |
+| `processors/quality.py`                   | the degenerate-output check applied to every reply                                           |
 | `processors/lemmatizer.py`                | UDPipe lemmatisation over HTTP                                                               |
 | `processors/vocab.py`                     | vocabulary CSV loading and term matching                                                     |
 | `processors/chunking.py`, `http_retry.py` | text chunking and the shared retry / throttle policy                                         |
@@ -391,7 +477,9 @@ These follow from how the tool works, and are worth knowing before relying on it
 
 * **Word boxes in translated ALTO are approximate.** Line boundaries are exact; the placement
   of words within a line is manufactured (see above).
-* **Output is not validated for ALTO.** `--xsd` applies to metadata output only.
+* **Output is not validated for ALTO.** `--xsd` applies to metadata output only. (ALTO output
+  of either mode is valid against ALTO 3.1.)
+* **AMCR `append` output is not AMCR-2.2-valid.** Use `replace` where the record must validate.
 * **No RO-Crate is produced by a run.** `atrium_rocrate.py` is a separate step, run over
   finished records; see [RO-Crate export](../../contracts/rocrate.md).
 * **Language coverage is the backend's.** CUBBITT is Czech-centric; other pairs need another
@@ -401,17 +489,21 @@ These follow from how the tool works, and are worth knowing before relying on it
 
 ## Sources
 
-Read from `ufal/atrium-translator` at branch **`master`**, commit `71feaef` (2026-09-23).
-This table records **provenance**, not a build instruction.
+Read from `ufal/atrium-translator` at release **`v1.2.1-beta`** — branch **`master`**:
+`v1.2.0-beta` (`3f2f1b6`) plus the record-licence, `--xsd` and image-name fixes; the AMCR
+and ALTO schema results were produced by validating the repository's `data_samples/` against
+the published AMCR 2.2 and ALTO 3.1 schemas. This table records **provenance**, not a build
+instruction.
 
-| Source                                                       | What was taken from it                                      |
-|--------------------------------------------------------------|-------------------------------------------------------------|
-| `main.py` (`parse_arguments`, `main`)                        | the flag table, defaults and exit codes                     |
-| `config.txt`, `para_config.txt`, `amcr-fields.txt`           | configuration and the licence component table               |
-| `service/api.py`, `service/README.md`                        | limits, request fields, response shapes, errors             |
-| `.env.example`                                               | the environment table and transport policy                  |
-| `utils.py`                                                   | ALTO alignment, batching, metadata mode, the record block   |
-| `processors/translator.py`, `llm_translator.py`, `vocab.py`  | Tag-and-Protect, the prompt glossary, the vocabulary format |
-| `processors/backend.py`, `identifier.py`, `lemmatizer.py`    | the registry, language identification, UDPipe models        |
-| `README.md` §§ Logic Overview, ALTO Dual-Pass Reconstruction | the six-stage algorithm                                     |
-| `docs/translation-backends.md`                               | backend comparison and the permissive recipe                |
+| Source                                                       | What was taken from it                                                    |
+|--------------------------------------------------------------|---------------------------------------------------------------------------|
+| `main.py` (`parse_arguments`, `main`)                        | the flag table, defaults and exit codes                                   |
+| `config.txt`, `para_config.txt`, `amcr-fields.txt`           | configuration and the licence component table                             |
+| `service/api.py`, `service/README.md`                        | limits, request fields, response shapes, errors                           |
+| `.env.example`                                               | the environment table and transport policy                                |
+| `utils.py`                                                   | ALTO alignment, batching, metadata mode, XSD validation, the record block |
+| `processors/quality.py`, `processors/language.py`            | the degenerate-output guard, the source-language rules                    |
+| `processors/translator.py`, `llm_translator.py`, `vocab.py`  | Tag-and-Protect, the prompt glossary, the vocabulary format               |
+| `processors/backend.py`, `identifier.py`, `lemmatizer.py`    | the registry, language identification, UDPipe models                      |
+| `README.md` §§ Logic Overview, ALTO Dual-Pass Reconstruction | the six-stage algorithm                                                   |
+| `docs/translation-backends.md`                               | backend comparison and the permissive recipe                              |

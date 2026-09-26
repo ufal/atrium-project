@@ -2,7 +2,7 @@
 title: translator
 nav_order: 50
 status: published
-round: 7
+round: 8
 issue: 57
 repo: atrium-translator
 role: index
@@ -39,12 +39,12 @@ an [Agent Skill](../../agent-skills.md).
 
 ## What it takes in, what it hands on
 
-|                          |                                                                                                                                                       |
-|--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **In**                   | One ALTO or AMCR XML file, or a directory of them, optionally with an ATRIUM document record to accrete onto                                          |
-| **Out**                  | `<name>_<target_lang>.<ext>` — the translated document; a `_log.csv` of every source/target text pair; a paradata JSON; optionally the updated record |
-| **Writes in the record** | The `translations` block, and `derived_from.translated_xml` — the name of the translated file                                                         |
-| **Reads from upstream**  | `PAGE_ALTO/<doc>/<doc>-N.alto.xml` from alto-postprocess                                                                                              |
+|                          |                                                                                                                                                                                |
+|--------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **In**                   | One ALTO or AMCR XML file, or a directory of them, optionally with an ATRIUM document record to accrete onto                                                                   |
+| **Out**                  | `<name>_<target_lang>.<ext>` — the translated document; a `_log.csv` of every source/target text pair with a per-line `status`; a paradata JSON; optionally the updated record |
+| **Writes in the record** | The `translations` block, and `derived_from.translated_xml` — the name of the translated file                                                                                  |
+| **Reads from upstream**  | `PAGE_ALTO/<doc>/<doc>-N.alto.xml` from alto-postprocess                                                                                                                       |
 
 ## Where it sits — the translator is a terminal branch
 
@@ -64,17 +64,29 @@ layers.
 **ALTO pages** keep their geometry. Each text block is translated twice: once whole, for a
 fluent translation, and once line by line, only to learn how many words belong on each
 line. The fluent translation is then split across the original lines and written into the
-original word boxes, so every coordinate survives.
+original word boxes, so every coordinate survives. In `replace` mode the English goes into
+each word's `CONTENT`; in `append` mode `CONTENT` keeps the scanned text and each word gains
+an `<ALTERNATIVE PURPOSE="translation:en">` with the English placed on that box.
 [Reference → ALTO dual-pass reconstruction](reference.md#alto-dual-pass-reconstruction)
 draws it step by step.
 
 **Metadata records** are translated field by field: each XPath in `amcr-fields.txt` selects
 the free-text fields to translate, and only their text changes. With `--output-mode append`
-the Czech is kept and the English is added beside it, marked `xml:lang="en"`.
-[Reference → Metadata mode](reference.md#metadata-amcr-mode) has the detail.
+the Czech is kept and the English is added beside it, marked `xml:lang="en"` — a shape the
+AMCR 2.2 schema does not accept, so a record that must stay schema-valid is translated with
+`replace`. [Reference → Metadata mode](reference.md#metadata-amcr-mode) has the detail.
+
+**Every reply is checked before it is used.** A translation that is empty, far too long,
+cut short or stuck repeating one word is requested again; a segment that still fails is
+retried once the whole document is done, and one that never recovers keeps its source text
+and is marked `untranslated` in the log. Nothing is ever blanked or filled with garbage.
+[Reference → Degenerate-output guard](reference.md#degenerate-output-guard).
 
 **The source language** is detected by FastText unless it is given — per text block in ALTO,
-per field in metadata — so a record that mixes languages is handled piece by piece.
+per field in metadata — so a record that mixes languages is handled piece by piece. A guess
+is used only when it is confident and names a language the backend can translate; otherwise
+the element's own language label, then the document's language, then a configured default
+(`cs`) decide. [Reference → Languages](reference.md#languages).
 
 **Controlled terms** from the AMCR and TEATER thesauri keep their fixed English equivalent:
 they are masked before translation and restored afterwards (CUBBITT), or given to the model
@@ -125,21 +137,22 @@ models it was built to choose between.
 
 ## Languages
 
-Twenty, mapped ISO 639-3 → ISO 639-1 by the language identifier: `cs`, `en`, `fr`, `de`,
-`ru`, `pl`, `uk`, `sk`, `bg`, `hr`, `sl`, `lv`, `lt`, `et`, `hu`, `ro`, `es`, `it`, `nl`,
-`hi`. Detection uses `facebook/fasttext-language-identification`; in ALTO mode it runs
-**once per `TextBlock`** so every line in a block is translated consistently.
+Detection uses `facebook/fasttext-language-identification`, whose ISO 639-3 labels are mapped
+to the ISO 639-1 codes translation services use. In ALTO mode it runs **once per `TextBlock`**,
+so every line in a block is translated consistently, and once for the whole document, which
+is the fallback for a block too short to judge.
 
-Whether a given pair is actually served depends on the backend — CUBBITT is Czech-centric,
-and offers the pairs the LINDAT service lists. The repository's backend evaluation document
-compares nine candidates on exactly this axis.
+Which languages can actually be translated depends on the backend — CUBBITT is Czech-centric,
+and offers the pairs the LINDAT service lists — and a detected language outside that set is
+never used. The repository's backend evaluation document compares nine candidates on exactly
+this axis.
 
 ## Licence — computed per run, not declared
 
 Every component carries a licence and a condition, and the paradata records what the run
-resolved to. A **default run resolves to CC BY-NC-SA 4.0**, because CUBBITT's models are
-CC BY-NC-SA and FastText's weights are CC BY-NC. A permissive run is possible but has to be
-assembled deliberately — see
+resolved to — as does every document record the run writes. A **default run resolves to
+CC BY-NC-SA 4.0**, because CUBBITT's models are CC BY-NC-SA and FastText's weights are
+CC BY-NC. A permissive run is possible but has to be assembled deliberately — see
 [Reference](reference.md#licence-is-computed-not-declared).
 
 ## Where to go next
@@ -154,15 +167,17 @@ assembled deliberately — see
 
 ## Sources
 
-Read from `ufal/atrium-translator` at branch **`master`**, commit `71feaef` (2026-09-23),
-and from the hub's canonical documents. This table records **provenance**: what this page
-was written from, not a build instruction.
+Read from `ufal/atrium-translator` at release **`v1.2.1-beta`** — branch **`master`**:
+`v1.2.0-beta` (`3f2f1b6`) plus the record-licence, `--xsd` and image-name fixes, and from
+the hub's canonical documents. This table records **provenance**: what this page was written
+from, not a build instruction.
 
 | Source                                                    | What was taken from it                                             |
 |-----------------------------------------------------------|--------------------------------------------------------------------|
 | `README.md` §§ Features, Logic Overview, Paradata         | behaviour, language handling, output description                   |
 | `processors/backend.py`, `processors/ct2_translator.py`   | the registry, the protocol, the selection order, the `ct2` backend |
-| `processors/identifier.py`                                | the 20 language codes                                              |
+| `processors/identifier.py`, `processors/language.py`      | the language map and the source-language rules                     |
+| `processors/quality.py`                                   | the degenerate-output check                                        |
 | `utils.py`                                                | the ALTO and metadata processing summarised above                  |
 | `eval/bakeoff.py`                                         | the evaluation metrics                                             |
 | `para_config.txt`                                         | the licence component table                                        |
