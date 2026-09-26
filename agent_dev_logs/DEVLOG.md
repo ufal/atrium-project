@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 24 open issues. `test` = `main` = `740348d` (2026-09-26, translator docs); tag `v1` = `337462d`; freeze tag `doc-schema-v1` = `544298b` (#54); the 2026-09-21 divergence and its retag window are closed — `v1` carries #59/#60 and canonical file #17. Latest entry: 2026-09-26 (#54 follow-through: the freeze checked in every repository, not yet pushed). CI green on `eec0682` (E2E pipeline smoke 35990199050, digital smoke 35990199010, fast-lane matrix 35990199041, docs site 35990199021)._
+> _Hub/planning repo. 24 open issues. `test` = `main` = `6167803` (2026-09-26, #54 freeze check); tag `v1` = `6167803`; freeze tag `doc-schema-v1` = `544298b` (#54); the 2026-09-21 divergence and its retag window are closed — `v1` carries #59/#60 and canonical file #17. Latest entry: 2026-09-26 (later: para-drift red in all five tool repos — `test_schema_freeze.py` re-wrapped in the hub after vendoring; fix not yet pushed). CI green on `eec0682` (E2E pipeline smoke 35990199050, digital smoke 35990199010, fast-lane matrix 35990199041, docs site 35990199021)._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0709.md` (prior: `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -1584,5 +1584,53 @@ the freeze tag `doc-schema-v1` (@ `544298b`), and it is additive.
      repos (those two files, `ruff.toml`, README, `CITATION.cff`) in one window.
   3. Move `v1` — until then para-drift reads the 17-file manifest at the old `v1` and ignores the two new files.
   4. Close #54.
+
+  Not pushed: files delivered in chat.
+
+## 2026-09-26 (later) — para-drift red in all five tool repos: a canonical file re-wrapped in the hub after vendoring
+
+* **Symptom:** from 16:08, Paradata Canonical Drift failed in all five tool repos on `test` and on the default branch
+  (`master` / `main` / `vit`), against `v1` = `6167803`. Nothing else was red: pre-commit, CodeQL, API contract,
+  security, workflow lint and integration all passed on the same commits, and so did the hub's own CI.
+* **The failure, identical in all five** (e.g. alto run 36254738179, llm-enrich run 36254836598): 18 of the 19 files
+  in parity, and `MISMATCH: tests/test_schema_freeze.py`. The only difference is a line wrap in `load_snapshot()`:
+  `pytest.fail(f"…")` on one line in the tool repos, across three in the hub.
+  * The first red runs in translator and alto were a different, already-fixed cause: `MISSING` for the two new files,
+    which the first tool-repo commits did not yet include.
+* **Root cause, byte-exact:**
+  * the tool repos carry blob `7699e78d`, the file exactly as delivered and as `revendor_shared.sh` copied it;
+  * the hub's canonical is blob `7c35fbf1`, which is that file after `ruff format` with the hub config.
+  * One line was 122 columns, so the file was not a formatter fixed point, and a formatter pass in the hub rewrote it
+    after the copies were made.
+* **Why the template did not stop it:** ruff applies the NEAREST config, so `docs/templates/shared/*.py` is governed by
+  `docs/templates/ruff.toml` itself (`ruff check --show-settings`: project root `docs/templates`). The template's hub
+  entry, `docs/templates/shared/*.py`, therefore resolved to `docs/templates/docs/templates/shared/` and excluded
+  nothing. 10 of the 16 canonical `.py` files were formattable in the hub; 9 happened to be fixed points already.
+* **Fix 1 (turns the five green; tool repos only, no hub commit, no `v1` move):** `scripts/revendor_shared.sh` from the
+  hub at `6167803`, then commit `tests/test_schema_freeze.py` in each tool repo, on `test` and the default branch.
+  Locally: 5 copied, then `--check` 19/19 in parity; each copy is blob `7c35fbf1`; 61 passed per repo
+  (`test_schema_freeze.py` + `test_document_originators.py`); `ruff check` clean.
+  * Stable after landing: llm-enrich and nlp-enrich (100 columns) exclude the file from formatting; at 120 columns it
+    is already a fixed point.
+* **Fix 2 (prevention, hub only; tool CI reads none of it, so no `v1` move):**
+  * `docs/templates/ruff.toml`: the hub entry becomes `shared/*.py` (relative to `docs/templates/`), and the comment
+    says why. It is inert in tool repos, none of which has a top-level `shared/`.
+  * `tests/test_shared_manifest.py`: `test_the_template_keeps_formatters_off_the_canonical_files_in_the_hub` — a
+    textual half, plus a ruff-backed half (`ruff format --check docs/templates/shared` reaches no file) that skips
+    without ruff.
+  * Verified: after the fix, `ruff format .` in the hub and an editor-style stdin format with an absolute
+    `--stdin-filename` leave the pre-wrap file unchanged (`7699e78d`); with the old template both re-wrap it
+    (`7c35fbf1`). All 16 canonical files are excluded from formatting, and `ruff check` still lints them.
+  * The new test fails with the old spelling restored, and — ruff half alone — with a nearer `ruff.toml` dropped into
+    `shared/`.
+  * Hub `pytest tests/`: 199 passed, 3 skipped. `docs/templates/shared`: 166 passed, 2 skipped. `ruff check .` clean.
+  * **Known limit:** ruff does not match directory globs when stdin is given a RELATIVE `--stdin-filename`; basename
+    patterns still apply. Editors pass absolute paths.
+* **Lesson for new canonical files:** before vendoring, run `ruff format --check` with `--isolated --line-length 120` on
+  the canonical file. The formatter-exclusion now protects it inside the hub, but a file that is already a fixed point
+  cannot drift at all.
+* **Next (the user's):**
+  1. Land Fix 1 in the five tool repos.
+  2. Commit Fix 2 in the hub.
 
   Not pushed: files delivered in chat.

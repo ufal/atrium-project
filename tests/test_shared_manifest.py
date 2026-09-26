@@ -21,6 +21,8 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
+import subprocess
 import sys
 import tomllib
 from pathlib import Path
@@ -99,12 +101,22 @@ def _ruff_list(toml_path: Path, *keys: str) -> list[str]:
     return list(node)
 
 
+#: The template's hub entry. Ruff applies the NEAREST config to each file, so the
+#: canonical files under docs/templates/shared/ are governed by docs/templates/ruff.toml
+#: itself, whose relative patterns resolve against docs/templates/. The previous spelling,
+#: `docs/templates/shared/*.py`, therefore named docs/templates/docs/templates/shared/ and
+#: excluded nothing: 10 of 16 canonical .py files stayed formattable in the hub, and on
+#: 2026-09-26 a formatter re-wrapped test_schema_freeze.py there AFTER it had been
+#: vendored, turning Paradata Canonical Drift red in all five tool repos (#54).
+_HUB_CANONICAL_GLOB = "shared/*.py"
+
+
 def test_ruff_format_exclude_matches_the_manifest(manifest_files):
     expected = {entry["dest"] for entry in manifest_files if entry["ruff_format_exclude"]}
     actual = set(_ruff_list(RUFF_TOML, "format", "exclude"))
-    # The hub-only catch-all glob covers docs/templates/shared/*.py directly; it is
-    # not a per-file dest path and has no manifest row of its own.
-    actual.discard("docs/templates/shared/*.py")
+    # The hub-only catch-all: not a per-file dest path, so it has no manifest row of its
+    # own. It is spelled relative to docs/templates/ -- see the test below for why.
+    actual.discard(_HUB_CANONICAL_GLOB)
     missing = sorted(expected - actual)
     extra = sorted(actual - expected)
     assert not missing, f"docs/templates/ruff.toml's [format] exclude is missing: {missing}"
@@ -112,6 +124,38 @@ def test_ruff_format_exclude_matches_the_manifest(manifest_files):
         f"docs/templates/ruff.toml's [format] exclude names {extra}, which the "
         f"manifest does not mark ruff_format_exclude: true for — either the manifest "
         f"or ruff.toml is stale"
+    )
+
+
+def test_the_template_keeps_formatters_off_the_canonical_files_in_the_hub():
+    """A formatter run in the hub must leave every canonical file byte-for-byte alone.
+
+    The textual half always runs. The ruff-backed half proves the pattern actually
+    RESOLVES -- the property the old spelling silently lacked -- and skips where ruff is
+    not installed (hub-self-check installs only pytest, jsonschema and PyYAML). Verified
+    to fail with the old `docs/templates/shared/*.py` spelling restored.
+    """
+    excluded = _ruff_list(RUFF_TOML, "format", "exclude")
+    assert _HUB_CANONICAL_GLOB in excluded, (
+        f"docs/templates/ruff.toml's [format] exclude no longer names {_HUB_CANONICAL_GLOB!r}; "
+        f"without it `ruff format` in the hub re-wraps canonical files after they are vendored"
+    )
+
+    ruff = shutil.which("ruff")
+    if ruff is None:
+        pytest.skip("ruff not installed; the textual half above still ran")
+    proc = subprocess.run(
+        [ruff, "format", "--check", "--no-cache", "docs/templates/shared"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    output = proc.stdout + proc.stderr
+    # An excluded file is skipped silently; one in scope is reported as "already
+    # formatted" or "Would reformat", so any mention of formatting means one got through.
+    assert proc.returncode == 0 and "formatted" not in output and "reformat" not in output, (
+        f"`ruff format --check docs/templates/shared` still reaches canonical files:\n{output}"
     )
 
 

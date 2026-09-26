@@ -99,9 +99,18 @@ known-first-party = [
 # Excluding them from FORMATTING (not from linting -- `ruff check` still applies, and
 # they are expected to stay clean) makes the invariant structural: the hub's copy is the
 # only formatting authority, exactly as para-drift already assumes. Both layouts are
-# listed so one block is correct everywhere -- the hub keeps these files under
-# docs/templates/shared/, tool repos at the paths shown. A path that does not exist in a
-# given repo is simply inert.
+# listed so one block is correct everywhere -- tool repos at the paths shown, the hub by
+# the last entry. A path that does not exist in a given repo is simply inert.
+#
+# THE HUB ENTRY IS `shared/*.py`, NOT `docs/templates/shared/*.py`. Ruff applies the
+# NEAREST config to each file, so in the hub the canonical files are governed by THIS
+# file, and a relative pattern here resolves against docs/templates/ (`ruff check
+# --show-settings docs/templates/shared/<file>` prints both facts). The old spelling
+# resolved to docs/templates/docs/templates/shared/ and excluded nothing: 10 of the 16
+# canonical .py files stayed formattable in the hub. On 2026-09-26 that let a formatter
+# re-wrap test_schema_freeze.py in the hub AFTER it had been vendored, and turned
+# Paradata Canonical Drift red in all five tool repos (atrium-project#54). A tool repo
+# that copies this block has no top-level shared/, so the entry is inert there.
 #
 # If you add a file to the para-drift enforced set, add it here too. (issue #10)
 exclude = [
@@ -121,5 +130,5 @@ exclude = [
     "tests/test_logging_contract.py",
     "tests/test_env_contract.py",
     "tests/test_schema_freeze.py",
-    "docs/templates/shared/*.py",
+    "shared/*.py",
 ]
