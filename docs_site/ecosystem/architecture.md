@@ -29,7 +29,7 @@ What holds them together is the hub, `atrium-project`, and it does so in two way
 ```mermaid
 flowchart TB
   subgraph HUB["atrium-project — the hub"]
-    SHARED["docs/templates/shared/<br/>17 canonical files + MANIFEST.json"]
+    SHARED["docs/templates/shared/<br/>19 canonical files + MANIFEST.json"]
     REUSE["8 reusable workflows<br/>pinned by callers at @v1"]
     E2E["3 end-to-end workflows"]
     SITE["this site"]
@@ -86,32 +86,34 @@ flowchart LR
 
 ## What is canonical, and what is vendored
 
-The hub does not publish the shared code as a package. It **enforces it by copy**: seventeen
+The hub does not publish the shared code as a package. It **enforces it by copy**: nineteen
 canonical files live under `docs/templates/shared/`, each tool repository carries a copy at a
 fixed path, and CI fails the tool repository if a single byte differs.
 
 `MANIFEST.json` is the one registration point — one row per file, naming the canonical file,
 its destination in a tool repository, and whether it has a `--selftest` that CI must also run.
 
-| Canonical file                      | Destination in a tool repo                | Selftest | What it is                                                             |
-|-------------------------------------|-------------------------------------------|----------|------------------------------------------------------------------------|
-| `atrium_document.py`                | `atrium_document.py`                      |          | the document record: ownership, accretion, validation                  |
-| `atrium_document.schema.json`       | `atrium_document.schema.json`             |          | its JSON Schema                                                        |
-| `atrium_paradata.py`                | `atrium_paradata.py`                      |          | the per-run paradata logger                                            |
-| `para_licenses.py`                  | `para_licenses.py`                        |          | licence normalisation and most-restrictive merging                     |
-| `atrium_vocab.py`                   | `atrium_vocab.py`                         | ✓        | the SKOS controlled-label registry                                     |
-| `atrium_vocab.schema.json`          | `atrium_vocab.schema.json`                |          | schema for the registry's JSON-LD export                               |
-| `atrium_rocrate.py`                 | `atrium_rocrate.py`                       | ✓        | the RO-Crate exporter                                                  |
-| `check_version.py`                  | `check_version.py`                        |          | the release gate: tag = `CITATION.cff` = `para_config.txt`             |
-| `atrium_service.py`                 | `service/atrium_service.py`               |          | the shared HTTP service contract — `/info`, `/health`, `/ready`, drain |
-| `healthcheck.py`                    | `service/healthcheck.py`                  |          | the container healthcheck probe                                        |
-| `test_para_licenses.py`             | `tests/test_para_licenses.py`             |          |                                                                        |
-| `test_document_originators.py`      | `tests/test_document_originators.py`      |          | block ownership for both originators                                   |
-| `test_atrium_vocab.py`              | `tests/test_atrium_vocab.py`              |          |                                                                        |
-| `test_atrium_rocrate.py`            | `tests/test_atrium_rocrate.py`            |          |                                                                        |
-| `test_logging_contract.py`          | `tests/test_logging_contract.py`          |          | one log format, no `basicConfig()` in library code                     |
-| `test_env_contract.py`              | `tests/test_env_contract.py`              |          | `.env.example` must list every variable the service reads              |
-| `test_dockerfile_security_layer.py` | `tests/test_dockerfile_security_layer.py` |          | pins the `apt-get upgrade` layer that keeps the release gate passable  |
+| Canonical file                              | Destination in a tool repo                  | Selftest | What it is                                                                                 |
+|---------------------------------------------|---------------------------------------------|----------|--------------------------------------------------------------------------------------------|
+| `atrium_document.py`                        | `atrium_document.py`                        |          | the document record: ownership, accretion, validation                                      |
+| `atrium_document.schema.json`               | `atrium_document.schema.json`               |          | its JSON Schema                                                                            |
+| `atrium_document.schema.doc-schema-v1.json` | `atrium_document.schema.doc-schema-v1.json` |          | the same schema frozen as tag `doc-schema-v1`; never edited                                |
+| `atrium_paradata.py`                        | `atrium_paradata.py`                        |          | the per-run paradata logger                                                                |
+| `para_licenses.py`                          | `para_licenses.py`                          |          | licence normalisation and most-restrictive merging                                         |
+| `atrium_vocab.py`                           | `atrium_vocab.py`                           | ✓        | the SKOS controlled-label registry                                                         |
+| `atrium_vocab.schema.json`                  | `atrium_vocab.schema.json`                  |          | schema for the registry's JSON-LD export                                                   |
+| `atrium_rocrate.py`                         | `atrium_rocrate.py`                         | ✓        | the RO-Crate exporter                                                                      |
+| `check_version.py`                          | `check_version.py`                          |          | the release gate: tag = `CITATION.cff` = `para_config.txt`                                 |
+| `atrium_service.py`                         | `service/atrium_service.py`                 |          | the shared HTTP service contract — `/info`, `/health`, `/ready`, drain                     |
+| `healthcheck.py`                            | `service/healthcheck.py`                    |          | the container healthcheck probe                                                            |
+| `test_para_licenses.py`                     | `tests/test_para_licenses.py`               |          |                                                                                            |
+| `test_document_originators.py`              | `tests/test_document_originators.py`        |          | block ownership for both originators                                                       |
+| `test_atrium_vocab.py`                      | `tests/test_atrium_vocab.py`                |          |                                                                                            |
+| `test_atrium_rocrate.py`                    | `tests/test_atrium_rocrate.py`              |          |                                                                                            |
+| `test_logging_contract.py`                  | `tests/test_logging_contract.py`            |          | one log format, no `basicConfig()` in library code                                         |
+| `test_env_contract.py`                      | `tests/test_env_contract.py`                |          | `.env.example` must list every variable the service reads                                  |
+| `test_dockerfile_security_layer.py`         | `tests/test_dockerfile_security_layer.py`   |          | pins the `apt-get upgrade` layer that keeps the release gate passable                      |
+| `test_schema_freeze.py`                     | `tests/test_schema_freeze.py`               |          | this repo's schema against the frozen copy: nothing removed, every change since registered |
 
 `test_env_contract.py` additionally needs a repo-local `tests/env_contract_data.py` — the
 list of variables that particular service reads — which each repository keeps and which is
@@ -146,7 +148,7 @@ moved deliberately. `test` is the hub's pre-release channel.
 |-------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `docker-tool.reusable.yml`    | fast test lane, container smoke test, image build, CVE gate, publish to GHCR                                                                                 |
 | `api-contract.reusable.yml`   | the service meta-contract: `/info` envelope, `/health`, `/ready`, OpenAPI validity                                                                           |
-| `para-drift.reusable.yml`     | byte-parity of all 17 vendored files, plus their selftests                                                                                                   |
+| `para-drift.reusable.yml`     | byte-parity of all 19 vendored files, plus their selftests                                                                                                   |
 | `security.reusable.yml`       | version consistency, and a scheduled Trivy scan of the published image                                                                                       |
 | `codeql.reusable.yml`         | CodeQL static analysis                                                                                                                                       |
 | `pre-commit.reusable.yml`     | `pre-commit run --all-files`, blocking                                                                                                                       |
@@ -221,7 +223,7 @@ This table records **provenance**: what this page was written from, not a build 
 
 | Source                                                                      | What was taken from it                                             |
 |-----------------------------------------------------------------------------|--------------------------------------------------------------------|
-| `atrium-project/docs/templates/shared/MANIFEST.json`                        | the 17 files and their destinations                                |
+| `atrium-project/docs/templates/shared/MANIFEST.json`                        | the 19 files and their destinations                                |
 | `atrium-page-classification@adee922`, `atrium-translator@71feaef`           | vendored destinations, repository-local helpers, Dockerfile stages |
 | `atrium-project/scripts/revendor_shared.sh`                                 | the re-vendoring procedure and its exit semantics                  |
 | `atrium-project/.github/workflows/*.reusable.yml` and the hub-own workflows | the federation                                                     |

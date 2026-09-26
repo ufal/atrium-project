@@ -109,16 +109,26 @@ It is vendored into every tool and byte-checked by `para-drift`. See
 
 ## Version policy
 
-| Contract            | Version                                      | On a newer major          | On an older major                          |
-|---------------------|----------------------------------------------|---------------------------|--------------------------------------------|
-| document record     | `1.0`, frozen                                | `load_document()` refuses | migrated                                   |
-| paradata            | `2.0`                                        | refused                   | migrated (`1.0 → 2.0` adds `docker_image`) |
-| vocabulary registry | `1.0`                                        | —                         | —                                          |
-| RO-Crate            | `1.1` (the RO-Crate specification's version) | —                         | —                                          |
+| Contract            | Version                                                                                               | On a newer major          | On an older major                          |
+|---------------------|-------------------------------------------------------------------------------------------------------|---------------------------|--------------------------------------------|
+| document record     | `1.0`, frozen as [`doc-schema-v1`](https://github.com/ufal/atrium-project/releases/tag/doc-schema-v1) | `load_document()` refuses | migrated                                   |
+| paradata            | `2.0`                                                                                                 | refused                   | migrated (`1.0 → 2.0` adds `docker_image`) |
+| vocabulary registry | `1.0`                                                                                                 | —                         | —                                          |
+| RO-Crate            | `1.1` (the RO-Crate specification's version)                                                          | —                         | —                                          |
 
 An **additive** change — a new optional field, a new block — does not bump a version. A
 **breaking** change bumps the major and ships a `_migrate_X_to_Y()` function. A record missing
 `schema_version` is read as `1.0`.
+
+The document record's freeze is a tag, one per major: `doc-schema-v1` is commit `544298b`, and it
+never moves. An additive change after it keeps that tag as the reference, but has to be registered.
+Every tool carries the frozen copy, `atrium_document.schema.doc-schema-v1.json`, and a vendored
+`tests/test_schema_freeze.py` that checks its own schema against it: nothing declared at the freeze
+removed, and every constraint added since listed in one register (so far one,
+`lines[].style.region`). The hub also checks that every record shape the tools write validates
+against both the frozen schema and the current one. The rule and the procedure for a new major are
+in the hub's
+[`document_schema.md`](https://github.com/ufal/atrium-project/blob/main/docs/document_schema.md#freeze--conformance).
 
 ## Sources
 
@@ -128,6 +138,7 @@ This table records **provenance**: what this page was written from, not a build 
 |-------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------|
 | `atrium-project/docs/templates/shared/atrium_document.schema.json`                                                      | every field definition quoted above                          |
 | `atrium-project/docs/templates/shared/atrium_vocab.schema.json`                                                         | the registry schema                                          |
+| `atrium-project/docs/templates/shared/test_schema_freeze.py`, tag `doc-schema-v1` (`544298b`)                           | the freeze tag, the post-freeze register                     |
 | `atrium-project/docs/templates/shared/atrium_document.py`, `atrium_paradata.py`, `atrium_vocab.py`, `atrium_rocrate.py` | version constants, the load/migrate behaviour, `concept_uri` |
 | `atrium-page-classification@vit` `adee922` — `run.py`, `atrium_document_adapter.py`                                     | what page-classification writes                              |
 | `atrium-translator` `v1.2.1-beta` — `utils.py`, `processors/backend.py`                                                 | what the translator writes, and the backend names            |

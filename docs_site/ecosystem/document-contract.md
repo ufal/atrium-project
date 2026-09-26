@@ -19,7 +19,8 @@ and how page-classification and the translator write it.
 
 ## The object
 
-One JSON file per document, named `<doc_id>.document.json`, schema version **`1.0`** (frozen).
+One JSON file per document, named `<doc_id>.document.json`, schema version **`1.0`** (frozen as
+[`doc-schema-v1`](https://github.com/ufal/atrium-project/releases/tag/doc-schema-v1)).
 The module that writes it, `atrium_document.py`, is vendored byte-identically into every tool, so
 every tool writes the record the same way; what differs is which calls each tool makes.
 

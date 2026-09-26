@@ -198,6 +198,26 @@
       "preconditions": [],
       "issue": 53,
       "note": "pins the apt-get upgrade layer that keeps the release gate passable -- the perl-base CRITICALs that blocked translator v1.0.0-beta and nlp-enrich v0.20.2 published both by digest with no :latest tag"
+    },
+    {
+      "canonical": "atrium_document.schema.doc-schema-v1.json",
+      "dest": "atrium_document.schema.doc-schema-v1.json",
+      "selftest": false,
+      "ruff_format_exclude": false,
+      "isort_first_party": null,
+      "preconditions": [],
+      "issue": 54,
+      "note": "the schema exactly as the freeze tag doc-schema-v1 has it (git blob 1945c43e...) -- never edited, only re-vendored; it sits beside atrium_document.py like the live schema, and test_schema_freeze.py pins it by blob id. Not Python -- ruff format/isort do not apply"
+    },
+    {
+      "canonical": "test_schema_freeze.py",
+      "dest": "tests/test_schema_freeze.py",
+      "selftest": false,
+      "ruff_format_exclude": true,
+      "isort_first_party": null,
+      "preconditions": [],
+      "issue": 54,
+      "note": "checks this repo's own vendored schema against the doc-schema-v1 frozen copy (blob pin, no removals, a register of every post-freeze change) -- stdlib only; the checks that need the tag, the changelog or jsonschema stay in the hub's tests/test_schema_freeze_records.py"
     }
   ]
 }

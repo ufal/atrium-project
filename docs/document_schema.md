@@ -35,6 +35,9 @@ block changes), and needs no shared volume or orchestrator.
 - **First published version.** There is nothing to migrate yet; `load_document()` already
   carries the guard and `migrate_document()` the branch point, so the mechanism exists before
   it is needed.
+- **Frozen as [`doc-schema-v1`](https://github.com/ufal/atrium-project/releases/tag/doc-schema-v1)**
+  (`544298b`, 2026-09-25). What that tag promises, what may still change under it, and how a tool
+  shows it conforms are in [Freeze & conformance](#freeze--conformance), below.
 
 ## The accretion contract (six rules)
 
@@ -257,6 +260,125 @@ python atrium_document.py set-block --doc-id "$DOC" --program alto-postprocess \
 `docs/templates/shared/` and are copied byte-identical into the tool repos, enforced by
 `para-drift.reusable.yml` — the same guarantee already covering `atrium_paradata.py` and
 `para_licenses.py`.
+Since 2026-09-26 the frozen copy `atrium_document.schema.doc-schema-v1.json` and
+`test_schema_freeze.py` travel with them; see below.
+
+## Freeze & conformance
+
+Schema `1.0` is frozen as the tag **`doc-schema-v1`** (atrium-project#54). From that tag on, the
+schema is a compatibility obligation, not a design surface.
+
+### Three references, three jobs
+
+| Reference               | What it names                                                                    | Moves?                                          |
+|-------------------------|----------------------------------------------------------------------------------|-------------------------------------------------|
+| `doc-schema-v1`         | the frozen contract for schema MAJOR 1                                           | **never**; it is not moved, deleted or re-cut   |
+| `v1`                    | the current canonical shared files, which the tools vendor and para-drift checks | yes, on every hub change the tools must pick up |
+| `schema_version: "1.0"` | what every record carries, and what `load_document()`'s MAJOR guard reads        | only on a MAJOR bump                            |
+
+`v1` is the reusable-workflow tag and says nothing about the schema by itself; `doc-schema-v1` says
+nothing about workflows. Neither replaces the other.
+
+The frozen file, immutably:
+
+* release: <https://github.com/ufal/atrium-project/releases/tag/doc-schema-v1>
+* file: <https://github.com/ufal/atrium-project/blob/doc-schema-v1/docs/templates/shared/atrium_document.schema.json>
+* commit `544298bb5817fe57d8521579700332184b86d778`, schema git blob
+  `1945c43ea5a4b6e370022fba75fe1d835b32b34c`
+
+### The frozen copy, and the check that travels with it
+
+Two shared files carry the freeze into every repository, vendored by `scripts/revendor_shared.sh`
+like the rest of `docs/templates/shared/`:
+
+| Shared file                                 | In a tool repo                                    | What it is                                                                         |
+|---------------------------------------------|---------------------------------------------------|------------------------------------------------------------------------------------|
+| `atrium_document.schema.doc-schema-v1.json` | beside `atrium_document.schema.json`, at the root | the schema exactly as `doc-schema-v1` has it; never edited, only re-vendored       |
+| `test_schema_freeze.py`                     | `tests/test_schema_freeze.py`                     | checks that repository's own `atrium_document.schema.json` against the frozen copy |
+
+`test_schema_freeze.py` is stdlib-only, so it runs in every tool repo's ordinary test lane. It
+checks that:
+
+* the frozen copy is byte-for-byte the file `doc-schema-v1` names, by git blob id, so it needs no
+  git and no tags;
+* nothing declared at the freeze was removed or renamed;
+* every constraining difference since the freeze is registered in its `POST_FREEZE_CHANGES`,
+  pinned to the node it adds; descriptions, `$comment`s and examples are free.
+
+What only the hub can check is [`tests/test_schema_freeze_records.py`](../tests/test_schema_freeze_records.py):
+
+* the tag itself has not moved, wherever it is present (skipped in CI's tagless checkout);
+* every register entry has its `## Changelog — <date>` section here;
+* every record shape the tools write (`tests/test_document_required.py`'s `VALID_SHAPES`, and the
+  committed example) validates under **both** the frozen and the current schema, and the floor's
+  defect shapes are refused by both.
+
+### What conforming means
+
+A repository implements `atrium_document` 1.0 when its own copy of `test_schema_freeze.py` passes:
+its schema keeps everything the freeze declared and differs from it only by registered, additive
+changes. para-drift adds that the schema, the frozen copy and the test are all byte-identical to
+hub `v1`, and the hub's records test that those registered changes still admit every record the
+tools write.
+
+Each tool repo's README (a *Document record schema* subsection under its paradata section) and its
+`CITATION.cff` (a `references:` entry of type `standard`) name `doc-schema-v1` and its commit, so
+the baseline is visible from every repository without reading the hub.
+
+### Changing the schema after the freeze
+
+**One freeze tag per MAJOR.** An additive change does not cut a tag and does not bump
+`SCHEMA_VERSION`; `doc-schema-v1` stays the reference. What makes a change additive is versioning
+rule 1 (a new optional field or block) and #54's rule for narrowing (a validator may accept less
+only while it still accepts everything the producers produce). An additive change lands in one
+hub commit carrying all of:
+
+1. the schema edit;
+2. its `POST_FREEZE_CHANGES` entry in `docs/templates/shared/test_schema_freeze.py` (pointer, the
+   node as it now is, issue, changelog date);
+3. a `## Changelog — <date>` section in this document;
+4. the producer shapes it has to keep admitting, in `tests/test_document_required.py`.
+
+Then the usual order: `scripts/revendor_shared.sh` into the five tool repos, commit them in one
+window, move `v1`.
+
+**Removing or renaming a declared field, or re-attributing a written block, is a MAJOR bump**
+(rule 2). The test has no register entry for a removal on purpose. The order:
+
+1. `_migrate_1_to_2()`, its branch in `migrate_document()`, and `SCHEMA_VERSION = "2.0"`;
+2. cut `doc-schema-v2` on the hub commit that carries them;
+3. add `atrium_document.schema.doc-schema-v2.json` (the file as that tag has it) to
+   `docs/templates/shared/` with its `MANIFEST.json` row, add `FREEZES[2]` to
+   `test_schema_freeze.py`, and start its `POST_FREEZE_CHANGES` empty;
+4. `scripts/revendor_shared.sh`, commit the five tool repos in one window, move `v1`;
+5. update the tool repos' README and `CITATION.cff` references to the new tag.
+
+`doc-schema-v1` and its frozen copy stay: `1.0` records already written still exist, and
+`load_document()` migrates them on read.
+
+### Checking it yourself
+
+```bash
+git fetch --tags
+git rev-parse doc-schema-v1                                                     # 544298bb…
+git rev-parse doc-schema-v1:docs/templates/shared/atrium_document.schema.json   # 1945c43e…
+git diff doc-schema-v1 -- docs/templates/shared/atrium_document.schema.json     # every change since
+python -m pytest tests/test_schema_freeze_records.py -v                         # hub, with jsonschema
+(cd docs/templates/shared && python -m pytest test_schema_freeze.py -v)         # the vendored check
+scripts/revendor_shared.sh --check                                              # every tool repo's copies
+```
+
+In a tool repository, `python -m pytest tests/test_schema_freeze.py` runs the same check against
+that repository's own copy.
+
+### Post-freeze register
+
+| Pointer                                                      | Change                                                                       | Issue                     | Changelog                                                                             |
+|--------------------------------------------------------------|------------------------------------------------------------------------------|---------------------------|---------------------------------------------------------------------------------------|
+| `/properties/lines/items/properties/style/properties/region` | added: closed enum `page_header` / `page_footer` / `footnote`; absent = body | ufal/atrium-llm-enrich#18 | [2026-09-25](#changelog--2026-09-25-llm-enrich18-linesstyleregion-cdla-permissive-20) |
+
+Not registered, because it does not constrain: the `lines[].style` description correction of the
+same pass.
 
 ## Changelog — 2026-07-31 hardening pass
 
@@ -732,7 +854,10 @@ started writing one key the schema did not declare, and running one component wh
 It is the **first change after the freeze tag** `doc-schema-v1` (`544298b`, cut 2026-09-25). The
 tag keeps naming the schema as frozen, and stays correct for every record: each one written
 before or after this pass — including every llm-enrich record that already carries `region` —
-validates against both.
+validates against both. Since 2026-09-26 that is checked rather than stated:
+the hub's `tests/test_schema_freeze_records.py` validates every producer shape against both
+schemas, and the vendored `test_schema_freeze.py` carries `region` as the first entry of its
+post-freeze register (see [Freeze & conformance](#freeze--conformance)).
 
 ### `lines[].style.region` — declared, as a closed enum
 
@@ -799,3 +924,36 @@ light engine (pdfplumber, pypdfium2, python-docx) was never affected. Pinned in
 * **Distribution:** the schema, `para_licenses.py` and `test_para_licenses.py` are hub-canonical.
   `scripts/revendor_shared.sh` copies them into the five tool repos, and `v1` has to move
   before `para-drift` compares against them.
+
+## Changelog — 2026-09-26 (#54: the freeze made traceable)
+
+The tag `doc-schema-v1` existed, but nothing outside this document named it, and no repository
+could show that the schema it carries still honoured it. This pass adds the check, vendored into
+every repository, and the references. **No schema change and no `SCHEMA_VERSION` bump. Two new
+shared files, so the usual re-vendor and `v1` move follow.**
+
+* **[Freeze & conformance](#freeze--conformance)**, above: what `doc-schema-v1`, `v1` and
+  `schema_version` each name; what a repository must satisfy to implement 1.0; the rule for
+  changes after the freeze (one tag per MAJOR, additive changes registered); the MAJOR procedure.
+* **Shared, vendored by `scripts/revendor_shared.sh` (MANIFEST 17 → 19 files):**
+  * `atrium_document.schema.doc-schema-v1.json`: the schema exactly as the tag has it, git blob
+    `1945c43e…`, vendored beside `atrium_document.schema.json`;
+  * `test_schema_freeze.py` → `tests/test_schema_freeze.py`: each repository's own schema against
+    the frozen copy (blob pin, no removals, the post-freeze register). Stdlib-only.
+  * `docs/templates/ruff.toml` and the five tool repos' `ruff.toml` exclude the test from
+    formatting, like every vendored `.py`; page-classification's and the template's stated
+    count move to 19.
+* **Hub-only: `tests/test_schema_freeze_records.py`**: the live tag, the changelog sections, and
+  every producer shape under both schemas.
+* **Verified to fail on each defect it exists for:** a byte changed in the frozen copy, a frozen
+  property renamed, a constraint edited without a register entry, the registered `region` enum
+  widened, a register entry whose changelog section is missing, `SCHEMA_VERSION` moved to `2.0`
+  with no freeze recorded, a moved tag (in a clone that carries it), and a narrowing that excludes
+  a producer's value. A description-only edit passes.
+* **References in every repository.** Each tool repo's README gains a *Document record schema*
+  subsection naming `doc-schema-v1` and its commit, and its `CITATION.cff` a `references:` entry
+  of type `standard`; the column-0 `version:` that `check_version.py` reads is untouched. The hub
+  gains a `CITATION.cff`: the 2026-09-16 pass recorded one (F6), but it is not in the tree.
+* `docs_site`: the schemas page's version policy and the document-contract page link the tag;
+  the architecture page's shared-file table gains the two files, and the counts there and on the
+  contributing and SKOS pages move to 19.

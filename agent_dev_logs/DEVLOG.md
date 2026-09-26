@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 24 open issues. `test` = `main` = `544298b` (2026-09-25, issue logs); tag `v1` = `2a47174`; freeze tag `doc-schema-v1` = `544298b` (#54); the 2026-09-21 divergence and its retag window are closed — `v1` carries #59/#60 and canonical file #17. Latest entry: 2026-09-25 (llm-enrich#18 follow-ups, not yet pushed). CI green on `eec0682` (E2E pipeline smoke 35990199050, digital smoke 35990199010, fast-lane matrix 35990199041, docs site 35990199021)._
+> _Hub/planning repo. 24 open issues. `test` = `main` = `740348d` (2026-09-26, translator docs); tag `v1` = `337462d`; freeze tag `doc-schema-v1` = `544298b` (#54); the 2026-09-21 divergence and its retag window are closed — `v1` carries #59/#60 and canonical file #17. Latest entry: 2026-09-26 (#54 follow-through: the freeze checked in every repository, not yet pushed). CI green on `eec0682` (E2E pipeline smoke 35990199050, digital smoke 35990199010, fast-lane matrix 35990199041, docs site 35990199021)._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0709.md` (prior: `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -1542,3 +1542,47 @@ the freeze tag `doc-schema-v1` (@ `544298b`), and it is additive.
   `INDEX.md` round 8.
 * **Not ours:** the translator's `live-backend` lane (0 dispatches), GitHub's `prerelease` flag on the beta
   releases, the LINDAT replica report, and the production run itself.
+
+## 2026-09-26 — #54 follow-through: the freeze made traceable, and checked in every repository
+
+* **Why:** `doc-schema-v1` (@ `544298b`) existed, but only `document_schema.md`'s changelog named it, and no repository
+  could show that the schema it carries still honoured it. The 2026-09-25 issue comment asked for three things: verify
+  the copies against the tag, name the tag in each repository's docs and release metadata, and document the rule for
+  later changes. Checked first: `region` (llm-enrich#18) had fully landed — hub `337462d`, re-vendored, `v1` =
+  `337462d`; the schema differs from the tag only by that enum and one description.
+* **Decided (user):** one freeze tag per MAJOR. Additive changes keep `doc-schema-v1`, with no bump, but are
+  registered and checked. A MAJOR cuts `doc-schema-v2`. The check is vendored, not hub-only.
+* **Shared (MANIFEST 17 → 19), via `scripts/revendor_shared.sh`:**
+  * `atrium_document.schema.doc-schema-v1.json`: the tagged file, git blob `1945c43e…`, beside
+    `atrium_document.schema.json`;
+  * `test_schema_freeze.py` → `tests/test_schema_freeze.py`, stdlib-only: blob pin, current MAJOR has a freeze,
+    nothing declared at the freeze removed, every constraining difference in `POST_FREEZE_CHANGES` (one entry,
+    `region`, pinned to its node).
+  * `ruff.toml` format-exclude in the template and all five tool repos; the "17 files" counts (template,
+    page-classification's `ruff.toml`, three docs_site pages) → 19.
+* **Hub-only:** `tests/test_schema_freeze_records.py` — the live tag (skips when tagless), each register entry's
+  changelog section, and every `VALID_SHAPES` record plus the example under both schemas, `INVALID_SHAPES` refused by
+  both.
+* **References:** `document_schema.md` "Freeze & conformance" (the three references, what conforming means, the
+  post-freeze rule, the MAJOR procedure, the register) and a 2026-09-26 changelog; docs_site schemas / document-contract
+  / architecture pages; each tool README gains *Document record schema 📑* under its paradata section; each tool
+  `CITATION.cff` a `references:` entry (`type: standard`, commit `544298bb…`), nested so `check_version.py`'s
+  column-0 `version:` is untouched.
+* **Correction:** the hub `CITATION.cff` that `54.plan.md` marks done on 2026-09-16 (F6) is not in the tree; added.
+* **Verified:**
+  * hub `pytest tests/` 198 passed, 3 skipped; `pytest docs/templates/shared` 166 passed, 2 skipped; `ruff` clean
+    under the hub config, the template and each tool repo's config; `mkdocs build --strict` exit 0.
+  * `scripts/revendor_shared.sh`: 10 copied; all 19 canonical files in parity across the 5 repos.
+  * In each tool repo: `tests/test_schema_freeze.py` + `test_document_originators.py` 61 passed; the README-reading
+    contract tests (and nlp-enrich's `test_docs.py`) pass; `cffconvert --validate` and `check_version.py` OK.
+  * Fails as intended on: a byte changed in the frozen copy, a frozen property renamed, an unregistered constraint,
+    the registered enum widened, a missing changelog section, `SCHEMA_VERSION` = `2.0` without a freeze, a moved tag
+    (scratch clone), a narrowing that excludes a producer. A description-only edit passes.
+* **Next (the user's):**
+  1. Commit the hub files.
+  2. Run `scripts/revendor_shared.sh` (then `--check`) to vendor the two new shared files, and commit the five tool
+     repos (those two files, `ruff.toml`, README, `CITATION.cff`) in one window.
+  3. Move `v1` — until then para-drift reads the 17-file manifest at the old `v1` and ignores the two new files.
+  4. Close #54.
+
+  Not pushed: files delivered in chat.

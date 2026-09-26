@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "ATRIUM project hub: shared contracts, schemas and CI for the ATRIUM tools, including the atrium_document record schema"
+authors:
+  - family-names: "Lutsai"
+    given-names: "Kateryna"
+    orcid: https://orcid.org/0009-0002-4773-2797
+  - family-names: "Straňák"
+    given-names: "Pavel"
+    orcid: https://orcid.org/0000-0002-6895-8536
+  - family-names: "Novák"
+    given-names: "David"
+    orcid: https://orcid.org/0009-0005-8722-0245
+  - family-names: "Křivánková"
+    given-names: "Dana"
+    orcid: https://orcid.org/0000-0001-5718-9447
+repository-code: "https://github.com/ufal/atrium-project"
+identifiers:
+  - type: url
+    value: "https://github.com/ufal/atrium-project/releases/tag/doc-schema-v1"
+    description: "atrium_document schema 1.0, frozen as tag doc-schema-v1 (commit 544298bb5817fe57d8521579700332184b86d778)"

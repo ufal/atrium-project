@@ -93,7 +93,7 @@ repository's release workflow, and `security.reusable.yml` checks it again. Cutt
 
 ### Shared code
 
-The seventeen files listed in
+The nineteen files listed in
 [Architecture](ecosystem/architecture.md#what-is-canonical-and-what-is-vendored) are **never
 edited in a tool repository**: CI fails on a single changed byte. A change to shared code is
 made in the hub and copied out with `scripts/revendor_shared.sh`, and the tool repositories'

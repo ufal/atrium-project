@@ -35,7 +35,7 @@ It is an internal alignment framework, and deliberately modest:
 * **ATRIUM mints URIs only for what it authors** — and roots them all in one constant, so the day a
   real namespace exists, one line changes.
 
-The registry is `atrium_vocab.py`, one of the [17 shared files](../ecosystem/architecture.md#what-is-canonical-and-what-is-vendored),
+The registry is `atrium_vocab.py`, one of the [19 shared files](../ecosystem/architecture.md#what-is-canonical-and-what-is-vendored),
 vendored byte-identically into both documented tools.
 
 ## How a URI is minted
