@@ -409,3 +409,225 @@ def test_serve_lifecycle_is_a_noop_wrapper_off_the_main_thread():
 
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))
+
+
+# ---------------------------------------------------------------------------------------
+# atrium-project#53 (factor III) + #32 item 2: the harmonised error body, the limits
+# contract in /info, and the bounded readers. These are generation-1 additions: opt-in,
+# so every existing caller of build_info()/add_cors() is unchanged. The one deliberate
+# behaviour change is resolve_max_upload_mb(): a malformed value now fails at startup,
+# naming the variable, where it used to be ignored silently.
+# ---------------------------------------------------------------------------------------
+
+from fastapi import File, HTTPException, Request, UploadFile  # noqa: E402
+from pydantic import BaseModel  # noqa: E402
+
+import atrium_limits  # noqa: E402  (same docs/templates/shared/ path as atrium_service)
+from atrium_service import (  # noqa: E402
+    REASON_CODES,
+    AtriumHTTPError,
+    add_cors,
+    attach_error_handlers,
+    build_info,
+    busy,
+    check_body_size,
+    error_body,
+    read_upload_bounded,
+    resolve_max_upload_mb,
+)
+
+
+def _limit_env(suffix: str) -> str:
+    return "_".join(("ATRIUM", "SERVICE", "TEST", suffix))
+
+
+class _Body(BaseModel):
+    n: int
+
+
+def _error_app() -> FastAPI:
+    app = FastAPI()
+    attach_error_handlers(app)
+    pages = atrium_limits.limit(_limit_env("PAGES"), 3, unit="pages", key="max_test_pages")
+
+    @app.get("/plain")
+    def plain():
+        raise HTTPException(status_code=422, detail="Filename has no usable document id.")
+
+    @app.get("/structured")
+    def structured():
+        raise HTTPException(status_code=400, detail={"why": "structured"})
+
+    @app.get("/busy")
+    def is_busy():
+        raise busy(retry_after_s=7)
+
+    @app.get("/pages/{n}")
+    def over_pages(n: int):
+        pages.check(n, detail=f"The PDF has {n} pages; the limit is {pages.get()} (MAX_TEST_PAGES).")
+        return {"ok": True}
+
+    @app.get("/timeout")
+    def timed_out():
+        spec = atrium_limits.limit(_limit_env("TIMEOUT"), 600, unit="s", status=504)
+        raise spec.exceeded(None, detail="Pipeline execution timed out.")
+
+    @app.post("/validated")
+    def validated(body: _Body):
+        return body
+
+    @app.post("/sized")
+    async def sized(request: Request):
+        await check_body_size(request, 0.001, label="Body")
+        return {"ok": True}
+
+    @app.get("/boom")
+    def boom():
+        raise RuntimeError("an unexpected failure")
+
+    return app
+
+
+def test_error_body_rejects_an_unregistered_reason():
+    assert error_body(413, "x", "limit_exceeded") == {"status": 413, "reason": "limit_exceeded", "detail": "x"}
+    with pytest.raises(ValueError):
+        error_body(400, "x", "made_up")
+    with pytest.raises(ValueError):
+        AtriumHTTPError(400, "x", reason="made_up")
+    assert set(REASON_CODES) >= {"limit_exceeded", "busy"}
+
+
+def test_every_http_error_gets_the_envelope_with_its_detail_string_unchanged():
+    client = TestClient(_error_app())
+    r = client.get("/plain")
+    assert r.status_code == 422
+    assert r.json() == {"status": 422, "reason": None, "detail": "Filename has no usable document id."}
+    r = client.get("/structured")
+    assert r.json() == {"status": 400, "reason": None, "detail": "Bad Request", "errors": {"why": "structured"}}
+
+
+def test_router_404_and_405_are_wrapped_too():
+    client = TestClient(_error_app())
+    r = client.get("/no-such-route")
+    assert r.status_code == 404 and r.json() == {"status": 404, "reason": None, "detail": "Not Found"}
+    r = client.post("/plain")
+    assert r.status_code == 405 and r.json()["reason"] is None and r.json()["status"] == 405
+
+
+def test_busy_is_429_with_retry_after():
+    r = TestClient(_error_app()).get("/busy")
+    assert r.status_code == 429
+    assert r.headers["retry-after"] == "7"
+    assert r.json()["reason"] == "busy"
+
+
+def test_limit_exceeded_carries_its_status_and_the_limit(monkeypatch):
+    monkeypatch.delenv(_limit_env("PAGES"), raising=False)
+    client = TestClient(_error_app())
+    assert client.get("/pages/3").status_code == 200
+    r = client.get("/pages/4")
+    assert r.status_code == 413
+    assert r.json() == {
+        "status": 413,
+        "reason": "limit_exceeded",
+        "detail": "The PDF has 4 pages; the limit is 3 (MAX_TEST_PAGES).",
+        "limit": {"key": "max_test_pages", "env": _limit_env("PAGES"), "value": 3, "observed": 4, "unit": "pages"},
+    }
+    r = client.get("/timeout")
+    assert r.status_code == 504 and r.json()["reason"] == "limit_exceeded"
+    assert r.json()["limit"]["observed"] is None
+
+
+def test_validation_errors_keep_a_string_detail_and_list_the_problems():
+    r = TestClient(_error_app()).post("/validated", json={"n": "not a number"})
+    assert r.status_code == 422
+    body = r.json()
+    assert body["reason"] is None and isinstance(body["detail"], str)
+    assert body["detail"].startswith("Request validation failed: n:")
+    assert isinstance(body["errors"], list) and body["errors"][0]["loc"][-1] == "n"
+
+
+def test_check_body_size_refuses_an_oversized_json_body():
+    client = TestClient(_error_app())
+    assert client.post("/sized", content=b"{}").status_code == 200
+    r = client.post("/sized", content=b"x" * 5000)
+    assert r.status_code == 413 and r.json()["limit"]["key"] == "max_upload_mb"
+    assert r.json()["detail"] == "Body too large: over 0.001 MB (MAX_UPLOAD_MB)."
+
+
+def test_uncaught_exception_is_a_json_500():
+    r = TestClient(_error_app(), raise_server_exceptions=False).get("/boom")
+    assert r.status_code == 500
+    assert r.json() == {"status": 500, "reason": None, "detail": "Internal server error."}
+
+
+def test_read_upload_bounded_refuses_past_the_limit():
+    app = FastAPI()
+    attach_error_handlers(app)
+
+    @app.post("/up")
+    async def up(file: UploadFile = File(...)):
+        data = await read_upload_bounded(file, 1.0, label="File")
+        return {"size": len(data)}
+
+    client = TestClient(app)
+    exact = b"a" * (1024 * 1024)
+    assert client.post("/up", files={"file": ("a.bin", exact)}).json() == {"size": len(exact)}
+    r = client.post("/up", files={"file": ("a.bin", exact + b"b")})
+    assert r.status_code == 413
+    assert r.json()["detail"] == "File too large: over 1 MB (MAX_UPLOAD_MB)."
+    assert r.json()["limit"]["observed"] == 1.0
+
+
+def test_build_info_accepts_a_limit_set_and_adds_limits_meta(monkeypatch):
+    monkeypatch.delenv("MAX_UPLOAD_MB", raising=False)
+    monkeypatch.delenv("MAX_UPLOAD_BYTES", raising=False)
+    monkeypatch.setenv(_limit_env("DPI"), "150")
+    limits = atrium_limits.LimitSet(
+        atrium_limits.upload_limit(10),
+        atrium_limits.limit(_limit_env("DPI"), 300, unit="dpi", key="pdf_render_dpi"),
+    )
+    app = FastAPI(version="1.2.3")
+    info = build_info(app, "atrium-test", limits, categories=["a"])
+    assert info["limits"] == {"max_upload_mb": 10.0, "pdf_render_dpi": 150}
+    assert info["limits_meta"]["pdf_render_dpi"] == {
+        "env": _limit_env("DPI"),
+        "unit": "dpi",
+        "default": 300,
+        "source": "env",
+    }
+    assert info["limits_meta"]["max_upload_mb"]["env"] == "MAX_UPLOAD_MB"
+    assert info["categories"] == ["a"]
+
+
+def test_build_info_with_a_plain_dict_is_unchanged():
+    info = build_info(FastAPI(), "atrium-test", {"max_upload_mb": 5.0})
+    assert info["limits"] == {"max_upload_mb": 5.0}
+    assert "limits_meta" not in info
+
+
+def test_resolve_max_upload_mb_is_strict(monkeypatch):
+    monkeypatch.delenv("MAX_UPLOAD_BYTES", raising=False)
+    monkeypatch.setenv("MAX_UPLOAD_MB", "12.5")
+    assert resolve_max_upload_mb(10) == 12.5
+    monkeypatch.setenv("MAX_UPLOAD_MB", " ")
+    assert resolve_max_upload_mb(10) == 10.0
+    monkeypatch.setenv("MAX_UPLOAD_MB", "ten")
+    with pytest.raises(atrium_limits.LimitConfigError, match="MAX_UPLOAD_MB"):
+        resolve_max_upload_mb(10)
+    monkeypatch.delenv("MAX_UPLOAD_MB")
+    monkeypatch.setenv("MAX_UPLOAD_BYTES", str(2 * 1024 * 1024))
+    assert resolve_max_upload_mb(10) == 2.0
+
+
+def test_cors_exposes_retry_after_and_the_limits_header():
+    app = FastAPI()
+    add_cors(app)
+
+    @app.get("/x")
+    def x():
+        return {}
+
+    r = TestClient(app).get("/x", headers={"Origin": "https://example.org"})
+    exposed = {h.strip().lower() for h in r.headers.get("access-control-expose-headers", "").split(",")}
+    assert {"retry-after", "x-atrium-limits-applied"} <= exposed

@@ -108,13 +108,21 @@ explicit rules so they are fixed there and never replicated.
 
 **`GET /info`** — service identity and capabilities. Required fields:
 
-| Field          | Type      | Content                                                                                                  |
-|----------------|-----------|----------------------------------------------------------------------------------------------------------|
-| `service`      | str       | canonical tool id = repo name (e.g. `atrium-nlp-enrich`)                                                 |
-| `version`      | str       | read from `para_config.txt` `[tool]` (never hard-coded)                                                  |
-| `endpoints`    | list[str] | the callable API paths                                                                                   |
-| `limits`       | object    | at least `max_upload_mb`; plus service-specific (`max_words`, `max_pdf_pages`, `max_concurrent_jobs`, …) |
-| _capabilities_ | any       | service-specific: categories, model versions, supported formats/langs, backends                          |
+| Field          | Type      | Content                                                                                                                  |
+|----------------|-----------|--------------------------------------------------------------------------------------------------------------------------|
+| `service`      | str       | canonical tool id = repo name (e.g. `atrium-nlp-enrich`)                                                                 |
+| `version`      | str       | read from `para_config.txt` `[tool]` (never hard-coded)                                                                  |
+| `endpoints`    | list[str] | the callable API paths                                                                                                   |
+| `limits`       | object    | **every** limit of the service (§4.5), `{key: effective value}`; at least `max_upload_mb`                                |
+| `limits_meta`  | object    | per limit: the environment variable `env` that sets it, `unit`, `default`, `source` (`env`/`config`/`default`/`derived`) |
+| _capabilities_ | any       | service-specific: categories, model versions, supported formats/langs, backends                                          |
+
+`limits` keys are the environment variable in lower case (`MAX_PDF_PAGES` → `max_pdf_pages`),
+except where an older key is kept stable; `limits_meta` is the authority for which variable
+sets which key. A **derived** limit (computed from settings or from the model, e.g. a token
+window) is reported with `env: null` and `derived_from`. Both maps come from the repo's
+`tool_limits.py` `LimitSet` (`atrium_limits.py`, atrium-project#53), so what `/info` reports is
+what the code enforces.
 
 Reference implementation: `atrium-nlp-enrich/service/api.py` (`info()`; note it already nails
 `service` + `limits`). Current drift to harmonize: translator keys the id as `"name"`,
@@ -154,14 +162,36 @@ one `/process` everywhere — would break every existing client and frontend for
 
 ### 4.4 Error codes (normative table)
 
-| Code        | Meaning                                              | Client behavior (§6)                  |
-|-------------|------------------------------------------------------|---------------------------------------|
-| 413         | payload too large (`MAX_UPLOAD_MB`, `max_pdf_pages`) | report limit, suggest split/downscale |
-| 415         | unsupported media type                               | report expected types                 |
-| 422         | unusable/invalid input (wrong format, bad params)    | report; no retry                      |
-| 429         | busy (job/concurrency limit)                         | report; caller may retry later        |
-| 500         | processing failure                                   | report server detail; no blind retry  |
-| 502/503/504 | not ready / warming up / proxy                       | **retry 3× with backoff**             |
+| Code        | Meaning                                                                                                                                              | Client behavior (§6)                                   |
+|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|
+| 413         | the request content is over a limit (`reason: limit_exceeded`: upload, pages, words, tokens, pixels)                                                 | report the limit; split the input or raise the setting |
+| 415         | unsupported media type                                                                                                                               | report expected types                                  |
+| 422         | unusable/invalid input (wrong format, bad params); also `reason: limit_exceeded` when a parameter or a per-input processing budget is over its limit | report; no retry                                       |
+| 429         | busy (`reason: busy`: every slot or queue place is taken), with `Retry-After`                                                                        | retry after `Retry-After` seconds                      |
+| 500         | processing failure                                                                                                                                   | report server detail; no blind retry                   |
+| 502/503/504 | not ready / warming up / proxy; 504 with `reason: limit_exceeded` is a time limit that depends on an upstream service                                | **retry 3× with backoff**                              |
+
+**Error body (atrium-project#32 item 2, landed with #53).** Every error a service returns —
+`HTTPException`, the router's 404/405, request validation, an uncaught failure — has one
+JSON shape, installed by `atrium_service.attach_error_handlers(app)`:
+
+```json
+{"status": 413, "reason": "limit_exceeded", "detail": "The PDF has 73 pages; the limit is 50 (MAX_PDF_PAGES).",
+ "limit": {"key": "max_pdf_pages", "env": "MAX_PDF_PAGES", "value": 50, "observed": 73, "unit": "pages"}}
+```
+
+- `status` is the HTTP status as an integer. It exists only on error bodies; the string
+  `status` of `/health`, `/ready`, a job resource or alto-postprocess's `/info` is another field.
+- `reason` is a **registered** code (`atrium_service.REASON_CODES`) or `null` when no code is
+  registered for the cause yet. Registered: `limit_exceeded`, `busy`. A published code is never
+  renamed or removed; a new cause gets a new code.
+- `detail` is always a human-readable string — the same text as before the envelope existed, so
+  a client reading `detail` needs no change. Structured data goes into extra members: `limit`
+  (for `limit_exceeded`), `errors` (the validation problems, or a non-string `HTTPException`
+  detail).
+- The status of a `limit_exceeded` refusal follows its cause: **413** request content too large,
+  **422** a parameter or a per-input processing budget, **504** a time limit that depends on an
+  upstream service. `busy` is always **429**; a draining replica's 503 keeps `reason: null`.
 
 Harmonization: translator currently returns **400** for non-XML uploads
 (`atrium-translator/service/api.py`, `/translate` filename check) — becomes **422**. Additive:
@@ -181,7 +211,32 @@ hub-local and vendored into all five tool repos) is what keeps that true.
 | `ALLOWED_ORIGINS` | server | CSV of CORS origins, code default `*`. Compose files may supply a narrower default of their own for local development; Kubernetes never reads one, so the k8s-facing reference (`docs/k8s_deployment.md`) always states the code default.                                                                                         |
 | `MAX_UPLOAD_MB`   | server | canonical upload limit, resolved by `atrium_service.resolve_max_upload_mb`. **The number is per-service, not shared** — alto-postprocess 25, llm-enrich 10, nlp-enrich 5, page-classification 10, translator 50 (see `docs/k8s_deployment.md`). `MAX_UPLOAD_BYTES` remains a deprecated fallback and loses whenever both are set. |
 | service-specific  | server | keep as-is; enumerated per repo in that repo's `.env.example` §5 ("Service knobs — operator") and in `docs/k8s_deployment.md`'s Table B.                                                                                                                                                                                          |
+| **limits**        | server | **every limit is a setting** (atrium-project#53, below): declared once in the repo's `tool_limits.py`, tagged `[limit]` in `.env.example`, listed in the service README's `## Limits` table and in `docs/k8s_deployment.md`'s Table B, and reported in `/info` (§4.1).                                                            |
 | `ATRIUM_<XX>_URL` | client | per-tool base-URL override, [§6](#-6-zero-dependency-client-contract) / [Appendix E](#appendix-e--naming-tables).                                                                                                                                                                                                                 |
+
+**What counts as a limit (atrium-project#53, factor III).** A *limit* is a value that
+(a) refuses an input; (b) cuts, samples or splits an input or a prompt; (c) caps an output; or
+(d) bounds the time or the retries of one request. AMČR's pipeline splits large documents
+itself and calls the services from its own workers, so each one must be a setting it can read
+(`/info`) and change (the environment):
+
+- **Declared with `atrium_limits.py`** (canonical, standard library only, at the repo root so
+  the CLIs use the same declaration): `limit("NAME", default, unit=…)` in the repo's
+  `tool_limits.py`. A malformed value fails at startup, naming the variable. Library code and
+  CLIs import `atrium_limits`, never the FastAPI-bound `service/atrium_service.py`.
+- **Over a limit, the service refuses** with `reason: limit_exceeded` (§4.4), **or processes the
+  input in full.** It never cuts an input quietly.
+- **Where a limit shapes a result without refusing it**, the run records a note in
+  `limits_applied` — `{limit, value, effect, count, detail}`, `effect` ∈ `sampled`, `split`,
+  `trimmed`, `skipped`, `stopped` (published; never renamed) — in its paradata
+  (`docs/paradata_schema.md`) and in the response (a top-level `limits_applied` list in a JSON
+  response; the `X-Atrium-Limits-Applied` header where the response is not JSON).
+- **Not limits**, and so not in `/info` `limits`: algorithmic thresholds (alto-postprocess's
+  `ATRIUM_TEXT_UTILS_*`, the translator's `LANG_ID_MIN_CONFIDENCE`); batch sizes that do not
+  change the result; bounds on a request parameter (those belong in the OpenAPI schema, #32);
+  lifecycle settings (`GRACEFUL_SHUTDOWN_S`, the drain wait, the health-probe timeout).
+- **Platform limits** — libxml2 without `huge_tree`, Starlette's multipart defaults, the csv
+  field size — are listed in the README's `## Limits` table but are not settings.
 
 ### 4.6 Versioning
 
@@ -481,8 +536,11 @@ depends on it.
       `OPENROUTER_API_KEY`, `OLLAMA_HOST`, `HF_TOKEN`, `MAX_UPLOAD_MB`, `ALLOWED_ORIGINS`.
 - [x] ⚠️ LLM calls are the slowest in the family: start synchronous; adopt nlp-enrich's
       `service/jobs.py` async pattern as a fast-follow if sync proves impractical.
-      _(Shipped synchronous with a strict concurrency guard + `504` timeout; async jobs deferred to
-      the W5 fast-follow.)_
+      _(Shipped synchronous; async jobs deferred to the W5 fast-follow. Corrected 2026-09-27
+      (atrium-project#53): this note used to say "with a strict concurrency guard + `504`
+      timeout", but `service/` has neither — no semaphore, no 429, no request deadline; each
+      upstream call is bounded only by `LLM_TIMEOUT` × `LLM_MAX_RETRIES`, both reported in
+      `/info`.)_
 - [x] Then: `agent-skill` branch per §5; `SKILL.md` per §7; `scripts/atrium_keywords.py` per §6
       (`--backend`, `--vocab`, `--top-k`); `scripts/server.sh`; text samples; branch README.
 

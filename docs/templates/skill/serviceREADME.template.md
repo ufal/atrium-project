@@ -20,7 +20,7 @@ docker compose --profile api up -d
 
 | Method | Path         | Purpose                                                                                                                                                                                  |
 |--------|--------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| GET    | `/info`      | service identity + capabilities: `service`, `version`, `endpoints`, `limits`, <capabilities>                                                                                             |
+| GET    | `/info`      | service identity + capabilities: `service`, `version`, `endpoints`, `limits`, `limits_meta`, <capabilities>                                                                              |
 | GET    | `/health`    | liveness probe; 200 always, even mid-shutdown. `?deep=true` additionally <backend/model probe> (503 on fail or while draining)                                                           |
 | GET    | `/ready`     | readiness probe (issue #55): 503 until warm, 200 while serving, 503 the instant a shutdown signal arrives — this is the Kubernetes `readinessProbe`/`startupProbe` target, not `/health` |
 | POST   | `/<primary>` | <domain endpoint(s), one row each, with params>                                                                                                                                          |
@@ -49,16 +49,37 @@ curl -s http://localhost:8000/info
 
 ## Errors
 
-| Code        | Meaning                                                  |
-|-------------|----------------------------------------------------------|
-| 413         | payload too large (`MAX_UPLOAD_MB`<, service caps>)      |
-| 415         | unsupported media type                                   |
-| 422         | unusable/invalid input                                   |
-| 429         | busy (concurrency limit) — retry later                   |
-| 500         | processing failure                                       |
-| 502/503/504 | not ready / warming up / upstream — **clients retry 3×** |
+Every error has one JSON body (hub `docs/agent_skill_strategy.md` §4.4):
+`{"status": <int>, "reason": <registered code or null>, "detail": "<text>"}`, plus `limit`
+for `reason: "limit_exceeded"` (`key`, `env`, `value`, `observed`, `unit`) and `errors` for
+validation problems.
+
+| Code        | `reason`                        | Meaning                                                                  |
+|-------------|---------------------------------|--------------------------------------------------------------------------|
+| 413         | `limit_exceeded`                | request content over a limit (see [Limits](#limits))                     |
+| 415         | `null`                          | unsupported media type                                                   |
+| 422         | `null` / `limit_exceeded`       | unusable/invalid input; or a parameter / per-input budget over its limit |
+| 429         | `busy`                          | every slot or queue place taken — retry after `Retry-After` seconds      |
+| 500         | `null`                          | processing failure                                                       |
+| 502/503/504 | `null` / `limit_exceeded` (504) | not ready / warming up / upstream — **clients retry 3×**                 |
 
 <drop rows that cannot occur for this service; add service-specific notes>
+
+## Limits
+
+Every limit this service has (atrium-project#53): each is a setting, reported with its
+current value in `/info` `limits` (and the variable that sets it in `limits_meta`). Over a
+limit, the service refuses with `reason: "limit_exceeded"` or processes the input in full;
+where a limit shapes a result, the response's `limits_applied` says so (and the paradata).
+`tests/test_api_contract.py` checks this table against `tool_limits.py` and `/info`.
+
+| Key (`/info`)   | Variable                              | Default | Unit   | Over the limit                                                              |
+|-----------------|---------------------------------------|---------|--------|-----------------------------------------------------------------------------|
+| `max_upload_mb` | `MAX_UPLOAD_MB`                       | <n>     | MB     | 413 `limit_exceeded`                                                        |
+| `<key>`         | `<VARIABLE>`                          | <n>     | <unit> | <413/422/504 `limit_exceeded`, or processed in full with a `<effect>` note> |
+| `<derived>`     | — (derived from `<VARIABLE>`/<model>) | —       | <unit> | <…>                                                                         |
+
+Platform limits (not settings): <libxml2 without `huge_tree` / Starlette multipart defaults / …, or "none">.
 
 ## Configuration (environment)
 

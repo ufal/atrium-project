@@ -218,6 +218,36 @@
       "preconditions": [],
       "issue": 54,
       "note": "checks this repo's own vendored schema against the doc-schema-v1 frozen copy (blob pin, no removals, a register of every post-freeze change) -- stdlib only; the checks that need the tag, the changelog or jsonschema stay in the hub's tests/test_schema_freeze_records.py"
+    },
+    {
+      "canonical": "atrium_limits.py",
+      "dest": "atrium_limits.py",
+      "selftest": true,
+      "ruff_format_exclude": true,
+      "isort_first_party": "atrium_limits",
+      "preconditions": [],
+      "issue": 53,
+      "note": "factor III: every service limit is a setting -- stdlib only, at the repo root so the CLIs import it too (nlp-enrich and llm-enrich CLI images have no FastAPI); service/atrium_service.py imports it lazily for the error body and /info"
+    },
+    {
+      "canonical": "test_atrium_limits.py",
+      "dest": "tests/test_atrium_limits.py",
+      "selftest": false,
+      "ruff_format_exclude": true,
+      "isort_first_party": null,
+      "preconditions": [],
+      "issue": 53,
+      "note": "tests atrium_limits.py, the limits_applied side of atrium_paradata.py, and that no code outside service/ imports the FastAPI-bound atrium_service"
+    },
+    {
+      "canonical": "test_limits_contract.py",
+      "dest": "tests/test_limits_contract.py",
+      "selftest": false,
+      "ruff_format_exclude": true,
+      "isort_first_party": null,
+      "preconditions": [],
+      "issue": 53,
+      "note": "David's done-when for #53: every limit in tool_limits.py is a documented environment setting (.env.example [limit], service/README.md ## Limits, visible to the env scanner) and setting it changes what /info reports. Skips where the repo has no tool_limits.py yet, so it needs no precondition"
     }
   ]
 }

@@ -77,8 +77,14 @@ jobs:
       # a collection error aborts the ENTIRE session — so the 143 tests that had
       # nothing to do with it never ran either. Landed red on 2026-08-06 (run
       # 31115978804) for exactly this.
-      - name: Install pytest, jsonschema and PyYAML
-        run: pip install pytest jsonschema PyYAML
+      #
+      # fastapi, httpx and python-multipart: tests/test_atrium_service.py opens with
+      # `pytest.importorskip("fastapi")`, so without them every test of the canonical
+      # atrium_service.py -- the #55 lifecycle and, since #53, the harmonised error body
+      # and the /info limits contract -- was SKIPPED here, green, testing nothing.
+      # python-multipart is what an UploadFile/Form endpoint needs to even be declared.
+      - name: Install pytest, jsonschema, PyYAML and the FastAPI test stack
+        run: pip install pytest jsonschema PyYAML fastapi httpx python-multipart
 
       # tests/ holds the 16 check_version.py tests — the release gate for all
       # five tool repos, which had no tests anywhere in the ecosystem until #18.
