@@ -8,26 +8,27 @@
 #   '{{ matrix.target != 'base' && format('-{0}'  was not properly terminated
 #   with regexp: /\}\}/  in docker_gha_roadmap.md
 #
-# Jekyll runs Liquid over ALL markdown -- inside fenced blocks and code spans too --
+# Jekyll runs Liquid over ALL markdown -- including fenced blocks and code spans --
 # so the GitHub Actions expression quoted at docs/docker_gha_roadmap.md:79 is read as
 # a template variable. There are nine such occurrences across two hub files.
 #
-# ⚠️ THAT FAILURE WAS LOAD-BEARING, AND IS NO LONGER. `/docs` is the hub's canonical
+# THAT FAILURE WAS LOAD-BEARING, AND IS NO LONGER. `/docs` is the hub's canonical
 # internal tree, so a GREEN Jekyll build from it would have published
 # docs/arub-p_contacts.md (five ARUP/ARUB partner email addresses),
 # docs/plan_repo_review.md and the 97 KB internal docker_gha_roadmap.md -- the build
 # log reaches `Rendering: arub-p_contacts.md` and dies four files later. Nothing was
 # published only because it crashed, which is an accident, not a safeguard.
 #
-# `docs/_config.yml` now excludes those three plus docker_gha.md (whose one `{{version}}`
-# resolves to the empty string rather than raising, shipping a silently wrong line) and
-# `templates/` (vendored code, not documentation). The legacy build is green and
-# publishes nine reviewed files; `tests/test_docs_pages_exclude.py` fails if anything
-# new appears under docs/ that is neither excluded nor reviewed. Both are stopgaps and
-# should be deleted once the Pages source moves. See PAGES_SETUP.md.
+# `docs/_config.yml` now excludes those three plus docker_gha.md (whose one
+# `{{version}}` resolves to the empty string rather than raising, shipping a
+# silently wrong line) and `templates/` (vendored code, not documentation). The
+# legacy build is green and publishes nine reviewed files; `tests/test_docs_pages_exclude.py`
+# fails if anything new appears under docs/ that is neither excluded nor reviewed.
+# Both are stopgaps and should be deleted once the Pages source moves. See
+# PAGES_SETUP.md.
 #
-# WHAT THIS WORKFLOW DOES INSTEAD. It builds docs_site/ with MkDocs Material and
-# publishes the RESULT to `gh-pages`, which is where the other five repositories
+# WHAT THIS WORKFLOW DOES INSTEAD. It builds the aggregate site with MkDocs Material
+# and publishes the RESULT to `gh-pages`, which is where the other five repositories
 # already publish from and what mkdocs.yml and PAGES_SETUP.md settled on. The branch
 # carries only built HTML, so nothing under docs/ can reach the site by accident.
 #
@@ -58,9 +59,9 @@ permissions:
   contents: read
 
 concurrency:
-  # `github.event_name` keeps a push from cancelling the scheduled run -- the same
-  # reasoning as pre-commit.yml. `cancel-in-progress: false` additionally keeps two
-  # deploys from racing for the gh-pages ref.
+  # Keep different trigger classes independent. Within the same trigger/ref,
+  # do not cancel an earlier run because a deployment must not race another
+  # deployment to the gh-pages branch.
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: false
 
@@ -69,17 +70,18 @@ jobs:
     name: Build the aggregate site
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
     permissions:
-      # Read to build. Write only because `mkdocs gh-deploy` pushes the built tree to
-      # the gh-pages branch with this job's GITHUB_TOKEN; the deploy step itself is
-      # gated to push-to-main below.
+      # The build only needs read access. Write access is required by the
+      # gh-deploy step to update the generated gh-pages branch.
       contents: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          # gh-deploy needs the gh-pages ref to exist locally when it already exists
-          # remotely; a shallow clone makes the first push after a branch reset fail.
+          # Keep the full repository history so gh-deploy can work reliably with
+          # an existing gh-pages branch, including after branch resets.
           fetch-depth: 0
 
       - name: Set up Python
@@ -90,25 +92,38 @@ jobs:
           cache-dependency-path: tools/docs/requirements.txt
 
       - name: Install the documentation toolchain
-        run: pip install -r tools/docs/requirements.txt
+        env:
+          # PyPI occasionally takes longer than pip's default 15-second socket
+          # timeout. The failed run hit this condition while resolving `click`;
+          # the reported ResolutionImpossible was a consequence of the timeout,
+          # not a real MkDocs dependency conflict.
+          PIP_DEFAULT_TIMEOUT: "60"
+          PIP_RETRIES: "10"
+        run: |
+          python -m pip install \
+            --disable-pip-version-check \
+            -r tools/docs/requirements.txt
 
       - name: Build the site
-        # mkdocs.yml sets `strict: true` and `validation.links.anchors: warn`, so an
-        # unresolved cross-repo link or a dead anchor fails here rather than shipping.
+        # `--strict` promotes MkDocs warnings to build failures, so broken
+        # configuration, navigation and other documented warnings cannot be
+        # silently published.
         run: mkdocs build --strict
 
       - name: Publish to gh-pages
-        # Only a push to the default branch deploys. PRs, pushes to `test`, the cron
-        # and manual dispatches on other refs build and stop -- which is what makes
-        # the build a gate rather than a deploy trigger.
+        # Only a push to the default branch deploys. PRs, pushes to `test`, the
+        # cron and manual dispatches build and stop -- making the workflow both
+        # a validation gate and a deployment workflow.
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          git config user.name  "github-actions[bot]"
+          git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # --force: the branch is derived output, never merged into.
-          # --no-history: one commit per deploy keeps the branch from growing without
-          # bound; nothing reads gh-pages' history. ghp-import writes .nojekyll itself,
-          # so Pages serves the built tree as-is instead of re-running Jekyll over it.
+
+          # --force: gh-pages is generated output and is never merged into.
+          # --no-history: keep one deployment commit instead of accumulating the
+          # complete generated-site history. Nothing consumes that history.
+          # ghp-import creates .nojekyll, so Pages serves the generated tree
+          # directly instead of running Jekyll over it.
           mkdocs gh-deploy --force --no-history
 
       - name: Where the site went
@@ -119,9 +134,10 @@ jobs:
             echo
             echo "Built from \`docs_site/\` and pushed to \`gh-pages\`."
             echo
-            echo "It serves at <https://ufal.github.io/atrium-project/> **once an owner"
-            echo "points Settings → Pages at \`gh-pages\` / \`/ (root)\`** -- until then this"
-            echo "repository still builds \`main\` / \`/docs\` with Jekyll, which now serves"
-            echo "nine reviewed files from \`docs/\` and none of the internal ones."
+            echo "It serves at <https://ufal.github.io/atrium-project/> once an owner"
+            echo "points Settings → Pages at \`gh-pages\` / \`/ (root)\`."
+            echo
+            echo "Until that Pages source change is made, the repository's existing"
+            echo "Pages configuration remains \`main\` / \`/docs\` with Jekyll."
             echo "See \`PAGES_SETUP.md\`."
           } >> "$GITHUB_STEP_SUMMARY"
