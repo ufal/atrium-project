@@ -5,6 +5,9 @@ _Scope: normative for the `agent-skill` branches of the five service repos
 (atrium-page-classification · atrium-translator · atrium-alto-postprocess ·
 atrium-nlp-enrich · atrium-llm-enrich). Per-repo implementation is tracked in
 sub-issues lifted from [§10](#-10-per-repo-work-plans)._
+_Round 2 of [#32](https://github.com/ufal/atrium-project/issues/32) (2026-09-28): the typed
+contract and the spec as a release artefact — §2.2 reversed, §4.1 `openapi_sha256`, §4.4 reason
+registry, new [§4.8](#48-typed-contract-and-the-spec-as-a-release-artefact-normative), §12.1._
 
 Decisions fixed at planning time:
 
@@ -60,13 +63,22 @@ Install targets (already proven by the page-classification example branch): `~/.
 Every ATRIUM service is FastAPI, so a complete OpenAPI 3.1 document already exists **at runtime**
 at `/openapi.json` (with Swagger UI at `/docs`). Policy:
 
-- **Do not commit static `openapi.json` snapshots.** They drift the moment `api.py` changes,
-  and FastAPI regenerates the spec for free. The SKILL.md instead tells agents: *for full
-  request/response schemas, fetch `GET /openapi.json` from the running server.*
-- **Drift control moves to tests/CI** ([§12](#-12-maintenance--drift-control)): a contract test
-  asserts the endpoint set and required `/info`/`/health` fields against in-process
-  `app.openapi()`, and a skill-validation workflow checks that skill docs only reference files
-  that exist.
+- **The spec is committed and released** (atrium-project#32 round 2, 2026-09-28; this
+  reverses the 07-23 rule "do not commit static `openapi.json` snapshots"). Each service commits
+  `service/openapi.json`, generated from the app; `tests/test_openapi_contract.py` fails while it
+  is stale, and every release attaches it as `openapi.json` with `openapi.json.sha256` and
+  compares it with the previous release's
+  ([§4.8](#48-typed-contract-and-the-spec-as-a-release-artefact-normative)). The AMČR pipeline
+  generates its Temporal activities' clients from the spec attached to the release it trusts,
+  and reads the live `/openapi.json` only to check that a deployed image matches that release.
+  The 07-23 objection — the snapshot drifts the moment `api.py` changes — is answered by the
+  freshness test: drift is a red build, not a stale file.
+- The SKILL.md still tells agents: *for full request/response schemas, fetch
+  `GET /openapi.json` from the running server* — which is now the same document as the release's.
+- **Drift control lives in tests/CI** ([§12](#-12-maintenance--drift-control)): the contract
+  tests assert the endpoint set, the required `/info`/`/health` fields and the committed spec
+  against in-process `app.openapi()`, and a skill-validation workflow checks that skill docs only
+  reference files that exist.
 - **Why a hand-written client at all, when agents could read OpenAPI and `curl`?** Determinism
   and economy: the client encodes multipart upload, retries, warmup patience, and exit codes
   once — instead of every agent re-deriving a correct `curl` invocation from a 100 KB spec on
@@ -108,14 +120,15 @@ explicit rules so they are fixed there and never replicated.
 
 **`GET /info`** — service identity and capabilities. Required fields:
 
-| Field          | Type      | Content                                                                                                                  |
-|----------------|-----------|--------------------------------------------------------------------------------------------------------------------------|
-| `service`      | str       | canonical tool id = repo name (e.g. `atrium-nlp-enrich`)                                                                 |
-| `version`      | str       | read from `para_config.txt` `[tool]` (never hard-coded)                                                                  |
-| `endpoints`    | list[str] | the callable API paths                                                                                                   |
-| `limits`       | object    | **every** limit of the service (§4.5), `{key: effective value}`; at least `max_upload_mb`                                |
-| `limits_meta`  | object    | per limit: the environment variable `env` that sets it, `unit`, `default`, `source` (`env`/`config`/`default`/`derived`) |
-| _capabilities_ | any       | service-specific: categories, model versions, supported formats/langs, backends                                          |
+| Field            | Type      | Content                                                                                                                  |
+|------------------|-----------|--------------------------------------------------------------------------------------------------------------------------|
+| `service`        | str       | canonical tool id = repo name (e.g. `atrium-nlp-enrich`)                                                                 |
+| `version`        | str       | read from `para_config.txt` `[tool]` (never hard-coded)                                                                  |
+| `endpoints`      | list[str] | the callable API paths                                                                                                   |
+| `limits`         | object    | **every** limit of the service (§4.5), `{key: effective value}`; at least `max_upload_mb`                                |
+| `limits_meta`    | object    | per limit: the environment variable `env` that sets it, `unit`, `default`, `source` (`env`/`config`/`default`/`derived`) |
+| `openapi_sha256` | str       | sha256 of the process's OpenAPI document in canonical form — the release's `openapi.json.sha256` for its image (§4.8)    |
+| _capabilities_   | any       | service-specific: categories, model versions, supported formats/langs, backends                                          |
 
 `limits` keys are the environment variable in lower case (`MAX_PDF_PAGES` → `max_pdf_pages`),
 except where an older key is kept stable; `limits_meta` is the authority for which variable
@@ -162,14 +175,15 @@ one `/process` everywhere — would break every existing client and frontend for
 
 ### 4.4 Error codes (normative table)
 
-| Code        | Meaning                                                                                                                                              | Client behavior (§6)                                   |
-|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|
-| 413         | the request content is over a limit (`reason: limit_exceeded`: upload, pages, words, tokens, pixels)                                                 | report the limit; split the input or raise the setting |
-| 415         | unsupported media type                                                                                                                               | report expected types                                  |
-| 422         | unusable/invalid input (wrong format, bad params); also `reason: limit_exceeded` when a parameter or a per-input processing budget is over its limit | report; no retry                                       |
-| 429         | busy (`reason: busy`: every slot or queue place is taken), with `Retry-After`                                                                        | retry after `Retry-After` seconds                      |
-| 500         | processing failure                                                                                                                                   | report server detail; no blind retry                   |
-| 502/503/504 | not ready / warming up / proxy; 504 with `reason: limit_exceeded` is a time limit that depends on an upstream service                                | **retry 3× with backoff**                              |
+| Code        | Meaning                                                                                                                                                                                                                                                                                | Client behavior (§6)                                   |
+|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|
+| 413         | the request content is over a limit (`reason: limit_exceeded`: upload, pages, words, tokens, pixels)                                                                                                                                                                                   | report the limit; split the input or raise the setting |
+| 415         | unsupported media type (`reason: unsupported_media_type`, with `accepted`)                                                                                                                                                                                                             | report expected types                                  |
+| 422         | unusable/invalid input (wrong format, bad params); `reason: invalid_record` for a record that cannot be opened, `ocr_text_layer` for a PDF whose text layer is an earlier OCR run's; also `reason: limit_exceeded` when a parameter or a per-input processing budget is over its limit | report; no retry                                       |
+| 429         | busy (`reason: busy`: every slot or queue place is taken), with `Retry-After`                                                                                                                                                                                                          | retry after `Retry-After` seconds                      |
+| 500         | processing failure                                                                                                                                                                                                                                                                     | report server detail; no blind retry                   |
+| 501         | this deployment cannot read the input: a reader's optional dependency is not installed (alto-postprocess `dependency_missing`)                                                                                                                                                         | report; the operator installs it                       |
+| 502/503/504 | not ready / warming up / proxy; 504 with `reason: limit_exceeded` is a time limit that depends on an upstream service                                                                                                                                                                  | **retry 3× with backoff**                              |
 
 **Error body (atrium-project#32 item 2, landed with #53).** Every error a service returns —
 `HTTPException`, the router's 404/405, request validation, an uncaught failure — has one
@@ -183,19 +197,38 @@ JSON shape, installed by `atrium_service.attach_error_handlers(app)`:
 - `status` is the HTTP status as an integer. It exists only on error bodies; the string
   `status` of `/health`, `/ready`, a job resource or alto-postprocess's `/info` is another field.
 - `reason` is a **registered** code (`atrium_service.REASON_CODES`) or `null` when no code is
-  registered for the cause yet. Registered: `limit_exceeded`, `busy`. A published code is never
-  renamed or removed; a new cause gets a new code.
+  registered for the cause yet. A published code is never renamed or removed; a new cause gets a
+  new code. Each code may be sent only with its statuses (`REASON_STATUSES`, enforced by
+  `error_body()` and `AtriumHTTPError`), and the registry is published in every spec as
+  `x-atrium-reason-codes` (§4.8), where `atrium_openapi.py compare` fails a release that drops
+  one:
+
+  | `reason`                 | Statuses      | Since     | Sent for                                                                                                                                                                                                               |
+  |--------------------------|---------------|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+  | `limit_exceeded`         | 413, 422, 504 | #53       | an input over a limit; the body's `limit` names it                                                                                                                                                                     |
+  | `busy`                   | 429           | #53       | every slot or queue place taken; `Retry-After`                                                                                                                                                                         |
+  | `unsupported_media_type` | 415           | #32 rnd 2 | a type the endpoint does not read; the body's `accepted` lists what it reads                                                                                                                                           |
+  | `invalid_record`         | 422           | #32 rnd 2 | the record sent with the request cannot be opened (not UTF-8 JSON, not an object, a newer `schema_version` major) — a record that opens but does not validate is accepted and reported in `document_json_schema_error` |
+  | `ocr_text_layer`         | 422           | #32 rnd 2 | a PDF whose text layer is an earlier OCR run's (llm-enrich#10 W6; raised by `api-digital`)                                                                                                                             |
+
 - `detail` is always a human-readable string — the same text as before the envelope existed, so
   a client reading `detail` needs no change. Structured data goes into extra members: `limit`
   (for `limit_exceeded`), `errors` (the validation problems, or a non-string `HTTPException`
-  detail).
+  detail), `accepted` (for `unsupported_media_type`) and `cause` — a finer, **unregistered**
+  cause such as alto-postprocess's reader codes (`image_needs_ocr`, `corrupt`, …), informational
+  and free to change; a client branches on `reason`, never on `cause`.
 - The status of a `limit_exceeded` refusal follows its cause: **413** request content too large,
   **422** a parameter or a per-input processing budget, **504** a time limit that depends on an
   upstream service. `busy` is always **429**; a draining replica's 503 keeps `reason: null`.
 
-Harmonization: translator currently returns **400** for non-XML uploads
-(`atrium-translator/service/api.py`, `/translate` filename check) — becomes **422**. Additive:
-correct clients treat any 4xx as a caller error, so nothing breaks.
+Harmonization (atrium-project#32 round 2, before the first release that attaches a spec): every
+media-type refusal is **415** `unsupported_media_type` — it was 400 in alto-postprocess and
+page-classification and 422 in llm-enrich, nlp-enrich and the translator. alto-postprocess's
+`dependency_missing` moves from 400 to **501**. Caller errors that ended in the blanket 500 are
+422 now: a record that cannot be opened (`invalid_record`, in all five), a malformed CSV/TEITOK
+(llm-enrich) or JSON upload (alto-postprocess), an unreadable image or PDF and an unknown model
+`version` (page-classification), an unknown `task_type` (alto-postprocess, which read it as
+`text`). A client that treats any 4xx as a caller error is unaffected.
 
 ### 4.5 Environment variables
 
@@ -251,6 +284,81 @@ skill pattern deliberately routes agents through the API so runs stay logged. **
 docs may claim paradata provenance **only if the service actually imports and writes it** on
 that branch. (Generalized from exemplar defect (b): the page-classification skill branch cites
 `atrium_paradata.py`, but the module is neither present nor imported there.)
+
+### 4.8 Typed contract and the spec as a release artefact (normative)
+
+atrium-project#32 round 2 (2026-09-28), K4TEL's three additions to David Motyčka's 09-26 request,
+accepted 09-27. Implemented in `docs/templates/shared/atrium_service.py` (gen 3),
+`atrium_openapi.py` and `test_openapi_contract.py`, vendored into all five repos.
+
+**Typed responses.** Every primary endpoint's JSON 200 is a named model (`$ref`), and so is
+`/info` (an `InfoBase` subclass). Routes **document** their responses —
+`response_model=None, responses={200: {"model": X}, **error_responses(…)}` — so the bytes sent
+are what the handler builds; each repo's `tests/test_api_contract.py` validates real responses
+against the **published** schema (`atrium_openapi.validate_response`). page-classification's
+`/predict_image`, which already filtered through `response_model`, keeps it. Rules:
+
+- a field the handler always sends has no default (required, nullable where it can be null);
+  one it sends only sometimes defaults to `None` — oasdiff rates removing a required response
+  property as breaking, and `compare` raises the optional case to the same level;
+- **no enums in responses**: a value is an open string whose known values are in its
+  description, so a new value never breaks a client generated from an older spec. Request
+  parameters use enums only where the handler already refuses unknown values (alto's
+  `task_type`, nlp's `kw_method`/`lang`/`format`, the translator's `response_format`) — the
+  translator's `output_mode` stays a string, since the handler accepts any case and falls back;
+- every model allows extra members, so an additive field is not breaking;
+- a returned record is typed **by reference**: the `AtriumDocument` component is the vendored
+  `atrium_document.schema.json` (its `$defs` hoisted as `AtriumDocument_<name>`), recorded as
+  `x-atrium-record-schema` (`schema_version`, `sha256`). A record in a **request** stays untyped
+  (a binary part with `contentMediaType: application/json`, or a free-form object), because a
+  #67 R1 seed (`doc_id`, `source`) fails the full schema and must stay valid input. Every tool
+  opens a sent record through `parse_record_part()` (§4.4 `invalid_record`) and names it
+  `document_json`, in and out (alto-postprocess keeps `document_record` / `document_json_out`
+  as deprecated aliases);
+- every primary response declares an optional `paradata: CreateAction` (#67 §E): absent or null
+  until #67 R2 returns it; nlp-enrich's pipeline-run record fills it today, as a transitional
+  shape without the action's own members.
+
+**Declared errors.** `FastAPI(responses=error_responses(422, 500), generate_unique_id_function=
+operation_id, root_path_in_servers=False)` and `attach_openapi_contract(app, SERVICE)` in every
+service: each error status is `ErrorBody` (FastAPI's `HTTPValidationError`, which is not what is
+sent, is gone), each route adds the statuses it can refuse with (a 429 documents `Retry-After`),
+and `/health`/`/ready` keep their own 503 bodies.
+
+**A stable spec.** operationIds are the handler names (a renamed handler is a renamed client
+method, and `compare` fails it); no component is split into `-Input`/`-Output`; nothing read
+from the environment reaches the spec (the test perturbs every `[limit]` variable and each
+repo's `ENV_PERTURB`); `fastapi==0.141.1` and `pydantic==2.13.5` are pinned **exactly** in every
+file a lane or an image installs them from, dependabot ignores both, and a bump regenerates the
+spec in the same commit.
+
+**Files per repo.** `service/openapi.json` (committed, generated:
+`python atrium_openapi.py export --app <mod>:app`); `atrium_openapi.py` at the root — also a
+**runtime companion** of `service/atrium_service.py`, which imports it lazily to finish and
+digest the spec, so it ships in every image and release bundle, like `atrium_document.py`;
+`tests/test_openapi_contract.py` (vendored) and `tests/openapi_contract_data.py` (per repo:
+`SERVICES`, `ENV_PERTURB`, `PIN_FILES`, `PREPARE` — page-classification's stubs the torch-bound
+model manager). A repo with two HTTP services lists both (llm-enrich's planned `api-digital`:
+`service/openapi-digital.json`).
+
+**Release.** `release.yml` (all five): `atrium_openapi.py check` (the committed spec is what the
+tag's code generates) → `stamp` (`info.version` = the release version; `openapi.json` +
+`openapi.json.sha256`) → `baseline` (the highest release below the tag that carries the asset;
+none is the bootstrap, which passes; an API error fails) → `compare --require-oasdiff`
+(oasdiff `v1.32.1`). **A breaking change fails unless the major version went up** — 0.x
+included, so a 0.x tool needs 1.0 — and **a removed reason code, a changed
+`x-atrium-service` or a record schema change without a `schema_version` major always fail**.
+The assets are attached in the step that creates the release (an immutable release refuses
+later uploads, #40), and `workflow_dispatch` is the dry run that proves the gate before a tag is
+spent. The gate runs the vendored script, not a cross-repo `uses:` (docker_gha_roadmap §3.3).
+
+**CI.** `api-contract.reusable.yml` runs the canonical test too (and no longer reads pytest's
+exit 5 as a failure, 07-23 defect 4), and its `openapi-compat` job compares the committed spec
+with the latest release's on every push, so a breaking change shows on the PR that makes it.
+`docker-tool.reusable.yml`'s container smoke checks that the served `/openapi.json` is the
+committed spec and that `/info` `openapi_sha256` is its digest — the check AMČR runs against a
+deployed image, and the container-level proof for page-classification. Both skip in a repo that
+has not adopted the contract yet.
 
 ## 🌿 5. `agent-skill` branch anatomy (normative)
 
@@ -564,8 +672,11 @@ least one backend (Ollama or OpenRouter with a test key).
 
 On each default branch, a test asserts against in-process `app.openapi()` (no server needed):
 the endpoint set matches the documented list; `/info` returns the §4.1 required fields;
-`/health` exists and returns the §4.1 shape. This guards the meta-contract without committed
-spec files. (Pattern: extend the existing `tests/test_api*.py` / `tests/test_service_api.py`.)
+`/health` exists and returns the §4.1 shape. (Pattern: extend the existing `tests/test_api*.py`
+/ `tests/test_service_api.py`.) Since atrium-project#32 round 2 the vendored
+`tests/test_openapi_contract.py` also holds the **committed** `service/openapi.json` to the app
+— current, typed, environment-independent, generated by the pinned fastapi and pydantic — and
+`tests/test_api_contract.py` validates real responses against it (§4.8).
 
 ### 12.2 Branch sync policy — **manual landing, scripted diagnosis**
 
@@ -763,7 +874,7 @@ Named **`server.sh`** (everywhere, including every doc that mentions it — defe
 3. Curl examples (primary endpoint(s) + `/info`).
 4. Response schema: JSON example + field-description table (must match `api.py` — defect (d)
    rule).
-5. Errors: the §4.4 table with service-specific notes.
+5. Errors: the §4.4 table with its `reason` column and service-specific notes.
 6. Configuration: the shared seven-row contract copied verbatim from
    `docs/templates/skill/serviceREADME.template.md`, plus this service's operator-facing
    variables, plus a pointer to the repo's `.env.example` (the complete ledger — layout per
@@ -771,6 +882,8 @@ Named **`server.sh`** (everywhere, including every doc that mentions it — defe
 7. Run: venv/uvicorn + `docker compose --profile api up` (+ GPU variant).
 8. Frontend(s): where mounted, what they demonstrate.
 9. Tests: how to run the API tests (default branch only).
+10. OpenAPI: where the committed spec is, how to regenerate it, the release comparison and the
+    fastapi/pydantic pins (§4.8).
 
 ## Appendix E — naming tables
 
@@ -788,8 +901,9 @@ Env var = `ATRIUM_<code>_URL`.
 
 Considered and rejected: `atrium_process.py` for alto-postprocess (too generic as a skill-level
 verb); `atrium_llm_enrich.py` for llm-enrich (confusable with nlp-enrich's `atrium_enrich.py`);
-a uniform `/process` primary endpoint everywhere (breaks existing clients for cosmetic gain);
-committed `openapi.json` snapshots (drift; §2.2).
+a uniform `/process` primary endpoint everywhere (breaks existing clients for cosmetic gain).
+Committed `openapi.json` snapshots were rejected on 07-23 (drift) and adopted on 2026-09-28 with
+a freshness test that turns the drift into a red build (§2.2, §4.8).
 
 ---
 _Maintained in `atrium-project` next to the ecosystem record

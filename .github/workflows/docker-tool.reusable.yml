@@ -54,6 +54,9 @@ on:
           would fail correctly-behaving images that were never meant to serve HTTP.
           Pass the server-shaped targets explicitly, e.g. '["api"]'. Assumes the probed
           image EXPOSEs 8000 and answers GET /health — true of every ATRIUM api stage.
+          Where the repo commits service/openapi*.json and vendors atrium_openapi.py, the
+          probe also checks that the served /openapi.json is a committed spec and that
+          /info openapi_sha256 is its digest (atrium-project#32 round 2).
         required: false
         type: string
         default: '[]'
@@ -453,6 +456,47 @@ jobs:
           curl -sf http://127.0.0.1:18080/health
           echo
           curl -s -o /dev/null -w "/ready http_code: %{http_code}\n" http://127.0.0.1:18080/ready
+
+          # (atrium-project#32 round 2) The image serves the spec that was committed and that
+          # the release attaches: GET /openapi.json must equal a committed service/openapi*.json
+          # (info.version aside — the committed file is stamped only at release time), and
+          # /info `openapi_sha256` must be the digest of what is served. This is the check the
+          # AMČR pipeline runs against a deployed image, and the only container-level proof for
+          # a torch-bound service whose light lane generates the spec with a stub (pc). A spec
+          # per service is matched by content, so a repo with two HTTP images (llm-enrich's
+          # planned api-digital, service/openapi-digital.json) passes against its own file.
+          # Skipped where the repo has not adopted the typed contract yet (no committed spec, or
+          # no vendored atrium_openapi.py), because the hub's `v1` moves for all five at once.
+          if ls service/openapi*.json >/dev/null 2>&1 && [ -f atrium_openapi.py ]; then
+            echo "Comparing the served OpenAPI document with the committed one..."
+            curl -sf http://127.0.0.1:18080/openapi.json -o "$RUNNER_TEMP/served.openapi.json"
+            curl -sf http://127.0.0.1:18080/info -o "$RUNNER_TEMP/served.info.json"
+            python3 - "$RUNNER_TEMP/served.openapi.json" "$RUNNER_TEMP/served.info.json" <<'PY'
+          import glob
+          import sys
+
+          sys.path.insert(0, ".")
+          import atrium_openapi  # the caller's vendored copy: stdlib only
+
+          served = atrium_openapi.load(sys.argv[1])
+          info = atrium_openapi.load(sys.argv[2])
+          results = {path: atrium_openapi.check(atrium_openapi.load(path), served) for path in sorted(glob.glob("service/openapi*.json"))}
+          matched = [path for path, problems in results.items() if not problems]
+          if not matched:
+              for path, problems in results.items():
+                  print(f"::error::the served /openapi.json is not {path} (committed → served):")
+                  for problem in problems:
+                      print(f"  {problem}")
+              sys.exit(1)
+          expected = atrium_openapi.digest(served)
+          if info.get("openapi_sha256") != expected:
+              print(f"::error::/info openapi_sha256 is {info.get('openapi_sha256')!r}, not the served spec's digest {expected}")
+              sys.exit(1)
+          print(f"OK: the served spec is {matched[0]}; /info openapi_sha256 = {expected}")
+          PY
+          else
+            echo "no committed service/openapi*.json or no atrium_openapi.py: skipping the spec comparison"
+          fi
 
           echo "Sending SIGTERM (docker stop) and asserting a clean, timely exit..."
           # The budget must EXCEED the graceful-shutdown budget the service is

@@ -11,6 +11,18 @@
 # The byte-parity of the shared service/atrium_service.py helper is enforced
 # separately by para-drift.reusable.yml.
 #
+# atrium-project#32 round 2 (the typed contract, the spec as a release artefact):
+#   * the pytest step also runs the vendored tests/test_openapi_contract.py where the repo
+#     has it: the committed service/openapi.json is current, typed, environment-independent,
+#     pinned, and /info reports its digest;
+#   * a pytest exit 5 ("no tests collected" — a module-level skip, 07-23 defect 4) is not
+#     read as a failure any more; every other non-zero exit still is;
+#   * a second job, `openapi-compat`, compares the committed spec with the latest release's
+#     `openapi.json` asset — the check each release.yml repeats as its gate — so a breaking
+#     change shows on the PR that makes it rather than on the tag. It skips where a repo has
+#     no committed spec (or no vendored atrium_openapi.py) yet, because `v1` moves for all
+#     five repos at once.
+#
 # W6's acceptance for issue #55/H10 asks that "the contract test asserts /health
 # against a container, not just an imported app." That assertion lives in
 # docker-tool.reusable.yml's docker-build-smoke job instead of a second job here:
@@ -56,4 +68,72 @@ jobs:
           if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
 
       - name: Run API meta-contract test
-        run: pytest -q -rs tests/test_api_contract.py
+        run: |
+          tests="tests/test_api_contract.py"
+          if [ -f tests/test_openapi_contract.py ]; then tests="$tests tests/test_openapi_contract.py"; fi
+          # Exit 5 is pytest's "no tests collected": a service whose app cannot be imported in
+          # this lane skips its module (07-23 defect 4). That is reported, not failed; every
+          # other non-zero exit is a failure.
+          rc=0
+          # shellcheck disable=SC2086 — word splitting is intended: a list of test files
+          pytest -q -rs $tests || rc=$?
+          if [ "$rc" -eq 5 ]; then
+            echo "::notice::no tests collected in $tests (every module skipped) — exit 5 is not a failure"
+            exit 0
+          fi
+          exit "$rc"
+
+  openapi-compat:
+    name: Compare the committed OpenAPI spec with the latest release (#32)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Reads the tree and the repository's own public release assets; nothing else.
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout caller tool repository
+        uses: actions/checkout@v7
+
+      - name: Decide whether this repo publishes a spec yet
+        id: adopted
+        run: |
+          if [ -f service/openapi.json ] && [ -f atrium_openapi.py ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::no service/openapi.json or no vendored atrium_openapi.py — the typed contract is not adopted here yet; skipping"
+          fi
+
+      - name: Set up Python
+        if: steps.adopted.outputs.run == 'true'
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install oasdiff
+        # Pinned to the version atrium_openapi.py's rules were measured against. `go install`
+        # verifies the module against sum.golang.org; GOTOOLCHAIN=auto fetches the Go version
+        # oasdiff's go.mod asks for (a few minutes on a cold runner).
+        if: steps.adopted.outputs.run == 'true'
+        env:
+          OASDIFF_VERSION: v1.32.1
+        run: |
+          GOTOOLCHAIN=auto go install "github.com/oasdiff/oasdiff@${OASDIFF_VERSION}"
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Compare with the latest release's openapi.json
+        # The vendored atrium_openapi.py is stdlib only, so nothing is installed. baseline: the
+        # highest release carrying openapi.json (none → the bootstrap, which passes; an API
+        # error fails). compare: a removed reason code always fails; any other breaking change
+        # fails unless para_config.txt's major version is above the baseline's. The release
+        # gate in release.yml runs the same two commands on the stamped spec.
+        if: steps.adopted.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          para=para_config.txt
+          if [ -f setup/para_config.txt ]; then para=setup/para_config.txt; fi
+          printf '%s' "$GH_TOKEN" | python atrium_openapi.py baseline --repo "$GITHUB_REPOSITORY" \
+            --out "$RUNNER_TEMP/previous.openapi.json" --token-stdin
+          python atrium_openapi.py compare --base "$RUNNER_TEMP/previous.openapi.json" --rev service/openapi.json \
+            --para-config "$para" --require-oasdiff --summary "$GITHUB_STEP_SUMMARY"

@@ -126,20 +126,20 @@ uuid4 boundary — the translated XML first, then the updated record, each with 
 
 ### Errors
 
-| Status | When                                                                                                                                               |
-|--------|----------------------------------------------------------------------------------------------------------------------------------------------------|
-| `413`  | Over `MAX_UPLOAD_MB`, or the declared envelope exceeds the cap. Enforced **during** the read, so an oversized body is refused rather than buffered |
-| `415`  | `Content-Type` is neither `multipart/form-data` nor `application/json`                                                                             |
-| `422`  | Missing filename, a filename not ending `.xml`, or metadata mode with no readable `AMCR_FIELDS_PATH`                                               |
-| `500`  | The pipeline raised — malformed XML, or the backend failed after retries                                                                           |
-| `503`  | Warming up, or draining after SIGTERM. **Retryable** against another replica                                                                       |
+| Status | When                                                                                                                                                                                          |
+|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `413`  | Over `MAX_UPLOAD_MB`, or the declared envelope exceeds the cap. Enforced **during** the read, so an oversized body is refused rather than buffered                                            |
+| `415`  | `reason: unsupported_media_type`: a filename not ending `.xml` (a `422` before #32 round 2), or a `Content-Type` that is neither `multipart/form-data` nor `application/json`                 |
+| `422`  | `reason: invalid_record` for a `document_json` that cannot be opened; else a missing or unusable filename, metadata mode with no readable `AMCR_FIELDS_PATH`, or an unknown `response_format` |
+| `500`  | The pipeline raised — malformed XML, or the backend failed after retries                                                                                                                      |
+| `503`  | Warming up, or draining after SIGTERM. **Retryable** against another replica                                                                                                                  |
 
-!!! warning "`detail` is not always a string"
-    Error bodies are FastAPI's `{"detail": ...}`. `detail` is a **string** for the errors
-    this service raises itself, and a **list of validation objects** when FastAPI rejects
-    the request before the handler runs — a `POST` with `Content-Type: application/json`
-    and no `file` part returns `422` in that second shape. A client must not assume a
-    string.
+!!! note "One error body"
+    Every error is `{"status", "reason", "detail"}` (atrium-project#32/#53): `detail` is
+    always a string, and FastAPI's validation list moved to `errors`. `reason` is a
+    registered code or `null`; the spec committed as `service/openapi.json` (and attached to
+    every release) lists the codes in `x-atrium-reason-codes`. `response_format=json` answers
+    one JSON object (`TranslateResponse`) instead of the XML or the multipart form.
 
 ### Environment
 

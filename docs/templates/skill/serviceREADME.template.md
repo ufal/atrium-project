@@ -51,17 +51,20 @@ curl -s http://localhost:8000/info
 
 Every error has one JSON body (hub `docs/agent_skill_strategy.md` §4.4):
 `{"status": <int>, "reason": <registered code or null>, "detail": "<text>"}`, plus `limit`
-for `reason: "limit_exceeded"` (`key`, `env`, `value`, `observed`, `unit`) and `errors` for
-validation problems.
+for `reason: "limit_exceeded"` (`key`, `env`, `value`, `observed`, `unit`), `accepted` for
+`reason: "unsupported_media_type"`, `errors` for validation problems and, where the service has
+one, an informational `cause` (unregistered; branch on `reason`). The registered codes and their
+statuses are listed in the spec's `x-atrium-reason-codes` (see [OpenAPI](#openapi-the-typed-contract)).
 
-| Code        | `reason`                        | Meaning                                                                  |
-|-------------|---------------------------------|--------------------------------------------------------------------------|
-| 413         | `limit_exceeded`                | request content over a limit (see [Limits](#limits))                     |
-| 415         | `null`                          | unsupported media type                                                   |
-| 422         | `null` / `limit_exceeded`       | unusable/invalid input; or a parameter / per-input budget over its limit |
-| 429         | `busy`                          | every slot or queue place taken — retry after `Retry-After` seconds      |
-| 500         | `null`                          | processing failure                                                       |
-| 502/503/504 | `null` / `limit_exceeded` (504) | not ready / warming up / upstream — **clients retry 3×**                 |
+| Code        | `reason`                        | Meaning                                                                                               |
+|-------------|---------------------------------|-------------------------------------------------------------------------------------------------------|
+| 413         | `limit_exceeded`                | request content over a limit (see [Limits](#limits))                                                  |
+| 415         | `unsupported_media_type`        | a type this endpoint does not read; `accepted` lists what it reads                                    |
+| 422         | `invalid_record`                | the `document_json` record cannot be opened (not JSON, not an object, a newer `schema_version` major) |
+| 422         | `null` / `limit_exceeded`       | unusable/invalid input; or a parameter / per-input budget over its limit                              |
+| 429         | `busy`                          | every slot or queue place taken — retry after `Retry-After` seconds                                   |
+| 500         | `null`                          | processing failure                                                                                    |
+| 502/503/504 | `null` / `limit_exceeded` (504) | not ready / warming up / upstream — **clients retry 3×**                                              |
 
 <drop rows that cannot occur for this service; add service-specific notes>
 
@@ -118,6 +121,25 @@ behavior, provenance (paradata) if actually written>
 
 <where mounted, what they demonstrate; every frontend carries the §9 API
 footer: curl example + /docs + /openapi.json + this README>
+
+## OpenAPI (the typed contract)
+
+The service's OpenAPI document is committed as [`service/openapi.json`](openapi.json) and
+attached to every release as `openapi.json` with its `openapi.json.sha256` (hub
+`docs/agent_skill_strategy.md` §4.8). Every request and response field is typed, every error
+response is the error body above, and a returned record is typed by the vendored record schema
+(`AtriumDocument`). `GET /info` reports `openapi_sha256`, the digest of the spec the running
+image serves.
+
+- **After an API change**, regenerate and commit it:
+  `python atrium_openapi.py export --app <module>:app --out service/openapi.json`
+  <`--prepare tests.openapi_contract_data:prepare` if the app needs a stub to import>.
+  `tests/test_openapi_contract.py` fails while it is stale.
+- **Compatibility.** Each release compares its spec with the previous release's: a breaking
+  change fails the release unless the major version went up (for 0.x, that means 1.0), and a
+  removed reason code always fails.
+- **fastapi and pydantic are pinned** exactly (<the requirement files>): bump both by hand and
+  regenerate.
 
 ## Tests
 

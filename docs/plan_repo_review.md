@@ -79,6 +79,10 @@ config) → "All checks passed!" in all five tool repos** (llm-enrich's three Ju
 | A3  | **Error-code harmonization to §4.4 (4xx not 500/400, #32)**    | ✅  | 🔧   | ✅    | 🔧         | 🔧  | —   |
 | A4  | **API contract test + `api-contract.reusable.yml` (#32)**      | 🔧 | 🔧   | 🔧   | 🔧         | 🔧  | 🔧  |
 | A5  | **llm-enrich FastAPI service built (§4.2, #32)**               | —  | —    | —    | —          | 🔧  | —   |
+| A6  | **Typed responses + declared errors (§4.8, #32 round 2)**      | 🔧 | 🔧   | 🔧   | 🔧         | 🔧  | 🔧  |
+| A7  | **Reason registry + 415/501/`invalid_record` (§4.4, #32 r2)**  | 🔧 | 🔧   | 🔧   | 🔧         | 🔧  | 🔧  |
+| A8  | **Committed `service/openapi.json` + pins + freshness test**   | 🔧 | 🔧   | 🔧   | 🔧         | 🔧  | 🔧  |
+| A9  | **Spec attached to releases + breaking-change gate (#32 r2)**  | 🔧 | 🔧   | 🔧   | 🔧         | 🔧  | 🔧  |
 
 Legend: ✅ closed/verified · ⏳ open · ⏸️ deferred (maintainer decision) · 🔴 open
 (decision needed) · 🔧 fix prepared, pending review/merge · n/a not applicable · — out of
@@ -120,6 +124,32 @@ service at all**. Verified against the `test` HEADs.
   per-endpoint response schemas (a candidate follow-up). Locations:
   `{pc,alto,nlp,translator,llm}/service/*.py` + `tests/test_api_contract.py`; hub
   `docs/templates/shared/atrium_service.py` + `.github/workflows/api-contract.reusable.yml`.
+
+**Round 2 (2026-09-28, A6–A9) — the typed contract and the spec as a release artefact.** David
+Motyčka (AMČR) writes the pipeline's Temporal activities against the services' OpenAPI; K4TEL's
+three additions, accepted 09-27, are prepared in the working trees (normative text:
+`agent_skill_strategy.md` §4.8; work sheet: `agent_dev_logs/plans/32.plan.md`).
+* **A6 — typed responses.** Every primary endpoint's JSON 200 and `/info` is a named model,
+  documented rather than filtered (`response_model=None`); errors are declared per route as
+  `ErrorBody`; operationIds are handler names; a returned record is the vendored record schema
+  by reference; each response has an optional `paradata: CreateAction` slot (#67 R2).
+  Conformance tests hold real responses to the published schema in all five repos (pc's now run
+  in the fast lane through a model-manager stub).
+* **A7 — reason registry.** `unsupported_media_type` (415, `accepted`), `invalid_record` (422)
+  and `ocr_text_layer` (422, llm-enrich#10 W6) join `limit_exceeded` and `busy`, with their
+  statuses enforced and published as `x-atrium-reason-codes`. Media-type refusals are 415
+  everywhere (alto and pc 400, llm/nlp/translator 422 before); alto's `dependency_missing` is
+  501; caller errors that were 500s are 422.
+* **A8 — committed spec.** `service/openapi.json` in every repo, generated from the app;
+  `tests/test_openapi_contract.py` (canonical) checks it is current, typed and
+  environment-independent; `fastapi==0.141.1` and `pydantic==2.13.5` pinned exactly, ignored
+  by dependabot.
+* **A9 — release artefact.** Every `release.yml` checks, stamps and attaches `openapi.json` +
+  `.sha256` and compares it with the previous release (oasdiff `v1.32.1` + the rules of
+  `atrium_openapi.py`): breaking fails unless the major version went up; a removed reason code
+  always fails; `workflow_dispatch` is the dry run. `api-contract.reusable.yml` gains the
+  `openapi-compat` job and tolerates pytest exit 5 (07-23 defect 4); the Docker smoke compares
+  the served spec with the committed one.
 
 ### 🏷️ F — Release & version hygiene — **CLOSED**
 `_read_tool_version()` reads `para_config.txt [tool] version` in every service API; `para_config`

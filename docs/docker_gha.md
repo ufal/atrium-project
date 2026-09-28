@@ -153,6 +153,32 @@ unpublished, it carries no ENTRYPOINT), GPU Inference Tests, pre-commit, notes-o
 Smoke Tests, Paradata Drift, API Meta-Contract, Workflow Policy Lint, and Security scans targeting the
 `-llm` image variant (largest CVE surface).
 
+### The OpenAPI release asset (atrium-project#32 round 2)
+
+Every tool release attaches the service's OpenAPI document — `openapi.json` (the committed
+`service/openapi.json`, `info.version` stamped with the release version) and
+`openapi.json.sha256` — and compares it with the previous release before publishing
+(`agent_skill_strategy.md` §4.8). The steps sit in each repo's own `release.yml`, after the
+bundle is built and before `softprops/action-gh-release`, and run the vendored
+`atrium_openapi.py` (stdlib only; no cross-repo `uses:` in a release gate, roadmap §3.3):
+
+1. `pip install -r requirements-test.txt` and `atrium_openapi.py check --app <module>:app`
+   (page-classification adds `--prepare tests.openapi_contract_data:prepare`, which stubs the
+   torch-bound model manager) — the committed spec is what the tag's code generates;
+2. `GOTOOLCHAIN=auto go install github.com/oasdiff/oasdiff@v1.32.1`;
+3. `stamp` → `baseline` (the highest release below the tag carrying the asset; none is the
+   bootstrap; an API error fails) → `compare --require-oasdiff` — a breaking change fails unless
+   the major version went up (0.x → 1.0), and a removed reason code always fails;
+4. the two assets go into the same `files:` list as the bundle (an immutable release refuses
+   later uploads, #40).
+
+`workflow_dispatch` is each release's dry run: the version guard compares CITATION.cff with
+`para_config.txt` only, every OpenAPI step runs against the latest release, and the publishing
+step is skipped (`if: github.ref_type == 'tag'`). The bundles of alto-postprocess,
+page-classification and the translator also ship `atrium_openapi.py`, which
+`service/atrium_service.py` imports to finish and digest the spec. `docker-build-smoke` checks
+that the image serves the committed spec and reports its digest as `/info` `openapi_sha256`.
+
 ---
 
 ## 2. Version floor and action pinning
@@ -353,23 +379,23 @@ umbrella wrapper is needed, is not planned. That reference should be removed.
 
 All ready-to-commit templates live in `docs/templates/workflows/`.
 
-| Workflow                 | What it does                                        | Deployment state                                                                      | Lives as        |
-|--------------------------|-----------------------------------------------------|---------------------------------------------------------------------------------------|-----------------|
-| **Docker Tool**          | Test + coverage + multi-target GHCR publish + scan + opt-in container health/`SIGTERM` smoke (issue #55). | ✅ All 5 repos (→ `docker-tool.reusable.yml@v1`).                                      | Reusable Bundle |
-| **Security**             | Version check + periodic Trivy re-scan.             | ✅ All 5 repos (→ `security.reusable.yml@v1`). ⚠️ No dispatch in TR/PC.                | Reusable Bundle |
-| **Paradata Drift**       | Canonical shared-file parity diff vs hub.           | ✅ All 5 repos.                                                                        | Reusable Bundle |
-| **CodeQL**               | Static security/quality analysis for Python.        | ✅ All 5 repos (→ `codeql.reusable.yml@v1`).                                           | Reusable Bundle |
-| **pre-commit**           | Ruff + ShellCheck + whitespace, **blocking**.       | ✅ All 5 repos (→ `pre-commit.reusable.yml@v1`).                                       | Reusable Bundle |
-| **API Meta-Contract**    | §4.1 service contract test.                         | ✅ All 5 repos (→ `api-contract.reusable.yml@v1`).                                     | Reusable Bundle |
-| **Workflow Policy Lint** | Pins, `secrets:`, permissions, caller shape.        | ✅ All 5 repos + hub. ⚠️ No caller example published.                                  | Reusable Bundle |
-| **Skill Validation**     | `agent-skill` branch contract checks.               | ✅ On the five `agent-skill` branches only.                                            | Reusable Bundle |
-| **E2E Pipeline Smoke**   | Threads one document JSON through all 5 stages.     | ✅ Hub, nightly-ish. ⚠️ Tests the last release, not HEAD.                              | Hub workflow    |
-| **Repo Suites Smoke**    | Runs each repo's pytest suite in parallel.          | ⚠️ Hub. Misnamed, omits `llm-enrich`, no marker filter, no timeout/concurrency.       | Hub workflow    |
-| **Scheduled Smoke**      | Runs `pytest -m slow` on a cron.                    | ✅ All 5 repos — but slow lanes in TR/nlp/llm are **empty**, so 3 of 5 pass vacuously. | Standalone      |
-| **GPU Inference**        | Real CUDA paths on a GPU runner.                    | 🕐 3 repos, inert pending a runner; alto — the one with a GPU test — has none.        | Standalone      |
-| **Release**              | Version guard + release bundle/notes.               | ✅ All 5 repos. ⚠️ Bundle-closure guard in only 1 of 5.                                | Standalone      |
-| **Shellcheck**           | Lints `*.sh`.                                       | ⚠️ nlp-enrich only.                                                                   | Standalone      |
-| **Secret Scanning**      | Push protection + history sweep.                    | ⛔ Dropped 2026-07-30 — unadopted; GitHub-native scanning covers it.                   | —               |
+| Workflow                 | What it does                                                                                              | Deployment state                                                                              | Lives as        |
+|--------------------------|-----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|-----------------|
+| **Docker Tool**          | Test + coverage + multi-target GHCR publish + scan + opt-in container health/`SIGTERM` smoke (issue #55). | ✅ All 5 repos (→ `docker-tool.reusable.yml@v1`).                                              | Reusable Bundle |
+| **Security**             | Version check + periodic Trivy re-scan.                                                                   | ✅ All 5 repos (→ `security.reusable.yml@v1`). ⚠️ No dispatch in TR/PC.                        | Reusable Bundle |
+| **Paradata Drift**       | Canonical shared-file parity diff vs hub.                                                                 | ✅ All 5 repos.                                                                                | Reusable Bundle |
+| **CodeQL**               | Static security/quality analysis for Python.                                                              | ✅ All 5 repos (→ `codeql.reusable.yml@v1`).                                                   | Reusable Bundle |
+| **pre-commit**           | Ruff + ShellCheck + whitespace, **blocking**.                                                             | ✅ All 5 repos (→ `pre-commit.reusable.yml@v1`).                                               | Reusable Bundle |
+| **API Meta-Contract**    | §4.1 service contract test; the committed spec (#32 r2).                                                  | ✅ All 5 repos (→ `api-contract.reusable.yml@v1`); `openapi-compat` job vs the latest release. | Reusable Bundle |
+| **Workflow Policy Lint** | Pins, `secrets:`, permissions, caller shape.                                                              | ✅ All 5 repos + hub. ⚠️ No caller example published.                                          | Reusable Bundle |
+| **Skill Validation**     | `agent-skill` branch contract checks.                                                                     | ✅ On the five `agent-skill` branches only.                                                    | Reusable Bundle |
+| **E2E Pipeline Smoke**   | Threads one document JSON through all 5 stages.                                                           | ✅ Hub, nightly-ish. ⚠️ Tests the last release, not HEAD.                                      | Hub workflow    |
+| **Repo Suites Smoke**    | Runs each repo's pytest suite in parallel.                                                                | ⚠️ Hub. Misnamed, omits `llm-enrich`, no marker filter, no timeout/concurrency.               | Hub workflow    |
+| **Scheduled Smoke**      | Runs `pytest -m slow` on a cron.                                                                          | ✅ All 5 repos — but slow lanes in TR/nlp/llm are **empty**, so 3 of 5 pass vacuously.         | Standalone      |
+| **GPU Inference**        | Real CUDA paths on a GPU runner.                                                                          | 🕐 3 repos, inert pending a runner; alto — the one with a GPU test — has none.                | Standalone      |
+| **Release**              | Version guard + release bundle/notes + `openapi.json` asset and breaking-change gate (#32 r2).            | ✅ All 5 repos. ⚠️ Bundle-closure guard in only 1 of 5.                                        | Standalone      |
+| **Shellcheck**           | Lints `*.sh`.                                                                                             | ⚠️ nlp-enrich only.                                                                           | Standalone      |
+| **Secret Scanning**      | Push protection + history sweep.                                                                          | ⛔ Dropped 2026-07-30 — unadopted; GitHub-native scanning covers it.                           | —               |
 
 ### Secret scanning — why it was dropped
 

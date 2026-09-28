@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 25 open issues (#67 added 2026-09-26). `test` = `4f65b20` (2026-09-26, issue logs + #67); tag `v1` = `6167803`; freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-09-26 (AMČR baseline) — every digest+plan pair refreshed to AMČR's #67 buckets; the para-drift red of 09-26 is fixed (tool repos at blob `7c35fbf1`, hub `f9bfb1b`). CI green on `4f65b20` (Hub Self-Check 36256783734, pre-commit, CodeQL, Documentation Site)._
+> _Hub/planning repo. 25 open issues (#67 added 2026-09-26). `test` = `189f572` (2026-09-28); tag `v1` = `6167803`; freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-09-28 (#32 round 2) — typed contracts, registered reason codes and `openapi.json` as a release asset, prepared in all six trees and not landed. Before it: 2026-09-26 (AMČR baseline), every digest+plan pair refreshed to AMČR's #67 buckets. CI green on `4f65b20` (Hub Self-Check 36256783734, pre-commit, CodeQL, Documentation Site)._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -1673,3 +1673,39 @@ the freeze tag `doc-schema-v1` (@ `544298b`), and it is additive.
   trailing whitespace.
 
   Not pushed: files delivered in chat.
+
+## 2026-09-28 — #32 round 2: the typed contract and the spec as a release artefact (prepared, not landed)
+
+* **What was asked:** David Motyčka (AMČR, #32 09-26) writes the pilot's Temporal activities against the services'
+  OpenAPI; K4TEL proposed three additions on 09-27 and David accepted them: typed requests and responses, one error
+  model with registered reason codes, `openapi.json` attached to each release and compared with the previous one.
+  Items 1 and 3 are to be confirmed on 30 September.
+* **Decided (the user):** register `ocr_text_layer` only (api-digital is llm-enrich#10 W1); declare an optional
+  `CreateAction` slot now (#67 R2); `reason` stays `string|null` with the registry in `x-atrium-reason-codes`; a
+  breaking change fails unless the major version went up, 0.x included.
+* **Delivered first, landed as `32dbbb7`:** the refined `digests/32.digest.md` and `plans/32.plan.md`.
+* **Built against the fetched `test` heads** (hub `189f572`, pc `f518605`, translator `b733c78`, alto `6707320`,
+  nlp `cd75d57`, llm `ab6b4ee`):
+  * hub: `atrium_service.py` gen 3, new canonical `atrium_openapi.py` and `test_openapi_contract.py` (MANIFEST 24
+    rows), `atrium_document.load_document` on `utf-8-sig`; `api-contract.reusable.yml` (the canonical test, pytest
+    exit 5 tolerated — 07-23 defect 4 — and a new `openapi-compat` job), `docker-tool.reusable.yml` (the served
+    spec is the committed one, `/info` `openapi_sha256` its digest), `hub-self-check.yml` (pins, oasdiff
+    `v1.32.1`); strategy §2.2 reversed, §4.1, §4.4 registry, new §4.8, §12.1, appendices D–E; the README template;
+    `plan_repo_review.md` A6–A9; `docker_gha.md`; the docs site's page-classification and translator error tables;
+  * all five tool repos: typed responses and declared errors, 415 `unsupported_media_type` for every media-type
+    refusal, `invalid_record`, a committed `service/openapi.json`, exact fastapi/pydantic pins, conformance tests
+    against the published schema, the release gate and assets in `release.yml` with a `workflow_dispatch` dry run;
+    the per-repo behaviour changes are in `plans/32.plan.md` *Implementation*.
+* **Found on the way:** `atrium_openapi.py` is a runtime companion of `atrium_service.py`, so the alto, pc and
+  translator release bundles must ship it (their closure checks would have failed the release); a BOM record
+  passed `parse_record_part` and failed `load_document`; alto's `test_limits.py` fixture cleared the wrong module
+  copy's cache; pc's `test_api_contract.py` never ran in the fast lane. Deferred: the translator's 502 (its
+  `TranslationError` is also ct2's local error, and the batch loop swallows it); listed in the plan with four smaller
+  findings.
+* **Verified:** each repo's suite (llm 1102, nlp 1208, alto 1839, translator 975, pc 623 passed); hub `tests/` 273
+  and `docs/templates/shared` 185; `revendor_shared.sh --check` in parity; `workflow_lint.py --offline` on all six;
+  `compare` on each real spec against crafted breaking changes; the three bundles built locally. Not verifiable
+  here: a real tag, the Docker smoke, the dry run.
+
+  Not pushed: per-repo archives delivered in chat. Land the hub and the five tool repos in one window, then move
+  `v1`.

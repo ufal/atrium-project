@@ -83,8 +83,26 @@ jobs:
       # atrium_service.py -- the #55 lifecycle and, since #53, the harmonised error body
       # and the /info limits contract -- was SKIPPED here, green, testing nothing.
       # python-multipart is what an UploadFile/Form endpoint needs to even be declared.
+      #
+      # fastapi and pydantic are pinned to the versions the five tool repos pin exactly
+      # (atrium-project#32 round 2): the gen-3 atrium_service.py tests assert the shape of the
+      # OpenAPI document those two generate, and each repo's committed service/openapi.json is
+      # a function of both. openapi-spec-validator validates the documents the tests build.
       - name: Install pytest, jsonschema, PyYAML and the FastAPI test stack
-        run: pip install pytest jsonschema PyYAML fastapi httpx python-multipart
+        run: pip install pytest jsonschema PyYAML fastapi==0.141.1 pydantic==2.13.5 httpx python-multipart openapi-spec-validator
+
+      # tests/test_atrium_openapi.py checks atrium_openapi.py's breaking-change rules against
+      # the REAL oasdiff (the severity levels it raises, the anyOf-null normalisation) and
+      # skips those tests without it; the rules were measured against this version, which is
+      # also what every release.yml and api-contract.reusable.yml installs. `go install`
+      # verifies the module against sum.golang.org; GOTOOLCHAIN=auto fetches the Go version
+      # oasdiff's go.mod asks for.
+      - name: Install oasdiff (atrium_openapi.OASDIFF_VERSION)
+        env:
+          OASDIFF_VERSION: v1.32.1
+        run: |
+          GOTOOLCHAIN=auto go install "github.com/oasdiff/oasdiff@${OASDIFF_VERSION}"
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       # tests/ holds the 16 check_version.py tests — the release gate for all
       # five tool repos, which had no tests anywhere in the ecosystem until #18.

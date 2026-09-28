@@ -248,6 +248,28 @@
       "preconditions": [],
       "issue": 53,
       "note": "David's done-when for #53: every limit in tool_limits.py is a documented environment setting (.env.example [limit], service/README.md ## Limits, visible to the env scanner) and setting it changes what /info reports. Skips where the repo has no tool_limits.py yet, so it needs no precondition"
+    },
+    {
+      "canonical": "atrium_openapi.py",
+      "dest": "atrium_openapi.py",
+      "selftest": true,
+      "ruff_format_exclude": true,
+      "isort_first_party": "atrium_openapi",
+      "preconditions": [],
+      "issue": 32,
+      "note": "#32 item 3: the committed service/openapi.json and the release asset -- export/check/stamp/baseline/compare. Stdlib only and at the repo root, so release.yml runs it with the runner's own Python and no hub checkout (docs/docker_gha_roadmap.md §3.3: a release gate must not depend on a cross-repo uses: at tag time); service/atrium_service.py imports it lazily for the /info digest"
+    },
+    {
+      "canonical": "test_openapi_contract.py",
+      "dest": "tests/test_openapi_contract.py",
+      "selftest": false,
+      "ruff_format_exclude": true,
+      "isort_first_party": null,
+      "preconditions": [
+        "tests/openapi_contract_data.py"
+      ],
+      "issue": 32,
+      "note": "#32 items 1-3 in every repo: the committed spec is current and environment-independent, every primary 200 is typed, every error is the ErrorBody, the reason registry and operationIds are published, the fastapi/pydantic pins hold, and /info reports the spec's digest. Reads the repo-local tests/openapi_contract_data.py (the services, their app imports and specs); skips in the hub"
     }
   ]
 }

@@ -172,13 +172,17 @@ automated caller can test instead of grepping the service log.
 
 ### Errors
 
-| Code  | When                                                                               |
-|-------|------------------------------------------------------------------------------------|
-| `400` | Wrong content type for the endpoint                                                |
-| `413` | Over `MAX_UPLOAD_MB`, or a PDF with more than 50 pages                             |
-| `422` | The uploaded `document_json` baseline is unparseable, or written by a newer schema |
-| `500` | Inference failure, or the service's own output failed schema validation            |
-| `503` | Draining after SIGTERM                                                             |
+Every error body is `{"status", "reason", "detail"}` (atrium-project#32/#53); since #32 round 2
+the spec committed as `service/openapi.json` and attached to every release types each of them.
+
+| Code  | `reason`                 | When                                                                                                                   |
+|-------|--------------------------|------------------------------------------------------------------------------------------------------------------------|
+| `413` | `limit_exceeded`         | Over `MAX_UPLOAD_MB`, `MAX_PDF_PAGES` or `MAX_IMAGE_PIXELS`                                                            |
+| `415` | `unsupported_media_type` | Wrong content type for the endpoint (a `400` before #32 round 2)                                                       |
+| `422` | `invalid_record`         | The uploaded `document_json` baseline is unparseable, or written by a newer schema                                     |
+| `422` | `null`                   | An unknown `version`, an unreadable image or PDF, or request validation                                                |
+| `500` | `null`                   | Inference failure (a page the model could not classify included), or the service's own output failed schema validation |
+| `503` | `null`                   | Draining after SIGTERM                                                                                                 |
 
 ## The canonical ensemble
 
