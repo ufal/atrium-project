@@ -89,8 +89,6 @@ if [[ ! -d "$BASE_DIR" ]]; then
     exit 1
 fi
 
-export GITHUB_ACCESS_TOKEN=github_pat_11APWHO...oG6
-
 if [[ -z "${GITHUB_ACCESS_TOKEN:-}" ]]; then
     echo -e "${RED}ERROR: GITHUB_ACCESS_TOKEN is not set.${NC}"
     echo "Export it before running this script, for example:"
