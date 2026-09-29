@@ -75,4 +75,3 @@ and the committed CSV stands in for that stage's output: Stage 4 (nlp-enrich) re
 `INPUT_TABLES_DIR`, and Stage 5 (llm-enrich) takes it as `--input`. The bridge goes away when the
 classify stage has a GPU lane to run in (deferred with
 [#40](https://github.com/ufal/atrium-project/issues/40)).
-
