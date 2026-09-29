@@ -14,6 +14,7 @@ making a ``$ref`` property nullable reports every property under it as removed.
 
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import os
@@ -270,11 +271,18 @@ def test_stamp_writes_the_asset_and_its_digest(tmp_path):
     (tmp_path / "para_config.txt").write_text("[tool]\nversion = v1.4.0-beta\n", encoding="utf-8")
     proc = _cli("stamp", "--para-config", "para_config.txt", "--out-dir", "dist", cwd=tmp_path)
     assert proc.returncode == 0, proc.stderr
-    asset = json.loads((tmp_path / "dist" / "openapi.json").read_text(encoding="utf-8"))
+    raw = (tmp_path / "dist" / "openapi.json").read_bytes()
+    asset = json.loads(raw)
     assert asset["info"]["version"] == "1.4.0-beta"
-    sha, name = (tmp_path / "dist" / "openapi.json.sha256").read_text(encoding="utf-8").split()
+    line = (tmp_path / "dist" / "openapi.json.sha256").read_text(encoding="utf-8")
+    sha, name = line.split()
     assert name == "openapi.json" and sha == atrium_openapi.digest(asset)
     assert _cli("digest", "dist/openapi.json", cwd=tmp_path).stdout.strip() == sha
+    # What a consumer runs (`sha256sum -c openapi.json.sha256`, or GitHub's asset digest): the
+    # asset's own bytes hash to its line, because stamp writes the canonical form the digest
+    # (and /info `openapi_sha256`) is taken of. A pretty-printed asset failed this.
+    assert line == f"{hashlib.sha256(raw).hexdigest()}  openapi.json\n"
+    assert raw == atrium_openapi.canonical_bytes(asset)
 
 
 def test_compare_on_the_command_line_writes_a_summary_and_uses_the_para_config(tmp_path):
