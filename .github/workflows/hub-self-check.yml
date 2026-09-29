@@ -24,6 +24,11 @@ on:
   # (5:15) and pre-commit (5:30).
   schedule:
     - cron: "45 5 * * 1"
+  # A manual re-run path (roadmap E11, atrium-project#69): a scheduled run that failed
+  # on something outside this repo (a missing secret, a force-pushed action tag) can be
+  # re-run once that is fixed, without an empty commit. The concurrency group below
+  # already keys on `github.event_name`, so a dispatch never cancels a push run.
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}

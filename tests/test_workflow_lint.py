@@ -52,12 +52,31 @@ def write_template(root: Path, name: str, body: str) -> Path:
     return p
 
 
-def run_lint(root: Path) -> tuple[int, str]:
-    """Run the linter against `root`, resolving callees from the real hub."""
+def run_lint(root: Path, *extra: str) -> tuple[int, str]:
+    """Run the linter against `root`, resolving callees from the real hub.
+
+    `--repo-name` is always passed, so a fixture never depends on whatever
+    GITHUB_REPOSITORY the machine running the tests happens to export.
+    """
     buf = io.StringIO()
+    args = ["--repo-root", str(root), "--hub-root", str(_HUB_ROOT), "--offline"]
+    if "--repo-name" not in extra:
+        args += ["--repo-name", "ufal/atrium-example"]
     with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
-        rc = wl.main(["--repo-root", str(root), "--hub-root", str(_HUB_ROOT), "--offline"])
+        rc = wl.main(args + list(extra))
     return rc, buf.getvalue()
+
+
+def write_compose(root: Path, name: str, body: str) -> Path:
+    p = root / name
+    p.write_text(body, encoding="utf-8")
+    return p
+
+
+def write_gitkeep(root: Path, directory: str = "data") -> None:
+    d = root / directory
+    d.mkdir(parents=True, exist_ok=True)
+    (d / ".gitkeep").write_text("", encoding="utf-8")
 
 
 #: A caller with nothing wrong with it — the baseline every test perturbs.
@@ -384,6 +403,321 @@ jobs:
     assert "client-script" in out
 
 
+# ── #69 round 5: the action-version floor ────────────────────────────────────
+
+_FLOOR = """\
+name: Floor
+on: push
+concurrency:
+  group: floor
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: %s
+"""
+
+
+@pytest.mark.parametrize(
+    "uses",
+    ["actions/checkout@v4", "actions/setup-python@v5", "actions/github-script@v7", "github/codeql-action/init@v3"],
+)
+def test_action_below_the_floor_is_rejected(tmp_path, uses):
+    """The two templates the floor paragraph named sat below it for weeks: nothing enforced it."""
+    write_workflow(tmp_path, "x.yml", _FLOOR % uses)
+    rc, out = run_lint(tmp_path)
+    assert rc == 1
+    assert "below the ecosystem floor" in out
+    assert uses.rsplit("@", 1)[0] in out
+
+
+@pytest.mark.parametrize("uses", ["actions/checkout@v7", "actions/checkout@v7.0.1", "github/codeql-action/analyze@v4"])
+def test_action_at_the_floor_passes(tmp_path, uses):
+    write_workflow(tmp_path, "x.yml", _FLOOR % uses)
+    rc, out = run_lint(tmp_path)
+    assert rc == 0, out
+
+
+def test_floor_ignores_prose_and_unlisted_actions(tmp_path):
+    """Parsed, not grepped: a comment quoting the old pin is history, not a finding; an
+    action the floor does not list is not the floor's to judge."""
+    body = _FLOOR % "some-org/some-action@v1"
+    body = body.replace("jobs:", "# this used to be `uses: actions/checkout@v4`\\njobs:")
+    write_workflow(tmp_path, "x.yml", body)
+    rc, out = run_lint(tmp_path)
+    assert rc == 0, out
+
+
+# ── #69 round 5: a permissions block on every job when the workflow has none ─
+
+_TWO_JOBS = """\
+name: Two
+on: push
+concurrency:
+  group: two
+jobs:
+  scoped:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - run: echo hi
+  bare:
+%s
+"""
+
+
+def test_one_unscoped_job_beside_a_scoped_one_is_rejected(tmp_path):
+    """E6's shape: the old rule passed as soon as ANY job had a block."""
+    write_workflow(
+        tmp_path,
+        "x.yml",
+        _TWO_JOBS % "    runs-on: ubuntu-latest\n    timeout-minutes: 5\n    steps:\n      - run: echo hi",
+    )
+    rc, out = run_lint(tmp_path)
+    assert rc == 1
+    assert "job 'bare' has no `permissions:`" in out
+    assert "job 'scoped'" not in out
+
+
+def test_an_unscoped_caller_job_is_rejected_too(tmp_path):
+    """A caller job without a grant starts its callee from the repository default."""
+    write_workflow(
+        tmp_path, "x.yml", _TWO_JOBS % "    uses: ufal/atrium-project/.github/workflows/para-drift.reusable.yml@v1"
+    )
+    rc, out = run_lint(tmp_path)
+    assert rc == 1
+    assert "job 'bare' has no `permissions:`" in out
+
+
+def test_every_job_scoped_passes_without_a_workflow_block(tmp_path):
+    body = _TWO_JOBS % (
+        "    runs-on: ubuntu-latest\n    timeout-minutes: 5\n    permissions: {}\n    steps:\n      - run: echo hi"
+    )
+    write_workflow(tmp_path, "x.yml", body)
+    rc, out = run_lint(tmp_path)
+    assert rc == 0, out
+
+
+# ── #69 round 5: compose files (B2, B3's compose half, B6) ───────────────────
+
+#: A docker caller that publishes `ghcr.io/ufal/atrium-example` (base) and `-api`.
+DOCKER_CALLER = """\
+name: Docker
+on: push
+concurrency:
+  group: docker
+permissions:
+  contents: read
+  packages: write
+  security-events: write
+jobs:
+  build-and-push:
+    uses: ufal/atrium-project/.github/workflows/docker-tool.reusable.yml@v1
+    with:
+      image-name: ${{ github.repository }}
+      build-targets: '["base", "api"]'
+"""
+
+_COMPOSE_CLEAN = """\
+services:
+  tool:
+    image: ghcr.io/ufal/atrium-example:${ATRIUM_VERSION:-dev}
+    user: "${ATRIUM_UID:-10001}:0"
+    build:
+      context: .
+      args:
+        ATRIUM_RUNNER_IMAGE: ghcr.io/ufal/atrium-example:${ATRIUM_VERSION:-dev}
+    environment:
+      ATRIUM_RUNNER_IMAGE: ghcr.io/ufal/atrium-example:${ATRIUM_VERSION:-dev}
+    volumes:
+      - ./data:/data
+      - cache:/cache
+  api:
+    extends: tool
+    image: ghcr.io/ufal/atrium-example-api:${ATRIUM_VERSION:-dev}
+    build:
+      context: .
+      target: api
+      args:
+        ATRIUM_RUNNER_IMAGE: ghcr.io/ufal/atrium-example-api:${ATRIUM_VERSION:-dev}
+    environment:
+      ATRIUM_RUNNER_IMAGE: ghcr.io/ufal/atrium-example-api:${ATRIUM_VERSION:-dev}
+  local:
+    image: atrium-example-heavy:local
+    pull_policy: build
+    build:
+      context: .
+      target: heavy
+volumes:
+  cache:
+"""
+
+#: The B2 defect, verbatim in shape from four tool repos on 2026-09-29.
+_COMPOSE_B2_FORM = """\
+services:
+  api:
+    image: ghcr.io/ufal/atrium-example:${ATRIUM_VERSION:-dev}-api
+    build:
+      context: .
+      target: api
+    volumes:
+      - ./data:/data
+"""
+
+
+def _compose_repo(tmp_path, compose=_COMPOSE_CLEAN, gitkeep=True):
+    write_workflow(tmp_path, "docker.yml", DOCKER_CALLER)
+    write_compose(tmp_path, "docker-compose.yml", compose)
+    if gitkeep:
+        write_gitkeep(tmp_path)
+
+
+def test_clean_compose_passes(tmp_path):
+    """The baseline every compose test perturbs; `extends:` and a local build included."""
+    _compose_repo(tmp_path)
+    rc, out = run_lint(tmp_path)
+    assert rc == 0, out
+    assert "1 compose files: 2 GHCR images" in out
+
+
+def test_b2_tag_suffix_is_rejected(tmp_path):
+    """`atrium-<tool>:<ver>-api` asks for a tag CI never publishes (B2)."""
+    _compose_repo(
+        tmp_path,
+        _COMPOSE_CLEAN.replace(
+            "atrium-example-api:${ATRIUM_VERSION:-dev}", "atrium-example:${ATRIUM_VERSION:-dev}-api"
+        ),
+    )
+    rc, out = run_lint(tmp_path)
+    assert rc == 1
+    assert "the tag must be exactly" in out
+
+
+def test_b2_is_caught_without_a_docker_caller(tmp_path):
+    """Form-only mode: with no docker.yml to read names from, the tag rule still holds."""
+    write_workflow(tmp_path, "clean.yml", CLEAN_CALLER)
+    write_compose(tmp_path, "docker-compose.yml", _COMPOSE_B2_FORM.replace("    volumes:\n      - ./data:/data\n", ""))
+    rc, out = run_lint(tmp_path)
+    assert rc == 1
+    assert "the tag must be exactly" in out
+
+
+def test_unpublished_target_is_rejected(tmp_path):
+    """`-llm` is not in build-targets, so GHCR has no such image."""
+    _compose_repo(tmp_path, _COMPOSE_CLEAN.replace("atrium-example-api:", "atrium-example-llm:"))
+    rc, out = run_lint(tmp_path)
+    assert rc == 1
+    assert "does not publish" in out
+    assert "ghcr.io/ufal/atrium-example-api" in out  # names what IS published
+
+
+def test_repository_expression_resolves_from_the_repo_name(tmp_path):
+    """`${{ github.repository }}` is the caller's repo; another name is not published."""
+    _compose_repo(tmp_path)
+    rc, out = run_lint(tmp_path, "--repo-name", "ufal/atrium-other")
+    assert rc == 1
+    assert "ghcr.io/ufal/atrium-other" in out
+
+
+def test_runner_image_mismatch_is_rejected(tmp_path):
+    """Paradata must name the image the service runs (B3's compose half)."""
+    _compose_repo(
+        tmp_path,
+        _COMPOSE_CLEAN.replace(
+            "      ATRIUM_RUNNER_IMAGE: ghcr.io/ufal/atrium-example-api:${ATRIUM_VERSION:-dev}\n",
+            "      ATRIUM_RUNNER_IMAGE: ghcr.io/ufal/atrium-example:${ATRIUM_VERSION:-dev}\n",
+        ),
+    )
+    rc, out = run_lint(tmp_path)
+    assert rc == 1
+    assert "environment ATRIUM_RUNNER_IMAGE" in out
+
+
+def test_build_arg_inherited_through_extends_is_checked(tmp_path):
+    """alto-postprocess's `api` shape: `extends:` merges `build:`, so without its own
+    build arg the api image bakes the batch image's name."""
+    compose = _COMPOSE_CLEAN.replace(
+        "      target: api\n      args:\n        ATRIUM_RUNNER_IMAGE: ghcr.io/ufal/atrium-example-api:${ATRIUM_VERSION:-dev}\n",
+        "      target: api\n",
+    )
+    _compose_repo(tmp_path, compose)
+    rc, out = run_lint(tmp_path)
+    assert rc == 1
+    assert "service 'api'" in out
+    assert "build arg ATRIUM_RUNNER_IMAGE is ghcr.io/ufal/atrium-example:" in out
+
+
+def test_overlay_is_checked_merged_onto_its_base(tmp_path):
+    """alto-postprocess's GPU overlay: a new image name, but the base's
+    ATRIUM_RUNNER_IMAGE survives the merge -- the CPU image in paradata."""
+    _compose_repo(tmp_path)
+    write_compose(
+        tmp_path,
+        "docker-compose.gpu.yml",
+        "services:\n  tool:\n    image: atrium-example-gpu:local\n    pull_policy: build\n",
+    )
+    rc, out = run_lint(tmp_path)
+    assert rc == 1
+    assert "docker-compose.gpu.yml (merged onto docker-compose.yml)" in out
+    assert "runs atrium-example-gpu:local but its build arg" in out
+
+
+def test_overlay_does_not_repeat_its_base_file_defects(tmp_path):
+    """Fixing the base file is one fix: an overlay reports only what it adds."""
+    _compose_repo(tmp_path, gitkeep=False)
+    write_compose(tmp_path, "docker-compose.gpu.yml", "services:\n  tool:\n    environment:\n      X: y\n")
+    rc, out = run_lint(tmp_path)
+    assert rc == 1
+    assert "does not contain" in out
+    assert "merged onto" not in out
+
+
+def test_local_build_without_pull_policy_is_rejected(tmp_path):
+    _compose_repo(tmp_path, _COMPOSE_CLEAN.replace("    pull_policy: build\n", ""))
+    rc, out = run_lint(tmp_path)
+    assert rc == 1
+    assert "pull_policy: build" in out
+
+
+@pytest.mark.parametrize(
+    ("user_line", "expected"),
+    [("", "sets no `user:`"), ('    user: "1000"\n', "runs as user '1000'")],
+)
+def test_data_mount_without_a_group_zero_user_is_rejected(tmp_path, user_line, expected):
+    """B6: uid 10001 cannot write a directory the host user owns."""
+    _compose_repo(tmp_path, _COMPOSE_CLEAN.replace('    user: "${ATRIUM_UID:-10001}:0"\n', user_line))
+    rc, out = run_lint(tmp_path)
+    assert rc == 1
+    assert expected in out
+
+
+def test_data_mount_the_clone_lacks_is_rejected(tmp_path):
+    """B6: Docker creates a missing bind source root-owned."""
+    _compose_repo(tmp_path, gitkeep=False)
+    rc, out = run_lint(tmp_path)
+    assert rc == 1
+    assert "Commit data/.gitkeep" in out
+
+
+def test_each_data_subdirectory_mount_needs_its_own_gitkeep(tmp_path):
+    """page-classification's `./data/output:/app/result`: `data/` existing is not enough."""
+    compose = _COMPOSE_CLEAN.replace(
+        "      - ./data:/data\n", "      - ./data:/data\n      - ./data/output:/app/result\n"
+    )
+    _compose_repo(tmp_path, compose)
+    rc, out = run_lint(tmp_path)
+    assert rc == 1
+    assert "Commit data/output/.gitkeep" in out
+    write_gitkeep(tmp_path, "data/output")
+    rc, out = run_lint(tmp_path)
+    assert rc == 0, out
+
+
 # ── the property that makes the output trustworthy ───────────────────────────
 
 
@@ -407,12 +741,20 @@ jobs:
 """,
     )
     write_template(tmp_path, "bad.caller.example.yml", "version: 2\nupdates: []\n")
+    # #69's rules, broken in the same run: an action below the floor, and a compose
+    # file with the B2 tag form and an unwritable ./data mount.
+    write_workflow(tmp_path, "old.yml", _FLOOR % "actions/checkout@v4")
+    write_workflow(tmp_path, "docker.yml", DOCKER_CALLER)
+    write_compose(tmp_path, "docker-compose.yml", _COMPOSE_B2_FORM)
     rc, out = run_lint(tmp_path)
     assert rc == 1
     assert "timeout-minutes" in out
     assert "concurrency" in out
     assert "permissions" in out
     assert "no `uses:`" in out
+    assert "below the ecosystem floor" in out
+    assert "the tag must be exactly" in out
+    assert "sets no `user:`" in out
 
 
 def test_hub_itself_passes_its_own_linter():

@@ -16,6 +16,15 @@ on:
         default: "latest"
         type: string
         required: false
+      e2e-doc:
+        description: >-
+          Fixture pair under fixtures/e2e/ (ALTO/<id>.alto.xml + DOC_LINE_CATEG/<id>.csv)
+          the chain runs on. The default is the single-page synthetic CTX000000003.
+          The other four are multi-page, and Stages 1 (page-classification) and 3
+          (translator) see page 1 only; every other stage sees the whole document.
+        default: "CTX000000003"
+        type: string
+        required: false
     secrets:
       OPENROUTER_KEY:
         description: "OpenRouter API Key for the LLM enrichment stage"
@@ -27,6 +36,16 @@ on:
         default: "latest"
         type: string
         required: false
+      e2e-doc:
+        description: "Fixture to run (fixtures/e2e/; multi-page ones reach Stages 1 and 3 as page 1 only)"
+        default: "CTX000000003"
+        type: choice
+        options:
+          - CTX000000003
+          - CTX000000001
+          - CTX000000002
+          - CTX192100040
+          - CTX192601143
   push:
     branches: [ main ]
   schedule:
@@ -69,8 +88,10 @@ concurrency:
   group: e2e-pipeline-smoke-${{ github.ref }}
   cancel-in-progress: false
 
+# W3's parameterised E2E (roadmap S6, atrium-project#69): five fixture pairs exist and
+# one was ever used. Push and schedule runs have no inputs, so they keep CTX000000003.
 env:
-  E2E_DOC: CTX000000003
+  E2E_DOC: ${{ inputs.e2e-doc || 'CTX000000003' }}
 
 jobs:
   e2e-json-thread:
@@ -103,6 +124,25 @@ jobs:
       # `uses: ./…` over `@v1`.
       - name: Checkout ATRIUM Hub Repository
         uses: actions/checkout@v7
+
+      # Before anything is pulled: a name with no fixture pair (a typo in a workflow_call
+      # caller, which has no choice list) would otherwise surface as a `cp` error after
+      # the setup steps. E2E_DOC also becomes part of paths, so only a bare id passes.
+      - name: Check the requested fixture exists
+        run: |
+          if ! printf '%s' "$E2E_DOC" | grep -Eq '^[A-Za-z0-9_-]+$'; then
+            # Not echoed: it failed the check, so it may carry a newline and a `::` command.
+            echo "::error::e2e-doc is not a fixture id (letters, digits, '-', '_' only)"
+            exit 1
+          fi
+          for f in "fixtures/e2e/ALTO/${E2E_DOC}.alto.xml" "fixtures/e2e/DOC_LINE_CATEG/${E2E_DOC}.csv"; do
+            if [ ! -f "$f" ]; then
+              echo "::error::no fixture pair for e2e-doc '$E2E_DOC': $f is missing"
+              echo "Available: $(for a in fixtures/e2e/ALTO/*.alto.xml; do basename "$a" .alto.xml; done | tr '\n' ' ')"
+              exit 1
+            fi
+          done
+          echo "Running the chain on ${E2E_DOC}"
 
       - name: Set up Python for Assertions
         uses: actions/setup-python@v7

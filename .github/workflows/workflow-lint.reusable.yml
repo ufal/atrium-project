@@ -80,6 +80,14 @@ jobs:
       # a directory share a `name:`; no caller passes an input its reusable does
       # not declare. The last two detect a file overwritten with a copy of
       # another file, which every other check passes happily.
+      #
+      # Round 5 (atrium-project#69) adds the action-version floor, a permissions
+      # block on every job of a workflow with none at the top, and the compose rule:
+      # every GHCR `image:` is a name docker.yml publishes, tagged
+      # `${ATRIUM_VERSION:-dev}`; ATRIUM_RUNNER_IMAGE equals the service's image;
+      # `./data` mounts exist in the clone and run as `user: …:0`. The compose rule
+      # reads the caller's `image-name`, which is usually `${{ github.repository }}` --
+      # resolved from GITHUB_REPOSITORY, which the runner sets to the CALLER here.
       - name: Check workflows and callers
         env:
           OFFLINE: ${{ inputs.offline && '--offline' || '' }}

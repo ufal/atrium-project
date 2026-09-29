@@ -3,13 +3,18 @@
 #
 # ⚠️ INFRA-GATED — requires an ARUP self-hosted runner with an NVIDIA GPU
 # registered with labels [self-hosted, gpu] and NVIDIA Container Toolkit installed.
+#
+# Manual dispatch only (atrium-project#69). The GPU runner is deferred with
+# atrium-project#40, and a `schedule:` aimed at labels no runner carries queues a job
+# every week that waits until it times out -- a red run for infrastructure that does
+# not exist yet. Add the cron back in the same change that registers the runner:
+#   schedule:
+#     - cron: "0 2 * * 0"   # weekly, Sunday 02:00 UTC
 
 name: GPU Inference Tests
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 2 * * 0"   # weekly, Sunday 02:00 UTC
 
 # A self-hosted runner is a SHARED, PERSISTENT machine: two overlapping runs fight
 # over the same GPU and the same HF cache, and the loser reports a CUDA OOM that
@@ -37,14 +42,18 @@ jobs:
     # hosted minute, it holds the ONLY GPU the ecosystem has.
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Show GPU
         run: nvidia-smi
 
+      # Template vars reach the shell as environment variables, never as `${{ env.* }}`
+      # substituted into the script text (see scheduled-smoke.caller.example.yml).
       - name: Install APT packages
         if: env.APT_PACKAGES != ''
-        run: sudo apt-get update && sudo apt-get install -y ${{ env.APT_PACKAGES }}
+        run: |
+          # shellcheck disable=SC2086 # a space-separated package list
+          sudo apt-get update && sudo apt-get install -y $APT_PACKAGES
 
       - name: Install dependencies (CUDA torch)
         run: |
@@ -53,7 +62,7 @@ jobs:
           pip install torch==2.7.1 torchvision==0.22.1 \
               --index-url https://download.pytorch.org/whl/cu126
 
-          for req in ${{ env.REQUIREMENTS }}; do
+          for req in $REQUIREMENTS; do
             if [ -f "$req" ]; then pip install -r "$req"; fi
           done
           pip install pytest

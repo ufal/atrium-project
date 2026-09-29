@@ -22,19 +22,27 @@ not a check.
 Exit code is 0 when clean, 1 when any check fails. Every failure names the file.
 
 Usage:
-    python tools/ci/workflow_lint.py [--repo-root .] [--offline]
+    python tools/ci/workflow_lint.py [--repo-root .] [--offline] [--repo-name owner/repo]
 
 `--offline` skips only the network half of the pin check (that a pinned SHA is
 really what its version comment claims). Everything else is static.
+
+Round 5 (#69) added three rules that hold what the roadmap's pilot slice fixed:
+the action-version floor, a `permissions:` block on every job of a workflow that
+declares none at the top, and the compose image/`./data` rule (check_compose),
+which runs wherever a repository has root compose files -- i.e. in the five tool
+repos, through workflow-lint.reusable.yml.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import re
 import subprocess
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import yaml
 
@@ -50,6 +58,29 @@ WRITE_SCOPED = {
 }
 
 PERMISSION_ORDER = {"none": 0, "read": 1, "write": 2}
+
+# The action-version floor (#69, roadmap E3): the majors docs/docker_gha.md §2 names
+# as the Node-24 baseline. The floor was a paragraph nobody enforced, and the two
+# caller templates below it (`checkout@v4`, `setup-python@v5`, `github-script@v7`)
+# stayed there for weeks after every live workflow moved -- a template is adopted by
+# copy, so it re-seeds the old majors in whichever repo copies it next.
+#
+# Keyed by `owner/repo`, so every `github/codeql-action/<sub>` shares one floor. The
+# write-scoped actions (WRITE_SCOPED) are absent on purpose: they are SHA-pinned, and
+# whether the SHA is the release its comment claims is check_pins' job.
+ACTION_FLOOR = {
+    "actions/checkout": 7,
+    "actions/setup-python": 7,
+    "actions/cache": 6,
+    "actions/upload-artifact": 7,
+    "actions/github-script": 9,
+    "codecov/codecov-action": 7,
+    "github/codeql-action": 4,
+    "docker/login-action": 4,
+    "docker/metadata-action": 6,
+    "docker/setup-buildx-action": 4,
+}
+MAJOR_REF_RE = re.compile(r"^v(?P<major>\d+)(?:\.\d+)*$")
 
 # `uses: owner/repo@ref` with an optional trailing `# vX.Y` version comment.
 USES_RE = re.compile(r"uses:\s*(?P<action>[\w.-]+/[\w./-]+)@(?P<ref>\S+)(?P<rest>[^\n]*)")
@@ -460,13 +491,69 @@ def check_job_hygiene(path: Path, doc: dict, findings: Findings) -> int:
                 "set `cancel-in-progress: false`.",
             )
 
-    has_job_perms = any(isinstance(j, dict) and j.get("permissions") is not None for j in jobs.values())
-    if doc.get("permissions") is None and not has_job_perms:
-        findings.error(
-            path,
-            "declares no `permissions:` at workflow or job level, so it inherits the "
-            "repository default token scope. Least privilege is explicit here.",
-        )
+    # E6, generalised (#69). The old rule passed as soon as ANY job had a block, so a
+    # workflow with no top-level `permissions:` could scope one job and leave its
+    # siblings at the repository default -- exactly docker-tool.reusable.yml's shape in
+    # 2026-08, where the jobs running arbitrary test and build code were the unscoped
+    # ones. With no workflow-level block, a job's own block is its only scope, so every
+    # job needs one. A caller job (`uses:`) counts too: without a grant of its own the
+    # callee starts from the repository default.
+    if doc.get("permissions") is None:
+        bare = [name for name, j in jobs.items() if isinstance(j, dict) and j.get("permissions") is None]
+        if bare and len(bare) == sum(isinstance(j, dict) for j in jobs.values()):
+            findings.error(
+                path,
+                "declares no `permissions:` at workflow or job level, so it inherits the "
+                "repository default token scope. Least privilege is explicit here.",
+            )
+        else:
+            for name in bare:
+                findings.error(
+                    path,
+                    f"job '{name}' has no `permissions:` and the workflow declares none at the "
+                    "top, so this job runs at the repository default token scope while its "
+                    "siblings are scoped. Give it its own block, or add a workflow-level one.",
+                )
+    return checked
+
+
+def _step_uses(doc: dict):
+    """Yield (job name, `uses:` value) for every STEP of a parsed workflow.
+
+    Parsed, not grepped: these files quote old pins in their comments on purpose (the
+    history of a fix is part of the fix), and a grep would flag the explanation.
+    """
+    for job_name, job in (doc.get("jobs") or {}).items():
+        if not isinstance(job, dict):
+            continue
+        for step in job.get("steps") or []:
+            if isinstance(step, dict) and step.get("uses"):
+                yield job_name, str(step["uses"])
+
+
+def check_action_floor(path: Path, doc: dict, findings: Findings) -> int:
+    """Check -- every floor-listed action is at or above the ecosystem's major.
+
+    Only a `@vN[.x.y]` ref is compared. A SHA pin is check_pins' job, and a local
+    (`./…`) or `docker://` reference has no major to compare.
+    """
+    checked = 0
+    for job_name, uses in _step_uses(doc):
+        if "@" not in uses:
+            continue
+        action, ref = uses.rsplit("@", 1)
+        floor = ACTION_FLOOR.get("/".join(action.split("/")[:2]))
+        if floor is None:
+            continue
+        checked += 1
+        major = MAJOR_REF_RE.match(ref)
+        if major and int(major["major"]) < floor:
+            findings.error(
+                path,
+                f"job '{job_name}' uses {action}@{ref}, below the ecosystem floor @v{floor} "
+                "(docs/docker_gha.md §2, the Node-24 baseline). A template below the floor "
+                "re-seeds the old major in every repo that copies it.",
+            )
     return checked
 
 
@@ -561,6 +648,277 @@ def check_template_permissions(path: Path, doc: dict, root: Path, hub_root: Path
     return checked
 
 
+# ── compose files (#69: B2, B3's compose half, B6) ───────────────────────────
+#
+# Three roadmap findings lived in compose files and nothing read them:
+#   * B2 -- compose asked for `atrium-<tool>:<ver>-api` while CI publishes
+#     `atrium-<tool>-api:<ver>`, so `docker compose pull` 404'd in four repos;
+#   * B3 -- a compose `ATRIUM_RUNNER_IMAGE` that differs from the service's own image
+#     makes paradata name an image the run did not use (alto's GPU overlay kept the
+#     CPU name once merged; alto `api` baked the batch name through `extends:`);
+#   * B6 -- `./data` bind mounts that no clone contains, so Docker created them
+#     root-owned and the uid-10001 container could not write its output.
+# The rule is enforced where the defect was: every tool repo runs this linter through
+# workflow-lint.reusable.yml, with GITHUB_REPOSITORY naming the caller.
+
+COMPOSE_BASES = ("docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml")
+COMPOSE_GLOBS = ("docker-compose*.yml", "docker-compose*.yaml", "compose*.yml", "compose*.yaml")
+GHCR_IMAGE_RE = re.compile(r"^ghcr\.io/(?P<name>[^:@\s]+):(?P<tag>\S+)$")
+# The tag is the release version and nothing else: `${ATRIUM_VERSION:-dev}`. A target
+# suffix after it (`${ATRIUM_VERSION:-dev}-api`) is B2 -- the target is part of the NAME.
+VERSION_TAG_RE = re.compile(r"^\$\{ATRIUM_VERSION(?::?-[^}]*)?\}$")
+REPOSITORY_EXPR_RE = re.compile(r"\$\{\{\s*github\.repository\s*\}\}")
+
+
+class PublishSpec:
+    """What the repo's docker.yml publishes: `image-name` and `build-targets`."""
+
+    def __init__(self, image_name: str | None, targets: list[str] | None, source: Path | None) -> None:
+        self.image_name = image_name
+        self.targets = targets
+        self.source = source
+
+    def published_names(self) -> dict[str, str]:
+        if not self.image_name or self.targets is None:
+            return {}
+        return {(self.image_name if t == "base" else f"{self.image_name}-{t}"): t for t in self.targets}
+
+
+def docker_publish_spec(root: Path, hub_root: Path, repo_name: str | None) -> PublishSpec:
+    """Read `image-name`/`build-targets` from the caller of docker-tool.reusable.yml."""
+    for path in sorted((root / ".github" / "workflows").glob("*.y*ml")):
+        try:
+            doc = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        except yaml.YAMLError:
+            continue  # check 1 reports it
+        for job in (doc.get("jobs") or {}).values():
+            if not isinstance(job, dict) or "docker-tool.reusable.yml" not in str(job.get("uses", "")):
+                continue
+            passed = job.get("with") or {}
+            name = passed.get("image-name")
+            if isinstance(name, str) and REPOSITORY_EXPR_RE.search(name):
+                name = REPOSITORY_EXPR_RE.sub(repo_name, name) if repo_name else None
+            if isinstance(name, str) and "${{" in name:
+                name = None  # another expression: form-only checks
+            raw_targets = passed.get("build-targets")
+            if raw_targets is None:
+                callee = resolve_callee(str(job["uses"]), root, hub_root)
+                if callee is not None:
+                    callee_doc = yaml.safe_load(callee.read_text(encoding="utf-8")) or {}
+                    spec = callee_doc.get(True) or callee_doc.get("on") or {}
+                    raw_targets = (
+                        ((spec.get("workflow_call") or {}).get("inputs") or {}).get("build-targets") or {}
+                    ).get("default")
+            try:
+                targets = json.loads(raw_targets) if isinstance(raw_targets, str) else None
+            except json.JSONDecodeError:
+                targets = None
+            return PublishSpec(name.lower() if isinstance(name, str) else None, targets, path)
+    return PublishSpec(None, None, None)
+
+
+def _mapping(value) -> dict[str, str]:
+    """`environment:` / `build.args:` in either compose form, as a dict."""
+    if isinstance(value, dict):
+        return {str(k): "" if v is None else str(v) for k, v in value.items()}
+    if isinstance(value, list):
+        out = {}
+        for item in value:
+            key, _, val = str(item).partition("=")
+            out[key] = val
+        return out
+    return {}
+
+
+def _volume(value) -> tuple[str | None, str | None, str]:
+    """(source, target, type) of a compose volume in short or long syntax."""
+    if isinstance(value, dict):
+        return value.get("source"), value.get("target"), str(value.get("type", "volume"))
+    parts = str(value).split(":")
+    if len(parts) == 1:
+        return None, parts[0], "volume"
+    source = parts[0]
+    return source, parts[1], "bind" if source.startswith((".", "/", "~")) else "volume"
+
+
+def _merge_service(base: dict, over: dict) -> dict:
+    """Compose's merge for the keys these checks read: mappings merge, `build.args`
+    and `environment` merge by key, `volumes` merge by container path."""
+    out = dict(base)
+    for key, value in over.items():
+        if key == "extends":
+            continue
+        if key == "build":
+            old = {"context": base["build"]} if isinstance(base.get("build"), str) else dict(base.get("build") or {})
+            new = {"context": value} if isinstance(value, str) else dict(value or {})
+            merged = {**old, **new}
+            args = {**_mapping(old.get("args")), **_mapping(new.get("args"))}
+            if args:
+                merged["args"] = args
+            out["build"] = merged
+        elif key == "environment":
+            out[key] = {**_mapping(base.get(key)), **_mapping(value)}
+        elif key == "volumes":
+            by_target = {_volume(v)[1]: v for v in list(base.get(key) or []) + list(value or [])}
+            out[key] = list(by_target.values())
+        elif isinstance(value, dict) and isinstance(base.get(key), dict):
+            out[key] = {**base[key], **value}
+        else:
+            out[key] = value
+    return out
+
+
+def _load_services(path: Path) -> dict[str, dict]:
+    doc = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    services = doc.get("services") or {}
+    return {str(k): v for k, v in services.items() if isinstance(v, dict)}
+
+
+def _resolve_extends(services: dict[str, dict], directory: Path, depth: int = 0) -> dict[str, dict]:
+    """Apply `extends:` within one file (and to a `file:` it names), as compose does
+    before it merges an overlay."""
+    resolved: dict[str, dict] = {}
+
+    def resolve(name: str, seen: frozenset) -> dict:
+        if name in resolved:
+            return resolved[name]
+        service = services.get(name) or {}
+        extends = service.get("extends")
+        if extends:
+            base_name, other = (
+                (extends, None) if isinstance(extends, str) else (extends.get("service"), extends.get("file"))
+            )
+            if other and depth < 3 and (directory / other).is_file():
+                base = _resolve_extends(_load_services(directory / other), directory, depth + 1).get(base_name, {})
+            elif not other and base_name not in seen:
+                base = resolve(base_name, seen | {name})
+            else:
+                base = {}
+            service = _merge_service(base, service)
+        resolved[name] = service
+        return service
+
+    for name in services:
+        resolve(name, frozenset({name}))
+    return resolved
+
+
+def _data_source(source: str | None) -> PurePosixPath | None:
+    """The repo-relative path of a bind source under `data/`, else None."""
+    if not source or source.startswith(("/", "~")):
+        return None
+    parts = [p for p in PurePosixPath(source).parts if p != "."]
+    return PurePosixPath(*parts) if parts and parts[0] == "data" else None
+
+
+def _check_service(name: str, service: dict, spec: PublishSpec, root: Path, counts: dict[str, set]) -> list[str]:
+    """The findings for one resolved service, as messages (the caller names the file)."""
+    problems: list[str] = []
+    image = service.get("image")
+    build = service.get("build")
+    published = spec.published_names()
+    if isinstance(image, str):
+        match = GHCR_IMAGE_RE.match(image)
+        if match:
+            counts["published"].add(image)
+            if not VERSION_TAG_RE.match(match["tag"]):
+                problems.append(
+                    f"service '{name}' asks for {image}: the tag must be exactly "
+                    "`${ATRIUM_VERSION:-dev}`. CI publishes the target as part of the image "
+                    "NAME (`ghcr.io/<tool>-<target>:<version>`), so a tag suffix names an image "
+                    "that does not exist and `docker compose pull` fails (roadmap B2).",
+                )
+            if published and match["name"].lower() not in published:
+                problems.append(
+                    f"service '{name}' asks for ghcr.io/{match['name']}, which "
+                    f"{spec.source.name if spec.source else 'docker.yml'} does not publish. "
+                    f"Published: {', '.join(f'ghcr.io/{n}' for n in sorted(published))}. A service "
+                    "built only locally takes a bare name and `pull_policy: build`.",
+                )
+        elif build is not None:
+            counts["local"].add(image)
+            if service.get("pull_policy") != "build":
+                problems.append(
+                    f"service '{name}' builds {image}, a name no registry publishes, without "
+                    "`pull_policy: build` -- so `docker compose pull` asks a registry for it.",
+                )
+        args = _mapping(build.get("args")) if isinstance(build, dict) else {}
+        for where, values in (("build arg", args), ("environment", _mapping(service.get("environment")))):
+            recorded = values.get("ATRIUM_RUNNER_IMAGE")
+            if recorded and recorded != image:
+                problems.append(
+                    f"service '{name}' runs {image} but its {where} ATRIUM_RUNNER_IMAGE is "
+                    f"{recorded}, so paradata names an image this service did not run "
+                    "(roadmap B3). Set it to the service's own `image:`.",
+                )
+    mounts = [_data_source(_volume(v)[0]) for v in service.get("volumes") or [] if _volume(v)[2] == "bind"]
+    mounts = [m for m in mounts if m is not None]
+    if not mounts:
+        return problems
+    counts["data"].add(name)
+    user = str(service.get("user") or "")
+    if not user.endswith(":0"):
+        problems.append(
+            f"service '{name}' bind-mounts ./{mounts[0]} but "
+            + ("sets no `user:`" if not user else f"runs as user {user!r}")
+            + '. Use `user: "${ATRIUM_UID:-10001}:0"`: the image runs as uid 10001, a clone '
+            "is owned by the host user, and the image's writable paths are group-0 writable "
+            "so a host uid with group 0 can use them (roadmap B6).",
+        )
+    for mount in mounts:
+        if not (root / mount / ".gitkeep").is_file():
+            problems.append(
+                f"service '{name}' bind-mounts ./{mount}, which the repository does not "
+                f"contain: Docker creates it root-owned on first run. Commit {mount}/.gitkeep "
+                "(and un-ignore it) so a clone has it (roadmap B6).",
+            )
+    return problems
+
+
+def check_compose(root: Path, hub_root: Path, repo_name: str | None, findings: Findings) -> dict[str, int]:
+    """Check -- compose files name what CI publishes, record the image they run, and
+    can write their `./data` mounts from a fresh clone.
+
+    Each file is read the way compose reads it: `extends:` resolved within the file,
+    then an overlay (`docker-compose.<x>.yml`) merged onto its base. The counts in the
+    summary are distinct image references and distinct service names.
+    """
+    counts: dict[str, set] = {"files": set(), "published": set(), "local": set(), "data": set()}
+    paths = sorted({p for pattern in COMPOSE_GLOBS for p in root.glob(pattern) if p.is_file()})
+    if not paths:
+        return {key: 0 for key in counts}
+    spec = docker_publish_spec(root, hub_root, repo_name)
+    resolved: dict[Path, dict[str, dict]] = {}
+    for path in paths:
+        try:
+            resolved[path] = _resolve_extends(_load_services(path), root)
+        except yaml.YAMLError as exc:
+            findings.error(path.relative_to(root), f"does not parse as YAML: {exc}")
+    for path, services in resolved.items():
+        counts["files"].add(path.name)
+        base_path = None
+        if path.name not in COMPOSE_BASES:
+            prefix = path.name.split(".", 1)[0]
+            base_path = next(
+                (root / b for b in COMPOSE_BASES if b.startswith(prefix + ".") and root / b in resolved), None
+            )
+        label = str(path.relative_to(root))
+        base = resolved.get(base_path, {}) if base_path else {}
+        if base_path:
+            label += f" (merged onto {base_path.name})"
+        for name, service in services.items():
+            merged = _merge_service(base[name], service) if name in base else service
+            problems = _check_service(name, merged, spec, root, counts)
+            # An overlay inherits its base's defects; report only what the overlay adds,
+            # so fixing the base file is one fix, not two.
+            scratch: dict[str, set] = {key: set() for key in counts}
+            already = set(_check_service(name, base[name], spec, root, scratch)) if name in base else set()
+            for problem in problems:
+                if problem not in already:
+                    findings.error(Path(label), problem)
+    return {key: len(values) for key, values in counts.items()}
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", default=".", help="repository to lint")
@@ -577,6 +935,14 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="skip only the network check that a pinned SHA matches its version comment",
     )
+    parser.add_argument(
+        "--repo-name",
+        default=os.environ.get("GITHUB_REPOSITORY"),
+        help="owner/repo the linted tree belongs to, used to resolve `${{ github.repository }}` in "
+        "docker.yml's `image-name` for the compose check. Defaults to $GITHUB_REPOSITORY, which "
+        "workflow-lint.reusable.yml's runner sets to the CALLER; without either, compose image "
+        "names are checked for form only.",
+    )
     args = parser.parse_args(argv)
 
     root = Path(args.repo_root).resolve()
@@ -588,7 +954,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     pins = perms = inputs = 0
-    shapes = refs = hygiene = required = 0
+    shapes = refs = hygiene = required = floors = 0
     docs: dict[Path, dict] = {}
     for path in paths:
         doc = load(path, findings)
@@ -606,7 +972,10 @@ def main(argv: list[str] | None = None) -> int:
         refs += check_caller_ref(rel, doc, findings)
         hygiene += check_job_hygiene(rel, doc, findings)
         required += check_required_inputs(rel, doc, root, hub_root, findings)
+        # #69 round 5.
+        floors += check_action_floor(rel, doc, findings)
     check_duplicate_names(docs, findings)
+    compose = check_compose(root, hub_root, args.repo_name, findings)
 
     for note in findings.notes:
         print(f"::notice::{note}")
@@ -621,6 +990,10 @@ def main(argv: list[str] | None = None) -> int:
             f"{refs} hub-reusable refs at @v1; "
             f"{hygiene} runner jobs carry timeout-minutes; "
             f"{shapes} caller templates contain a `uses:`; "
+            f"{floors} floor-listed actions at or above the floor; "
+            f"{compose['files']} compose files: {compose['published']} GHCR images published by docker.yml, "
+            f"{compose['local']} local-only images pinned to `pull_policy: build`, "
+            f"{compose['data']} services writing ./data as a set user; "
             f"no duplicate workflow names; no structural `secrets: inherit`."
         )
         return 0

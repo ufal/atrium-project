@@ -841,10 +841,26 @@ jobs:
           # promotion step at the end of this job, after the gate — see W3 above.
           tags: ${{ steps.meta-immutable.outputs.tags }}
           labels: ${{ steps.meta-immutable.outputs.labels }}
+          # ATRIUM_RUNNER_IMAGE names the tag THIS job publishes, taken from the step that
+          # computes it (roadmap B3, atrium-project#69). It used to be
+          # `:${{ github.ref_name }}` = `v1.7.3-beta`, while `type=semver,pattern={{version}}`
+          # publishes `1.7.3-beta`: every released image's paradata named a tag that does
+          # not exist in GHCR, and #67 R2's `CreateAction.instrument` would repeat it.
+          # `meta-release.outputs.version` is the highest-priority tag it emits: the semver
+          # on a version tag, `test` on a `test` push. With no release tag (only `sha-*` is
+          # pushed) the immutable `sha-<short>` is the only name the image has.
+          #
+          # NOT `sha-<short>` always: that changes on every push, and this value is baked
+          # into the ENV layer the Dockerfiles' apt-upgrade layer deliberately sits under
+          # (their "CACHE INTERACTION" note, guarded by test_dockerfile_security_layer.py).
+          # `test` is stable across `test` pushes and the semver is unique per release, so
+          # the cache still hits day to day and every release still re-patches.
+          #
+          # ATRIUM_RUNNER_REF stays `github.ref_name`: it is a git ref, where the `v` is right.
           build-args: |
             ATRIUM_RUNNER_REPO=https://github.com/${{ github.repository }}
             ATRIUM_RUNNER_REF=${{ github.ref_name }}
-            ATRIUM_RUNNER_IMAGE=ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}:${{ github.ref_name }}
+            ATRIUM_RUNNER_IMAGE=ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}:${{ steps.meta-release.outputs.version || steps.meta-immutable.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           # SBOM + provenance as buildkit attestations pushed alongside the image.

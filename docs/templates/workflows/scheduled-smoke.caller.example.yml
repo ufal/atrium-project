@@ -2,8 +2,13 @@
 # Drops into: .github/workflows/scheduled-smoke.yml
 #
 # PR CI runs `pytest -m "not slow"`. This nightly job catches upstream breakage
-# (moved/renamed HF models, vanishing external APIs, reachability issues)
-# and audits the supply chain.
+# (moved/renamed HF models, vanishing external APIs, reachability issues).
+#
+# No `pip-audit` step (atrium-project#69). This template used to run
+# `pip-audit || true`, which can never fail: a gate in name only, copied into every
+# repo that adopted it. A real audit gate is roadmap H7, retired for now in
+# docs/docker_gha_roadmap.md §10; the image-level gate is Trivy's fixable-CRITICAL
+# check in docker-tool.reusable.yml. Add an audit here only as a step that can fail.
 
 name: Scheduled Smoke Tests
 
@@ -36,30 +41,36 @@ jobs:
       contents: read
       issues: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: "pip"
 
+      # The three template vars reach the shell as environment variables, never as
+      # `${{ env.* }}` pasted into the script: an expression is substituted into the
+      # script TEXT before bash sees it, so a value with a quote or `;` in it becomes
+      # code. They are in the workflow's `env:` block already, so `$VAR` reads them.
+      # Word-splitting of the lists is intended, hence no quotes.
       - name: Install APT packages
         if: env.APT_PACKAGES != ''
-        run: sudo apt-get update && sudo apt-get install -y ${{ env.APT_PACKAGES }}
+        run: |
+          # shellcheck disable=SC2086 # a space-separated package list
+          sudo apt-get update && sudo apt-get install -y $APT_PACKAGES
 
       - name: Pre-install PyTorch (CPU)
         if: env.PRE_INSTALL_TORCH != ''
-        run: pip install ${{ env.PRE_INSTALL_TORCH }} --index-url https://download.pytorch.org/whl/cpu
+        run: |
+          # shellcheck disable=SC2086 # a space-separated requirement list
+          pip install $PRE_INSTALL_TORCH --index-url https://download.pytorch.org/whl/cpu
 
       - name: Install dependencies
         run: |
-          for req in ${{ env.REQUIREMENTS }}; do
+          for req in $REQUIREMENTS; do
             if [ -f "$req" ]; then pip install -r "$req"; fi
           done
           pip install pytest pytest-cov
-
-      - name: Supply Chain Audit
-        run: pip install pip-audit && pip-audit || true
 
       - name: Run slow tests (network + models)
         env:
@@ -69,7 +80,7 @@ jobs:
 
       - name: Open issue on failure
         if: failure()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const title = `Scheduled smoke tests failed (${new Date().toISOString().slice(0,10)})`;

@@ -105,12 +105,22 @@ RUN pip install -r requirements.txt -r service/requirements.txt
 
 COPY . .
 
-# Non-root runtime user owning only the caches and data mountpoint. /app stays root-owned
-# to enforce source immutability. uid 10001 is fixed across the ecosystem so a
-# `runAsUser` in the k8s manifest (docs/templates/k8s/) matches every image.
+# Non-root runtime user owning only the caches, the data mountpoint and its home. /app
+# stays root-owned to enforce source immutability. uid 10001 is fixed across the ecosystem
+# so a `runAsUser` in the k8s manifest (docs/templates/k8s/) matches every image.
+#
+# Owned atrium:0 and group-writable (`g=u`): the arbitrary-UID convention (OpenShift's),
+# roadmap B6 (atrium-project#69). Compose runs these images as
+# `user: "${ATRIUM_UID:-10001}:0"`, so on Linux an operator sets ATRIUM_UID=$(id -u) and the
+# container can write a ./data bind mount owned by that host user. A uid with no passwd
+# entry still reaches every writable path through group 0, and HOME is set explicitly
+# because without a passwd entry it would be `/` (anything writing ~/.cache would fail).
+# The default runtime -- uid 10001 as the owner -- is unchanged.
 RUN useradd --create-home --uid 10001 atrium \
     && mkdir -p /cache/huggingface /data \
-    && chown -R atrium:atrium /cache /data
+    && chown -R atrium:0 /cache /data /home/atrium \
+    && chmod -R g=u /cache /data /home/atrium
+ENV HOME=/home/atrium
 USER atrium
 
 # Batch entrypoint — the one-off/admin surface (12-factor XII). The API stage overrides it.
@@ -124,7 +134,9 @@ FROM base AS api
 USER root
 COPY service/requirements.txt ./service_requirements.txt
 RUN pip install -r service_requirements.txt
-RUN chown -R atrium:atrium /app
+# Same arbitrary-UID ownership as `base` (atrium:0, g=u), re-applied to what this stage adds.
+RUN chown -R atrium:0 /app /home/atrium \
+    && chmod -R g=u /app /home/atrium
 USER atrium
 
 # EXPOSE tracks the DEFAULT port: it is image metadata and cannot read $PORT at runtime.
