@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 25 open issues (#67 added 2026-09-26). `test` = `189f572` (2026-09-28); tag `v1` = `6167803`; freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-09-28 (#32 round 2) — typed contracts, registered reason codes and `openapi.json` as a release asset, prepared in all six trees and not landed. Before it: 2026-09-26 (AMČR baseline), every digest+plan pair refreshed to AMČR's #67 buckets. CI green on `4f65b20` (Hub Self-Check 36256783734, pre-commit, CodeQL, Documentation Site)._
+> _Hub/planning repo. 25 open issues (#67 added 2026-09-26). `test` = `fb64b29` (2026-09-29); tag `v1` = `fb64b29`; freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-09-29 (#69 round 5) — every CI-roadmap wave executed or retired (roadmap §10); the hub half landed, the five tool repos' half delivered. Before it: 2026-09-28 (#32 round 2), typed contracts, registered reason codes and `openapi.json` as a release asset. CI green on `4f65b20` (Hub Self-Check 36256783734, pre-commit, CodeQL, Documentation Site)._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -1709,3 +1709,66 @@ the freeze tag `doc-schema-v1` (@ `544298b`), and it is additive.
 
   Not pushed: per-repo archives delivered in chat. Land the hub and the five tool repos in one window, then move
   `v1`.
+
+## 2026-09-29 — #69 round 5: every CI-roadmap wave executed or retired
+
+* **What was asked:** #69 (split from #18) — execute or explicitly retire each wave W1–W6 of
+  `docs/docker_gha_roadmap.md`, and make the roadmap say which. The pilot's call (#67, 09-27): only what touches
+  the images AMČR runs, plus what is cheap.
+* **Decided (the user):**
+  * scope: the pilot slice plus the cheap items; the W4 collapse and the rest of W5 are retired with reasons;
+  * the nlp/llm `line-length` reformat is retired;
+  * alto's weight pin fails closed until its two Hub values are pasted;
+  * B6 runs the containers as the host uid.
+* **Re-checked first** against the fetched `test` heads (hub `721f9c7`, alto `f43290c`, llm `626f2ed`, nlp
+  `f0b1207`, pc `452ccad`, translator `71037ab`). The #32 round-2 landing moved line numbers only, and GHCR
+  confirmed B2 and B3. The refreshed `digests/69.digest.md` and `plans/69.plan.md` were delivered first and
+  landed as `f8f94b6`.
+* **Landed (the hub half), `6ca3049` + `fb64b29`, with `v1` moved to it by the user:**
+  * `workflow_lint.py`'s action floor, per-job `permissions` and compose rule (47 linter tests);
+  * B3: `ATRIUM_RUNNER_IMAGE` from the metadata step, `tests/test_runner_image_tag.py`;
+  * E11: `workflow_dispatch` on `hub-self-check`, `codeql`, `pre-commit`;
+  * the E2E's `e2e-doc` input;
+  * the two caller templates at the floor, without the fake `pip-audit` gate;
+  * the arbitrary-UID user block in `docs/templates/Dockerfile`, `ATRIUM_UID` in the env template;
+  * `fixtures/e2e/README.md`.
+* **Delivered, not landed:**
+  * the five tool repos: B2 (four repos; alto's GPU overlay and llm's `digital-docling` local with
+    `pull_policy: build`); B6 (`data/.gitkeep`, pc's `data/output/.gitkeep`, `user: "${ATRIUM_UID:-10001}:0"`,
+    images `atrium:0` + `g=u` + `HOME`); H3 (alto, fail closed, one layer); H4 (alto, pc, nlp); H5 (all five);
+    D4 (pc's shellcheck hook + the two scripts);
+  * the hub docs: `update_issues.sh` (R1, which was not in `fb64b29`), roadmap §10, `docker_gha.md`, this pair's
+    status.
+* **Retired, in roadmap §10 with reasons and revisit triggers:**
+  * W3 `:edge` (superseded by `:test`);
+  * W4 in full;
+  * W5's H1/H2-tooling/H6/H7 and the size budget;
+  * W6's compose `healthcheck:` and the GPU items (#40);
+  * the E3 rules no finding drives;
+  * S4 re-slotting;
+  * the line-length reformat.
+* **Found on the way:**
+  * alto's GPU overlay kept the CPU image's `ATRIUM_RUNNER_IMAGE` once merged;
+  * alto `api` baked the batch name through `extends:`;
+  * pc bind-mounts a second `./data` directory;
+  * `docker_gha.md` §2 still listed two hub workflows below the floor;
+  * the fixtures README was truncated and named a script that no longer exists;
+  * alto's "GPU test" needs no GPU;
+  * R2, R3 and R7 were already fixed, while R5, R6 and R8 are still open;
+  * `httpx2` is declared and unused in three repos.
+* **Verified:**
+  * hub `tests/` 299, `docs/templates/shared` 185; linter OK on all six, and it reported every defect on
+    the original compose files;
+  * fast suites translator 967, nlp 1207, llm 1102, pc 623, alto 1835 (pc and alto without torch: the
+    PyTorch index is denied here);
+  * `compose config` on every file and profile;
+  * a stand-in image for H3 (all failure modes, one layer) and B6 (uid 1000:0 writes, the default is
+    unchanged, no group 0 is denied).
+  * No real tool image was built: Docker Hub rate-limited, and the Debian mirror and the Hub are denied.
+* **Next (the user's):**
+  1. Paste alto's `FASTTEXT_REVISION` / `FASTTEXT_SHA256` (the curl one-liner is in its Dockerfile).
+  2. Land the five tool repos in one window: until then each one's `workflow-lint` fails the compose rule.
+  3. Land the hub docs.
+  4. Close #69, citing roadmap §10.
+
+  Not pushed from here: files delivered in chat.
