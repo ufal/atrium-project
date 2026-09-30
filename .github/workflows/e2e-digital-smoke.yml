@@ -59,10 +59,10 @@
 # pulled `-remote:latest` and `-digital:latest` without incident and got all the way to
 # the final assert. Option 2 in the preflight summary is what happened.
 #
-# The `:test` channel is a separate question and is NOT known to be fixed — nothing here
-# has exercised it since. A push-triggered run is still the first thing that would find
-# out, and the preflight will say `MISSING` rather than dying on a `denied` from the
-# daemon if `v1` has still not moved.
+# The `:test` channel is a separate question. The gate that publishes it is at `v1`
+# (docker_gha_roadmap.md §7 W2, §10); a push-triggered run with `image-tag: test` is
+# what confirms it for `-digital`, and the preflight says `MISSING` rather than dying on
+# a `denied` from the daemon if it has not been published yet.
 
 name: E2E Digital-Born Smoke Test
 
@@ -219,27 +219,23 @@ jobs:
       #   docker: Error response from daemon: Head
       #   "https://ghcr.io/v2/ufal/atrium-llm-enrich-digital/manifests/latest": denied
       #
-      # which reads as a permissions problem and is not one. `-digital` has never
-      # been published at ANY tag, and two independent gates put it there:
+      # which reads as a permissions problem and is not one. At the time `-digital`
+      # had never been published at ANY tag, for two independent reasons (both
+      # resolved since, and kept here because they are what a MISSING below means):
       #
       #   * `:latest` moves only on `refs/tags/v*` (docker-tool.reusable.yml,
       #     `type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}`).
       #     The `digital` build target was added to llm-enrich's docker.yml in
-      #     57d8073 (2026-08-06); the newest tag, v0.5.2, is 6c71425 and does NOT
-      #     contain it. No release has been cut since, so no `latest` exists.
-      #   * The `:test` channel could not have covered the gap either. llm-enrich
-      #     calls `docker-tool.reusable.yml@v1`, and at the v1 tag `build-and-push`
-      #     is still gated on `startsWith(github.ref, 'refs/tags/v') || release` —
-      #     the W2 fix that admits `push` to `refs/heads/test` landed on the hub's
-      #     default branch but the v1 tag was never moved onto it. Both test-branch
-      #     pushes on 2026-08-06 (57d8073, f19fcd7) reported success and published
-      #     nothing; GHCR still holds no `sha-57d8073`, no `sha-f19fcd7` and no
-      #     `test` tag for ANY llm-enrich image.
+      #     57d8073 (2026-08-06), after the then-newest tag v0.5.2. Every llm-enrich
+      #     release from v0.6.0 (2026-08-19) on carries it, so `-digital:latest` exists.
+      #   * The `:test` channel needed the `build-and-push` gate that admits `push` to
+      #     `refs/heads/test` to be at the `v1` tag the tool repos call. It is at `v1`
+      #     now; before that move a `test` push published nothing at all.
       #
-      # So this workflow cannot pass until the hub's `v1` tag is moved (unblocking
-      # the `:test` channel for all five repos) or an llm-enrich release is cut with
-      # the digital target in it. Failing here, by name, with that written down beats
-      # failing four steps later on a daemon error that names the wrong cause.
+      # So a MISSING here means: no release (for `latest`) or no `test` push since the
+      # gate reached `v1` (for `test`), or a package visibility problem (below).
+      # Failing here, by name, beats failing four steps later on a daemon error that
+      # names the wrong cause.
       - name: Preflight - confirm the images exist at the requested tag
         run: |
           set -uo pipefail
@@ -266,11 +262,10 @@ jobs:
               echo ""
               echo "This is a publication gap, not a credentials problem. To unblock, either:"
               echo ""
-              echo "1. Move the hub's \`v1\` tag onto a commit containing the \`build-and-push\`"
-              echo "   gate that admits \`push\` to \`refs/heads/test\`, then re-push"
-              echo "   \`atrium-llm-enrich\`'s \`test\` branch and re-run this with \`image-tag: test\`; or"
-              echo "2. Cut an \`atrium-llm-enrich\` release tag newer than v0.5.2 — the first one"
-              echo "   to include the \`digital\` build target also publishes \`:latest\`."
+              echo "1. For \`image-tag: test\`: push \`atrium-llm-enrich\`'s \`test\` branch (the"
+              echo "   \`build-and-push\` gate at \`v1\` publishes \`:test\` on it) and re-run; or"
+              echo "2. For \`latest\`: cut an \`atrium-llm-enrich\` release — every release since"
+              echo "   v0.6.0 includes the \`digital\` build target and publishes \`:latest\`."
               echo ""
               echo "Then mind the third gate, which bites immediately after the first two:"
               echo "a GHCR package is PRIVATE on creation, and it is owned by"

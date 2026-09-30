@@ -81,6 +81,22 @@ derived and disposable. Both belong in `regenerable` as a recipe:
 }
 ```
 
+**Detail profiles** (`regenerable.*.detail`, atrium-project#70 item 1; implemented in llm-enrich's
+renderer, `api_util/layout_md.py`, `json_to_md@1.1`). The Markdown's **text lines are the same in
+all three**; a lighter profile drops layout cues only, and the cue sets nest
+(minimal ⊂ standard ⊂ full):
+
+| Profile    | Keeps                                                                                                                                                                                      | Drops (against the next richer one)                  |
+|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------|
+| `full`     | every cue the record supports: `BBOX` per line, `DOC_META`, `OCR` provenance, whole-line emphasis, and `LAYOUT_MARGIN` (canvas minus the body-line union) on pages with a canvas and boxes | —                                                    |
+| `standard` | one `BBOX` per block (a `group_id` run; a table keeps its own; ungrouped lines none), `DOC_META`, `OCR`, emphasis                                                                          | per-line boxes, `LAYOUT_MARGIN`                      |
+| `minimal`  | the page skeleton and structure: `# doc`, `## Page`, `PAGE_BREAK`, `NEEDS_OCR`, headings, footnotes, GFM tables, `HEADER_*`/`FOOTER_*`, figure placeholders                                | all geometry, `DOC_META`, `OCR` provenance, emphasis |
+
+`full` is the default everywhere; which lighter profile is safe for the model is the #22 bake-off's
+call. A recipe names the profile the Markdown was rendered at; llm-enrich writes a `json_to_md`
+recipe only when the record it writes can actually be rendered (a record with no `lines[]` and no
+`content.text` gets none).
+
 Visual overlay still works without stored images: every `bbox` is in one declared coordinate
 space — **origin top-left, y increasing downwards, in the unit named by that page's
 `pages[].canvas.unit`** — and `pages[].teitok_surface` is a **logical** `<surface>` id, so
@@ -101,6 +117,16 @@ no facsimile. `entities[].page` is the page of the entity's first token, the sam
 document's pages, layout first — since nlp-enrich#38, not from UDPipe's chunks). The E2E lane
 checks that every reference resolves to the right element (`entities[]` to a `<name>`,
 `lines[]` to an `<s>`) and that the pages agree (`tools/e2e/e2e_assert.py --teitok-dir`).
+
+The other direction — the record's facts inside the TEITOK file — is **off by default**: page
+classification and line quality stay "only in the record" (the AMČR storage contract; #24's
+three-format decision). nlp-enrich's opt-in projection (atrium-project#70 item 2,
+`api_util/teitok_project.py`; `run_pipeline.py --teitok-enrichment`, `teitok_enrichment` on its
+`/enrich`, `POST /project_record`) writes the page categories as `pb/@ana` plus a `classDecl`
+taxonomy (`@corresp` = the `atrium_vocab` concept URI) and llm-enrich's TEATER/AMČR categories and
+keywords, and nlp-enrich's own keywords per document and per page, as
+`profileDesc/textClass/keywords`, each pointing at its `<pb>`s. It reads the record and writes only
+the TEITOK header and `pb/@ana`; it never writes line quality, and it changes no block owner.
 
 Two things a reader of both files should know. `lines[].teitok_ref` is granted to nlp-enrich
 but **not written** by it today (its hook's `include_lines` branch is a placeholder; the
@@ -181,7 +207,7 @@ engine ran, so "was this OCR'd" stays answerable.
 | page-classification | `page_categories` · `pages[]` *category, category_confidence*                                                                                                                                                                                               |
 | alto-postprocess    | `pages[]` *page_index, quality_score, quality_band, needs_ocr, needs_ocr_reason, ocr, canvas* · `content` · `lines[]` *categ, quality_score, lang, text* · `tables[]` — **originator, documents with an OCR-class origin** (`ABBYY-ALTO`, `ocr:…`, `vlm:…`) |
 | digital-convert     | `pages[]` *page_index, canvas, quality_score, quality_band, needs_ocr, needs_ocr_reason* · `content` · `lines[]` *text, bbox, group_id, style, lang, quality_score, categ* · `tables[]` — **originator, digital-born documents only**                       |
-| translator          | `translations` · `entities[]` *translation_en*                                                                                                                                                                                                              |
+| translator          | `translations` · `entities[]` *translation_en* — **reserved**: granted, written by no tool (#70; see below)                                                                                                                                                 |
 | nlp-enrich          | `entities[]` · `lines[]` *lemma, upos, feats, teitok_ref, bbox* · `pages[]` *teitok_surface* · `derived_from.teitok`                                                                                                                                        |
 | llm-enrich          | `enrichment` · `forms` · `entities[]` *pid* · `regenerable.markdown`                                                                                                                                                                                        |
 
@@ -957,3 +983,25 @@ shared files, so the usual re-vendor and `v1` move follow.**
 * `docs_site`: the schemas page's version policy and the document-contract page link the tag;
   the architecture page's shared-file table gains the two files, and the counts there and on the
   contributing and SKOS pages move to 19.
+
+## Changelog — 2026-09-30 (#70: `translation_en` reserved, detail profiles described)
+
+**Descriptions only: no constraint changes, no register entry, no `SCHEMA_VERSION` bump.** Two
+canonical files change (`atrium_document.schema.json`, `atrium_document.py`), so the re-vendor
+and the `v1` move follow, hub first (para-drift diffs every tool repo against the hub at `v1`).
+
+* **`entities[].translation_en` is reserved.** Declared for the translator, written by no tool:
+  the translator runs before nlp-enrich creates `entities[]`, so it cannot write a field on rows
+  that do not exist yet, and the AMČR pilot produces English only for free-text metadata
+  (`metadata-en`; vocabulary fields use AMČR's own English labels; entity facets go by the coarse
+  types). The field and the grant stay: removing it is a MAJOR, re-attributing it is breaking
+  (see [Versioning Rules](#versioning-rules)). `entities` and `translation_en` gain descriptions
+  saying so; `atrium_document.py` gains a comment beside the grant; the ownership table above says
+  *reserved*.
+* **`regenerable.*.detail` gains a description** naming the three profiles, and this document
+  their definition ([Reference discipline](#reference-discipline-non-negotiable)). The enum is
+  unchanged. llm-enrich implements `standard` and `minimal` (`--detail`; `json_to_md@1.1`).
+* **TEITOK projection (opt-in)** noted under Reference discipline: nlp-enrich can write the page
+  categories and keywords into the TEITOK header; no record field changes.
+* Verified: `test_schema_freeze.py` passes with the description edits (they are annotations) and
+  still fails on a constraining edit.

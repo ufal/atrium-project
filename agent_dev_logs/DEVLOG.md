@@ -1772,3 +1772,50 @@ the freeze tag `doc-schema-v1` (@ `544298b`), and it is additive.
   4. Close #69, citing roadmap §10.
 
   Not pushed from here: files delivered in chat.
+
+## 2026-09-30 — #69 closed out, #70 resolved (detail profiles, opt-in TEITOK projection, `translation_en` reserved), CC0 in nlp/llm
+
+Against the `test` heads of 09-30 (hub `10ad2d3`, alto `8eca0ac`, llm `c83f6e2`, nlp `810f54e`, pc `8bf8ee0`,
+translator `4ab3b1d`) and David's grounding report for the 30 September meeting. Translator (`v1.3.0-beta`) and
+page-classification (`v1.9.0-beta`) were released; alto-postprocess, nlp-enrich and llm-enrich waited on #69 and #70.
+
+* **#69, the leftovers of roadmap §10's *Found, not fixed*** (comments only, plus one unused install):
+  * `security.reusable.yml` (R5), the caller-job count — 38 = 35 in the tool repos at `@v1` + 3 hub-local (R6),
+    the `PC_REVISION` pointers in `docker-tool.reusable.yml` and pc's `docker.yml` (R8);
+  * `pytest pytest-cov` without the unused `ruff`; the `dependabot.yml` header; the v0.5.2 notes in
+    `e2e-digital-smoke.yml`; llm-enrich's `docker.yml` comment quoting the old install;
+  * roadmap §10 addendum: the acceptance re-read (CI green on all six heads, alto's pinned build green on
+    `6804032`) and the items still open with where they go. #69 can close citing §10.
+  * Corrected on the way: the inherited "`httpx2` declared and never imported" is not dead weight — Starlette's
+    `TestClient` asks for it (warning in alto's lane).
+* **#70 item 1 — `--detail standard|minimal`** (llm-enrich): profile tables in `layout_md.py` (`PROFILE_CUES`,
+  `BBOX_SCOPE`, `RESERVED` with reasons), block-union boxes for `standard`, skeleton-only `minimal`,
+  `LAYOUT_MARGIN` for `full` on the record route; `detail` through `json_to_md` (`@1.1`), `xml_to_md`,
+  `doc_to_visual_md`, the cache stamp, both clients and the recipe. `scripts/detail_budget.py`: real ALTO scans
+  −35/−53 % (`standard`), −52/−64 % (`minimal`). `full` stays the default; #22 decides from quality.
+  * Fixed on the way: a `json_to_md` recipe only for a record that renders (plain-text uploads recorded one), and
+    the recipe names the record's own file when a seed keeps its id (#68).
+* **#70 item 2 — record → TEITOK projection** (nlp-enrich, opt-in, off): `api_util/teitok_project.py` writes page
+  categories (`pb/@ana` + `classDecl`), llm-enrich's TEATER/AMČR categories and cs/en keywords, and statistical
+  keywords per document and per page (flexiconv#1) into the header only; idempotent, identity-checked, validated.
+  XSD grown additively, `lint_projection`, `CTX_projected` + negatives in `teitok-schema.yml`. Switches:
+  `run_pipeline.py --teitok-enrichment` / `TEITOK_ENRICHMENT`, `teitok_enrichment` on `/enrich`, `/enrich_text`,
+  `/jobs`, and `POST /project_record`.
+  * Found on the way: `run_pipeline._parse_config` kept `${NAME:-default}` literally, so an exported
+    `TEITOK_ENRICHMENT=true` would never have reached the runner. It now expands the form like `source` does.
+* **#70 item 3 — `entities[].translation_en` reserved**: schema descriptions (`entities`, `translation_en`,
+  `regenerable.*.detail`), a comment beside the grant, `document_schema.md` (ownership row, detail profiles,
+  projection note, 2026-09-30 changelog); translator `utils.py` and README say "decided". No constraint change.
+* **CC0 relabel** (#6 request 12; also #72's licence item): nlp-enrich and llm-enrich `para_config.txt`,
+  `vocab_sources.py`, the flat artefacts' `_meta` and the rebuilt `*.meta.json`/`union.skos.ttl`
+  (`vocab_build.py --from-flat --update-legacy --skos`; `--check` up to date), comments, RUNBOOKs, README and tests.
+* **Window:** `scripts/revendor_shared.sh` (10 copies, 24/24 in parity, 20 selftests); every `service/openapi.json`
+  regenerated — nlp and llm by `export`, alto/pc/translator by transplanting the one changed component (identical
+  in all five at HEAD) and then `check`ed as current with each repo's own generator.
+* **Verified:** hub 299 + 185; linter clean on all six; llm 1128, nlp 1255, translator 967, pc 623, alto 1835
+  (torch-free lanes); ruff clean; flexiconv v0.3.10 reads a projected document.
+* **Next (the user's):** hub commit → move `v1` → the five tool repos in one window; fix #70's body citation
+  (`utils.py:865-879`), post the verdicts, close #69 and #70; tick #6's nlp/llm boxes; post the encoding on
+  flexiconv#1; version bumps (llm-enrich 0.9.0, nlp-enrich 0.23.0, alto-postprocess 1.7.0-beta).
+
+  Not pushed from here: files delivered in chat.

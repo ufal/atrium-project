@@ -1,7 +1,8 @@
 # ATRIUM hub — the hub checking itself (issue #18, T7).
 #
-# WHY THIS EXISTS. This repository is the source of truth for 42 caller jobs
-# across six repos, and for the canonical modules para-drift.reusable.yml forces
+# WHY THIS EXISTS. This repository is the source of truth for 38 caller jobs
+# across six repos (35 in the five tool repos at `@v1`, 3 hub-local by path;
+# counted 2026-09-30), and for the canonical modules para-drift.reusable.yml forces
 # byte-identical into all five tool repos. Until 2026-07-31 it had no caller
 # workflows at all — only `workflow_call` reusables plus the E2E and issue-log
 # jobs — so nothing in CI parsed, linted or policy-checked any of it.

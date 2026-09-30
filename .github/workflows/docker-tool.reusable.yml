@@ -127,7 +127,8 @@ jobs:
           # Keyed on the caller's MODEL revision, not source code. The old key was
           # hashFiles('**/*.py'), which changed on every Python edit and therefore
           # missed the cache almost every run — the opposite of the intent (#18).
-          # Same pattern as e2e-pipeline-smoke.yml's `hf-e2e-pc-${PC_REVISION}`.
+          # (e2e-pipeline-smoke.yml keys its own HF cache by image tag instead,
+          # `e2e-hf-<tag>-regnety160`; the `PC_REVISION` it once used is gone.)
           key: hf-models-${{ inputs.hf-cache-key != '' && inputs.hf-cache-key || 'default' }}
           restore-keys: hf-models-
 
@@ -161,7 +162,9 @@ jobs:
           for req in $REQUIREMENTS; do
             if [ -f "$req" ]; then pip install -r "$req"; fi
           done
-          pip install pytest pytest-cov ruff
+          # No `ruff` here: its advisory run was removed (see below), and the
+          # pre-commit reusable owns the lint gate.
+          pip install pytest pytest-cov
 
       - name: Prepare environment
         run: if [ -f ".env.example" ]; then cp .env.example .env; fi

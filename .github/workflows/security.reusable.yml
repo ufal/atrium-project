@@ -1,17 +1,19 @@
 # ATRIUM — Security & supply-chain reusable workflow (TEMPLATE)
 #
 # Second reusable workflow (sibling to docker-tool.reusable.yml). Bundles the
-# checks that are *identical* across the four tool repos so they stay DRY:
+# checks that are *identical* across the five tool repos so they stay DRY:
 #   1. version-check  — CITATION.cff == para_config.txt [tool] version (== git tag on tag push)
 #   2. image-scan     — Trivy CVE scan of the published GHCR image -> SARIF in the Security tab
-#   3. sbom           — Software Bill of Materials for the image (supply-chain transparency)
+# (The third job, `sbom`, was removed on 2026-07-30: the SBOM is now a buildkit
+# attestation pushed with the image by docker-tool.reusable.yml — see §3 below.)
 #
 # Host this once in ufal/atrium-project/.github/workflows/ and call it from each
 # repo with a ~15-line caller (see security.caller.example.yml).
 #
 # NOTE: action versions match the Node-24 baseline already used by
-# docker-tool.reusable.yml. Verify/pin latest majors (and ideally commit SHAs)
-# at adoption time — see comments on the Trivy step.
+# docker-tool.reusable.yml, and tools/ci/workflow_lint.py holds them at that floor.
+# The write-scoped action here (trivy-action) is pinned by commit SHA with a
+# `# vX` comment the linter verifies — see the comments on the Trivy step.
 
 name: ATRIUM Security Template
 
@@ -19,7 +21,7 @@ on:
   workflow_call:
     inputs:
       image-ref:
-        description: "Image to scan/SBOM, e.g. ghcr.io/ufal/atrium-translator:latest. Leave empty to skip image jobs."
+        description: "Image to scan, e.g. ghcr.io/ufal/atrium-translator:latest. Leave empty to skip the image scan."
         required: false
         type: string
         default: ""

@@ -777,3 +777,39 @@ acceptance, re-read:
 - the E2E passes without `OPENROUTER_KEY` (B4, before).
 
 **Owner:** @K4TEL · **Blast radius:** hub + 5 tool repos, in one window, with `v1` already moved.
+
+### Addendum (2026-09-30) — the leftovers fixed, #69 ready to close
+
+Read again on the `test` heads of 2026-09-30 (hub `10ad2d3`, alto-postprocess `8eca0ac`, llm-enrich
+`c83f6e2`, nlp-enrich `810f54e`, page-classification `8bf8ee0`, translator `4ab3b1d`): every workflow
+green on all six, and alto-postprocess's pinned fastText build green since its two Hub values landed
+(`6804032`). Nothing functional was left; this pass removes the comment rot *Found, not fixed* lists, in
+the same window as #70's re-vendor:
+
+- **R5** `security.reusable.yml`: "five tool repos"; the header lists the two jobs it has (the SBOM is a
+  buildkit attestation since 2026-07-30); the pinning sentence says what is true (trivy-action SHA-pinned
+  with a linter-verified `# vX` comment); `image-ref` no longer mentions an SBOM.
+- **R6** one count in both places: 38 caller jobs resolve to hub files — 35 in the five tool repos at
+  `@v1`, 3 hub-local by path (`workflow_lint.py` docstring, `hub-self-check.yml`; counted 2026-09-30).
+- **R8** the two `PC_REVISION` pointers (`docker-tool.reusable.yml`, page-classification's `docker.yml`)
+  now name the real key, `e2e-hf-<tag>-regnety160`.
+- `docker-tool.reusable.yml` installs `pytest pytest-cov` only (E7 removed the `ruff` run; no tool test
+  shells out to ruff); llm-enrich's `docker.yml` comment quoting the old install follows.
+- The hub `dependabot.yml` header names `tools/e2e/requirements.txt` and `tools/docs/requirements.txt` as
+  CI tooling left untracked on purpose (H6 retired above).
+- `e2e-digital-smoke.yml`: the v0.5.2 notes are history now; every llm-enrich release since v0.6.0 carries
+  the `digital` target.
+
+Still open, each outside #69 and none blocking the pilot (owner @K4TEL unless noted):
+- `httpx2` (alto, nlp, llm): no repo code imports it, but it is not dead weight — Starlette's
+  `TestClient` now warns "install `httpx2` instead" when only `httpx` is present (seen in alto's fast
+  lane, 2026-09-30). Reconcile the three declarations, and alto's `correct.py` lazy `httpx`, in the
+  next dependency pass of each repo (a candidate for #72); do not simply delete it.
+- alto's `setup/setup_api_server.sh` `/resolve/main` fetch: host setups only; with #72.
+- llm's `digital-docling` root-owned Hub cache: build-only image; with llm-enrich#10 W7.
+- `fixtures/e2e/VOCAB/teater_nested_vocab.json` and the older E2E `CSV_HEADER`: with the seeded E2E
+  (#67 C.4), which rewrites those fixtures anyway.
+- nlp's `-llm` image without `data_samples/vocab`: goes with #67 R7.
+
+**#69 can close** citing this section: every wave has a verdict, W2's acceptance holds, and the only
+items left are listed above with where they go.

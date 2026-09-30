@@ -2,8 +2,9 @@
 """Policy checks for the ATRIUM hub's own workflows and caller templates (issue #18).
 
 The hub is the single source of truth for every reusable workflow in the
-ecosystem -- 37 caller jobs across six repos resolve `@v1` to files in this
-repository -- yet until now nothing in CI looked at those files. Every defect
+ecosystem -- 38 caller jobs across six repos resolve to files in this repository
+(35 in the five tool repos at `@v1`, 3 hub-local by path; counted 2026-09-30) --
+yet until now nothing in CI looked at those files. Every defect
 found in them during #18 was found by hand:
 
   * `security.reusable.yml` kept a mutable `aquasecurity/trivy-action@v0.36.0`

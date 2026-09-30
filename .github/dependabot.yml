@@ -10,9 +10,11 @@
 #
 # github-actions, plus `docker` for the Dockerfile TEMPLATE: docs/templates/Dockerfile
 # pins python:3.11-slim by digest, the digest tool repos copy, so it is kept current
-# here rather than only in each tool repo. No `pip`: this repo ships no Python package
-# manifest — tools/e2e/ installs each tool repo's own requirements at runtime inside
-# e2e-pipeline-smoke.yml, and those are covered by the tool repos' Dependabot.
+# here rather than only in each tool repo. No `pip`, on purpose: the hub's two Python
+# manifests are CI tooling, not a package — tools/e2e/requirements.txt (the E2E
+# assertions; the stages themselves run the published images) and
+# tools/docs/requirements.txt (the docs site). Adding a `pip` ecosystem for them was
+# retired with the rest of roadmap H6 (docker_gha_roadmap.md §10, #69).
 #
 # Grouped into a single PR and targeted at `test`, matching the convention in
 # atrium-translator / atrium-alto-postprocess / atrium-page-classification.

@@ -380,13 +380,13 @@ changed on every export could not be committed, diffed, or checksummed.
 Recorded rather than papered over. None of these blocks a first crate; each makes it materially
 better.
 
-| Gap                                                                                            | Consequence                                                                                | Fix                                              |
-|------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|--------------------------------------------------|
-| **No git SHA.** Paradata carries `runner_ref` (a branch or tag), not a commit.                 | Software provenance is "this ref", not "this commit".                                      | add a commit SHA to `atrium_paradata`            |
-| **No output checksums.** `sha256` exists only on `source`.                                     | Every `hasPart` file is named without a hash, so tampering is undetectable from the crate. | add `sha256` alongside each `derived_from` value |
-| **No DOI or PID anywhere** — not on any `CITATION.cff`, not on any record.                     | The crate has no persistent identifier; `@id` is a local path.                             | out of scope here; needs a repository deposit    |
-| **`atrium-project` has no `CITATION.cff`** though all five tool repos do.                      | Author metadata is hardcoded in `AUTHORS` rather than read from the hub.                   | add one                                          |
-| **`forms` has no writer** in any repo, and `entities[].translation_en` is owned-but-unwritten. | Two declared parts of the schema can never appear in a crate.                              | product decision — see `54.plan.md` §C           |
+| Gap                                                                                            | Consequence                                                                                | Fix                                                                        |
+|------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| **No git SHA.** Paradata carries `runner_ref` (a branch or tag), not a commit.                 | Software provenance is "this ref", not "this commit".                                      | add a commit SHA to `atrium_paradata`                                      |
+| **No output checksums.** `sha256` exists only on `source`.                                     | Every `hasPart` file is named without a hash, so tampering is undetectable from the crate. | add `sha256` alongside each `derived_from` value                           |
+| **No DOI or PID anywhere** — not on any `CITATION.cff`, not on any record.                     | The crate has no persistent identifier; `@id` is a local path.                             | out of scope here; needs a repository deposit                              |
+| **`atrium-project` has no `CITATION.cff`** though all five tool repos do.                      | Author metadata is hardcoded in `AUTHORS` rather than read from the hub.                   | add one                                                                    |
+| **`forms` has no writer** in any repo, and `entities[].translation_en` is owned-but-unwritten. | Two declared parts of the schema can never appear in a crate.                              | `forms`: see `54.plan.md` §C; `translation_en`: reserved (#70, 2026-09-30) |
 
 ---
 
