@@ -1819,3 +1819,50 @@ page-classification (`v1.9.0-beta`) were released; alto-postprocess, nlp-enrich 
   flexiconv#1; version bumps (llm-enrich 0.9.0, nlp-enrich 0.23.0, alto-postprocess 1.7.0-beta).
 
   Not pushed from here: files delivered in chat.
+
+## 2026-09-30 (after the meeting) — the grounding report against the tracker; the repository split planned
+
+Against the `test` heads of 09-30 (hub `9bffcea`, pc `eed2522`, alto `b3b4401`, translator `8d74c4c`, llm `5cacf0b`,
+nlp `b21fc5c`) and David's grounding report for the meeting (DOCX first draft and MD after the meeting; a
+sentence-level diff of the two gives the post-meeting edits — the §2.2 tool table only).
+
+* **What the meeting changed** (the report's table, plus four items the same afternoon): alto-postprocess →
+  `ocr-postprocess` (alto#56); keywords of nlp-enrich and llm-enrich → a new `ufal/atrium-keyword-extractor` (nlp#40);
+  llm-enrich's service → `/reformat`, the repository → the born-digital converter (llm#29); the TODO on #71 reads
+  `doc-schema-v1` as beta. No dates were set.
+* **Alignment matrix:** `digests/project_state_3009.md` — every report item and request → issue → pair → gap; the
+  six-stage service map after the split; where report and tracker still disagree (request 12 already done, #73's
+  owner, the default keyword method, `/convert` vs `/reformat`, the schema's reading).
+* **Pairs:**
+  * `73.*` ✍️ **written from scratch** — the pair on disk carried #71's content under #73's number. Block shape
+    (`items[]` with method, score, rank, page), owner keyword-extractor, a band-free deterministic quality summary.
+  * `72.*` ✍️ **rewritten** with code evidence — the moves as its largest items; shared layers with owners; the
+    release-gate rename rule.
+  * `71.*` 🔄 post-meeting banner; A.6 the successor map (`PROGRAM_SUCCESSORS`); the C.2 table under the post-split
+    names (six services); question 6 (the pilot baseline).
+  * `67.*` 🔄 the umbrella: where each request lives now, superseded lines marked (R3, R5's owner, R7's `llm` stage),
+    the outcome of each question for 30 September, the thread trail to 09-30.
+  * `6.*`, `32.*`, `66.*`, `57.*`, `4.*`, `17.*` 🧭 post-meeting banners (licences to inventory, two new services and a
+    renamed one, wrappers after the renames, Pages URLs that do not redirect, SSHOMP records to re-point).
+* **Found on the way:**
+  * `atrium_openapi.py compare` treats a changed `x-atrium-service` as fatal whatever the version (`:417-420`) and
+    picks its baseline by asset name (`:238-283`): the ocr-postprocess rename needs a declared-rename rule; the
+    converter's service avoids it with its own asset (`openapi-digital.json`) and its final id from the first release.
+  * `docs/document_schema.md` makes a re-attributed written block a MAJOR bump; adding successors beside their
+    predecessors (multi-writer, as `pages` already is) is not. The OCR hand-off rule hard-codes
+    `self.program == "alto-postprocess"` (`atrium_document.py:856`).
+  * Two posted comments still carry placeholders: #6 (`<NLP_COMMIT>`/`<LLM_COMMIT>` = `ufal/atrium-nlp-enrich@d46239a`,
+    `ufal/atrium-llm-enrich@b0e384c`) and translator#46 (`<result>`: the Integration workflow was never dispatched).
+  * The translator harvests the AMČR and TEATER vocabularies itself (`load_vocab.py`): a third harvester for #72's
+    one vocabulary artefact.
+* **GitHub drafts** (not posted): `/home/user/github_drafts_2026-09-30.md` — the two placeholder fixes, replacement
+  bodies for alto#56, nlp#40 and llm#29, comments on #67, #71, #72, #73, #32, #4, llm#28, llm#10, and five new issues:
+  *Repository split after the 30 September meeting* (hub), *`doc-schema-v1` as the pilot baseline* (hub), *Written
+  permission for AMČR's use of the LINDAT translation service* (translator; the report says it has no issue yet), and
+  two for keyword-extractor once it exists.
+* **Exports pending:** #73, llm#29, nlp#40, alto#56 (the new digests name the paths `update_issues.sh` will write);
+  `update_issues.sh` `REPOS` and `scripts/revendor_shared.sh` need the new names at the split.
+* **Next (the user's):** post the drafts in the order the file gives; agree the pilot baseline with AMČR; then the
+  schema round, the time-box release (16 October) and the moves, in `project_state_3009.md`'s order.
+
+  Not pushed from here: files delivered in chat.
