@@ -196,6 +196,105 @@ def test_non_v1_hub_ref_is_rejected(tmp_path, ref):
     assert f"@{ref}" in out
 
 
+# ── commit pins (atrium-project#40 F, #72 E.2) ──────────────────────────────
+
+_SHA = "0123456789abcdef0123456789abcdef01234567"
+_PINNED = CLEAN_CALLER.replace("para-drift.reusable.yml@v1", f"para-drift.reusable.yml@{_SHA}  # v1")
+
+
+def test_a_commit_pin_with_its_channel_and_matching_hub_ref_passes(tmp_path):
+    write_workflow(tmp_path, "x.yml", _PINNED + f"    with:\n      hub-ref: {_SHA}\n")
+    rc, out = run_lint(tmp_path)
+    assert rc == 0, out
+
+
+def test_a_commit_pin_whose_callee_takes_no_hub_ref_needs_only_the_comment(tmp_path):
+    caller = CLEAN_CALLER.replace("para-drift.reusable.yml@v1", f"codeql.reusable.yml@{_SHA}  # v1")
+    write_workflow(
+        tmp_path, "x.yml", caller.replace("contents: read", "contents: read\n  security-events: write\n  actions: read")
+    )
+    rc, out = run_lint(tmp_path)
+    assert "hub-ref" not in out and "comment" not in out, out
+
+
+def test_a_commit_pin_without_hub_ref_reads_the_files_at_the_moving_tag(tmp_path):
+    write_workflow(tmp_path, "x.yml", _PINNED)
+    rc, out = run_lint(tmp_path)
+    assert rc == 1 and f"pass `hub-ref: {_SHA}`" in out
+
+
+def test_a_commit_pin_with_another_hub_ref_is_rejected(tmp_path):
+    write_workflow(tmp_path, "x.yml", _PINNED + "    with:\n      hub-ref: " + "f" * 40 + "\n")
+    rc, out = run_lint(tmp_path)
+    assert rc == 1 and "reads the hub at hub-ref" in out
+
+
+@pytest.mark.parametrize("comment", ["", "  # v2", "  # main"])
+def test_a_commit_pin_must_name_its_channel(tmp_path, comment):
+    caller = CLEAN_CALLER.replace("para-drift.reusable.yml@v1", f"para-drift.reusable.yml@{_SHA}{comment}")
+    write_workflow(tmp_path, "x.yml", caller + f"    with:\n      hub-ref: {_SHA}\n")
+    rc, out = run_lint(tmp_path)
+    assert rc == 1 and "without a '# v1' comment" in out
+
+
+def test_v1_with_another_hub_ref_is_rejected(tmp_path):
+    write_workflow(tmp_path, "x.yml", CLEAN_CALLER + "    with:\n      hub-ref: test\n")
+    rc, out = run_lint(tmp_path)
+    assert rc == 1 and "hub-ref 'test'" in out
+
+
+def test_require_sha_pins_refuses_v1(tmp_path):
+    write_workflow(tmp_path, "x.yml", CLEAN_CALLER)
+    assert run_lint(tmp_path)[0] == 0
+    rc, out = run_lint(tmp_path, "--require-sha-pins")
+    assert rc == 1 and "pin it to a commit of v1" in out
+
+
+# ── release assets and immutable releases (atrium-project#40 E, #72) ─────────
+
+_RELEASE = """\
+name: Release
+on:
+  push:
+    tags: ['v*']
+concurrency:
+  group: release-${{ github.ref }}
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64  # v3.0.3
+        with:
+          files: dist/openapi.json
+%s"""
+
+
+@pytest.mark.parametrize(
+    "extra, ok",
+    [
+        ("", True),
+        ("          prerelease: true\n          draft: true\n", True),
+        ("          prerelease: true\n", False),
+    ],
+    ids=["draft-first-by-default", "prerelease-as-draft", "prerelease-published-first"],
+)
+def test_a_prerelease_must_be_created_as_a_draft(tmp_path, extra, ok):
+    write_workflow(tmp_path, "release.yml", _RELEASE % extra)
+    rc, out = run_lint(tmp_path)
+    assert (rc == 0) is ok, out
+    assert ok or "publishes a prerelease before uploading its assets" in out
+
+
+def test_an_asset_uploaded_after_the_release_is_rejected(tmp_path):
+    later = '      - run: gh release upload "$GITHUB_REF_NAME" dist/bundle.zip\n'
+    write_workflow(tmp_path, "release.yml", _RELEASE % "" + later)
+    rc, out = run_lint(tmp_path)
+    assert rc == 1 and "uploads a release asset after the release exists" in out
+
+
 def test_missing_timeout_minutes_is_rejected(tmp_path):
     write_workflow(
         tmp_path,

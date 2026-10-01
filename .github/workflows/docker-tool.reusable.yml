@@ -60,6 +60,26 @@ on:
         required: false
         type: string
         default: '[]'
+      forbidden-distributions:
+        description: >-
+          JSON list of Python distributions a probed image (probe-targets) must not have
+          installed (atrium-project#72). The default names PyMuPDF: AGPL-3.0, and undeclared
+          in page-classification until pypdfium2 replaced it, so an image that brings it back
+          fails here rather than in a licence review. A repository adds to it only with a
+          reason; `[]` switches the check off.
+        required: false
+        type: string
+        default: '["pymupdf"]'
+      forbidden-modules:
+        description: >-
+          JSON list of top-level modules that must not be importable inside a probed image,
+          first-party ones included (the probe runs in the image's WORKDIR). For code a tracked
+          move takes out of an image, e.g. '["llm_utils"]' in nlp-enrich once
+          atrium-nlp-enrich#40 lands; the image-closure check of workflow-lint covers what the
+          entrypoint imports, this covers what the image contains.
+        required: false
+        type: string
+        default: '[]'
       assert-clean-tree:
         description: >-
           Fail the test job if the suite modified any TRACKED file (W6). A suite that
@@ -370,6 +390,38 @@ jobs:
           tags: atrium-smoke/${{ inputs.image-name }}:${{ matrix.target }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: The probed image carries no forbidden package (atrium-project#72)
+        # "No production image depends on the undeclared AGPL dependency" (#72), checked in the
+        # image itself rather than in its requirements files, which is where it would be missed:
+        # a transitive dependency or a stray `pip install` reaches the image without touching a
+        # requirements file. Also the place a finished repository move proves its code left the
+        # image (forbidden-modules). Runs python inside the image, nothing is started.
+        if: contains(fromJSON(inputs.probe-targets), matrix.target)
+        env:
+          IMAGE: atrium-smoke/${{ inputs.image-name }}:${{ matrix.target }}
+          FORBIDDEN_DISTRIBUTIONS: ${{ inputs.forbidden-distributions }}
+          FORBIDDEN_MODULES: ${{ inputs.forbidden-modules }}
+        run: |
+          set -euo pipefail
+          docker run --rm -i --entrypoint python \
+            -e FORBIDDEN_DISTRIBUTIONS -e FORBIDDEN_MODULES "$IMAGE" - <<'PY'
+          import importlib.metadata, importlib.util, json, os, sys
+
+          found = []
+          for name in json.loads(os.environ.get("FORBIDDEN_DISTRIBUTIONS") or "[]"):
+              try:
+                  found.append(f"distribution {name} {importlib.metadata.version(name)} is installed")
+              except importlib.metadata.PackageNotFoundError:
+                  pass
+          for module in json.loads(os.environ.get("FORBIDDEN_MODULES") or "[]"):
+              if importlib.util.find_spec(module) is not None:
+                  found.append(f"module {module} is importable")
+          for line in found:
+              print(f"::error::{line} in the image")
+          print("forbidden packages: none found" if not found else f"{len(found)} forbidden package(s)")
+          sys.exit(1 if found else 0)
+          PY
 
       - name: Run container and wait for HEALTHCHECK (issue #55)
         # Opt-in per target via probe-targets — most build-targets are batch CLIs with

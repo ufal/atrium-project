@@ -775,9 +775,20 @@ def test_the_finished_spec_publishes_the_contract():
         "$ref": "#/components/schemas/HealthBody"
     }
     assert spec["info"]["x-atrium-service"] == "atrium-test"
+    assert "x-atrium-service-previous" not in spec["info"], "only a renamed service declares its old id"
     assert set(spec["x-atrium-reason-codes"]) == set(REASON_CODES)
     assert spec["x-atrium-reason-codes"]["unsupported_media_type"]["statuses"] == [415]
     assert "servers" not in spec
+
+
+def test_a_renamed_service_declares_its_previous_id():
+    """atrium-project#72: the release gate accepts a changed service id only when the new spec
+    names the old one, which attach_openapi_contract writes from `previous`."""
+    app = FastAPI(title="renamed", version="2.0.0", generate_unique_id_function=operation_id)
+    attach_openapi_contract(app, "atrium-ocr-postprocess", previous="atrium-alto-postprocess")
+    info = app.openapi()["info"]
+    assert info["x-atrium-service"] == "atrium-ocr-postprocess"
+    assert info["x-atrium-service-previous"] == "atrium-alto-postprocess"
 
 
 def test_the_record_component_is_the_vendored_schema_with_its_defs_hoisted():

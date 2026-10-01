@@ -19,6 +19,30 @@ on:
         required: false
         type: string
         default: v1
+      vendored-from:
+        description: >-
+          Space-separated ufal repositories this caller vendors files from with SHA pins, in
+          tests/test_vendored_*_parity.py (atrium-project#72 B: the tool-to-tool shared layers,
+          e.g. llm-enrich's copy of nlp-enrich's TEITOK reader). When set, the vendored-parity
+          job clones each owner beside the caller at vendored-ref and runs the pin tests, whose
+          sibling half then compares every copy byte for byte with the owner's current file: a
+          copy that fell behind its owner turns red here, in the consumer. Empty (the default)
+          skips the job.
+        required: false
+        type: string
+        default: ""
+      vendored-ref:
+        description: >-
+          The owners' ref the copies are compared with. `test`, the integration branch, so a
+          change in the owner shows in the consumer before either releases.
+        required: false
+        type: string
+        default: test
+      vendored-tests:
+        description: The pin tests to run, as a shell glob relative to the caller's root.
+        required: false
+        type: string
+        default: tests/test_vendored_*_parity.py
 
 permissions:
   contents: read   # least privilege: these jobs only ever read the tree
@@ -88,3 +112,60 @@ jobs:
             echo "::endgroup::"
           done < <(python3 hub-repo/tools/shared_manifest.py --tsv hub-repo/docs/templates/shared/MANIFEST.json)
           exit "$fail"
+
+  vendored-parity:
+    # atrium-project#72 B: para-drift over the tool-to-tool layers. The hub-canonical files above
+    # are compared with the hub; a layer one tool owns and another vendors (the TEITOK reader
+    # today; the document reader and the record renderer after the repository moves) is compared
+    # with its owner, by the pin tests the consumer already has. Those tests skip their sibling
+    # comparison when the owner is not checked out beside the consumer, which is what they do
+    # in every other CI job; here it is, so a skip is a failure.
+    name: Verify Vendored Copies Against Their Owners
+    if: inputs.vendored-from != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout caller tool repository
+        uses: actions/checkout@v7
+        with:
+          # The pin tests find their owner at ../<owner>, so both sit side by side under work/.
+          path: work/${{ github.event.repository.name }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Clone the owners beside it
+        env:
+          OWNERS: ${{ inputs.vendored-from }}
+          REF: ${{ inputs.vendored-ref }}
+        run: |
+          set -euo pipefail
+          for owner in $OWNERS; do
+            case "$owner" in
+              *[!A-Za-z0-9._-]*) echo "::error::vendored-from: '$owner' is not a repository name"; exit 1 ;;
+            esac
+            git clone --quiet --depth 1 --branch "$REF" "https://github.com/ufal/$owner.git" "work/$owner"
+            echo "$owner @ $REF = $(git -C "work/$owner" rev-parse --short HEAD)"
+          done
+
+      - name: Run the pin tests; a skipped sibling comparison fails
+        working-directory: work/${{ github.event.repository.name }}
+        env:
+          TESTS: ${{ inputs.vendored-tests }}
+        run: |
+          set -euo pipefail
+          pip install --quiet pytest
+          shopt -s nullglob
+          # shellcheck disable=SC2206 — TESTS is a glob, expanded here on purpose
+          files=( $TESTS )
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "::error::no pin tests match '$TESTS'"
+            exit 1
+          fi
+          python -m pytest -rs -p no:cacheprovider "${files[@]}" | tee "$RUNNER_TEMP/pins.log"
+          if grep -q '^SKIPPED' "$RUNNER_TEMP/pins.log"; then
+            echo "::error::a pin test skipped its comparison with the owner: the owner checkout is not where the test looks"
+            exit 1
+          fi

@@ -63,13 +63,19 @@ _WORKFLOW_GLOBS = ("*.yml", "*.yaml")
 
 # (workflow file name, step `name:`) -> why the override is unavoidable.
 #
-# EMPTY ON PURPOSE, and that is the point: every stage in the E2E lane now runs its
-# image as built. Adding an entry is how you declare that a stage genuinely cannot --
+# No STAGE is on this list, and that is the point: every stage in the E2E lane runs its
+# image as built. Adding an entry is how you declare that a step genuinely cannot --
 # with a reason a reviewer can weigh -- instead of leaving the override to be discovered
 # by the next person auditing the lane. If you find yourself adding one, check first
 # that the image's own ENTRYPOINT is not simply what you were about to hand-write:
 # three of the four this file replaced were exactly that.
-ALLOWED_OVERRIDES: dict[tuple[str, str], str] = {}
+ALLOWED_OVERRIDES: dict[tuple[str, str], str] = {
+    ("docker-tool.reusable.yml", "The probed image carries no forbidden package (atrium-project#72)"): (
+        "Reads the image's installed distributions with the image's own interpreter "
+        "(`pip show pymupdf` fails, #72's criterion); runs no stage. The ENTRYPOINT is "
+        "exercised by the HEALTHCHECK/SIGTERM probe steps that follow."
+    ),
+}
 
 # `--entrypoint` as a whole token. The negative lookbehind keeps a longer flag that
 # merely ends in the same letters from matching.

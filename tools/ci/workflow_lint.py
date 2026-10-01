@@ -388,14 +388,43 @@ def check_template_shape(path: Path, doc: dict, text: str, findings: Findings) -
     return 1
 
 
-def check_caller_ref(path: Path, doc: dict, findings: Findings) -> int:
-    """Check -- hub reusables are pinned at `@v1`, not a branch or another tag.
+#: The release channel a hub reusable is adopted at: `@v1`, or a commit of it pinned as
+#: `@<40-char sha>  # v1` (atrium-project#40 F, #72 E.2).
+HUB_CHANNEL = "v1"
 
-    G7 widened the template glob so the `@test`-pinned skill template became
-    VISIBLE, but visibility is not a rule: nothing yet fails a caller pinned at
-    `@test`, `@main` or `@v2-beta`. A branch pin means the caller silently follows
-    whatever lands on that branch -- which is exactly how a reusable change reaches
-    all five repos without anyone choosing to adopt it.
+
+def _declared_inputs(callee_path: Path | None) -> set[str]:
+    if callee_path is None:
+        return set()
+    callee = yaml.safe_load(callee_path.read_text(encoding="utf-8")) or {}
+    trigger = callee.get(True) or callee.get("on") or {}
+    return set(((trigger.get("workflow_call") or {}).get("inputs") or {}))
+
+
+def check_caller_ref(
+    path: Path,
+    doc: dict,
+    text: str,
+    root: Path,
+    hub_root: Path,
+    findings: Findings,
+    require_sha: bool = False,
+) -> int:
+    """Check -- hub reusables are adopted at the `v1` channel: `@v1`, or a commit of it.
+
+    G7 widened the template glob so the `@test`-pinned skill template became VISIBLE, but
+    visibility is not a rule: nothing failed a caller pinned at `@test`, `@main` or `@v2-beta`.
+    A branch pin means the caller silently follows whatever lands on that branch -- which is
+    exactly how a reusable change reaches all five repos without anyone choosing to adopt it.
+
+    atrium-project#40 F / #72 E.2 add the commit pin, `@<40-char sha>  # v1`: a moving tag
+    cannot change what a pinned caller runs. The comment names the channel the commit was
+    taken from, so a reader (and Dependabot) can tell. para-drift and workflow-lint also check
+    the hub out a second time, at their `hub-ref` input (default `v1`), to read the files they
+    enforce; a caller pinned by commit must pass that same commit there, or the logic comes
+    from the pin and the files from the moving tag. Conversely a caller at `@v1` must not pass
+    another `hub-ref`. `require_sha` (--require-sha-pins) refuses `@v1` itself, for after the
+    sweep (scripts/pin_hub_reusables.py) has pinned every caller.
     """
     checked = 0
     for job_name, job in (doc.get("jobs") or {}).items():
@@ -406,13 +435,84 @@ def check_caller_ref(path: Path, doc: dict, findings: Findings) -> int:
             continue  # third-party or local reusable; pins are check_pins' job
         checked += 1
         ref = uses.rsplit("@", 1)[-1] if "@" in uses else ""
-        if ref != "v1":
-            findings.error(
-                path,
-                f"job '{job_name}' pins a hub reusable at '@{ref}', not '@v1'. "
-                "Branch and pre-release pins make a hub change reach this repo "
-                "without anyone adopting it; `v1` is the ecosystem's adoption point.",
-            )
+        takes_hub_ref = "hub-ref" in _declared_inputs(resolve_callee(uses, root, hub_root))
+        hub_ref = (job.get("with") or {}).get("hub-ref")
+        if ref == HUB_CHANNEL:
+            if require_sha:
+                findings.error(
+                    path,
+                    f"job '{job_name}' calls a hub reusable at '@{HUB_CHANNEL}'; pin it to a commit of "
+                    f"{HUB_CHANNEL} (`@<sha>  # {HUB_CHANNEL}`, scripts/pin_hub_reusables.py).",
+                )
+            if takes_hub_ref and hub_ref not in (None, HUB_CHANNEL):
+                findings.error(
+                    path,
+                    f"job '{job_name}' calls the reusable at '@{HUB_CHANNEL}' but reads the hub at "
+                    f"hub-ref '{hub_ref}': the logic and the files it enforces would come from "
+                    f"different generations of the hub.",
+                )
+            continue
+        if SHA_RE.match(ref):
+            comments = [
+                VERSION_COMMENT_RE.search(m["rest"])
+                for m in re.finditer(rf"uses:\s*{re.escape(uses)}(?P<rest>[^\n]*)", text)
+            ]
+            if not comments or any(c is None or c["version"] != HUB_CHANNEL for c in comments):
+                findings.error(
+                    path,
+                    f"job '{job_name}' pins a hub reusable to a commit without a '# {HUB_CHANNEL}' "
+                    f"comment: name the channel the commit was taken from.",
+                )
+            if takes_hub_ref and str(hub_ref) != ref:
+                findings.error(
+                    path,
+                    f"job '{job_name}' pins the reusable to {ref[:12]}... but reads the hub at "
+                    f"hub-ref '{hub_ref if hub_ref is not None else HUB_CHANNEL}': pass `hub-ref: {ref}`, "
+                    f"or the files it enforces still come from the moving tag.",
+                )
+            continue
+        findings.error(
+            path,
+            f"job '{job_name}' pins a hub reusable at '@{ref}', not '@{HUB_CHANNEL}' or a commit of it. "
+            "Branch and pre-release pins make a hub change reach this repo without anyone adopting it; "
+            f"`{HUB_CHANNEL}` is the ecosystem's adoption point.",
+        )
+    return checked
+
+
+def check_release_assets(path: Path, doc: dict, findings: Findings) -> int:
+    """Check -- a release gets its assets while it is still a draft (atrium-project#40 E, #72).
+
+    An immutable release refuses assets added after it is published. softprops/action-gh-release
+    (v3) creates a release as a draft, uploads, then publishes -- except a `prerelease: true`
+    release without `draft: true`, which it publishes first; and a later `gh release upload` or
+    upload-release-asset step always comes after publication. Either works on a mutable release
+    and fails the first time the repository turns immutable releases on.
+    """
+    checked = 0
+    for job_name, job in (doc.get("jobs") or {}).items():
+        if not isinstance(job, dict):
+            continue
+        for step in job.get("steps") or []:
+            if not isinstance(step, dict):
+                continue
+            uses = str(step.get("uses") or "")
+            with_ = step.get("with") or {}
+            if uses.startswith("softprops/action-gh-release@"):
+                checked += 1
+                if str(with_.get("prerelease", "")).lower() == "true" and str(with_.get("draft", "")).lower() != "true":
+                    findings.error(
+                        path,
+                        f"job '{job_name}' publishes a prerelease before uploading its assets "
+                        f"(softprops `prerelease: true` without `draft: true`); an immutable release refuses them.",
+                    )
+            if uses.startswith("actions/upload-release-asset@") or "gh release upload" in str(step.get("run") or ""):
+                checked += 1
+                findings.error(
+                    path,
+                    f"job '{job_name}' uploads a release asset after the release exists; an immutable "
+                    f"release refuses it. Attach every asset in the step that creates the release.",
+                )
     return checked
 
 
@@ -937,6 +1037,12 @@ def main(argv: list[str] | None = None) -> int:
         help="skip only the network check that a pinned SHA matches its version comment",
     )
     parser.add_argument(
+        "--require-sha-pins",
+        action="store_true",
+        help="refuse `@v1` too: every hub reusable must be pinned to a commit (after the "
+        "scripts/pin_hub_reusables.py sweep, atrium-project#72 E.2)",
+    )
+    parser.add_argument(
         "--repo-name",
         default=os.environ.get("GITHUB_REPOSITORY"),
         help="owner/repo the linted tree belongs to, used to resolve `${{ github.repository }}` in "
@@ -955,7 +1061,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     pins = perms = inputs = 0
-    shapes = refs = hygiene = required = floors = 0
+    shapes = refs = hygiene = required = floors = releases = 0
     docs: dict[Path, dict] = {}
     for path in paths:
         doc = load(path, findings)
@@ -970,7 +1076,8 @@ def main(argv: list[str] | None = None) -> int:
         inputs += check_template_inputs(rel, doc, root, hub_root, findings)
         # W5 additions.
         shapes += check_template_shape(rel, doc, text, findings)
-        refs += check_caller_ref(rel, doc, findings)
+        refs += check_caller_ref(rel, doc, text, root, hub_root, findings, args.require_sha_pins)
+        releases += check_release_assets(rel, doc, findings)
         hygiene += check_job_hygiene(rel, doc, findings)
         required += check_required_inputs(rel, doc, root, hub_root, findings)
         # #69 round 5.
@@ -988,7 +1095,8 @@ def main(argv: list[str] | None = None) -> int:
             f"{perms} caller/callee permission pairs satisfied; "
             f"{inputs} passed inputs declared; "
             f"{required} required inputs passed; "
-            f"{refs} hub-reusable refs at @v1; "
+            f"{refs} hub-reusable refs at @v1 or a commit of it; "
+            f"{releases} release steps attach their assets before publishing; "
             f"{hygiene} runner jobs carry timeout-minutes; "
             f"{shapes} caller templates contain a `uses:`; "
             f"{floors} floor-listed actions at or above the floor; "

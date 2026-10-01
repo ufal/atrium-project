@@ -330,8 +330,13 @@ def _script_refs_sh(text: str) -> set:
     return set(_SCRIPT_TOKEN_RE.findall("\n".join(live)))
 
 
-def _references_of(repo: Path, ref: str, path: str, index: dict, files: set, local: set):
+def _references_of(repo: Path, ref: str, path: str, index: dict, files: set, local: set, with_optional: bool = False):
     """(resolved paths, referenced-but-absent paths) for one file.
+
+    An import guarded by ``except ImportError`` is skipped unless ``with_optional``: a skill
+    branch may leave such a module out, but a production image that carries it can run it —
+    and the relative-vs-bare import pair (``from .inference`` / ``from inference``) is always
+    guarded that way, so the image-closure walk must follow it.
 
     The second element is the half that was missing until 2026-09-16: `_module_index` is
     built from files that EXIST, so an unresolvable import used to vanish silently. A
@@ -361,7 +366,7 @@ def _references_of(repo: Path, ref: str, path: str, index: dict, files: set, loc
     classify(_script_refs_py(module))
 
     optional = set()
-    for node in ast.walk(module):
+    for node in ast.walk(module) if not with_optional else ():
         if isinstance(node, ast.Try) and any(_catches_import_error(h) for h in node.handlers):
             optional.update(
                 id(child)
@@ -387,8 +392,15 @@ def _references_of(repo: Path, ref: str, path: str, index: dict, files: set, loc
             declared.add(base)
             probes.update(f"{base}.{alias.name}" for alias in node.names)
 
+    # A script run as `python service/text_api.py` has its own directory first on sys.path, so
+    # its bare `import text_inference` is service/text_inference.py (atrium-alto-postprocess's
+    # production entrypoint). Followed only for the image-closure walk, and only when the name
+    # resolves nowhere else, so it can add a missing edge but never redirect an existing one.
+    own_dir = path.rsplit("/", 1)[0].replace("/", ".") if with_optional and "/" in path else ""
     for name in declared | probes:
         target = _resolve_module(name, index)
+        if not target and own_dir and name.split(".")[0] not in local:
+            target = _resolve_module(f"{own_dir}.{name}", index)
         if target:
             resolved.add(target)
             continue
@@ -421,8 +433,13 @@ def _references_of(repo: Path, ref: str, path: str, index: dict, files: set, loc
     return resolved, absent
 
 
-def _walk_closure(repo: Path, ref: str, files: set, universe: set = None):
+def _walk_closure(repo: Path, ref: str, files: set, universe: set = None, roots: set = None):
     """(needed paths, referenced-but-absent paths), from `service/**.py` outward.
+
+    With `roots` (atrium-project#72's image-closure check, `tools/ci/image_closure.py`) the
+    walk starts from those paths only — a production image's entrypoint — instead of every
+    `service/`/`scripts/` file and the commands the docs name, and every file it reaches,
+    the roots included, is `needed`.
 
     One level is not enough: translator's `service/api.py` never imports `atrium_document`
     itself, but the `main.py` it calls does — so a one-level scan would report the skill
@@ -448,16 +465,21 @@ def _walk_closure(repo: Path, ref: str, files: set, universe: set = None):
     # root module like `main.py` is indistinguishable from a third-party import and was
     # silently skipped.
     local = _local_prefixes(files if universe is None else files | universe)
-    pending = {f for f in files if f.startswith("service/") and f.endswith(".py")}
-    pending |= {f for f in files if f.startswith("scripts/") and f.endswith((".py", ".sh"))}
-    for doc in _ROOT_DOCS:
-        if doc not in files:
-            continue
-        # Only backticked spans: markdown prose names files constantly, but a command the
-        # reader is told to RUN is written as code. SKILL.md:130's
-        # "with `api_util/xml_to_md.py` first" is the shape that matters.
-        for span in _CODE_SPAN_RE.findall(blob(repo, ref, doc)):
-            pending |= {token for token in _SCRIPT_TOKEN_RE.findall(span) if token in files and _is_runtime_path(token)}
+    if roots is not None:
+        pending = {f for f in roots if f in files}
+    else:
+        pending = {f for f in files if f.startswith("service/") and f.endswith(".py")}
+        pending |= {f for f in files if f.startswith("scripts/") and f.endswith((".py", ".sh"))}
+        for doc in _ROOT_DOCS:
+            if doc not in files:
+                continue
+            # Only backticked spans: markdown prose names files constantly, but a command the
+            # reader is told to RUN is written as code. SKILL.md:130's
+            # "with `api_util/xml_to_md.py` first" is the shape that matters.
+            for span in _CODE_SPAN_RE.findall(blob(repo, ref, doc)):
+                pending |= {
+                    token for token in _SCRIPT_TOKEN_RE.findall(span) if token in files and _is_runtime_path(token)
+                }
 
     needed, absent, seen = set(), set(), set()
     while pending:
@@ -465,11 +487,11 @@ def _walk_closure(repo: Path, ref: str, files: set, universe: set = None):
         if path in seen:
             continue
         seen.add(path)
-        if not path.startswith(("service/", "scripts/")):
+        if roots is not None or not path.startswith(("service/", "scripts/")):
             # service/ and scripts/ are roots, checked by the `missing` family and by
             # skill-validate's referenced-path step respectively.
             needed.add(path)
-        found, gone = _references_of(repo, ref, path, index, files, local)
+        found, gone = _references_of(repo, ref, path, index, files, local, with_optional=roots is not None)
         absent |= {g for g in gone if _is_runtime_path(g)}
         pending |= {f for f in found if _is_runtime_path(f)} - seen
     return needed, absent
@@ -478,6 +500,12 @@ def _walk_closure(repo: Path, ref: str, files: set, universe: set = None):
 def runtime_closure(repo: Path, ref: str, files: set, universe: set = None) -> set:
     """Repo-relative file paths the service needs at runtime. See `_walk_closure`."""
     return _walk_closure(repo, ref, files, universe)[0]
+
+
+def closure_from(repo: Path, ref: str, files: set, roots: set) -> tuple:
+    """(reached paths, referenced-but-absent paths) of `roots` at `ref`, the roots included:
+    imports, relative imports, and the scripts a string literal or a shell script names."""
+    return _walk_closure(repo, ref, files, roots=set(roots))
 
 
 def missing_references(repo: Path, ref: str, files: set, universe: set = None) -> set:

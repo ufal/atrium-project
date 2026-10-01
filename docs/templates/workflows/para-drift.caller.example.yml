@@ -4,12 +4,24 @@
 #
 # The reusable checks out this repo AND the hub, then `diff -u`s every canonical
 # shared file against docs/templates/shared/ — reading the single list at
-# docs/templates/shared/MANIFEST.json (atrium-project#59), currently 16 files, not
+# docs/templates/shared/MANIFEST.json (atrium-project#59), 24 files on 2026-09-30, not
 # a fixed list hand-copied into this comment. That list grows independently of
 # this template; see MANIFEST.json itself for what it holds today.
 #
 # A failure here means someone edited a vendored copy. Fix it by editing the HUB
 # copy and re-vendoring (scripts/revendor_shared.sh) — never the other way round.
+#
+# A repo that ALSO vendors files from another tool repo, pinned by a
+# tests/test_vendored_*_parity.py (atrium-project#72 B), names the owners in
+# `vendored-from`; the reusable then compares the copies with the owners' `test`
+# heads too. A copy that falls behind its owner fails here: re-vendor it from the
+# owner and update the pins, as the pin test's docstring says. Example:
+#
+#   jobs:
+#     check-drift:
+#       uses: ufal/atrium-project/.github/workflows/para-drift.reusable.yml@v1
+#       with:
+#         vendored-from: atrium-nlp-enrich
 
 name: Paradata Canonical Drift
 

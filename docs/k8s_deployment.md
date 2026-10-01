@@ -2,7 +2,8 @@
 
 > **Status:** Active Document (added 2026-09-07, issue #55)
 > **Scope:** `atrium-translator`, `atrium-nlp-enrich`, `atrium-page-classification`,
-> `atrium-alto-postprocess`, `atrium-llm-enrich` — the five `-api` images.
+> `atrium-alto-postprocess`, `atrium-llm-enrich` — the five `-api` images, one production
+> image per stage (the map below, added for issue #72).
 >
 > This document is the deployment-side half of issue #55 (`HEALTHCHECK` + `SIGTERM`
 > handling). The code-side half — `ServiceState`, `/ready`, `serve_lifecycle`,
@@ -12,6 +13,37 @@
 > [`templates/k8s/atrium-service.deployment.yaml`](templates/k8s/atrium-service.deployment.yaml)
 > and the acceptance procedure in
 > [`k8s_acceptance_runbook.md`](k8s_acceptance_runbook.md).
+
+## Which image to deploy — one production image per stage (#72)
+
+Each tool repository publishes several images from one Dockerfile. **One of them is the
+production service** of its stage — the image the AMČR pilot pins and this manifest deploys; the
+others are the batch/command-line form of the same stage (published, never pinned) or research
+targets. Each repository's `.github/production-image.json` lists the first-party files that
+production image can run, and CI fails when the image reaches anything else
+(`tools/ci/image_closure.py`, run by `workflow-lint.reusable.yml`); `docker-tool.reusable.yml`
+also fails a probed image that has PyMuPDF (AGPL-3.0) installed.
+
+| Stage                                     | Repository                   | Production image (`api` target)               | Endpoints                                                              | Program id in the record | Blocks it writes                                  | GPU (report item 8)                              | Other published images                                                                                 |
+|-------------------------------------------|------------------------------|-----------------------------------------------|------------------------------------------------------------------------|--------------------------|---------------------------------------------------|--------------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| page categories                           | `atrium-page-classification` | `ghcr.io/ufal/atrium-page-classification-api` | `POST /predict_image`, `POST /predict_document`                        | `page-classification`    | `page_categories`, `pages[].category*`            | first GPU                                        | `…-page-classification`: batch CLI (`run.py`)                                                          |
+| OCR output and text files → lines, scores | `atrium-alto-postprocess`    | `ghcr.io/ufal/atrium-alto-postprocess-api`    | `POST /process`                                                        | `alto-postprocess`       | `pages`, `content`, `lines`, `tables`             | first GPU                                        | `…-alto-postprocess`: batch pipeline (`run_pipeline.py`)                                               |
+| morphology, named entities, TEITOK        | `atrium-nlp-enrich`          | `ghcr.io/ufal/atrium-nlp-enrich-api`          | `POST /enrich`, `/enrich_text`, `/rescale`, `/project_record`, `/jobs` | `nlp-enrich`             | `entities`, `lines[].lemma/upos/feats/teitok_ref` | — (LINDAT UDPipe and NameTag)                    | `…-nlp-enrich`: batch pipeline; `…-nlp-enrich-llm`: the keyword stage's GPU batch                      |
+| keywords from the controlled vocabularies | `atrium-llm-enrich`          | `ghcr.io/ufal/atrium-llm-enrich-api`          | `POST /extract_keywords`, `/extract_keywords_text`                     | `llm-enrich`             | `enrichment`, `forms`, `entities[].pid`           | — (a client of the LLM server on the second GPU) | `…-remote`, `…-llm`: batch LLM runs; `…-digital`: the born-digital converter's CLI (`digital-convert`) |
+| English metadata                          | `atrium-translator`          | `ghcr.io/ufal/atrium-translator-api`          | `POST /translate`                                                      | `translator`             | `translations`                                    | — (LINDAT)                                       | `…-translator`: batch CLI (`main.py`)                                                                  |
+
+Tags follow `docker_gha.md` §3.1–3.2: the release version without its `v` (`1.9.0-beta`), and
+`test` for the integration branch. Deploy only release tags; `docs/release_trust.md` describes
+what makes them immutable.
+
+The meeting of 30 September moves three of these (keywords into a new keyword-extractor,
+[atrium-nlp-enrich#40](https://github.com/ufal/atrium-nlp-enrich/issues/40); llm-enrich into the
+born-digital converter with its own `api-digital` service,
+[atrium-llm-enrich#28](https://github.com/ufal/atrium-llm-enrich/issues/28) and
+[#29](https://github.com/ufal/atrium-llm-enrich/issues/29); alto-postprocess renamed
+ocr-postprocess, [atrium-alto-postprocess#56](https://github.com/ufal/atrium-alto-postprocess/issues/56)).
+This table changes with each move; the `production-image.json` of the moved repositories changes
+with it.
 
 ## Why this document exists — a Dockerfile `HEALTHCHECK` is invisible to Kubernetes
 

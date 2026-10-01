@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 25 open issues (#67 added 2026-09-26). `test` = `fb64b29` (2026-09-29); tag `v1` = `fb64b29`; freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-09-29 (#69 round 5) — every CI-roadmap wave executed or retired (roadmap §10); the hub half landed, the five tool repos' half delivered. Before it: 2026-09-28 (#32 round 2), typed contracts, registered reason codes and `openapi.json` as a release asset. CI green on `4f65b20` (Hub Self-Check 36256783734, pre-commit, CodeQL, Documentation Site)._
+> _Hub/planning repo. 25 open issues (#67 added 2026-09-26). `test` = `fb64b29` (2026-09-29); tag `v1` = `fb64b29`; freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-09-30 (#72 round 1) — production images declared and checked, PyMuPDF replaced, release-trust tooling (delivered, not landed). Before it: 2026-09-30 (the meeting, #69/#70 closed out), 2026-09-29 (#69 round 5), 2026-09-28 (#32 round 2), typed contracts, registered reason codes and `openapi.json` as a release asset. CI green on `4f65b20` (Hub Self-Check 36256783734, pre-commit, CodeQL, Documentation Site)._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -1864,5 +1864,47 @@ sentence-level diff of the two gives the post-meeting edits — the §2.2 tool t
   `update_issues.sh` `REPOS` and `scripts/revendor_shared.sh` need the new names at the split.
 * **Next (the user's):** post the drafts in the order the file gives; agree the pilot baseline with AMČR; then the
   schema round, the time-box release (16 October) and the moves, in `project_state_3009.md`'s order.
+
+  Not pushed from here: files delivered in chat.
+
+## 2026-09-30 (#72 round 1) — production images declared and checked, PyMuPDF replaced, release-trust tooling
+
+Against the `test` heads of 09-30 (hub `d1bb069`, pc `eed2522`, alto `bd5849f`, translator `c6699e0`, llm `54cbe6b`,
+nlp `77278a1`) and the grounding report (S2 pins tool versions in Dec 2026–Jan 2027; item 7 asks a date for immutable
+releases; the gate's diff review covers *"only the files that go into the image we use"*). The three repository moves
+(nlp#40, llm#28/#29, alto#56) stay out of this round; the repositories are worked on under today's names.
+
+* **Service map** — `docs/k8s_deployment.md` *Which image to deploy*: one production image per stage (repo, image,
+  endpoints, program id, blocks, GPU, the other published targets and their role), the moves linked; the same table in
+  `docs_site/pipelines.md` W4; each tool `docker.yml` names its production target.
+* **Image closure** — `.github/production-image.json` in the five tool repos (target, entrypoint, core files, pinned
+  copies of another repo's layer, `moving` rows for nlp-enrich's keyword code → nlp#40). `tools/ci/image_closure.py`
+  (walker: `tools/skill_drift_check.py` roots mode, which follows guarded imports and script-directory imports) runs in
+  `workflow-lint.reusable.yml`: an undeclared reached file, a stale declared one or an unpinned copy fails.
+  `tests/test_image_closure.py` (22). llm-enrich and nlp-enrich keep their review tools out of the images
+  (`.dockerignore`), proven unreachable from every published entrypoint first.
+* **Forbidden packages** — `docker-tool.reusable.yml` inputs `forbidden-distributions` (default `["pymupdf"]`) and
+  `forbidden-modules`; a probe step fails a `probe-targets` image that has one, before publishing.
+* **PyMuPDF → pypdfium2** (page-classification, #6 request 11) — `service/pdf_render.py`, plain render at
+  `PDF_RENDER_DPI / 72` under a process lock (PDFium is not thread-safe); `MAX_IMAGE_PIXELS` checked on PDFium's own
+  rounding (a 595.2 pt page at 300 dpi is 2481 px, not 2480). Decision and measurements in the repository:
+  `data_scripts/pdf_rasteriser_comparison.md` (pdftoppm, the training renderer, as reference; twelve geometries from a
+  74 × 105 mm slip to an A1 plan; `data_scripts/compare_pdf_rasterisers.py`). The AMČR label run is the user's.
+  alto-postprocess's `/process` logs `pypdfium2`/`charset_normalizer` when its reader used them (#6, 09-26 promise).
+* **Tool-to-tool drift** — `para-drift.reusable.yml` job `vendored-parity` (`vendored-from`, `vendored-ref`,
+  `vendored-tests`): clones the owner beside the caller and runs its pin tests, failing on a skip; llm-enrich passes
+  `vendored-from: atrium-nlp-enrich`.
+* **Release gate renames** — `atrium_openapi.py compare` accepts a changed `x-atrium-service` only when the new spec
+  declares `info.x-atrium-service-previous` equal to the baseline's id (`attach_openapi_contract(..., previous=)`);
+  canonical contract test asserts `service_previous`; revendored ×5.
+* **Release trust** — `workflow_lint.py`: hub refs `@v1` or `@<sha>  # v1` with a matching `hub-ref`,
+  `--require-sha-pins`, release assets attached before publishing (softprops v3.0.3 drafts non-prereleases first, so the
+  five `release.yml` already work with immutable releases). `scripts/pin_hub_reusables.py` (the sweep, `--check`),
+  `scripts/release_trust.py` (status, checks, immutable, tag-rules, branch-rules; `--dry-run`),
+  `docs/release_trust.md` (the order). `docs/docker_gha.md` updated (reusables, ref-pin box, known-open item 1).
+* **Tag drafts** for all five tools (pc `v1.10.0-beta`, alto `v1.7.0-beta`, translator `v1.3.1-beta`, llm `v0.9.0`,
+  nlp `v0.23.0`), to follow `release_trust.py immutable`.
+* **Next (the user's):** land the hub, move `v1`, land the five; `release_trust.py status` → `immutable` → `tag-rules`
+  → `branch-rules`; the tags; the pin sweep, then `--require-sha-pins`; the AMČR label run.
 
   Not pushed from here: files delivered in chat.

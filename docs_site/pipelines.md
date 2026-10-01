@@ -173,6 +173,21 @@ Dockerfile as its batch image, and every one exposes the same meta-contract:
 | `GET /health?deep=true` | 503 with detail when a dependency is degraded, or when draining                         |
 | `GET /ready`            | 503 `starting` → 200 `ready` → 503 `draining` on SIGTERM                                |
 
+One image per repository is the **production service** of its stage — the one a deployment
+runs; the repository's other images are the batch form of the same stage or research tools:
+
+| Stage                                     | Production image                              |
+|-------------------------------------------|-----------------------------------------------|
+| page categories                           | `ghcr.io/ufal/atrium-page-classification-api` |
+| OCR output and text files → scored lines  | `ghcr.io/ufal/atrium-alto-postprocess-api`    |
+| morphology, named entities, TEITOK        | `ghcr.io/ufal/atrium-nlp-enrich-api`          |
+| keywords from the controlled vocabularies | `ghcr.io/ufal/atrium-llm-enrich-api`          |
+| English metadata                          | `ghcr.io/ufal/atrium-translator-api`          |
+
+What each production image may contain is declared in its repository
+(`.github/production-image.json`) and checked on every push: the stage's own code and the
+shared contract modules, nothing else.
+
 The tool-specific endpoints for the two repositories documented here:
 
 | Tool                | Endpoints                                       | Upload cap                                             |

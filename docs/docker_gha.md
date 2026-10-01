@@ -46,21 +46,30 @@ that the copies are *identical*, not that they are *correct* — the largest can
 Seven reusable workflows are live, consumed by **38 caller jobs** (35 cross-repo + 3 hub-local):
 
 * **Docker Tool** (`docker-tool.reusable.yml`) — environment setup, linting, testing with coverage,
-multi-target Docker builds, GHCR publish, and the post-publish container scan.
+multi-target Docker builds, GHCR publish, and the post-publish container scan. Every `probe-targets` image
+is also checked for forbidden packages before it is published (#72): `forbidden-distributions` (default
+`["pymupdf"]`, AGPL) and `forbidden-modules` (default `[]`).
 * **Security** (`security.reusable.yml`) — version consistency check plus the periodic Trivy re-scan of the
 published image.
 * **Paradata Drift** (`para-drift.reusable.yml`) — canonical shared-file parity diff. Reads the canonical
-files via a `hub-ref` input (default `v1`) rather than a hardcoded branch.
+files via a `hub-ref` input (default `v1`) rather than a hardcoded branch. Its `vendored-parity` job (#72)
+does the same for a layer one tool owns and another vendors: with `vendored-from: <owner repo>` it clones
+the owner at `vendored-ref` (default `test`) beside the caller and runs the caller's
+`tests/test_vendored_*_parity.py`, failing on any skip — llm-enrich runs it against nlp-enrich's TEITOK
+reader.
 * **API Meta-Contract** (`api-contract.reusable.yml`) — the §4.1 service contract test.
 * **CodeQL** (`codeql.reusable.yml`) — Python, `build-mode: none`. The caller supplies the schedule (`on:`
 can only be declared by the caller) and **must** grant `security-events: write`.
 * **pre-commit** (`pre-commit.reusable.yml`) — blocking, with the hook-environment cache. The repo's own
 `.pre-commit-config.yaml` and `ruff.toml` still decide what runs.
 * **Workflow Policy Lint** (`workflow-lint.reusable.yml`) — runs the hub's `tools/ci/workflow_lint.py`
-against the caller's tree: parse, write-scoped SHA pins, caller/callee permissions and inputs, `@v1`
-refs, `timeout-minutes`, `concurrency`, a `permissions:` block on every job of a workflow with none at
-the top, the action-version floor (§2) and — since round 5 (#69) — the compose rule (§3.5). ⚠️ It has no
-published caller example, so its own caller shape is not policy-linted (roadmap **E4**).
+against the caller's tree: parse, write-scoped SHA pins, caller/callee permissions and inputs, hub refs
+(`@v1`, or since #72 a commit of it with a matching `hub-ref`), `timeout-minutes`, `concurrency`, a
+`permissions:` block on every job of a workflow with none at the top, the action-version floor (§2), the
+compose rule (§3.5, round 5, #69) and — since #72 — release assets attached before publishing. A second
+step, `tools/ci/image_closure.py`, checks the production image's first-party files against the repo's
+`.github/production-image.json` ([`k8s_deployment.md`](k8s_deployment.md#which-image-to-deploy--one-production-image-per-stage-72)).
+⚠️ It has no published caller example, so its own caller shape is not policy-linted (roadmap **E4**).
 * **Skill Branch Validation** (`skill-validate.reusable.yml`) — for `agent-skill` branches; no
 default-branch callers.
 * **Dependabot / GPU Inference / Scheduled Smoke / Release:** caller examples in
@@ -96,6 +105,13 @@ default-branch callers.
 > SHAs would destroy the property the architecture exists for — but it carries two obligations: **`v1` moves
 > only to a commit that passed `Hub Self-Check`**, and **every move is also recorded as an immutable
 > `v1.x.y` tag** so there is an audit trail.
+>
+> 🔁 **Commit pins (#72, #40).** AMČR's production gate needs a hub change to reach a tool repository only
+> through a reviewed change, so the trade-off above is being closed. The linter already accepts
+> `@<40-char sha>  # v1` beside `@v1`, and fails a pinned caller whose `hub-ref` differs from its pin;
+> `scripts/pin_hub_reusables.py --sha <v1 commit>` moves every caller of the five repos in one sweep, so a
+> hub fix still ships centrally — as one scripted pin move instead of a tag move. Once all five are
+> pinned, `--require-sha-pins` makes it mandatory. Order and settings: [`release_trust.md`](release_trust.md).
 >
 > ⚠️ `para-drift.reusable.yml` also reads the canonical `docs/templates/shared/*` files via its
 > **`hub-ref`** input (default `v1`). Keep it in step with the ref the workflow is called at — a caller
@@ -133,6 +149,10 @@ that is precisely what produces the phantom failures above.
 If a hub change genuinely needs validating against real callers before the tag moves, pin **one**
 caller to `@test` temporarily (and pass `hub-ref: test` so its parity check stays self-consistent),
 rather than moving `v1` to test it on all five at once.
+
+Once the callers are commit-pinned ([`release_trust.md`](release_trust.md)), step 4 is followed by the pin
+sweep, and moving `v1` no longer changes what any repo enforces: each caller reads the canonical files at
+its own pin.
 
 ### Localized Repository Workflows
 
@@ -176,7 +196,7 @@ bundle is built and before `softprops/action-gh-release`, and run the vendored
    bootstrap; an API error fails) → `compare --require-oasdiff` — a breaking change fails unless
    the major version went up (0.x → 1.0), and a removed reason code always fails;
 4. the two assets go into the same `files:` list as the bundle (an immutable release refuses
-   later uploads, #40).
+   later uploads, #40; `workflow_lint.py` fails a later upload, #72).
 
 `workflow_dispatch` is each release's dry run: the version guard compares CITATION.cff with
 `para_config.txt` only, every OpenAPI step runs against the latest release, and the publishing
@@ -424,23 +444,23 @@ umbrella wrapper is needed, is not planned. That reference should be removed.
 
 All ready-to-commit templates live in `docs/templates/workflows/`.
 
-| Workflow                 | What it does                                                                                              | Deployment state                                                                              | Lives as        |
-|--------------------------|-----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|-----------------|
-| **Docker Tool**          | Test + coverage + multi-target GHCR publish + scan + opt-in container health/`SIGTERM` smoke (issue #55). | ✅ All 5 repos (→ `docker-tool.reusable.yml@v1`).                                              | Reusable Bundle |
-| **Security**             | Version check + periodic Trivy re-scan.                                                                   | ✅ All 5 repos (→ `security.reusable.yml@v1`). ⚠️ No dispatch in TR/PC.                        | Reusable Bundle |
-| **Paradata Drift**       | Canonical shared-file parity diff vs hub.                                                                 | ✅ All 5 repos.                                                                                | Reusable Bundle |
-| **CodeQL**               | Static security/quality analysis for Python.                                                              | ✅ All 5 repos (→ `codeql.reusable.yml@v1`).                                                   | Reusable Bundle |
-| **pre-commit**           | Ruff + ShellCheck + whitespace, **blocking**.                                                             | ✅ All 5 repos (→ `pre-commit.reusable.yml@v1`).                                               | Reusable Bundle |
-| **API Meta-Contract**    | §4.1 service contract test; the committed spec (#32 r2).                                                  | ✅ All 5 repos (→ `api-contract.reusable.yml@v1`); `openapi-compat` job vs the latest release. | Reusable Bundle |
-| **Workflow Policy Lint** | Pins, `secrets:`, permissions, caller shape, action floor, compose names/`./data` (§3.5).                 | ✅ All 5 repos + hub. ⚠️ No caller example published.                                          | Reusable Bundle |
-| **Skill Validation**     | `agent-skill` branch contract checks.                                                                     | ✅ On the five `agent-skill` branches only.                                                    | Reusable Bundle |
-| **E2E Pipeline Smoke**   | Threads one document JSON through all 5 stages.                                                           | ✅ Hub, every 3rd day. `image-tag` (`latest` / `test`) and `e2e-doc` (five fixtures) inputs.   | Hub workflow    |
-| **Repo Suites Smoke**    | Runs each repo's `-m "not slow"` suite in parallel ("Cross-Repo Fast-Lane Matrix").                       | ✅ Hub, all five repos, timeouts and concurrency.                                              | Hub workflow    |
-| **Scheduled Smoke**      | The nightly lane: `-m slow`, or the whole suite with the optional stacks, per repo.                       | ✅ All 5 repos; `slow` marks exist in all five.                                                | Standalone      |
-| **GPU Inference**        | Real CUDA paths on a GPU runner.                                                                          | 🕐 3 repos, inert pending a runner (#40); no test needs a GPU yet.                            | Standalone      |
-| **Release**              | Version guard + release bundle/notes + `openapi.json` asset and breaking-change gate (#32 r2).            | ✅ All 5 repos; every bundle that ships is closure-checked.                                    | Standalone      |
-| **Shellcheck**           | Lints `*.sh`.                                                                                             | nlp-enrich's workflow; every repo's pre-commit hook covers its scripts.                       | Standalone      |
-| **Secret Scanning**      | Push protection + history sweep.                                                                          | ⛔ Dropped 2026-07-30 — unadopted; GitHub-native scanning covers it.                           | —               |
+| Workflow                 | What it does                                                                                                                              | Deployment state                                                                              | Lives as        |
+|--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|-----------------|
+| **Docker Tool**          | Test + coverage + multi-target GHCR publish + scan + opt-in container health/`SIGTERM` smoke (issue #55) + forbidden-package probe (#72). | ✅ All 5 repos (→ `docker-tool.reusable.yml@v1`).                                              | Reusable Bundle |
+| **Security**             | Version check + periodic Trivy re-scan.                                                                                                   | ✅ All 5 repos (→ `security.reusable.yml@v1`). ⚠️ No dispatch in TR/PC.                        | Reusable Bundle |
+| **Paradata Drift**       | Canonical shared-file parity diff vs hub; `vendored-parity` vs the owning tool repo (#72).                                                | ✅ All 5 repos; llm-enrich also against nlp-enrich.                                            | Reusable Bundle |
+| **CodeQL**               | Static security/quality analysis for Python.                                                                                              | ✅ All 5 repos (→ `codeql.reusable.yml@v1`).                                                   | Reusable Bundle |
+| **pre-commit**           | Ruff + ShellCheck + whitespace, **blocking**.                                                                                             | ✅ All 5 repos (→ `pre-commit.reusable.yml@v1`).                                               | Reusable Bundle |
+| **API Meta-Contract**    | §4.1 service contract test; the committed spec (#32 r2).                                                                                  | ✅ All 5 repos (→ `api-contract.reusable.yml@v1`); `openapi-compat` job vs the latest release. | Reusable Bundle |
+| **Workflow Policy Lint** | Pins, `secrets:`, permissions, caller shape, action floor, compose names/`./data` (§3.5), release assets, production-image closure (#72). | ✅ All 5 repos + hub. ⚠️ No caller example published.                                          | Reusable Bundle |
+| **Skill Validation**     | `agent-skill` branch contract checks.                                                                                                     | ✅ On the five `agent-skill` branches only.                                                    | Reusable Bundle |
+| **E2E Pipeline Smoke**   | Threads one document JSON through all 5 stages.                                                                                           | ✅ Hub, every 3rd day. `image-tag` (`latest` / `test`) and `e2e-doc` (five fixtures) inputs.   | Hub workflow    |
+| **Repo Suites Smoke**    | Runs each repo's `-m "not slow"` suite in parallel ("Cross-Repo Fast-Lane Matrix").                                                       | ✅ Hub, all five repos, timeouts and concurrency.                                              | Hub workflow    |
+| **Scheduled Smoke**      | The nightly lane: `-m slow`, or the whole suite with the optional stacks, per repo.                                                       | ✅ All 5 repos; `slow` marks exist in all five.                                                | Standalone      |
+| **GPU Inference**        | Real CUDA paths on a GPU runner.                                                                                                          | 🕐 3 repos, inert pending a runner (#40); no test needs a GPU yet.                            | Standalone      |
+| **Release**              | Version guard + release bundle/notes + `openapi.json` asset and breaking-change gate (#32 r2).                                            | ✅ All 5 repos; every bundle that ships is closure-checked.                                    | Standalone      |
+| **Shellcheck**           | Lints `*.sh`.                                                                                                                             | nlp-enrich's workflow; every repo's pre-commit hook covers its scripts.                       | Standalone      |
+| **Secret Scanning**      | Push protection + history sweep.                                                                                                          | ⛔ Dropped 2026-07-30 — unadopted; GitHub-native scanning covers it.                           | —               |
 
 ### Secret scanning — why it was dropped
 
@@ -468,12 +488,14 @@ Tracked in detail in [`docker_gha_roadmap.md`](docker_gha_roadmap.md) — since 
 an *executed* or *retired* line; summarised here so this reference is not read as "all green".
 
 1. **Branch protection, immutable releases, commit-pinned reusables** — [#40](https://github.com/ufal/atrium-project/issues/40)
-   (roadmap §3.5).
+   (roadmap §3.5). The tooling exists since #72 — `scripts/release_trust.py` for the settings,
+   `scripts/pin_hub_reusables.py` for the sweep; what remains is running them, in the order of
+   [`release_trust.md`](release_trust.md).
 2. **GPU runner** — deferred with #40; the GPU workflows, the `gpu` marker and `runner-labels` wait with it.
    No test needs a GPU today.
-3. **alto-postprocess's weight pin needs two values** — `FASTTEXT_REVISION` and `FASTTEXT_SHA256` in its
-   `Dockerfile` ship empty and the build fails closed until they are filled from the Hub (roadmap **H3**,
-   round 5).
+3. ~~**alto-postprocess's weight pin needs two values**~~ — filled on 2026-09-30 (alto `6804032`:
+   `FASTTEXT_REVISION` `3af127d…`, `FASTTEXT_SHA256` `8ded574…`); the build still fails closed if either is
+   overridden to empty (roadmap **H3**, round 5).
 4. **Supply chain after the pilot** — no lockfiles or hash pinning (**H1**), unpinned tooling installs
    (**H2**'s tooling half), no `docker`/`pre-commit` dependabot in the tool repos (**H6**), no `pip-audit`
    gate (**H7**): each retired from #69, for its own issue if wanted.

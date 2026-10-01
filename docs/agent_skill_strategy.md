@@ -348,6 +348,10 @@ none is the bootstrap, which passes; an API error fails) → `compare --require-
 (oasdiff `v1.32.1`). **A breaking change fails unless the major version went up** — 0.x
 included, so a 0.x tool needs 1.0 — and **a removed reason code, a changed
 `x-atrium-service` or a record schema change without a `schema_version` major always fail**.
+The one exception is a declared rename (#72): a changed `x-atrium-service` passes when the new
+spec's `info.x-atrium-service-previous` equals the baseline's id, which
+`attach_openapi_contract(app, SERVICE, previous="<old id>")` writes and the repo's
+`tests/openapi_contract_data.py` entry names as `service_previous`.
 The assets are attached in the step that creates the release (an immutable release refuses
 later uploads, #40), and `workflow_dispatch` is the dry run that proves the gate before a tag is
 spent. The gate runs the vendored script, not a cross-repo `uses:` (docker_gha_roadmap §3.3).

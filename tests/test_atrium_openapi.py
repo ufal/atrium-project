@@ -104,7 +104,41 @@ def test_a_removed_or_narrowed_reason_code_always_fails():
 def test_a_changed_service_id_always_fails():
     rev = _spec("2.0.0")
     rev["info"]["x-atrium-service"] = "atrium-other"
-    assert compare(_spec(), rev, "2.0.0")[0] == 1
+    code, lines = compare(_spec(), rev, "2.0.0")
+    assert code == 1
+    assert any("x-atrium-service-previous: 'atrium-test'" in line for line in lines), "the hint names the fix"
+
+
+@pytest.mark.parametrize("version", ["1.3.0", "2.0.0"])
+def test_a_declared_rename_passes_at_any_version(version):
+    """atrium-project#72 (alto#56): the rename is declared by the new spec, not implied by a
+    major bump; the renamed release is still held to every other rule."""
+    rev = _spec(version)
+    rev["info"]["x-atrium-service"] = "atrium-ocr-postprocess"
+    rev["info"]["x-atrium-service-previous"] = "atrium-test"
+    code, lines = compare(_spec(), rev, version)
+    assert code == 0 and any("Declared rename" in line for line in lines), lines
+
+    broken = _spec(version, props={"a": {"type": "string"}})
+    broken["info"].update(rev["info"])
+    assert compare(_spec(), broken, version)[0] == (0 if version == "2.0.0" else 1), "other rules still apply"
+
+
+def test_a_rename_declaring_another_id_fails():
+    rev = _spec("2.0.0")
+    rev["info"]["x-atrium-service"] = "atrium-ocr-postprocess"
+    rev["info"]["x-atrium-service-previous"] = "atrium-somebody-else"
+    code, lines = compare(_spec(), rev, "2.0.0")
+    assert code == 1 and any("not the baseline's id" in line for line in lines)
+
+
+def test_a_kept_declaration_is_harmless_once_the_baseline_carries_the_new_id():
+    base = _spec("2.0.0")
+    base["info"].update({"x-atrium-service": "atrium-ocr-postprocess", "x-atrium-service-previous": "atrium-test"})
+    rev = _spec("2.1.0")
+    rev["info"].update(base["info"])
+    rev["info"]["version"] = "2.1.0"
+    assert compare(base, rev, "2.1.0")[0] == 0
 
 
 def test_the_record_schema_counts_by_its_major():

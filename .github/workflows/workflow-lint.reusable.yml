@@ -96,3 +96,14 @@ jobs:
           python hub-repo/tools/ci/workflow_lint.py \
             --repo-root tool-repo \
             --hub-root hub-repo $OFFLINE
+
+      # atrium-project#72 A.3: a production image holds its stage and the approved shared
+      # components, nothing else. The caller's .github/production-image.json lists the stage's
+      # own code (`core`), copies of another repository's layer (`vendored`, each pinned by a
+      # tests/test_vendored_*.py) and code a tracked move still has to take out (`moving`);
+      # tools/ci/image_closure.py walks everything the entrypoint can run and fails on a file
+      # outside that list, a stale entry, or a missing module. The hub-canonical files of
+      # MANIFEST.json count as approved. A repository without the declaration (the hub) passes
+      # with a notice. It checks the committed tree, so no build is needed.
+      - name: Check the production image's first-party closure
+        run: python hub-repo/tools/ci/image_closure.py --repo-root tool-repo --hub-root hub-repo
