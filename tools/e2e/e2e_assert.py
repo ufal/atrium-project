@@ -35,6 +35,11 @@ with tokens, and contain every id the record points into:
 ``pages[].teitok_surface`` → ``<surface id>`` and ``entities[]``/``lines[].teitok_ref``
 → an element ``id``. See `assert_teitok()`.
 
+With ``--seed``, the chain started from an AMČR seed (atrium-project#71), and every stage
+must have kept its identity: the seed's ``doc_id``, ``source.sha512``, file name and media type,
+with ``source.origin`` added by the program that reads the source and by no other. See
+`assert_seed_identity()`.
+
 On the born-digital branch, ``--expect-layout`` asks for the structure the
 converter recovers from a DOCX or a PDF with a layout (llm-enrich#18): a heading,
 page furniture or a footnote in ``lines[].style``, and tables whose cells join back
@@ -44,7 +49,7 @@ Usage:
     python tools/e2e/e2e_assert.py work/doc_json/5_llm.json \\
         --llm-stage-ran true \\
         --stages work/doc_json/1_pc.json ... work/doc_json/5_llm.json \\
-        --teitok-dir work/nlp_out/TEITOK
+        --teitok-dir work/nlp_out/TEITOK --seed work/seed.json
 """
 
 import argparse
@@ -64,8 +69,10 @@ if str(_SHARED_DIR) not in sys.path:
 
 from atrium_document import (  # noqa: E402  (needs the path above)
     BLOCK_OWNERS,
+    SEED_SOURCE_REQUIRED,
     resolve_originator,
     validate_document,
+    validate_seed,
 )
 
 
@@ -195,6 +202,74 @@ def assert_doc_id_stable(stage_paths, final_doc, final_path):
     print(f"✅ doc_id: {distinct[0]!r} unchanged across {len(seen)} stage record(s)")
 
 
+def _programs(doc):
+    return {str(c.get("program")) for c in ((doc.get("provenance") or {}).get("contributors") or [])}
+
+
+def assert_seed_identity(seed_path, stage_paths, final_doc, final_path):
+    """The AMČR seed's identity survives the whole chain (atrium-project#71).
+
+    AMČR writes `doc_id` (its file id), `source.sha512` (the Fedora digest), the file name and the
+    media type before the first stage, and leaves `source.origin` to the tool that reads the
+    source, because the origin decides who writes the page layout. So, after every stage:
+
+      * `doc_id` and the three `source` fields are the seed's, unchanged;
+      * the stage that first records an `origin` is one in which the program that origin
+        authorises (`resolve_originator`) contributed; a stage that only passes the record on
+        must never be the one that names it.
+
+    The seed's `doc_id` deliberately differs from every file name in the chain (make_seed.py), so
+    a stage that keys the record off its own input fails here, not in production.
+    """
+    seed = _load(seed_path)
+    try:
+        validate_seed(seed)
+    except RuntimeError as exc:
+        raise SystemExit(f"❌ cannot validate the seed {seed_path}: {exc}") from exc
+    except Exception as exc:
+        raise AssertionError(f"❌ {seed_path} is not a valid AMČR seed: {exc}") from exc
+
+    expected = {"doc_id": seed["doc_id"]}
+    expected.update({f"source.{k}": seed["source"][k] for k in SEED_SOURCE_REQUIRED})
+    paths = list(dict.fromkeys([*stage_paths, final_path]))
+    for path in paths:
+        doc = final_doc if path == final_path else _load(path)
+        got = {"doc_id": doc.get("doc_id")}
+        got.update({f"source.{k}": (doc.get("source") or {}).get(k) for k in SEED_SOURCE_REQUIRED})
+        changed = {k: (expected[k], got[k]) for k in expected if got[k] != expected[k]}
+        assert not changed, (
+            f"❌ {path} changed the seed's identity: "
+            + "; ".join(f"{k}: seed {v[0]!r}, record {v[1]!r}" for k, v in sorted(changed.items()))
+            + ". doc_id is inherited and source is first-writer-wins: no stage may rewrite either."
+        )
+
+    origin = (final_doc.get("source") or {}).get("origin")
+    assert origin, (
+        f"❌ {final_path} carries no source.origin: no stage recorded how the text was obtained, so "
+        f"nothing authorises the positional plane"
+    )
+    originator = resolve_originator(origin)
+    previous = set()
+    for path in paths:
+        doc = final_doc if path == final_path else _load(path)
+        programs = _programs(doc)
+        if (doc.get("source") or {}).get("origin"):
+            new = programs - previous
+            if originator is None:
+                print(f"⚠️  source.origin {origin!r} matches no known originator; who wrote it is not checked")
+            else:
+                assert originator in new, (
+                    f"❌ source.origin {origin!r} first appears in {path}, written by {sorted(new)}, but it "
+                    f"authorises {originator!r}: only the tool that reads the source may record the origin"
+                )
+            break
+        previous = programs
+    print(
+        f"✅ seed: doc_id {seed['doc_id']!r}, sha512, file name and media type kept across "
+        f"{len(paths)} record(s); origin {origin!r} recorded by {originator or 'an unknown originator'}"
+    )
+
+
 # Older TEITOK exports (nlp-enrich format 1) close <name> with </n>: not well-formed XML.
 _NAME_CLOSE = re.compile(r"</n\s*>")
 _PB_ID = re.compile(r"pb-(\d+)")
@@ -255,10 +330,17 @@ def assert_teitok(doc, teitok_dir):
     mismatch there is reported but does not fail.
     """
     doc_id = doc.get("doc_id")
-    matches = sorted(Path(teitok_dir).rglob(f"{doc_id}.teitok.xml"))
+    # The file the record names first: nlp-enrich names it after its own input, which differs
+    # from doc_id whenever the record was seeded by an archive (atrium-project#71).
+    names = [Path(str((doc.get("derived_from") or {}).get("teitok") or "")).name, f"{doc_id}.teitok.xml"]
+    matches = []
+    for name in (n for n in names if n):
+        matches = sorted(Path(teitok_dir).rglob(name))
+        if matches:
+            break
     assert matches, (
-        f"❌ no {doc_id}.teitok.xml under {teitok_dir}: nlp-enrich ran with SAVE_TEITOK=true "
-        f"but wrote no TEITOK for this document"
+        f"❌ no {' or '.join(n for n in names if n)} under {teitok_dir}: nlp-enrich ran with "
+        f"SAVE_TEITOK=true but wrote no TEITOK for this document"
     )
     path = matches[0]
     root = _parse_teitok(path)
@@ -475,7 +557,13 @@ def assert_layout(doc):
 
 
 def assert_document_contract(
-    json_path, llm_stage_ran="auto", stage_paths=(), expect_needs_ocr=False, teitok_dir=None, expect_layout=False
+    json_path,
+    llm_stage_ran="auto",
+    stage_paths=(),
+    expect_needs_ocr=False,
+    teitok_dir=None,
+    expect_layout=False,
+    seed=None,
 ):
     doc = _load(json_path)
 
@@ -483,6 +571,8 @@ def assert_document_contract(
     #    not validate is broken whatever else it contains (D4).
     assert_schema_valid(doc, json_path)
     assert_doc_id_stable(list(stage_paths), doc, json_path)
+    if seed:
+        assert_seed_identity(seed, list(stage_paths), doc, json_path)
 
     # 0b. W10: which contract applies is derived from the RECORD, not from a flag.
     #     `source.origin` already names the originator, and `resolve_originator()`
@@ -656,6 +746,13 @@ def main(argv=None):
         "must exist, be TEI with tokens, and contain every <surface id> / teitok_ref the "
         "record points at.",
     )
+    parser.add_argument(
+        "--seed",
+        default=None,
+        metavar="SEED",
+        help="the AMČR seed the chain started from (tools/e2e/make_seed.py): every stage must keep its "
+        "doc_id, source.sha512, file name and media type, and only the reading tool may add source.origin.",
+    )
     args = parser.parse_args(argv)
 
     assert_document_contract(
@@ -665,6 +762,7 @@ def main(argv=None):
         expect_needs_ocr=args.expect_needs_ocr,
         teitok_dir=args.teitok_dir,
         expect_layout=args.expect_layout,
+        seed=args.seed,
     )
     return 0
 

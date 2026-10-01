@@ -239,7 +239,7 @@ Written under `[OUTPUT] FOLDER_RESULTS` (default `./result`).
 | `model/gpu_profile.json`                  | measured VRAM profile used by `--parallel` to group models                                                                                                                      |
 | `{stamp}_page-classification.json`        | paradata — tool version, run id, resolved licence, config, statistics, skipped files                                                                                            |
 | `<doc_id>.document.json`                  | the ATRIUM record, carrying `page_categories`, `pages[].category`, `pages[].category_confidence`                                                                                |
-| `ro-crate-metadata.json`                  | RO-Crate 1.1 JSON-LD, from `atrium_rocrate.py`'s own CLI                                                                                                                        |
+| `ro-crate-metadata.json`                  | RO-Crate 1.2 JSON-LD (Process Run Crate 0.5), from `atrium_rocrate.py`'s own CLI                                                                                                |
 
 !!! info "RO-Crate export"
     `atrium_rocrate.py`, vendored from the hub, is a deterministic exporter — `@graph`

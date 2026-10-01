@@ -315,9 +315,10 @@ against the **published** schema (`atrium_openapi.validate_response`). page-clas
   opens a sent record through `parse_record_part()` (§4.4 `invalid_record`) and names it
   `document_json`, in and out (alto-postprocess keeps `document_record` / `document_json_out`
   as deprecated aliases);
-- every primary response declares an optional `paradata: CreateAction` (#67 §E): absent or null
-  until #67 R2 returns it; nlp-enrich's pipeline-run record fills it today, as a transitional
-  shape without the action's own members.
+- every primary response declares an optional `paradata: CreateAction` (#67 §E), and since
+  atrium-project#71 every successful response fills it: the call's Process Run Crate
+  `CreateAction`, from `atrium_rocrate.create_action()`, whose `@id` is the `run_uuid` the call
+  stamped into the record it returned (`docs/rocrate_export.md` §5). An error body carries none.
 
 **Declared errors.** `FastAPI(responses=error_responses(422, 500), generate_unique_id_function=
 operation_id, root_path_in_servers=False)` and `attach_openapi_contract(app, SERVICE)` in every

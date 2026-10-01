@@ -48,5 +48,29 @@ without the key means "not recorded", which is what every record before this dat
   Notes for the same `limit` and `effect` are merged (counts add up).
 - `merge_paradata_files` and `merge_run_paradata` carry every stage's notes into the merged
   record's `limits_applied`, each tagged with the stage's `program`.
-- Until #67 R2 returns paradata from every service, the same list is also echoed in each
-  service response (`limits_applied` in JSON, the `X-Atrium-Limits-Applied` header otherwise).
+- Every service response also echoes the same list (`limits_applied` in JSON, the
+  `X-Atrium-Limits-Applied` header otherwise), next to the run's `paradata` (below).
+
+### `run_uuid` and `run_agent`, and the service mode (2026-10-01, atrium-project#71)
+Two more optional fields, so no bump either. A record written before this date has neither.
+
+| Field       | Meaning                                                                                                                                                                                                             |
+|-------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `run_uuid`  | the run's stable id, `urn:uuid:` and a random UUID, minted when the logger starts. `run_id` has one-second resolution, so two workers started together share one; they never share a `run_uuid`                     |
+| `run_agent` | `ATRIUM_RUN_AGENT`: the IRI (a ROR id, say) of the organisation operating the deployment; `""` when unset. It is the `agent` of the run's CreateAction. Never a processing account, which only reads and calls back |
+
+- `run_uuid` is what ties the three records of a run together. It is stamped into the document
+  record (`DocumentRecord(run_uuid=logger.run_uuid)`, on every block and the contributor entry),
+  and it is the `@id` of the run's RO-Crate `CreateAction`
+  (`atrium_rocrate.create_action(logger.record)`). The CLI state file keeps it across a bash
+  stage's calls, and a step of such a stage that writes the record reads the run from that file,
+  `ParadataLogger.from_state_file(state)` (its `run_id`, `run_uuid` and `paradata_ref`).
+  `merge_paradata_files` and `merge_run_paradata` carry each step's and stage's
+  `run_uuid`, and a merged record mints its own. Merged stages also carry their `repository`,
+  `tool_version`, `docker_image` and `start_time`/`end_time`, so a run crate describes each stage
+  by itself.
+- **Service mode.** A service creates its logger with `paradata_dir=None`: nothing is written to
+  the container's filesystem, `finalize()` returns `""`, `logger.record` is the finalized record,
+  and `logger.paradata_ref` is the `run_uuid` instead of a file path. The service returns the run
+  as `paradata`, a Process Run Crate `CreateAction` built from that record
+  ([`rocrate_export.md`](rocrate_export.md) §5), with every successful response.

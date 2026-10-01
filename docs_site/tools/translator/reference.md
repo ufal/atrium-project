@@ -54,7 +54,7 @@ CI step sees a run that translated nothing as a failure.
 | `eval/langid_report.py`  | Per-block report: FastText's guesses beside the resolved language        | `--xpaths`, `--languages`                               |
 | `eval/lindat_probe.py`   | Sends one text N times to the live endpoint, prints the good/bad pattern | `--n`, `--text`, `--model`, `--pause`                   |
 | `check_version.py`       | Release gate: tag == `CITATION.cff` == `para_config.txt`                 |                                                         |
-| `atrium_rocrate.py`      | RO-Crate 1.1 export, its own CLI                                         | `--out-dir`                                             |
+| `atrium_rocrate.py`      | RO-Crate 1.2 export and the service's CreateAction, its own CLI          | `--out-dir`                                             |
 | `service/healthcheck.py` | Docker healthcheck; stdlib only, always probes loopback                  |                                                         |
 
 ## Configuration — `config.txt`

@@ -426,8 +426,9 @@ python atrium_rocrate.py --document CTX000000003.document.json --out-dir crate/
 python atrium_rocrate.py --run 1.document.json 2.document.json --paradata run.json --out-dir crate/
 ```
 
-**Outputs.** `ro-crate-metadata.json` — RO-Crate 1.1, sorted and byte-stable, written atomically.
-A run crate holds one sub-crate per document and also declares the Process Run Crate profile.
+**Outputs.** `ro-crate-metadata.json` — RO-Crate 1.2 with the Process Run Crate 0.5 profile,
+sorted and byte-stable, written atomically. A run crate holds one sub-crate per document;
+`--fragment` writes a record's entities without a root, for a crate someone else owns.
 
 **What the user actually gets.** A catalogue-readable description with a separate creator and date
 for every block, so "who classified the pages" and "who translated them" have separate answers,

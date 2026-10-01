@@ -37,7 +37,7 @@ computed from another config file, a class instance's default parameter with no
 THE SHARED-CORE FLOOR (test_the_shared_core_is_in_the_scan). Three modules are
 para-drift byte-identical across all five repos: atrium_paradata.py,
 service/atrium_service.py and service/healthcheck.py. Scanning only those plus the
-entrypoint's __main__ block yields the SAME thirteen names in every repo. That set is
+entrypoint's __main__ block yields the SAME fourteen names in every repo. That set is
 asserted literally, byte-identically, in every vendored copy of this file — it is the
 check that catches a broken scanner (a bad _SKIP_DIRS entry, a regex that stopped
 matching, a repo that lost service/) rather than a genuinely clean repo, because a
@@ -93,6 +93,7 @@ _SHARED_CORE = {
     "ATRIUM_RUNNER_REPO",
     "ATRIUM_RUNNER_REF",
     "ATRIUM_REQUEST_ID",
+    "ATRIUM_RUN_AGENT",
     "ALLOWED_ORIGINS",
     "MAX_UPLOAD_MB",
     "MAX_UPLOAD_BYTES",

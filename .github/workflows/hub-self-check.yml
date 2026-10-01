@@ -11,7 +11,7 @@
 # of other files, a SHA-pinning pass missed one of eleven occurrences, and
 # test_para_licenses.py sat here with 36 passing tests that no workflow invoked.
 #
-# Both jobs read only, need no secrets, and finish in well under a minute.
+# Every job reads only, needs no secrets, and finishes in well under a minute.
 
 name: Hub Self-Check
 
@@ -132,3 +132,34 @@ jobs:
       - name: Run canonical shared-module tests
         working-directory: docs/templates/shared
         run: python -m pytest . -v
+
+  # atrium-project#71: the crates atrium_rocrate.py writes, checked by the RO-Crate validator
+  # against the pair agreed with AMČR (RO-Crate 1.2, Process Run Crate 0.5), each profile in its
+  # own run. The validator lives here and in the E2E only, never in a tool repo
+  # (tools/ci/requirements-rocrate.txt says why); the module's --selftest stays the structural
+  # check para-drift runs everywhere.
+  rocrate-validate:
+    name: Validate the RO-Crates (RO-Crate 1.2, Process Run Crate 0.5)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: tools/ci/requirements-rocrate.txt
+
+      - name: Install the RO-Crate validator
+        run: pip install -r tools/ci/requirements-rocrate.txt
+
+      # The sample document crate, run crate, record fragment and service CreateAction, the
+      # last two under a stub root. The profile is gated at SHOULD: the builder must meet all of
+      # Process Run Crate, not only its two MUSTs.
+      - name: Validate the module's sample crates
+        run: python tools/ci/rocrate_check.py --samples "$RUNNER_TEMP/crates"

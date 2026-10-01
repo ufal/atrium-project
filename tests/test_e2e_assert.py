@@ -534,3 +534,86 @@ def test_cli_accepts_expect_layout(tmp_path):
     """The shape e2e-digital-smoke.yml's D1d/D1e stages pass."""
     final = _write(tmp_path, "rich.json", _digital_record())
     assert e2e_assert.main([final, "--llm-stage-ran", "false", "--expect-layout"]) == 0
+
+
+# ── the AMČR seed (atrium-project#71) ──────────────────────────────────────────
+
+_SEED_SOURCE = {"sha512": "e" * 128, "filename": "zprava_1923.pdf", "media_type": "application/pdf"}
+
+
+def _seeded_chain(tmp_path, record):
+    """seed -> pc (no origin yet) -> alto (reads the source: origin) -> final, as the pilot runs it."""
+    seed = {"schema_version": "1.0", "record_type": "atrium-document", "doc_id": "AMCR-F-1", "source": _SEED_SOURCE}
+    contributors = record["provenance"]["contributors"]
+    stages = []
+    for index, upto in enumerate((1, 2), start=1):
+        stage = copy.deepcopy(record)
+        stage["doc_id"] = seed["doc_id"]
+        stage["source"] = {**_SEED_SOURCE, **({"origin": "ABBYY-ALTO"} if upto >= 2 else {})}
+        stage["provenance"]["contributors"] = contributors[:upto]
+        stages.append(stage)
+    final = copy.deepcopy(record)
+    final["doc_id"] = seed["doc_id"]
+    final["source"] = {**_SEED_SOURCE, "origin": "ABBYY-ALTO"}
+    return (
+        _write(tmp_path, "0_seed.json", seed),
+        [_write(tmp_path, f"{i}_stage.json", s) for i, s in enumerate(stages, start=1)],
+        final,
+    )
+
+
+def test_a_seeded_chain_that_keeps_the_seed_passes(tmp_path, record, capsys):
+    seed, stages, final = _seeded_chain(tmp_path, record)
+    final_path = _write(tmp_path, "5_llm.json", final)
+    e2e_assert.assert_document_contract(final_path, llm_stage_ran=True, stage_paths=stages, seed=seed)
+    assert "seed: doc_id 'AMCR-F-1'" in capsys.readouterr().out
+
+
+def test_a_stage_that_rewrites_the_digest_fails(tmp_path, record):
+    seed, stages, final = _seeded_chain(tmp_path, record)
+    final["source"]["sha512"] = "d" * 128
+    final_path = _write(tmp_path, "5_llm.json", final)
+    with pytest.raises(AssertionError, match="sha512"):
+        e2e_assert.assert_document_contract(final_path, llm_stage_ran=True, stage_paths=stages, seed=seed)
+
+
+def test_a_chain_rekeyed_off_its_file_names_fails_even_when_consistent(tmp_path, record):
+    """Every stage agreeing on doc_id is not enough: it must be the SEED's."""
+    seed, _, final = _seeded_chain(tmp_path, record)
+    final["doc_id"] = "CTX000000001"
+    final_path = _write(tmp_path, "5_llm.json", final)
+    with pytest.raises(AssertionError, match="doc_id"):
+        e2e_assert.assert_document_contract(final_path, llm_stage_ran=True, stage_paths=[final_path], seed=seed)
+
+
+def test_an_origin_recorded_by_a_stage_that_does_not_read_the_source_fails(tmp_path, record):
+    seed, stages, final = _seeded_chain(tmp_path, record)
+    first = json.loads(Path(stages[0]).read_text(encoding="utf-8"))
+    first["source"]["origin"] = "ABBYY-ALTO"  # page-classification's stage names the origin
+    Path(stages[0]).write_text(json.dumps(first), encoding="utf-8")
+    final_path = _write(tmp_path, "5_llm.json", final)
+    with pytest.raises(AssertionError, match="only the tool that reads the source"):
+        e2e_assert.assert_document_contract(final_path, llm_stage_ran=True, stage_paths=stages, seed=seed)
+
+
+def test_a_seed_that_names_the_origin_is_refused(tmp_path, record):
+    seed, stages, final = _seeded_chain(tmp_path, record)
+    bad = json.loads(Path(seed).read_text(encoding="utf-8"))
+    bad["source"]["origin"] = "ABBYY-ALTO"
+    Path(seed).write_text(json.dumps(bad), encoding="utf-8")
+    final_path = _write(tmp_path, "5_llm.json", final)
+    with pytest.raises(AssertionError, match="not a valid AMČR seed"):
+        e2e_assert.assert_document_contract(final_path, llm_stage_ran=True, stage_paths=stages, seed=seed)
+
+
+def test_teitok_is_found_through_derived_from_when_doc_id_is_the_seeds(tmp_path, record):
+    """nlp-enrich names its TEITOK after its own input; a seeded record's doc_id is AMČR's."""
+    teitok_dir = _teitok(tmp_path)
+    record["doc_id"] = "AMCR-F-1"
+    e2e_assert.assert_teitok(record, teitok_dir)
+
+
+def test_cli_accepts_seed(tmp_path, record):
+    seed, stages, final = _seeded_chain(tmp_path, record)
+    final_path = _write(tmp_path, "5_llm.json", final)
+    assert e2e_assert.main([final_path, "--llm-stage-ran", "true", "--stages", *stages, "--seed", seed]) == 0

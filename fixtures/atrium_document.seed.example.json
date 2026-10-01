@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0",
+  "record_type": "atrium-document",
+  "doc_id": "AMCR-F-CTX000000001",
+  "source": {
+    "sha512": "bae39af8eb1c8d0d65c521a5ea580ce74de62b1290c32573ec1639aeac9fe73b81f5e70865c7f8d36c0732f18701c037a844db6d6d62ca032ed52ddf9a7df67d",
+    "filename": "CTX000000001.alto.xml",
+    "media_type": "application/alto+xml"
+  }
+}

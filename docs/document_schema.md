@@ -64,6 +64,55 @@ block changes), and needs no shared volume or orchestrator.
 6. **Unknown or newer blocks are preserved** verbatim; a newer MAJOR `schema_version` is refused
    with the same guard as `load_paradata()`.
 
+## The AMČR seed
+
+In the AMČR pilot the archive writes the record before the first stage (atrium-project#71). That
+record is a **seed**: the document's identity and nothing a tool writes.
+
+| Key                 | Value                                                 | Required |
+|---------------------|-------------------------------------------------------|----------|
+| `doc_id`            | the AMČR file id                                      | yes      |
+| `source.sha512`     | the Fedora digest of the original, lower-case hex     | yes      |
+| `source.filename`   | the original's file name in the archive               | yes      |
+| `source.media_type` | the original's media type, as the archive detected it | yes      |
+| `schema_version`    | `"1.0"`                                               | no       |
+| `record_type`       | `"atrium-document"`                                   | no       |
+
+Nothing else, and in particular **no `source.origin`**: the origin decides which tool writes the
+page layout (see [Originators](#originators-issue-18-1a)), so it belongs to the tool that reads
+the source. `python atrium_document.py seed-schema` prints the seed's JSON Schema; it is built from
+this schema's own subschemas, so the two cannot drift. A worked example is
+[`fixtures/atrium_document.seed.example.json`](../fixtures/atrium_document.seed.example.json).
+
+**A seed is valid input; what a tool emits is a full record.** A seed has neither `provenance`
+nor `assembled`, so it fails the full schema, and it should not pass for one. Every tool's gate on
+the record it was HANDED calls `validate_baseline()`, which checks a seed against the seed profile
+(`is_seed()`, `validate_seed()`) and anything else in full. The gate on the record a tool WRITES
+stays `validate_document()`.
+
+**The keep rule.** `doc_id`, `sha512`, the file name and the media type are never changed:
+
+* `doc_id` is inherited (accretion rule 1): a tool that derives another id from the file it reads
+  keeps the seed's and says so in a NOTE;
+* `source` is first-writer-wins: the reading tool **adds** `origin`, and nothing else changes.
+  A tool reading an OCR output, a page split out of the original or a temporary upload sees
+  another file name and media type than the archive's. That difference is reported as a NOTE and
+  never refused, even by a strict writer;
+* no `sha256` joins the seed's `sha512`. A tool's `sha256` is the digest of what it read, which
+  on the AMČR path is a derivative (`atr/alto-xml` is derived from the OCR of the original), and
+  one `source` must not name two files by digest. `set_source()` drops it with a NOTE;
+* a different `sha512` or `origin` is still the conflict it always was.
+
+**The run's stable id.** Every block stamp and contributor entry a run writes carries the run's
+`run_uuid` (`urn:uuid:…`, minted by `atrium_paradata`). It is also the `@id` of the run's RO-Crate
+`CreateAction`, which every service returns as `paradata`
+([`rocrate_export.md`](rocrate_export.md) §5). `run_id` stays: it names the paradata file, and a
+record written before atrium-project#71 has only that.
+
+The seeded path is the integration baseline of the pilot: the E2E smokes start from a seed
+(`tools/e2e/make_seed.py`) whose `doc_id` matches no file name, and `e2e_assert.py --seed` fails
+any stage that changes the four values or names the origin without reading the source.
+
 ## Reference discipline (non-negotiable)
 
 Only two classes of reference may appear: the **original input** (`source`, keyed by `doc_id` +
@@ -232,9 +281,10 @@ from atrium_document import DocumentRecord
 with DocumentRecord.open(
     doc_id,
     "llm-enrich",
-    baseline=args.document_json,  # may be None — rule 3
+    baseline=args.document_json,  # may be None — rule 3; may be an AMČR seed
     run_id=logger.run_id,
-    paradata_ref=paradata_path,
+    run_uuid=logger.run_uuid,  # the run's stable id (atrium-project#71)
+    paradata_ref=logger.paradata_ref,
 ) as doc:
     doc.set_block("enrichment", {"items": items})
     doc.add_derived_from("enriched", f"{doc_id}_enriched.json")
@@ -399,9 +449,12 @@ that repository's own copy.
 
 ### Post-freeze register
 
-| Pointer                                                      | Change                                                                       | Issue                     | Changelog                                                                             |
-|--------------------------------------------------------------|------------------------------------------------------------------------------|---------------------------|---------------------------------------------------------------------------------------|
-| `/properties/lines/items/properties/style/properties/region` | added: closed enum `page_header` / `page_footer` / `footnote`; absent = body | ufal/atrium-llm-enrich#18 | [2026-09-25](#changelog--2026-09-25-llm-enrich18-linesstyleregion-cdla-permissive-20) |
+| Pointer                                                                            | Change                                                                       | Issue                     | Changelog                                                                             |
+|------------------------------------------------------------------------------------|------------------------------------------------------------------------------|---------------------------|---------------------------------------------------------------------------------------|
+| `/properties/lines/items/properties/style/properties/region`                       | added: closed enum `page_header` / `page_footer` / `footnote`; absent = body | ufal/atrium-llm-enrich#18 | [2026-09-25](#changelog--2026-09-25-llm-enrich18-linesstyleregion-cdla-permissive-20) |
+| `/properties/source/properties/sha512`                                             | added: optional, `^[a-f0-9]{128}$`, the archive's digest of the original     | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)           |
+| `/properties/provenance/properties/contributors/items/properties/run_uuid`         | added: optional, `urn:uuid:` + a lower-case UUID                             | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)           |
+| `/properties/assembled/properties/blocks/additionalProperties/properties/run_uuid` | added: optional, the same pattern                                            | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)           |
 
 Not registered, because it does not constrain: the `lines[].style` description correction of the
 same pass.
@@ -1005,3 +1058,29 @@ and the `v1` move follow, hub first (para-drift diffs every tool repo against th
   categories and keywords into the TEITOK header; no record field changes.
 * Verified: `test_schema_freeze.py` passes with the description edits (they are annotations) and
   still fails on a constraining edit.
+
+## Changelog — 2026-10-01 (#71: the AMČR seed, `source.sha512`, `run_uuid`)
+
+**Three additive nodes, registered; no `SCHEMA_VERSION` bump, `doc-schema-v1` stays the
+reference.** Every record written before this date still validates, and so does every record
+written after it under the frozen schema (`tests/test_schema_freeze_records.py`). Canonical files
+change, so the re-vendor and the `v1` move follow, hub first.
+
+* **`source.sha512`** (optional, lower-case hex): the archive's digest of the original, written by
+  the seed and carried unchanged.
+* **`run_uuid`** on `provenance.contributors[]` and on each `assembled.blocks` stamp (optional,
+  `urn:uuid:…`): the run's stable id, the `@id` of its CreateAction. `DocumentRecord(run_uuid=…)`
+  writes it, and refuses a malformed one before anything is written.
+* **[The AMČR seed](#the-amčr-seed)**: its definition, the keep rule, `seed_schema()` /
+  `validate_seed()` / `validate_baseline()` / `is_seed()`, and the CLI `seed-schema`. The tools'
+  inherited-baseline gates move to `validate_baseline()`: they used to report a seed as an
+  invalid baseline and demote their own output check to a warning.
+* **`set_source()`**: a different `filename` or `media_type` from a later writer is a NOTE, never
+  a WARNING, and never refused under `strict`. On the seeded path they differ on nearly every
+  call, and digital-convert, which runs strict, refused the seed outright.
+* Producer shape added to `tests/test_document_required.py`: a seeded record after its reading
+  stage. Tests: hub `tests/test_document_seed.py`, `tests/test_fixture_schema.py` (the example
+  seed), `tests/test_e2e_assert.py` (`--seed`).
+* Not in this round (atrium-project#71 plan): the program successors of the coming repository
+  renames, and #73's `keywords` block. Each will get its own register entries and changelog
+  section.

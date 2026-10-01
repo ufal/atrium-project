@@ -1,0 +1,10 @@
+# The RO-Crate validator, for tools/ci/rocrate_check.py only (atrium-project#71).
+#
+# Run by hub-self-check.yml on the module's sample crates and by e2e-pipeline-smoke.yml on the
+# real E2E record. It is deliberately NOT a dependency of any tool repository: atrium_rocrate.py
+# is stdlib-only and drift-gated, so its conformance is checked here, once.
+#
+# 0.12.0 checks RO-Crate 1.1/1.2/1.3 and Process Run Crate 0.5: the pinned pair is 1.2 + 0.5
+# (atrium_rocrate.ROCRATE_VERSION / PROCESS_RUN_PROFILE). Move the pin with them, to the release
+# that checks 1.3 + Process Run Crate 0.6, in one planned pass.
+roc-validator==0.12.0

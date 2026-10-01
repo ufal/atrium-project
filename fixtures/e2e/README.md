@@ -47,6 +47,27 @@ they are in an older `CSV_HEADER` (40 columns; the two real scans 37) than alto'
 There is **no committed page image** — the pc stage renders one from the ALTO at runtime
 (`tools/e2e/render_alto_page.py`, page 1), keeping the whole smoke anchored to one fixture pair.
 
+### 🌱 The AMČR seed (atrium-project#71)
+
+By default the chain starts the way the AMČR pilot does: from a **seed**, the record the archive
+writes before the first stage. The `Write the AMČR seed` step makes it at run time with
+[`tools/e2e/make_seed.py`](../../tools/e2e/make_seed.py), so no seed is committed per fixture:
+
+* `doc_id` is `AMCR-F-<id>`, unlike every file name in the chain, which is the AMČR situation
+  (its file id is not the upload's name);
+* `source.sha512` is the digest of the fixture's ALTO, standing in for the archive's digest of
+  the original, with the file name and media type of that ALTO;
+* there is no `source.origin`: the stage that reads the source records it.
+
+`e2e_assert.py --seed` then fails any stage that changes the four values, or names the origin
+without being the program that reads the source. The `seed` input set to false reproduces the
+unseeded chain. A worked example of a seed is
+[`fixtures/atrium_document.seed.example.json`](../atrium_document.seed.example.json).
+
+After the assertions, the final record and every stage's paradata file are turned into the
+record's RO-Crate fragment and checked by the RO-Crate validator, against RO-Crate 1.2 and Process
+Run Crate 0.5 ([`tools/ci/rocrate_check.py`](../../tools/ci/rocrate_check.py)).
+
 ### 🏷️ No vocabulary fixture (unused since 2026-08-19)
 
 `VOCAB/teater_nested_vocab.json` is still in this directory, but **no workflow, script or test reads it**

@@ -61,18 +61,19 @@ def _is_valid(record: Dict[str, Any]) -> bool:
         return False
 
 
-def _stamp(*names: str) -> Dict[str, Any]:
-    """An `assembled` block stamped for `names`, shaped exactly as `_stamp()` writes it."""
+#: A run's stable id as atrium_paradata mints it (atrium-project#71).
+_RUN_UUID = "urn:uuid:4f1c2e3a-5b6d-4e7f-8a9b-0c1d2e3f4a5b"
+
+
+def _stamp(*names: str, run_uuid: str = "") -> Dict[str, Any]:
+    """An `assembled` block stamped for `names`, shaped exactly as `_stamp()` writes it; with
+    `run_uuid` as a run that carries one (atrium-project#71) writes it."""
+    stamp = {"program": "p", "run_id": "260909-000000"}
+    if run_uuid:
+        stamp["run_uuid"] = run_uuid
+    stamp.update({"paradata_ref": run_uuid, "updated_at": "2026-09-09T00:00:00+00:00"})
     return {
-        "blocks": {
-            n: {
-                "program": "p",
-                "run_id": "260909-000000",
-                "paradata_ref": "",
-                "updated_at": "2026-09-09T00:00:00+00:00",
-            }
-            for n in names
-        },
+        "blocks": {n: dict(stamp) for n in names},
         "had_baseline": False,
         "note": "Blocks reflect CONTRIBUTED steps only; a block is absent until its tool has run.",
     }
@@ -157,6 +158,37 @@ VALID_SHAPES = {
             "origin": "digital-born-docx",
         },
         "assembled": _unstamped(),
+    },
+    # The AMČR-seeded path (atrium-project#71), as it leaves the reading stage:
+    # alto-postprocess/document_hook.py::write_document_block on a seed. The seed's doc_id (an AMČR
+    # file id), sha512, file name and media type are kept; the stage added the origin (its sha256
+    # is of the ALTO it read, not of the original, so it is dropped) and stamped its run_uuid on
+    # its blocks and its contributor entry.
+    "AMČR seed after the reading stage (sha512 kept, run_uuid stamped)": {
+        **_FLOOR,
+        "doc_id": "AMCR-F-CTX000000001",
+        "source": {
+            "sha512": "c" * 128,
+            "filename": "CTX000000001.pdf",
+            "media_type": "application/pdf",
+            "origin": "ABBYY-ALTO",
+        },
+        "provenance": {
+            **_FLOOR["provenance"],
+            "contributors": [
+                {
+                    "program": "alto-postprocess",
+                    "run_id": "261001-000000",
+                    "run_uuid": _RUN_UUID,
+                    "paradata_ref": _RUN_UUID,
+                    "blocks": "pages,lines",
+                    "at": "2026-10-01T00:00:00+00:00",
+                }
+            ],
+        },
+        "assembled": _stamp("pages", "lines", run_uuid=_RUN_UUID),
+        "pages": [{"page": "1", "quality_band": "Clear"}],
+        "lines": [{"page": "1", "line": 0, "text": "Náčrt sondy.", "categ": "Clear"}],
     },
     # alto-postprocess/extract_ALTO_2_TXT.py::main (and its four twins: extract_LytRdr_ALTO_2_TXT,
     # extract_LLM_ALTO_2_TXT, extract_JSON_2_TXT and, for --method text-lines, extract_TEXT_2_TXT)

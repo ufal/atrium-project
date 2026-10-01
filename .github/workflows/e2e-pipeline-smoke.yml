@@ -25,6 +25,14 @@ on:
         default: "CTX000000003"
         type: string
         required: false
+      seed:
+        description: >-
+          Start the chain from an AMČR-style seed (atrium-project#71): Stage 1 gets a record
+          with only doc_id (unlike every file name) and source.sha512/filename/media_type, and
+          every stage must keep them. The pilot's integration baseline, so on by default.
+        default: true
+        type: boolean
+        required: false
     secrets:
       OPENROUTER_KEY:
         description: "OpenRouter API Key for the LLM enrichment stage"
@@ -46,6 +54,11 @@ on:
           - CTX000000002
           - CTX192100040
           - CTX192601143
+      seed:
+        description: "Start from an AMČR-style seed (atrium-project#71); off reproduces the unseeded chain"
+        default: true
+        type: boolean
+        required: false
   push:
     branches: [ main ]
   schedule:
@@ -92,6 +105,9 @@ concurrency:
 # one was ever used. Push and schedule runs have no inputs, so they keep CTX000000003.
 env:
   E2E_DOC: ${{ inputs.e2e-doc || 'CTX000000003' }}
+  # Push and schedule runs have no inputs and run seeded. Compared as a string on purpose: in an
+  # expression a missing input (null) loosely EQUALS false, which would turn the default off.
+  E2E_SEED: ${{ format('{0}', inputs.seed) == 'false' && 'false' || 'true' }}
 
 jobs:
   e2e-json-thread:
@@ -179,6 +195,16 @@ jobs:
           cp "fixtures/e2e/ALTO/${E2E_DOC}.alto.xml" "$W/ALTO/"
           cp "fixtures/e2e/DOC_LINE_CATEG/${E2E_DOC}.csv" "$W/DOC_LINE_CATEG/"
           chmod -R a+rwX "$W"
+
+      # atrium-project#71: what AMČR hands the first stage. doc_id is an AMČR-style file id that
+      # matches no file name in the chain, and sha512 is the fixture's own digest, standing in for
+      # Fedora's. The origin is left out on purpose: the stage that reads the source writes it.
+      - name: Write the AMČR seed
+        if: env.E2E_SEED == 'true'
+        run: >
+          python tools/e2e/make_seed.py "fixtures/e2e/ALTO/${E2E_DOC}.alto.xml"
+          --doc-id "AMCR-F-${E2E_DOC}" --media-type application/alto+xml
+          --out work/doc_json/0_seed.json
 
       - name: Render fixture page image from the ALTO
         run: |
@@ -305,14 +331,20 @@ jobs:
           # Optional. Absent -> anonymous, which is what hit the 429; present -> a much
           # higher limit. Add an HF_TOKEN repository secret to harden this further.
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: >
-          docker run --rm -v ${{ github.workspace }}:/workspace
-          -v ${{ github.workspace }}/hf-cache:/cache/huggingface
-          -e HF_TOKEN
-          ghcr.io/ufal/atrium-page-classification:${{ inputs.image-tag || 'latest' }}
-          -f /workspace/work/input/${E2E_DOC}-1.png
-          -m timm/regnety_160.swag_ft_in1k --hf
-          --document-json-out /workspace/work/doc_json/1_pc.json
+        # Seeded (the default), Stage 1 accretes onto the seed instead of originating the record.
+        run: |
+          SEED_ARGS=()
+          if [ "$E2E_SEED" = "true" ]; then
+            SEED_ARGS=(--document-json /workspace/work/doc_json/0_seed.json)
+          fi
+          docker run --rm -v "${{ github.workspace }}:/workspace" \
+            -v "${{ github.workspace }}/hf-cache:/cache/huggingface" \
+            -e HF_TOKEN \
+            "ghcr.io/ufal/atrium-page-classification:${{ inputs.image-tag || 'latest' }}" \
+            -f "/workspace/work/input/${E2E_DOC}-1.png" \
+            -m timm/regnety_160.swag_ft_in1k --hf \
+            "${SEED_ARGS[@]}" \
+            --document-json-out /workspace/work/doc_json/1_pc.json
 
       - name: Fetch latest ALTO Postprocess source
         uses: actions/checkout@v7
@@ -513,12 +545,33 @@ jobs:
           if [ "$LLM_STAGE_RAN" = "true" ]; then
             STAGES="$STAGES work/doc_json/5_llm.json"
           fi
+          SEED_ARGS=()
+          if [ "$E2E_SEED" = "true" ]; then
+            SEED_ARGS=(--seed work/doc_json/0_seed.json)
+          fi
           echo "Asserting against: $FINAL"
           # shellcheck disable=SC2086 — STAGES is a deliberate list of paths
           python tools/e2e/e2e_assert.py "$FINAL" \
             --llm-stage-ran "$LLM_STAGE_RAN" \
             --stages $STAGES \
-            --teitok-dir work/nlp_out/TEITOK
+            --teitok-dir work/nlp_out/TEITOK \
+            "${SEED_ARGS[@]}"
+
+      - name: Install the RO-Crate validator
+        run: pip install -r tools/ci/requirements-rocrate.txt
+
+      # atrium-project#71, the "production crate output" of its acceptance criteria: the final
+      # record and every stage's paradata file become the fragment AMČR embeds in its record
+      # crate. It is checked under a stub root, against RO-Crate 1.2 and Process Run Crate 0.5,
+      # each in its own validator run, gated at MUST: a real run may lack a SHOULD (no
+      # ATRIUM_RUN_AGENT, say), which is reported as a warning.
+      - name: Validate the record crate (RO-Crate 1.2, Process Run Crate 0.5)
+        run: |
+          FINAL="work/doc_json/5_llm.json"
+          [ -f "$FINAL" ] || FINAL="work/doc_json/4_nlp.json"
+          mapfile -t PARADATA < <(find work -path '*/paradata/*' -name '[!.]*.json' -type f | sort)
+          echo "Paradata files: ${#PARADATA[@]}"
+          python tools/ci/rocrate_check.py --record "$FINAL" --paradata "${PARADATA[@]}" --out work/crate
 
       - name: Upload Pipeline Artifacts
         if: failure()
@@ -528,6 +581,7 @@ jobs:
           path: |
             work/doc_json/*.json
             work/nlp_out/TEITOK/*.teitok.xml
+            work/crate/
 
       - name: Open issue on scheduled failure
         if: failure() && github.event_name == 'schedule'

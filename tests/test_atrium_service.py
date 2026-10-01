@@ -889,3 +889,13 @@ def test_models_allow_extra_members_so_additions_are_not_breaking():
         assert model.model_json_schema().get("additionalProperties") is True, model.__name__
     schema = CreateAction.model_json_schema(by_alias=True)
     assert {"@id", "@type", "object", "startTime", "actionStatus"} <= set(schema["properties"])
+    # atrium-project#71: what atrium_rocrate.create_action() returns, documented for the client.
+    assert {"@context", "containerImage", "paradataRecord", "description"} <= set(schema["properties"])
+
+
+def test_a_create_action_sends_only_the_members_it_has():
+    """Through a response_model the action keeps its JSON-LD keys and sends no `null` member."""
+    action = CreateAction.model_validate({"@id": "urn:uuid:x", "@type": "CreateAction", "object": [{"@id": "#r"}]})
+    dumped = action.model_dump(by_alias=True)
+    assert dumped == {"@id": "urn:uuid:x", "@type": "CreateAction", "object": [{"@id": "#r"}]}
+    assert CreateAction.model_json_schema(mode="serialization")["properties"]["agent"]["description"]

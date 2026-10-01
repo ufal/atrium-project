@@ -79,3 +79,30 @@ def test_schema_version_matches_the_module():
 
     record = json.loads(_FIXTURE.read_text(encoding="utf-8"))
     assert record["schema_version"] == SCHEMA_VERSION
+
+
+# ── the AMČR seed (atrium-project#71) ──────────────────────────────────────────
+
+_SEED_FIXTURE = _HUB_ROOT / "fixtures" / "atrium_document.seed.example.json"
+_SEED_SOURCE = _HUB_ROOT / "fixtures" / "e2e" / "ALTO" / "CTX000000001.alto.xml"
+
+
+def test_the_seed_example_is_a_valid_seed():
+    """The seed AMČR's developers are pointed at must be one every tool accepts as input."""
+    from atrium_document import is_seed, validate_seed
+
+    seed = json.loads(_SEED_FIXTURE.read_text(encoding="utf-8"))
+    assert is_seed(seed)
+    try:
+        validate_seed(seed)
+    except RuntimeError as exc:  # jsonschema absent -> the gate cannot run
+        pytest.skip(f"jsonschema not installed: {exc}")
+
+
+def test_the_seed_example_digest_is_its_files():
+    """Its sha512 is the digest of the file it names (tools/e2e/make_seed.py), so it cannot drift."""
+    import hashlib
+
+    seed = json.loads(_SEED_FIXTURE.read_text(encoding="utf-8"))
+    assert seed["source"]["filename"] == _SEED_SOURCE.name
+    assert seed["source"]["sha512"] == hashlib.sha512(_SEED_SOURCE.read_bytes()).hexdigest()

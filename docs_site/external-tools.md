@@ -467,7 +467,7 @@ its inputs and outputs, its container, compute and network needs, and its test d
 ### WorkflowHub, and Workflow RO-Crate
 
 **What it is.** A registry for computational workflows. It gives each workflow a citable
-identifier and stores it as a **Workflow RO-Crate** — an [RO-Crate](#ro-crate-11-and-the-process-run-crate-profile)
+identifier and stores it as a **Workflow RO-Crate** — an [RO-Crate](#ro-crate-12-and-the-process-run-crate-profile)
 whose main entity is the workflow itself, with its inputs, outputs, creator and licence. Galaxy
 workflows reviewed by the IWC, and those of the Galaxy Training Network, are deposited there
 automatically.
@@ -495,7 +495,7 @@ file but does not import it; its glossary is a CSV. The full picture is on
 
 **Onward:** <https://www.w3.org/TR/skos-reference/>
 
-### RO-Crate 1.1, and the Process Run Crate profile
+### RO-Crate 1.2, and the Process Run Crate profile
 
 **What it is.** A convention for packaging research data. A folder becomes a crate when it holds
 one JSON-LD file, `ro-crate-metadata.json`, saying what is in the folder, who made it, with which
@@ -503,12 +503,14 @@ software and under which licence. *Profiles* add rules for particular kinds of c
 Run Crate profile is for "these tools were run over these inputs".
 
 **Where ATRIUM uses it.** `atrium_rocrate.py`, vendored into every tool and run as its own step, writes
-RO-Crate 1.1. A run crate also declares the profile `https://w3id.org/ro/wfrun/process/0.5`. See
+RO-Crate 1.2, and every crate declares the profile `https://w3id.org/ro/wfrun/process/0.5`; every
+service returns its run as a Process Run Crate `CreateAction` (atrium-project#71). See
 [W13](pipelines.md#w13--ro-crate-export--fair-publication) and
 [RO-Crate export](contracts/rocrate.md).
 
 **Worth knowing.** Profiles are versioned independently of RO-Crate itself, so a crate names both:
-RO-Crate 1.1 for the container, and the profile version for what the crate claims to describe.
+RO-Crate 1.2 on its metadata descriptor, and the profile version on its root. The pair is the
+newest the RO-Crate validator checks, which the hub's CI runs on every change.
 
 **Onward:** <https://www.researchobject.org/ro-crate/>
 

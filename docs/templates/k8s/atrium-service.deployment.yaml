@@ -117,6 +117,10 @@ spec:
             #                                 # Uncommenting this as-is RAISES nlp-enrich's
             #                                 # limit and LOWERS alto's and translator's.
             #                                 # Use your service's number (k8s_deployment.md).
+            # - name: ATRIUM_RUN_AGENT        # unset by default — the IRI (e.g. ROR) of the
+            #   value: "https://ror.org/..."  # organisation operating this deployment, the
+            #                                 # `agent` of every run's CreateAction
+            #                                 # (atrium-project#71). Never a processing account.
             #
             # --- Backing services (atrium-project#63) -----------------------
             # Endpoints the service calls OUT to. Unset, each falls back to the

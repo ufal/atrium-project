@@ -327,6 +327,25 @@ jobs:
           python tools/e2e/e2e_assert.py work/doc_json/minimal.document.json \
             --llm-stage-ran false
 
+      # ── Case 1s: the happy path from an AMČR seed (atrium-project#71) ───────
+      # The converter is the first stage of the born-digital route, so it is the one that reads
+      # the seed: it must keep doc_id (an AMČR-style id unlike the file name) and the seed's
+      # sha512, file name and media type, and add the origin itself.
+      - name: Stage D1s - digital-convert (AMČR seed)
+        run: |
+          python tools/e2e/make_seed.py work/digital_in/minimal.pdf \
+            --doc-id AMCR-F-minimal --media-type application/pdf --out work/doc_json/minimal.seed.json
+          docker run --rm -v "${{ github.workspace }}:/workspace" \
+            "${DIGITAL_IMAGE}:${IMAGE_TAG}" \
+            /workspace/work/digital_in/minimal.pdf \
+            --document-json /workspace/work/doc_json/minimal.seed.json \
+            --document-json-out /workspace/work/doc_json/minimal.seeded.document.json
+
+      - name: Assert the seed survived the converter
+        run: |
+          python tools/e2e/e2e_assert.py work/doc_json/minimal.seeded.document.json \
+            --llm-stage-ran false --seed work/doc_json/minimal.seed.json
+
       # ── Case 2: the needs_ocr handoff (§1a) ─────────────────────────────────
       # garbled.pdf — CP1250 bytes declared WinAnsi with no /ToUnicode, so the text
       # layer decodes to mojibake. The converter must NOTICE and say so, because

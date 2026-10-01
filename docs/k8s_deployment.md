@@ -174,6 +174,7 @@ each of the five repos) fails on exactly that.
 | `RELOAD`              | `false`       | **—, deliberately**      | uvicorn filesystem auto-reload. There is no correct value for a Deployment, so there is no commented entry to uncomment by accident.                                                              |
 | `HEALTHCHECK_PATH`    | `/health`     | **—**                    | The path the container's own `HEALTHCHECK` probes. Kubernetes does not read a `HEALTHCHECK` (see this document's opening section), so it is irrelevant here — change it only alongside the route. |
 | `MAX_UPLOAD_BYTES`    | —             | **—**                    | **Deprecated.** A byte-valued fallback that loses to `MAX_UPLOAD_MB` whenever both are set. Do not introduce it.                                                                                  |
+| `ATRIUM_RUN_AGENT`    | unset         | commented                | The IRI (a ROR id, say) of the organisation operating the deployment: the `agent` of every run's `CreateAction` (atrium-project#71). Unset, no agent is recorded. Never the processing account.   |
 
 The `RELOAD` and `HEALTHCHECK_PATH` rows exist so their absence from the manifest reads as a
 decision, not an omission.
