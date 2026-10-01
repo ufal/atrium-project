@@ -79,13 +79,13 @@ Expect `DOC,PAGE,LINE,CATEGORY,CONF,KEYWORDS_CS`; first start auto-syncs the TEA
 
 ## Results log (fill in)
 
-| Repo | server.sh | /info+/health | client smoke | clean-room | notes |
-|---|---|---|---|---|---|
-| page-classification | ☐ | ☐ | ☐ | ☐ | |
-| ocr-postprocess | ☐ | ☐ | ☐ | ☐ | |
-| translator | ☐ | ☐ | ☐ | ☐ | |
-| nlp-enrich | ☐ | ☐ | ☐ | ☐ | |
-| keyword-extract | ☐ | ☐ | ☐ | ☐ | |
+| Repo                | server.sh | /info+/health | client smoke | clean-room | notes |
+|---------------------|-----------|---------------|--------------|------------|-------|
+| page-classification | ☐         | ☐             | ☐            | ☐          |       |
+| ocr-postprocess     | ☐         | ☐             | ☐            | ☐          |       |
+| translator          | ☐         | ☐             | ☐            | ☐          |       |
+| nlp-enrich          | ☐         | ☐             | ☐            | ☐          |       |
+| keyword-extract     | ☐         | ☐             | ☐            | ☐          |       |
 
 > Environment note: CI/sandbox without GPU or outbound model access can only complete the
 > translator round-trip (remote) and the meta-contract checks via `TestClient`; the model-heavy

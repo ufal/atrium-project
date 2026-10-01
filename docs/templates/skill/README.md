@@ -5,12 +5,12 @@ Appendices A–D, promoted here after the first full rollout run across all five
 service repos (page-classification hardening + nlp-enrich / ocr-postprocess /
 translator / keyword-extract skill layers). Copy, then replace every `<placeholder>`.
 
-| File | Appendix | Purpose |
-|------|----------|---------|
-| [`SKILL.template.md`](SKILL.template.md) | A | the `SKILL.md` skeleton (frontmatter + required section order) |
-| [`atrium_client.skeleton.py`](atrium_client.skeleton.py) | B | runnable zero-dependency client skeleton (§6 contract) |
-| [`server.template.sh`](server.template.sh) | C | idempotent `scripts/server.sh` launcher |
-| [`serviceREADME.template.md`](serviceREADME.template.md) | D | `service/README.md` outline |
+| File                                                     | Appendix | Purpose                                                        |
+|----------------------------------------------------------|----------|----------------------------------------------------------------|
+| [`SKILL.template.md`](SKILL.template.md)                 | A        | the `SKILL.md` skeleton (frontmatter + required section order) |
+| [`atrium_client.skeleton.py`](atrium_client.skeleton.py) | B        | runnable zero-dependency client skeleton (§6 contract)         |
+| [`server.template.sh`](server.template.sh)               | C        | idempotent `scripts/server.sh` launcher                        |
+| [`serviceREADME.template.md`](serviceREADME.template.md) | D        | `service/README.md` outline                                    |
 
 CI guard for the finished branch:
 [`skill-validate.reusable.yml`](../../../.github/workflows/skill-validate.reusable.yml)
