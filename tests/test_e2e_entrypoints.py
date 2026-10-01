@@ -196,4 +196,6 @@ def test_the_e2e_lane_is_actually_covered() -> None:
 
     doc = yaml.safe_load((_WORKFLOW_DIR / "e2e-pipeline-smoke.yml").read_text(encoding="utf-8"))
     stages = [name for name, _ in _steps(doc) if name.startswith("Stage ")]
-    assert len(stages) == 5, f"expected five pipeline stages, found {len(stages)}: {stages}"
+    # Four numbered stages: the former stage 5 (LLM keywords) moved to keyword-extract, which the
+    # lane exercises in its own un-numbered step until the record has a keywords block (#73).
+    assert len(stages) == 4, f"expected four pipeline stages, found {len(stages)}: {stages}"

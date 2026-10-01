@@ -201,8 +201,9 @@ def _table_b_rows() -> list[tuple[str, list[str]]]:
 
 
 _TABLE_B_REPO_TO_DIR = {
-    "alto-postprocess": "atrium-alto-postprocess",
-    "llm-enrich": "atrium-llm-enrich",
+    "ocr-postprocess": "atrium-ocr-postprocess",
+    "digital-convert": "atrium-digital-convert",
+    "keyword-extract": "atrium-keyword-extract",
     "nlp-enrich": "atrium-nlp-enrich",
     "page-classification": "atrium-page-classification",
     "translator": "atrium-translator",

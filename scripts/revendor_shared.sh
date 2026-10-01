@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 #
-# revendor_shared.sh — push docs/templates/shared/* into the five tool repos.
+# revendor_shared.sh — push docs/templates/shared/* into the six tool repos.
 #
 # WHY THIS EXISTS. The hub does not publish the canonical modules as a package;
 # it enforces them by COPY. para-drift.reusable.yml `diff -u`s every file in
-# docs/templates/shared/ against its vendored twin in all five tool repos, so a
-# hub-side edit is not "landed" until the same bytes exist in five other
+# docs/templates/shared/ against its vendored twin in all six tool repos, so a
+# hub-side edit is not "landed" until the same bytes exist in six other
 # repositories. Until now that copy step was done by hand, and two documents
 # (docs/document_schema.md, atrium_document.py's load_schema() error message)
 # already told maintainers to "use scripts/revendor_shared.sh" — a script that
 # did not exist (issue #10, finding D9).
 #
 # It is also what makes issue #10 finding G4's atomic window practical: template
-# edit + five re-vendorings + retag has to happen inside one window, because a
+# edit + six re-vendorings + retag has to happen inside one window, because a
 # moving `v1` makes identical commits fail para-drift in one repo and pass in
-# another minutes later. Doing five copies by hand is how that window gets wide.
+# another minutes later. Doing six copies by hand is how that window gets wide.
 #
 # DESTINATIONS ARE NOT UNIFORM — this is the whole reason a script beats a
 # `cp -t`: the tests go to tests/, the service base class goes to service/, and

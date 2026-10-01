@@ -13,7 +13,7 @@ vocabulary contains in full, and how page-classification and the translator use 
 
 !!! info "Scope"
     The registry holds six vocabularies; one of them belongs to page-classification, and the
-    translator uses none. The other five belong to alto-postprocess and nlp-enrich.
+    translator uses none. The other five belong to ocr-postprocess and nlp-enrich.
     [`docs/skos_strategy.md`](https://github.com/ufal/atrium-project/blob/main/docs/skos_strategy.md)
     is the normative text.
 
@@ -78,11 +78,11 @@ a-page-category:TEXT_HW rdf:type skos:Concept ;
 | Scheme              | Concepts | Authority                                              | Record field                                        |
 |---------------------|----------|--------------------------------------------------------|-----------------------------------------------------|
 | **`page-category`** | **11**   | page-classification — `model_registry.py` `CATEGORIES` | `page_categories`, `pages[].category`               |
-| `line-category`     | 7        | alto-postprocess and digital-convert                   | `lines[].categ`                                     |
-| `quality-band`      | 3        | alto-postprocess                                       | `pages[].quality_band`                              |
+| `line-category`     | 7        | ocr-postprocess and digital-convert                    | `lines[].categ`                                     |
+| `quality-band`      | 3        | ocr-postprocess                                        | `pages[].quality_band`                              |
 | `entity-type`       | 4        | nlp-enrich                                             | `entities[].type_teitok`                            |
 | `cnec`              | 28       | nlp-enrich (CNEC 2.0)                                  | `entities[].type_cnec`                              |
-| `theme`             | 11       | nlp-enrich's taxonomy                                  | `enrichment.items[].teater_category`, via the facet |
+| `theme`             | 11       | keyword-extract's taxonomy                             | `enrichment.items[].teater_category`, via the facet |
 
 **The translator appears in none of them** — see [below](#the-translator-and-its-glossary).
 
@@ -166,7 +166,7 @@ translation; it does not label anything in the record. See
 `skos_strategy.md` §5.2 records a modelling decision about the **source** vocabularies: AMCR's
 `hierarchie_vyse` edges all cross from one scheme to another and so become `skos:related`, while
 TEATER's `broader` edges stay within one scheme and become real `skos:broader`. That concerns the
-vocabularies nlp-enrich builds from AMCR and TEATER. **It does not touch `page-category`**, which
+vocabularies keyword-extract builds from AMCR and TEATER. **It does not touch `page-category`**, which
 asserts no `broader` at all.
 
 ## Getting the vocabulary

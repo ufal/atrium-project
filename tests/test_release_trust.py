@@ -46,7 +46,7 @@ def run(argv, gh):
     return rt.main(argv, gh=gh, out=out), out.getvalue()
 
 
-def test_immutable_releases_go_on_in_the_five_tool_repositories_only():
+def test_immutable_releases_go_on_in_the_six_tool_repositories_only():
     gh = FakeGh()
     assert run(["immutable"], gh)[0] == 0
     assert [(m, p) for m, p, _ in gh.writes()] == [

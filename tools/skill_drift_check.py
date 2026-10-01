@@ -97,7 +97,7 @@ DOCUMENTED_DIVERGENCES = {
         "long-standing 'mounted at /frontend' claim is true. A no-op on any branch without "
         "service/frontend/, so it is forward-mergeable rather than a fork (2026-09-09)"
     ),
-    ("atrium-llm-enrich", "service/api.py"): ("same guarded /frontend mount as atrium-translator (2026-09-09)"),
+    ("atrium-digital-convert", "service/api.py"): ("same guarded /frontend mount as atrium-translator (2026-09-09)"),
 }
 
 # Guarded byte-identical by the hub's para-drift.reusable.yml. Read from the single
@@ -115,9 +115,10 @@ SHARED_FILES = tuple(entry["dest"] for entry in load_manifest(_MANIFEST_PATH))
 REPOS = (
     "atrium-page-classification",
     "atrium-translator",
-    "atrium-alto-postprocess",
+    "atrium-ocr-postprocess",
     "atrium-nlp-enrich",
-    "atrium-llm-enrich",
+    "atrium-keyword-extract",
+    "atrium-digital-convert",
 )
 
 _VERSION_RE = re.compile(r"^\s*version\s*=\s*(\S+)", re.M)
@@ -393,7 +394,7 @@ def _references_of(repo: Path, ref: str, path: str, index: dict, files: set, loc
             probes.update(f"{base}.{alias.name}" for alias in node.names)
 
     # A script run as `python service/text_api.py` has its own directory first on sys.path, so
-    # its bare `import text_inference` is service/text_inference.py (atrium-alto-postprocess's
+    # its bare `import text_inference` is service/text_inference.py (atrium-ocr-postprocess's
     # production entrypoint). Followed only for the image-closure walk, and only when the name
     # resolves nowhere else, so it can add a missing edge but never redirect an existing one.
     own_dir = path.rsplit("/", 1)[0].replace("/", ".") if with_optional and "/" in path else ""
@@ -666,7 +667,7 @@ def main() -> int:
         action="append",
         dest="repos",
         metavar="NAME",
-        help="check only this repo (repeatable; default: all five service repos)",
+        help="check only this repo (repeatable; default: all six service repos)",
     )
     parser.add_argument("--test-ref", default="origin/test", help="default-branch ref (default: origin/test)")
     parser.add_argument("--skill-ref", default="origin/agent-skill", help="skill ref (default: origin/agent-skill)")

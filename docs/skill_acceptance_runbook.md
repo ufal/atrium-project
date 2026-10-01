@@ -1,10 +1,14 @@
 # ✅ Agent-Skill acceptance runbook (issue #31 · W2)
 
+> **Names (2026-10-01):** written for `alto-postprocess` and `llm-enrich`; the `agent-skill` branches of their
+> successors `ocr-postprocess` and `keyword-extract` are brought to the new names in a follow-up, so the client
+> scripts named below are those of the previous repositories until then.
+
 Per-repo end-to-end acceptance for the `agent-skill` branches. Run in the order below (cheapest /
 most foundational first). Each repo's block is self-contained; record PASS/FAIL + notes under that
 repo's `agent_dev_logs/`. **Requires model downloads and a running server** — expect the first
-start of the model-heavy services to take minutes (page-classification, alto-postprocess,
-nlp-enrich, llm-enrich); translator is light (calls remote LINDAT).
+start of the model-heavy services to take minutes (page-classification, ocr-postprocess,
+nlp-enrich, keyword-extract); translator is light (calls remote LINDAT).
 
 ## Shared procedure (every repo)
 
@@ -42,7 +46,7 @@ python3 scripts/atrium_classify.py small_data_samples/DRAW/atrium-34.png --topn 
 ```
 Expect `FILE,PAGE,RANK,LABEL,SCORE` rows; first start downloads ViT/RegNetY/EffNetV2 weights.
 
-### 2. atrium-alto-postprocess
+### 2. atrium-ocr-postprocess
 ```bash
 python3 scripts/atrium_postprocess.py small_data_samples/CTX000000001-1.alto.xml
 python3 scripts/atrium_postprocess.py small_data_samples/CTX000000001-1.txt --format json
@@ -64,7 +68,7 @@ python3 scripts/atrium_enrich.py small_data_samples/CTX000000001.csv --jobs   # 
 ```
 Expect `DOC,RANK,KEYWORD,SCORE`; JSON envelope carries `teitok_xml`/`ne_summary`/`paradata`.
 
-### 5. atrium-llm-enrich (needs a backend)
+### 5. atrium-keyword-extract (the controlled kind needs a backend)
 ```bash
 export OPENROUTER_API_KEY=sk-or-...          # or run a local Ollama server
 python3 scripts/atrium_keywords.py small_data_samples/lines_sample.txt --top-k 5
@@ -78,10 +82,10 @@ Expect `DOC,PAGE,LINE,CATEGORY,CONF,KEYWORDS_CS`; first start auto-syncs the TEA
 | Repo | server.sh | /info+/health | client smoke | clean-room | notes |
 |---|---|---|---|---|---|
 | page-classification | ☐ | ☐ | ☐ | ☐ | |
-| alto-postprocess | ☐ | ☐ | ☐ | ☐ | |
+| ocr-postprocess | ☐ | ☐ | ☐ | ☐ | |
 | translator | ☐ | ☐ | ☐ | ☐ | |
 | nlp-enrich | ☐ | ☐ | ☐ | ☐ | |
-| llm-enrich | ☐ | ☐ | ☐ | ☐ | |
+| keyword-extract | ☐ | ☐ | ☐ | ☐ | |
 
 > Environment note: CI/sandbox without GPU or outbound model access can only complete the
 > translator round-trip (remote) and the meta-contract checks via `TestClient`; the model-heavy

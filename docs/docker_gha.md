@@ -1,11 +1,14 @@
 # ATRIUM GitHub Actions Strategy & Integration Report
 
 > **Status:** Active Document (Updated: 2026-09-29, roadmap round 5 / [#69](https://github.com/ufal/atrium-project/issues/69))
-> **Scope:** `atrium-translator`, `atrium-nlp-enrich`, `atrium-page-classification`, `atrium-alto-postprocess`,
-> `atrium-llm-enrich`, and `atrium-project` (templates).
+> **Scope:** `atrium-translator`, `atrium-nlp-enrich`, `atrium-page-classification`, `atrium-ocr-postprocess`,
+> `atrium-keyword-extract`, `atrium-digital-convert`, and `atrium-project` (templates). The first
+> three of those replaced `atrium-alto-postprocess` and `atrium-llm-enrich` on 2026-10-01
+> (atrium-project#72); the old repositories are archived and no longer part of the federation. Where
+> this document describes what a workflow did in one of them, it names the repository as it was then.
 >
 > This document is the **current-state reference** for the ATRIUM GitHub Actions automation: what is
-> deployed, what conventions hold, and what the version floor is. It is cited from all five tool repos.
+> deployed, what conventions hold, and what the version floor is. It is cited from all six tool repos.
 >
 > 📍 **The forward plan lives in [`docker_gha_roadmap.md`](docker_gha_roadmap.md)** — findings register,
 > cross-cutting decisions, and the W1–W6 wave sequence. Keep planning material there; keep this file
@@ -55,7 +58,7 @@ published image.
 files via a `hub-ref` input (default `v1`) rather than a hardcoded branch. Its `vendored-parity` job (#72)
 does the same for a layer one tool owns and another vendors: with `vendored-from: <owner repo>` it clones
 the owner at `vendored-ref` (default `test`) beside the caller and runs the caller's
-`tests/test_vendored_*_parity.py`, failing on any skip — llm-enrich runs it against nlp-enrich's TEITOK
+`tests/test_vendored_*_parity.py`, failing on any skip — digital-convert runs it against nlp-enrich's TEITOK
 reader.
 * **API Meta-Contract** (`api-contract.reusable.yml`) — the §4.1 service contract test.
 * **CodeQL** (`codeql.reusable.yml`) — Python, `build-mode: none`. The caller supplies the schedule (`on:`
@@ -156,7 +159,7 @@ its own pin.
 
 ### Localized Repository Workflows
 
-* **`atrium-alto-postprocess`:** CodeQL, Docker Build & Publish, pre-commit, Automated Releases, Scheduled
+* **`atrium-ocr-postprocess`** (until 2026-10-01 `atrium-alto-postprocess`): CodeQL, Docker Build & Publish, pre-commit, Automated Releases, Scheduled
 Smoke Tests, Paradata Drift, API Meta-Contract, Workflow Policy Lint, and Security & Supply-chain scanning
 (`para-config-path: setup/para_config.txt` — configs moved into `setup/`). Fully on the current
 action-version floor with correct triggers throughout. No GPU workflow, and none needed yet:
@@ -174,7 +177,8 @@ to the hub is retired, roadmap §10).
 * **`atrium-translator`:** CodeQL, Docker Build & Push, pre-commit, Scheduled Smoke Tests, Release Bundling,
 Paradata Drift, API Meta-Contract, Workflow Policy Lint, and Security Scans. CPU-only tool — no GPU lane by
 design.
-* **`atrium-llm-enrich`:** CodeQL, Docker Build & Publish (`remote` + `llm` targets — `base` deliberately
+* **`atrium-keyword-extract`** and **`atrium-digital-convert`** (until 2026-10-01 `atrium-llm-enrich` and the
+  keyword part of `atrium-nlp-enrich`): CodeQL, Docker Build & Publish (`remote` + `llm` targets — `base` deliberately
 unpublished, it carries no ENTRYPOINT), GPU Inference Tests, pre-commit, notes-only Releases, Scheduled
 Smoke Tests, Paradata Drift, API Meta-Contract, Workflow Policy Lint, and Security scans targeting the
 `-llm` image variant (largest CVE surface).

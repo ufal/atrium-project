@@ -14,10 +14,10 @@ Google Antigravity, Gemini CLI, and other Agent-Skill hosts.
 | Skill (`name:`)              | Repo                                                                                       | Does                                                               | Primary endpoints                                       | Client                          | Env override    |
 |------------------------------|--------------------------------------------------------------------------------------------|--------------------------------------------------------------------|---------------------------------------------------------|---------------------------------|-----------------|
 | `atrium-page-classification` | [page-classification](https://github.com/ufal/atrium-page-classification/tree/agent-skill) | classify historical page images/PDFs into 11 structural categories | `POST /predict_image` · `POST /predict_document`        | `scripts/atrium_classify.py`    | `ATRIUM_PC_URL` |
-| `atrium-alto-postprocess`    | [alto-postprocess](https://github.com/ufal/atrium-alto-postprocess/tree/agent-skill)       | per-line OCR language ID + quality classification                  | `POST /process`                                         | `scripts/atrium_postprocess.py` | `ATRIUM_AP_URL` |
+| `atrium-ocr-postprocess`     | [ocr-postprocess](https://github.com/ufal/atrium-ocr-postprocess/tree/agent-skill)         | per-line OCR language ID + quality classification                  | `POST /process`                                         | `scripts/atrium_postprocess.py` | `ATRIUM_AP_URL` |
 | `atrium-translator`          | [translator](https://github.com/ufal/atrium-translator/tree/agent-skill)                   | structure-preserving translation of ALTO/AMCR XML                  | `POST /translate`                                       | `scripts/atrium_translate.py`   | `ATRIUM_TR_URL` |
-| `atrium-nlp-enrich`          | [nlp-enrich](https://github.com/ufal/atrium-nlp-enrich/tree/agent-skill)                   | UDPipe + NameTag + keyword enrichment → TEITOK XML                 | `POST /enrich` · `/enrich_text` · `/rescale` · jobs API | `scripts/atrium_enrich.py`      | `ATRIUM_NE_URL` |
-| `atrium-llm-enrich`          | [llm-enrich](https://github.com/ufal/atrium-llm-enrich/tree/agent-skill)                   | vocabulary-guided LLM keyword extraction (TEATER/AMCR)             | `POST /extract_keywords` · `/extract_keywords_text`     | `scripts/atrium_keywords.py`    | `ATRIUM_LE_URL` |
+| `atrium-nlp-enrich`          | [nlp-enrich](https://github.com/ufal/atrium-nlp-enrich/tree/agent-skill)                   | UDPipe + NameTag enrichment → TEITOK XML                           | `POST /enrich` · `/enrich_text` · `/rescale` · jobs API | `scripts/atrium_enrich.py`      | `ATRIUM_NE_URL` |
+| `atrium-keyword-extract`     | [keyword-extract](https://github.com/ufal/atrium-keyword-extract/tree/agent-skill)         | statistical keywords; vocabulary-guided LLM keywords (TEATER/AMCR) | `POST /extract_keywords` · `/extract_keywords_text`     | `scripts/atrium_keywords.py`    | `ATRIUM_LE_URL` |
 
 All five also expose the standardized meta-contract: **`GET /info`**
 (`service`/`version`/`endpoints`/`limits` + capabilities), **`GET /health`** (liveness; `?deep=true` for
@@ -28,12 +28,17 @@ request/response schemas: fetch `GET /openapi.json` (Swagger UI at `/docs`) from
 ## Typical pipeline order
 
 ```
-scan → page-classification → alto-postprocess (quality filter) → translator ─┐
-                                                                             ├─→ nlp-enrich → llm-enrich
+scan → page-classification → ocr-postprocess (quality filter) → translator ─┐
+                                                                         ├─→ nlp-enrich → keyword-extract
                                                                      (Clear lines only)
 ```
 
-Route only `Clear`/`Noisy` lines from alto-postprocess into the downstream NLP/LLM enrichers.
+Route only `Clear`/`Noisy` lines from ocr-postprocess into the downstream NLP and keyword stages.
+
+> **Names (2026-10-01):** the skills were written for `alto-postprocess` and `llm-enrich`. Their repositories are
+> archived; the `agent-skill` branches of `ocr-postprocess` and `keyword-extract` start as copies and are brought to
+> the new names and endpoints in a follow-up. `llm-enrich`'s skill described `/extract_keywords` on a CSV of lines;
+> keyword-extract's service takes a record or plain text.
 
 ## Install (any host)
 

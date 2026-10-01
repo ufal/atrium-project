@@ -17,7 +17,7 @@
 # retired with the rest of roadmap H6 (docker_gha_roadmap.md §10, #69).
 #
 # Grouped into a single PR and targeted at `test`, matching the convention in
-# atrium-translator / atrium-alto-postprocess / atrium-page-classification.
+# atrium-translator / atrium-ocr-postprocess / atrium-page-classification.
 
 version: 2
 updates:

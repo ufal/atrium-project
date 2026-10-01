@@ -12,7 +12,7 @@ what its production image (the one the AMČR pilot pins, `-api`) is made of:
       "stage": "one line: the pipeline stage this image serves",
       "core": ["service/api.py", "tool_limits.py", ...],        # this stage's own code
       "vendored": {"api_util/teitok_read.py": "atrium-nlp-enrich"},  # another repo's layer, pinned
-      "moving": {"keywords.py": "ufal/atrium-nlp-enrich#40"}   # reached today, leaves with that move
+      "moving": {"llm_utils.py": "ufal/atrium-keyword-extract#1"}   # reached today, leaves with that move
     }
 
 This tool walks everything the entrypoint can execute — imports (guarded ones too: the image
@@ -32,7 +32,7 @@ which runs `api_*.sh`) — with the walker `tools/skill_drift_check.py` already 
   * a malformed declaration (unknown key, a path listed twice, a shared file listed as core).
 
 `moving` rows are reported as notices: they are allowed, and they are the list of what a
-repository move (nlp-enrich#40, llm-enrich#29) still has to take out of this image.
+repository move (atrium-keyword-extract#1, atrium-digital-convert#1) still has to take out of this image.
 
 A repository without the declaration (the hub) passes with a notice. The committed tree at
 `--ref` (default HEAD) is what is checked; `--worktree` snapshots the working tree instead

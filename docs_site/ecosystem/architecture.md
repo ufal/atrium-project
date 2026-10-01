@@ -8,20 +8,20 @@ issue: 57
 
 # Architecture
 
-How the six repositories fit together as one system: what is shared, what is federated, and
+How the seven repositories fit together as one system: what is shared, what is federated, and
 where the boundaries are.
 
 !!! info "Scope"
-    The mechanisms below are the same in all five tool repositories. The per-repository
+    The mechanisms below are the same in all six tool repositories. The per-repository
     examples — which files are vendored where, which workflows call what — are given for
     page-classification and the translator.
 
 ## Hub and spokes
 
-There is no monorepo and no git submodule. The six repositories are deliberately separate,
+There is no monorepo and no git submodule. The seven repositories are deliberately separate,
 because the tools' dependency graphs cannot share an environment: page-classification needs
-PyTorch and a vision-model stack, alto-postprocess is CPU heuristics, llm-enrich needs GPU LLM
-inference. One environment for all of them would satisfy none.
+PyTorch and a vision-model stack, ocr-postprocess is CPU heuristics, keyword-extract needs GPU LLM
+inference for its controlled kind. One environment for all of them would satisfy none.
 
 What holds them together is the hub, `atrium-project`, and it does so in two ways only — it
 **hands out copies of code**, and it **runs CI on their behalf**.
@@ -185,8 +185,8 @@ on their `agent-skill` branches), and each keeps a few workflows of its own:
 The hub runs its own workflows without `@v1` — they use `./…` so they test the commit under
 review — and three end-to-end workflows that exercise the published images together:
 `all-repos-smoke.yml` (each tool's fast suite, on its default branch), `e2e-pipeline-smoke.yml`
-(the scanned-document chain, five stages) and `e2e-digital-smoke.yml` (the born-digital chain,
-two stages). See [Pipelines](../pipelines.md#w6--e2e-smoke-the-integration-contract).
+(the scanned-document chain, four stages and a keyword-extract smoke) and `e2e-digital-smoke.yml`
+(the born-digital chain, one stage). See [Pipelines](../pipelines.md#w6--e2e-smoke-the-integration-contract).
 
 ## Where the boundaries are
 

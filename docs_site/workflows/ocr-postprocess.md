@@ -1,24 +1,24 @@
 ---
-title: alto-postprocess workflow
+title: ocr-postprocess workflow
 nav_order: 16
 status: published
 round: 7
 issue: 57
-repo: atrium-alto-postprocess
+repo: atrium-ocr-postprocess
 role: workflow
 authored: true
 ---
 
 # Turning OCR output into clean, classified text lines
 
-*The alto-postprocess workflow.* Tool: [atrium-alto-postprocess](https://ufal.github.io/atrium-alto-postprocess/).
+*The ocr-postprocess workflow.* Tool: [atrium-ocr-postprocess](https://ufal.github.io/atrium-ocr-postprocess/). The tool was named **alto-postprocess** until 1 October 2026; it continues in a new repository under the new name, with its code, its pipeline and its categories unchanged.
 
 !!! info "Scope"
     This page gives the **stable core** of the workflow: its purpose, its steps, the formats
     it reads and writes, and the licence floor of its output. The rules that decide a line's
     category, their thresholds and the options of each step are documented with the code —
-    in the tool's [README](https://github.com/ufal/atrium-alto-postprocess#readme) and
-    [`docs/categorization_logic.md`](https://github.com/ufal/atrium-alto-postprocess/blob/master/docs/categorization_logic.md) —
+    in the tool's [README](https://github.com/ufal/atrium-ocr-postprocess#readme) and
+    [`docs/categorization_logic.md`](https://github.com/ufal/atrium-ocr-postprocess/blob/master/docs/categorization_logic.md) —
     because they change as the rules are calibrated.
 
 ## Purpose
@@ -28,13 +28,13 @@ and empty lines. This workflow splits OCR output into pages, extracts the text o
 reading order, and labels every text line by its language and by how well it was recognised,
 so that later stages can work on the readable text and send the rest back for another
 attempt. It is the point where the ATRIUM pipeline fans out: the per-page ALTO feeds the
-translator, the line tables feed the NLP and LLM enrichment.
+translator, the line tables feed the NLP enrichment, and the record feeds keyword extraction.
 
 ## At a glance
 
 |                    |                                                                                                                                                                                                     |
 |--------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **In**             | ALTO XML from OCR; OCR output in JSON; other text-bearing formats as listed in the tool's [input-format reference](https://github.com/ufal/atrium-alto-postprocess/blob/master/docs/text_inputs.md) |
+| **In**             | ALTO XML from OCR; OCR output in JSON; other text-bearing formats as listed in the tool's [input-format reference](https://github.com/ufal/atrium-ocr-postprocess/blob/master/docs/text_inputs.md) |
 | **Out**            | per-page ALTO and plain text; page statistics (CSV); per-document tables of text lines with their language and category (CSV); a paradata log (JSON); optionally the ATRIUM document record (JSON)  |
 | **Runs as**        | a command-line pipeline (`run_pipeline.py`, or one script per step); a container image; an HTTP service image (`POST /process`); an [Agent Skill](../agent-skills.md)                               |
 | **Compute**        | the line classification step is built for a GPU                                                                                                                                                     |
@@ -96,8 +96,8 @@ tool classifies OCR quality line by line.
 
 ## Sources
 
-Read from `ufal/atrium-alto-postprocess` at release **`v1.5.1-beta`**, and at branch **`master`**,
-commit `a584b7d`, for the input-format reference. This table records **provenance**, not a
+Read from `ufal/atrium-alto-postprocess` (continued as `ufal/atrium-ocr-postprocess` from 2026-10-01) at
+release **`v1.5.1-beta`**, and at branch **`master`**, commit `a584b7d`, for the input-format reference. This table records **provenance**, not a
 build instruction.
 
 | Source                                                                                | What was taken from it                                     |

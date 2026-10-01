@@ -16,17 +16,18 @@ carries, and where the same workflow is published on other platforms.
 [Pipelines](../pipelines.md) shows how the tools connect to each other. These pages take one
 tool at a time and describe it the way a person using only that tool meets it.
 
-## The five narratives
+## The six narratives
 
 | Tool                                          | Depth       | What the workflow does                                                                                     | SSH Open Marketplace                                                                                                                                   |
 |-----------------------------------------------|-------------|------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [page-classification](page-classification.md) | full        | sorts scanned archive pages into eleven categories that decide how each page is processed next             | tool [`RER7Fw`](https://marketplace.sshopencloud.eu/tool-or-service/RER7Fw)                                                                            |
-| [alto-postprocess](alto-postprocess.md)       | stable core | turns OCR output into per-page text and a table of text lines labelled by language and OCR quality         | tool [`YParYU`](https://marketplace.sshopencloud.eu/tool-or-service/YParYU)                                                                            |
+| [ocr-postprocess](ocr-postprocess.md)         | stable core | turns OCR output into per-page text and a table of text lines labelled by language and OCR quality         | tool [`YParYU`](https://marketplace.sshopencloud.eu/tool-or-service/YParYU)                                                                            |
 | [translator](translator.md)                   | full        | translates the text inside XML documents and writes it back without changing their structure               | tool [`CizIUW`](https://marketplace.sshopencloud.eu/tool-or-service/CizIUW) · workflow [`13eHAZ`](https://marketplace.sshopencloud.eu/workflow/13eHAZ) |
 | [nlp-enrich](nlp-enrich.md)                   | stable core | adds lemmas, part-of-speech tags, syntax and named entities to text lines, and writes TEITOK XML           | tool [`EMhu3X`](https://marketplace.sshopencloud.eu/tool-or-service/EMhu3X)                                                                            |
-| [llm-enrich](llm-enrich.md)                   | stable core | maps text onto the AMČR and TEATER vocabularies with a language model, and converts born-digital documents | tool [`j9fqxo`](https://marketplace.sshopencloud.eu/tool-or-service/j9fqxo)                                                                            |
+| [keyword-extract](keyword-extract.md)         | stable core | finds statistical keywords, and maps text onto the AMČR and TEATER vocabularies with a language model      | the llm-enrich record [`j9fqxo`](https://marketplace.sshopencloud.eu/tool-or-service/j9fqxo), to be re-pointed                                         |
+| [digital-convert](digital-convert.md)         | stable core | reads born-digital PDF and DOCX files into the document record without OCR, and flags pages that need OCR  | none of its own yet                                                                                                                                    |
 
-The five tools are also steps of one chain: the AMČR text workflow, which ARÚP curates on the
+The six tools are also steps of one chain: the AMČR text workflow, which ARÚP curates on the
 SSH Open Marketplace as [`0xSpVP`](https://marketplace.sshopencloud.eu/workflow/0xSpVP).
 [Pipelines → W1](../pipelines.md#w1--scanned--ocr-document-pipeline) draws the same chain from
 the tools' side.
@@ -63,7 +64,7 @@ next.
 settled: page-classification and the translator.
 
 **Stable-core** narratives are written for tools whose rules, defaults or inputs change from
-release to release: alto-postprocess, nlp-enrich and llm-enrich. They give the purpose, the order of
+release to release: ocr-postprocess, nlp-enrich, keyword-extract and digital-convert. They give the purpose, the order of
 the steps, the formats, the licence floor and the records, and leave out thresholds, default
 models and options that are not part of a release. Each says so in a *Scope* box at the top,
 and links to the tool's README for the rest. A full narrative replaces the stable core once
@@ -114,7 +115,7 @@ Galaxy](../external-tools.md#galaxy) explains the Galaxy terms.
 
 ## Sources
 
-Written from the five tool repositories at their release tags and from the SSH Open
+Written from the tool repositories at their release tags and from the SSH Open
 Marketplace and Galaxy sources below. This table records **provenance**, not a build
 instruction.
 
@@ -125,4 +126,4 @@ instruction.
 | `DARIAH-ERIC/atrium-galaxy-tools` — `README.md`, `workflows/README.md`, `workflows/T4.2.1-Vocab_Driven_IE.ga`, `tools/atrium_tools.xml` | the narrative-to-Galaxy pairing                                      |
 | `galaxyproject/iwc` — `workflows/README.md`; `galaxyproject/planemo` — `docs/best_practices_workflows.rst`                              | workflow metadata best practice                                      |
 | `galaxyproject/training-material` — `topics/digital-humanities/tutorials/introduction_to_dh/workflows/`                                 | a published humanities workflow with its tests                       |
-| the five narratives on this site                                                                                                        | the table of tools                                                   |
+| the six narratives on this site                                                                                                         | the table of tools                                                   |

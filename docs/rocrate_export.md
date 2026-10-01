@@ -1,5 +1,11 @@
 # 📦 RO-Crate Export
 
+> **Repository names (2026-10-01).** This document predates the repository moves of atrium-project#72 and
+> uses the names of its time: `alto-postprocess` is now `ocr-postprocess`; `llm-enrich` split into
+> `keyword-extract` (its keyword stage, with the keyword extraction of `nlp-enrich`) and `digital-convert`
+> (the born-digital converter). The old repositories are archived. Read the names below through that map;
+> the current ones are in [`docs_site/ecosystem/repository-map.md`](../docs_site/ecosystem/repository-map.md).
+
 This document explains **what RO-Crate is** (assuming you have never seen one), **why ATRIUM has
 one**, and **how to use `atrium_rocrate.py`**: the crate of a document record, the
 `CreateAction` every service returns for its run, and the fragment another crate embeds. It is the

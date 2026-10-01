@@ -12,10 +12,10 @@ role: index
 
 <div class="atrium-pipeline" markdown="0">
 <span class="here">page-classification</span>
-<a href="https://ufal.github.io/atrium-alto-postprocess/">alto-postprocess</a>
+<a href="https://ufal.github.io/atrium-ocr-postprocess/">ocr-postprocess</a>
 <a href="../translator/">translator</a>
 <a href="https://ufal.github.io/atrium-nlp-enrich/">nlp-enrich</a>
-<a href="https://ufal.github.io/atrium-llm-enrich/">llm-enrich</a>
+<a href="https://github.com/ufal/atrium-keyword-extract">keyword-extract</a>
 </div>
 
 **Sorts a scanned page into one of 11 structural categories, so that a human — or a
@@ -46,7 +46,7 @@ five-model ensemble.
 page-classification is the first stage, and its categories **inform a routing decision**
 rather than trigger one: which pages go to OCR, which to handwriting recognition, which
 to table extraction, which to image extraction. That decision is made by a person or a
-script reading the result tables. The next stage, `alto-postprocess`, works from OCR
+script reading the result tables. The next stage, `ocr-postprocess`, works from OCR
 output and does not read `page_categories`.
 
 What travels between stages is the **record**. Each stage takes `--document-json` in,

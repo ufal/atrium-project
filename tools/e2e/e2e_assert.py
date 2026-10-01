@@ -70,6 +70,7 @@ if str(_SHARED_DIR) not in sys.path:
 from atrium_document import (  # noqa: E402  (needs the path above)
     BLOCK_OWNERS,
     SEED_SOURCE_REQUIRED,
+    canonical_program,
     resolve_originator,
     validate_document,
     validate_seed,
@@ -148,7 +149,9 @@ def _block_owner(path):
     owners = BLOCK_OWNERS.get(str(parts[0]))
     if not owners:
         return ""
-    return owners if isinstance(owners, str) else " or ".join(owners)
+    names = (owners,) if isinstance(owners, str) else owners
+    # A predecessor and its successor (PROGRAM_SUCCESSORS) are one writer: name the current repo.
+    return " or ".join(dict.fromkeys(canonical_program(n) for n in names))
 
 
 def assert_doc_id_stable(stage_paths, final_doc, final_path):
@@ -258,7 +261,7 @@ def assert_seed_identity(seed_path, stage_paths, final_doc, final_path):
             if originator is None:
                 print(f"⚠️  source.origin {origin!r} matches no known originator; who wrote it is not checked")
             else:
-                assert originator in new, (
+                assert canonical_program(originator) in {canonical_program(p) for p in new}, (
                     f"❌ source.origin {origin!r} first appears in {path}, written by {sorted(new)}, but it "
                     f"authorises {originator!r}: only the tool that reads the source may record the origin"
                 )

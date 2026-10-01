@@ -9,18 +9,18 @@ read back as evidence:
 
     status        read-only: immutable releases and rulesets, per repository
     checks        read-only: the check-run names on a branch head, to choose required checks
-    immutable     turn immutable releases on (the five tool repositories)
+    immutable     turn immutable releases on (the six tool repositories)
     tag-rules     release tags: no update, no deletion (tool repos `v*`; hub `v1`, `doc-schema-v*`)
     branch-rules  default branch and `test`: no deletion, no force push, changes through a pull
                   request; `--checks` adds required status checks
 
 Every changing command takes `--dry-run` (print each API call and its body, change nothing) and
-`--repo NAME` (repeatable; default: all six, or the five tool repositories for `immutable`).
+`--repo NAME` (repeatable; default: all six, or the six tool repositories for `immutable`).
 Re-running is safe: a ruleset is found by its name and updated in place.
 
 Repository admins may bypass the rulesets (logged by GitHub as a bypass, so not silent), which
 keeps the maintainers' direct pushes to `test` and the planned moves of `v1` possible. An
-immutable release cannot be changed by anyone; softprops/action-gh-release v3 in the five
+immutable release cannot be changed by anyone; softprops/action-gh-release v3 in the six
 `release.yml` already attaches the assets while the release is a draft, which is what an
 immutable release requires (`tools/ci/workflow_lint.py` keeps it that way).
 
@@ -47,10 +47,11 @@ OWNER = "ufal"
 HUB = "atrium-project"
 TOOLS = (
     "atrium-page-classification",
-    "atrium-alto-postprocess",
+    "atrium-ocr-postprocess",
     "atrium-translator",
     "atrium-nlp-enrich",
-    "atrium-llm-enrich",
+    "atrium-keyword-extract",
+    "atrium-digital-convert",
 )
 ALL = (HUB, *TOOLS)
 

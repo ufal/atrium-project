@@ -254,11 +254,14 @@ engine ran, so "was this OCR'd" stays answerable.
 | Tool                | Owns                                                                                                                                                                                                                                                        |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | page-classification | `page_categories` · `pages[]` *category, category_confidence*                                                                                                                                                                                               |
-| alto-postprocess    | `pages[]` *page_index, quality_score, quality_band, needs_ocr, needs_ocr_reason, ocr, canvas* · `content` · `lines[]` *categ, quality_score, lang, text* · `tables[]` — **originator, documents with an OCR-class origin** (`ABBYY-ALTO`, `ocr:…`, `vlm:…`) |
+| ocr-postprocess ¹   | `pages[]` *page_index, quality_score, quality_band, needs_ocr, needs_ocr_reason, ocr, canvas* · `content` · `lines[]` *categ, quality_score, lang, text* · `tables[]` — **originator, documents with an OCR-class origin** (`ABBYY-ALTO`, `ocr:…`, `vlm:…`) |
 | digital-convert     | `pages[]` *page_index, canvas, quality_score, quality_band, needs_ocr, needs_ocr_reason* · `content` · `lines[]` *text, bbox, group_id, style, lang, quality_score, categ* · `tables[]` — **originator, digital-born documents only**                       |
 | translator          | `translations` · `entities[]` *translation_en* — **reserved**: granted, written by no tool (#70; see below)                                                                                                                                                 |
 | nlp-enrich          | `entities[]` · `lines[]` *lemma, upos, feats, teitok_ref, bbox* · `pages[]` *teitok_surface* · `derived_from.teitok`                                                                                                                                        |
-| llm-enrich          | `enrichment` · `forms` · `entities[]` *pid* · `regenerable.markdown`                                                                                                                                                                                        |
+| keyword-extract ¹   | `enrichment` · `forms` · `entities[]` *pid* · `regenerable.markdown`                                                                                                                                                                                        |
+
+¹ The successor of `alto-postprocess` and of `llm-enrich` respectively, since the repository moves of
+2026-10-01. Each predecessor keeps the same grant beside it — see [Program successors](#program-successors-2026-10-01).
 
 `quality_score` is one axis — **text trustworthiness, 0–1** — with two derivations. On the
 OCR path it is an engine-confidence proxy; on the digital-born path it is a decode-sanity
@@ -1084,3 +1087,38 @@ change, so the re-vendor and the `v1` move follow, hub first.
 * Not in this round (atrium-project#71 plan): the program successors of the coming repository
   renames, and #73's `keywords` block. Each will get its own register entries and changelog
   section.
+
+## Program successors (2026-10-01)
+
+**Changelog — 2026-10-01 (#72: the repository moves).** `alto-postprocess` continues as
+**`ocr-postprocess`**, and the keyword stage of `llm-enrich` (with the keyword extraction of
+`nlp-enrich`) continues as **`keyword-extract`**; the born-digital converter keeps its role id
+`digital-convert` and the LLM-free remainder of the old repository. **An additive change; no
+`SCHEMA_VERSION` bump, `doc-schema-v1` stays the reference.**
+
+* **`PROGRAM_SUCCESSORS`** in `atrium_document.py`: `{"alto-postprocess": "ocr-postprocess",
+  "llm-enrich": "keyword-extract"}`, with `canonical_program()` and `same_program()`. Each successor
+  is added **beside** its predecessor in `BLOCK_OWNERS` and `BLOCK_FIELD_OWNERS` with exactly the
+  predecessor's grant (one hop; the table is built once, so the two cannot drift).
+* **Comparisons go through the canonical name.** The §1a origin check (`_assert_origin_consistent`),
+  the `needs_ocr` hand-off (it is `ocr-postprocess` that may re-originate a digital-born document,
+  whichever of the two names is running) and the fan-in check of `merge_document_records()`.
+  `ORIGIN_ORIGINATORS` (and so `resolve_originator()`) now names the **current** program, `ocr-postprocess`; both spellings are the one writer. A
+  block is a multi-originator block only when it has two distinct writers *after* that, so
+  `enrichment` (llm-enrich + keyword-extract) is a single-owner block.
+* **Nothing written is re-attributed.** An existing `assembled.blocks[*].program` or
+  `provenance.contributors[].program` is never rewritten: a record written by `alto-postprocess`
+  keeps that stamp, still loads, merges with one written by `ocr-postprocess`, and passes the origin
+  check. Consumers that compare program names should compare `canonical_program()` of both sides.
+* **`atrium_vocab.validate_labels(originator="ocr-postprocess")`** resolves to `alto-postprocess`'s
+  label set through an alias; `LINE_CATEGORY_ORIGINATORS` keeps one row per label set.
+* **Repository URLs** (`atrium_rocrate.REPO_URLS`, `atrium_paradata._REPO_URLS`) name each current
+  program's own repository (`ocr-postprocess`, `keyword-extract`, `digital-convert`) and keep the
+  predecessors' archived ones, so a crate links the release that really produced a run.
+* **Descriptions only in the schema JSON** (`atrium_document.schema.json`): the owner names in the
+  property descriptions. No constraint changed, so the freeze register has no new entry.
+* **Not in this round:** #73's `keywords` block, which keyword-extract will own from its first release.
+  It gets its own register entry and changelog section.
+
+Tests: `docs/templates/shared/test_document_originators.py` (the successor cases),
+`test_atrium_vocab.py`, `test_atrium_rocrate.py`; hub `tests/test_e2e_assert.py`.

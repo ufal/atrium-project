@@ -24,7 +24,7 @@ moved to it, with that commit::
 
 (`^{commit}`: an annotated tag's own SHA is not a commit, and `uses:` needs the commit.)
 
-then commit the callers in each tool repo and, once all five are pinned, run the linter with
+then commit the callers in each tool repo and, once all six are pinned, run the linter with
 `--require-sha-pins` (workflow-lint.reusable.yml). Re-running with the same commit changes
 nothing; with a new commit it moves every pin together. Exit 0: nothing (left) to change;
 1: `--check` found callers to change; 2: usage error.
@@ -43,10 +43,11 @@ import yaml
 HUB_ROOT = Path(__file__).resolve().parent.parent
 REPOS = (
     "atrium-page-classification",
-    "atrium-alto-postprocess",
+    "atrium-ocr-postprocess",
     "atrium-nlp-enrich",
+    "atrium-keyword-extract",
     "atrium-translator",
-    "atrium-llm-enrich",
+    "atrium-digital-convert",
 )
 CHANNEL = "v1"
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")

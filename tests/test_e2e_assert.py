@@ -258,7 +258,7 @@ def test_every_schema_violation_is_reported_not_just_the_first(tmp_path, record)
     assert "2 violation(s)" in message
     # Each line names the repo that owns the block, so the report is directly actionable.
     assert "[owned by nlp-enrich]" in message
-    assert "[owned by alto-postprocess or digital-convert]" in message
+    assert "[owned by ocr-postprocess or digital-convert]" in message
 
 
 def test_cli_accepts_the_workflow_invocation(tmp_path, record):

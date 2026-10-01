@@ -21,10 +21,10 @@ bridges four European research infrastructures: **DARIAH** (arts and humanities)
 More at [atrium-research.eu](https://atrium-research.eu/), and in the
 [project presentation on Zenodo](https://zenodo.org/records/19500212).
 
-This site documents ÚFAL's part: five tool repositories and the hub that holds them
-together — six repositories in all.
+This site documents ÚFAL's part: six tool repositories and the hub that holds them
+together — seven repositories in all.
 
-## The six repositories
+## The seven repositories
 
 <div class="grid cards" markdown>
 
@@ -37,7 +37,7 @@ together — six repositories in all.
 
     [Overview](tools/page-classification/index.md) · [Guide](tools/page-classification/guide.md) · [Reference](tools/page-classification/reference.md) · [Workflow](workflows/page-classification.md)
 
--   **alto-postprocess**
+-   **ocr-postprocess**
 
     ---
 
@@ -45,7 +45,7 @@ together — six repositories in all.
     point the whole pipeline fans out from. Besides ALTO it reads the other OCR formats (PAGE XML,
     hOCR, ABBYY FineReader XML, DjVuXML, Tesseract TSV, OCR JSON) and PDF, office and text files.
 
-    [Workflow](workflows/alto-postprocess.md) · [Landing page](https://ufal.github.io/atrium-alto-postprocess/) · [Source](https://github.com/ufal/atrium-alto-postprocess)
+    [Workflow](workflows/ocr-postprocess.md) · [Landing page](https://ufal.github.io/atrium-ocr-postprocess/) · [Source](https://github.com/ufal/atrium-ocr-postprocess)
 
 -   **[translator](tools/translator/index.md)**
 
@@ -60,19 +60,28 @@ together — six repositories in all.
 
     ---
 
-    Morphology, syntax and named entities for every text line, and the TEITOK corpus format with
-    bounding boxes kept.
+    Morphology, syntax and named entities for every text line, from LINDAT's UDPipe and NameTag,
+    and the TEITOK corpus format with bounding boxes kept.
 
     [Workflow](workflows/nlp-enrich.md) · [Landing page](https://ufal.github.io/atrium-nlp-enrich/) · [Source](https://github.com/ufal/atrium-nlp-enrich)
 
--   **llm-enrich**
+-   **keyword-extract**
 
     ---
 
-    Keywords and vocabulary mapping against the ATRIUM controlled vocabulary, with local or remote
-    LLMs — and the converter for born-digital documents.
+    Both kinds of keywords: statistical ones (KeyBERT, YAKE, KER), and terms of the AMČR and TEATER
+    controlled vocabularies chosen by a language model.
 
-    [Workflow](workflows/llm-enrich.md) · [Landing page](https://ufal.github.io/atrium-llm-enrich/) · [Source](https://github.com/ufal/atrium-llm-enrich)
+    [Workflow](workflows/keyword-extract.md) · [Source](https://github.com/ufal/atrium-keyword-extract)
+
+-   **digital-convert**
+
+    ---
+
+    Reads born-digital PDF and DOCX files into the document record without OCR, and flags the
+    pages whose text layer does not decode, so only those go to OCR.
+
+    [Workflow](workflows/digital-convert.md) · [Source](https://github.com/ufal/atrium-digital-convert)
 
 -   **atrium-project** — the hub
 
@@ -115,16 +124,17 @@ And by question:
 flowchart LR
   SCAN[/"scanned pages"/] --> PC[page-classification]
   PC -. "routing decision" .-> OCR["OCR<br/>(outside the pipeline)"]
-  OCR --> ALTO[alto-postprocess]
-  DOCS[/"PDF, office and text files"/] -. "text-lines" .-> ALTO
+  OCR --> ALTO[ocr-postprocess]
+  DOCS[/"office and text files"/] -. "text-lines" .-> ALTO
+  BORN[/"born-digital PDF, DOCX"/] --> DC[digital-convert]
   ALTO -- "PAGE_ALTO/" --> TR[translator]
   ALTO -- "DOC_LINE_CATEG/" --> NLP[nlp-enrich]
-  ALTO -- "DOC_LINE_CATEG/" --> LLM[llm-enrich]
-  NLP -- "TEITOK/" --> LLM
+  NLP -- "record" --> KW[keyword-extract]
+  DC -- "record" --> KW
   TR --> EN[/"English editions"/]
 ```
 
-**Five tools, each a separate repository.** Every tool is a command-line program and an HTTP
+**Six tools, each a separate repository.** Every tool is a command-line program and an HTTP
 service built from the same code, shipped as two container images. The tools need very
 different environments — a vision-model stack, CPU heuristics, remote translation services,
 GPU language models — so they are not combined into one program.

@@ -45,6 +45,6 @@ jobs:
     with:
       image-ref: ghcr.io/ufal/atrium-<tool>:latest
       citation-path: CITATION.cff
-      # Repos with a setup/ layout (alto-postprocess, page-classification) pass
+      # Repos with a setup/ layout (ocr-postprocess, page-classification) pass
       # setup/para_config.txt here.
       para-config-path: para_config.txt

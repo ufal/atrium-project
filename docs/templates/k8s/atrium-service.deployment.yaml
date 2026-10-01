@@ -13,12 +13,12 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: atrium-<tool>-api            # e.g. atrium-nlp-enrich-api
+  name: atrium-<tool>-api            # e.g. atrium-keyword-extract-api
   labels:
     app.kubernetes.io/name: atrium-<tool>-api
     app.kubernetes.io/part-of: atrium
 spec:
-  # SAFE TO RAISE for translator, page-classification, alto-postprocess and llm-enrich:
+  # SAFE TO RAISE for translator, page-classification, ocr-postprocess and keyword-extract:
   # all four are stateless per request (each uses a tempfile.TemporaryDirectory that dies
   # with the request), so any replica can serve any request.
   #
@@ -55,7 +55,7 @@ spec:
       # the process is still doing. 60s here = 5s preStop + 20s uvicorn HTTP drain +
       # 25s tracked-task drain (every repo's actual defaults) + 10s headroom. Widen
       # it for a repo with longer-running SINGLE requests (translator's per-chunk
-      # LINDAT calls, llm-enrich's per-line LLM calls can legitimately run minutes) —
+      # LINDAT calls, keyword-extract's per-passage LLM calls can legitimately run minutes) —
       # this default protects typical requests, not every possible one; see
       # docs/k8s_deployment.md's "Known limits".
       terminationGracePeriodSeconds: 60
@@ -111,8 +111,8 @@ spec:
             #                                 # to an empty origin list and blocks every
             #                                 # browser request. To keep the default, delete
             #                                 # the entry; do not blank it.
-            # - name: MAX_UPLOAD_MB           # NO shared default: alto-postprocess 25,
-            #   value: "10"                   # llm-enrich 10, nlp-enrich 5,
+            # - name: MAX_UPLOAD_MB           # NO shared default: ocr-postprocess 25,
+            #   value: "10"                   # keyword-extract 10, nlp-enrich 5,
             #                                 # page-classification 10, translator 50.
             #                                 # Uncommenting this as-is RAISES nlp-enrich's
             #                                 # limit and LOWERS alto's and translator's.
@@ -143,17 +143,18 @@ spec:
             # - name: TRANSLATION_URL         # translator
             #   value: "https://translate.internal/api/v2"
             #
-            # --- Secrets: llm-enrich only ---------------------------------
-            # llm-enrich raises at startup without a key (service/api.py:128-134),
-            # so it is the one service this manifest cannot deploy unmodified.
+            # --- Secrets: keyword-extract only (the controlled kind) ---------------------------------
+            # keyword-extract's controlled kind (the LLM over the AMČR/TEATER vocabularies,
+            # through OpenRouter) needs a key; its statistical kind (KeyBERT, YAKE, KER) needs
+            # none, so a statistical-only deployment of this manifest runs unmodified.
             # Create the Secret out of band — never as a literal `value:` here, and
             # never in a file that gets committed:
-            #   kubectl create secret generic atrium-llm-enrich \
+            #   kubectl create secret generic atrium-keyword-extract \
             #     --from-literal=openrouter-api-key=sk-...
             # - name: OPENROUTER_API_KEY
             #   valueFrom:
             #     secretKeyRef:
-            #       name: atrium-llm-enrich
+            #       name: atrium-keyword-extract
             #       key: openrouter-api-key
             # - name: OPENROUTER_MODEL        # not secret, but equally required
             #   value: "openai/gpt-4o-mini"

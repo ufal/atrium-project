@@ -74,8 +74,8 @@ on:
         description: >-
           JSON list of top-level modules that must not be importable inside a probed image,
           first-party ones included (the probe runs in the image's WORKDIR). For code a tracked
-          move takes out of an image, e.g. '["llm_utils"]' in nlp-enrich once
-          atrium-nlp-enrich#40 lands; the image-closure check of workflow-lint covers what the
+          move takes out of an image, e.g. '["llm_utils"]' in nlp-enrich until
+          atrium-keyword-extract#1 has taken it out; the image-closure check of workflow-lint covers what the
           entrypoint imports, this covers what the image contains.
         required: false
         type: string
@@ -377,7 +377,7 @@ jobs:
           # Every ATRIUM Dockerfile names its first stage `AS base`, so the
           # target is passed through verbatim. The old `'base' -> ''` mapping
           # resolved to the LAST declared stage, silently building/publishing
-          # the wrong image in multi-stage repos (nlp-enrich, llm-enrich).
+          # the wrong image in multi-stage repos (nlp-enrich, digital-convert).
           target: ${{ matrix.target }}
           push: false
           # load: true puts the built image into this runner's local Docker daemon so
@@ -486,7 +486,7 @@ jobs:
           # as a clean INFO-only startup does -- narrowing to INFO alone made this step
           # fail every run for that service regardless of the format string being fine.
           LEVEL_ALLOWLIST='(DEBUG|INFO|WARNING|ERROR|CRITICAL)'
-          # Some services (nlp-enrich's KeyBERT warmup, in particular) keep emitting
+          # Some services (keyword-extract's KeyBERT warmup, in particular) keep emitting
           # HF Hub metadata calls for a few seconds after Docker's own HEALTHCHECK
           # first reports healthy, so a single immediate grep can race a genuinely
           # correct container. Poll instead of checking once.
@@ -518,7 +518,7 @@ jobs:
           # /info `openapi_sha256` must be the digest of what is served. This is the check the
           # AMČR pipeline runs against a deployed image, and the only container-level proof for
           # a torch-bound service whose light lane generates the spec with a stub (pc). A spec
-          # per service is matched by content, so a repo with two HTTP images (llm-enrich's
+          # per service is matched by content, so a repo with two HTTP images (digital-convert's
           # planned api-digital, service/openapi-digital.json) passes against its own file.
           # Skipped where the repo has not adopted the typed contract yet (no committed spec, or
           # no vendored atrium_openapi.py), because the hub's `v1` moves for all five at once.
@@ -956,7 +956,7 @@ jobs:
 
       - name: Upload SARIF to code scanning
         # Distinct category per matrix target, otherwise multi-target repos
-        # (nlp-enrich: base/api/llm) overwrite each other's findings.
+        # (a repo with base/api/llm targets) overwrite each other's findings.
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results.sarif

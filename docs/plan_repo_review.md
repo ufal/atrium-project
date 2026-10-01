@@ -1,5 +1,11 @@
 # 🧭 ATRIUM Ecosystem — Repository Review & Forward Strategy
 
+> **Repository names (2026-10-01).** This document predates the repository moves of atrium-project#72 and
+> uses the names of its time: `alto-postprocess` is now `ocr-postprocess`; `llm-enrich` split into
+> `keyword-extract` (its keyword stage, with the keyword extraction of `nlp-enrich`) and `digital-convert`
+> (the born-digital converter). The old repositories are archived. Read the names below through that map;
+> the current ones are in [`docs_site/ecosystem/repository-map.md`](../docs_site/ecosystem/repository-map.md).
+
 > ⚠️ **This review is dated 2026-07-22 and is not the current source of truth for the
 > facts it records.** `docs/docker_gha_roadmap.md` (2026-08-04 onward) supersedes its
 > CI/dependency/build findings; the para-drift-guarded canonical set specifically has

@@ -1908,3 +1908,38 @@ releases; the gate's diff review covers *"only the files that go into the image 
   → `branch-rules`; the tags; the pin sweep, then `--require-sha-pins`; the AMČR label run.
 
   Not pushed from here: files delivered in chat.
+
+## 2026-10-01 · transfer round 1 — the hub follows the repository moves (#72)
+
+`alto-postprocess` → **`ocr-postprocess`**; the keyword extraction of `nlp-enrich` and `llm-enrich` →
+**`keyword-extract`**; the rest of `llm-enrich` → **`digital-convert`**. The three were created as **new** repositories
+(no GitHub redirects; AMČR re-forked them under these names), the old ones are to be archived. Hub side:
+
+* **Record contract** — `PROGRAM_SUCCESSORS` (`alto-postprocess` → `ocr-postprocess`, `llm-enrich` → `keyword-extract`),
+  `canonical_program()`, `same_program()`; each successor is added beside its predecessor in `BLOCK_OWNERS` /
+  `BLOCK_FIELD_OWNERS` (built once by `_add_successors()`), and the §1a origin check, the `needs_ocr` hand-off and
+  `merge_document_records()` compare canonical names, so `enrichment` stays a single-owner block. Stamps already written are
+  never rewritten. `atrium_vocab.validate_labels(originator=)` resolves `ocr-postprocess` by alias;
+  `atrium_rocrate.REPO_URLS` / `atrium_paradata._REPO_URLS` give every current program its own repository and keep the
+  predecessors'. Schema JSON: descriptions only (freeze register untouched). `docs/document_schema.md`: *Program successors*.
+  Tests: the successor cases in `test_document_originators.py` (+7), `test_atrium_vocab.py`, `test_atrium_rocrate.py`.
+  Needs: re-vendor ×6, move `v1`.
+* **Lists** — `revendor_shared.sh` (done in `aeec306`), `release_trust.py`, `pin_hub_reusables.py`,
+  `skill_drift_check.py`, `update_issues.sh`, `all-repos-smoke.yml` matrix, the landing-card generator, `image_closure`
+  (its `moving` example now → keyword-extract#1).
+* **E2E** — `e2e-pipeline-smoke.yml`: Stage 2 → `ocr-postprocess` (checkout + image); the former Stage 5 (llm-enrich) is
+  **gone** — controlled keywords return when keyword-extract ships that kind; in its place a keyword-extract **service
+  smoke** (production `-api` image, `POST /extract_keywords`, YAKE, statistical kind) that warns on an unpublished image and
+  fails on the schedule. `tests/test_e2e_entrypoints.py` counts four numbered stages. `e2e-digital-smoke.yml`:
+  digital-convert images and generator checkout; Stage D2 (llm-enrich) removed. `e2e_assert.py` names the current writer in
+  its owner report and accepts either spelling of the originator.
+* **Docs** — `docs_site/workflows/`: `alto-postprocess.md` → `ocr-postprocess.md`, `llm-enrich.md` → `digital-convert.md`
+  (the converter), new `keyword-extract.md`, `nlp-enrich.md` without keywords; the index, nav, repository map, pipelines,
+  external tools, contracts, tool pages, history; `docs/k8s_deployment.md` service map (+ runbooks, skills catalog,
+  `docker_gha.md`); name banners on the dated planning documents; `PAGES_SETUP.md` addendum; README.
+* **Open for the repositories** — nlp-enrich 1.0.0 (LINDAT only), keyword-extract 1.0.0, ocr-postprocess 2.0.0-beta; the
+  controlled kind and `keywords` block (#73); digital-convert cleanup; old images stay published, no new tags.
+* **Licence note** — YAKE is **AGPL-3.0** (`para_config.txt` of nlp-enrich: conditional). It is selectable in keyword-extract's
+  production image, so a run that uses it is declared AGPL; the same class of finding as PyMuPDF (#72). Decision for #72.
+
+  Not pushed from here: files delivered in chat.

@@ -16,10 +16,11 @@ authored: true
 !!! info "Scope"
     This page gives the **stable core** of the workflow: its purpose, its steps, the formats
     it reads and writes, and the licence floor of its output. The details of the TEITOK output,
-    the named-entity model in use and the keyword options are documented with the code — in
+    and the named-entity model in use are documented with the code — in
     the tool's [README](https://github.com/ufal/atrium-nlp-enrich#readme) and
     [`schemas/teitok/README.md`](https://github.com/ufal/atrium-nlp-enrich/blob/master/schemas/teitok/README.md) —
-    because they change as the format and the models are refined.
+    because they change as the format and the models are refined. Keywords are no longer made
+    here: they moved to [keyword-extract](keyword-extract.md) on 1 October 2026.
 
 ## Purpose
 
@@ -34,7 +35,7 @@ keeps every word tied to its place on the page image.
 
 |                    |                                                                                                                                                                                                                                  |
 |--------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **In**             | tables of text lines (CSV or XLSX with a `text` column) from alto-postprocess; optionally the original ALTO files and the page images, for word positions                                                                        |
+| **In**             | tables of text lines (CSV or XLSX with a `text` column) from ocr-postprocess; optionally the original ALTO files and the page images, for word positions                                                                        |
 | **Out**            | CoNLL-U per document; named entities per page (TSV); tokens, lemmas and entities per document (CSV); an entity summary for the collection (CSV); TEITOK XML; a paradata log (JSON); optionally the ATRIUM document record (JSON) |
 | **Runs as**        | a command-line pipeline (four stages, or `run_pipeline.py`); a container image; an HTTP service image (`POST /enrich`); an [Agent Skill](../agent-skills.md)                                                                     |
 | **Compute**        | CPU; the annotation itself runs on LINDAT's servers                                                                                                                                                                              |
@@ -52,10 +53,11 @@ keeps every word tied to its place on the page image.
 | 3 | Named entities        | NameTag 3 finds names of people, places, organisations and other entities in the annotated text.                                                                                                  | CoNLL-U → TSV                                    | Named Entity Recognition |
 | 4 | Merge and write       | Tokens, lemmas and entities are joined per document into tables, into CoNLL-U with the entities added, and into TEITOK XML; with the ALTO files, each word in TEITOK carries its box on the page. | CoNLL-U, TSV (+ ALTO) → CSV, CoNLL-U, TEITOK XML | —                        |
 
-**Optional stages** add keywords per page or per document, and convert documents that are not
-ALTO — PDF, office files, PAGE XML, hOCR — into TEITOK before annotation
-([Pipelines → W11](../pipelines.md#other-workflows)). The converter runs from the command line
-only.
+**An optional stage** converts documents that are not ALTO — PDF, office files, PAGE XML,
+hOCR — into TEITOK before annotation ([Pipelines → W11](../pipelines.md#other-workflows)). The
+converter runs from the command line only. The tool's projection of the finished record into the
+TEITOK header (`/project_record`) reads the keywords that [keyword-extract](keyword-extract.md)
+wrote, so it runs after that step.
 
 ## Provenance and licence
 
@@ -63,8 +65,7 @@ The stages write paradata logs, and a whole-pipeline run merges them into one ru
 The licence of a run is computed from the components it used, as declared in the tool's
 `para_config.txt`; the most restrictive one wins. The UDPipe 2 and NameTag 3 models are
 CC BY-NC-SA 4.0 and take part in every run, so every core run's output is CC BY-NC-SA 4.0;
-the optional stages declare their own components (the format converter, for example, is
-GPL-3.0).
+the optional stage declares its own component (the format converter is GPL-3.0).
 
 In the [document record](../ecosystem/document-contract.md) the tool owns the `entities`
 block.
@@ -72,8 +73,8 @@ block.
 ## Where it sits
 
 * **Fourth stage** of the scanned-document pipeline — [Pipelines → W1](../pipelines.md#w1--scanned--ocr-document-pipeline).
-  It reads the line tables of alto-postprocess and the original ALTO, and its TEITOK is read by
-  llm-enrich.
+  It reads the line tables of [ocr-postprocess](ocr-postprocess.md) and the original ALTO;
+  [keyword-extract](keyword-extract.md) follows it and reads the record it leaves.
 * **One route of format adaptation**, into TEITOK — [Pipelines → W11](../pipelines.md#other-workflows).
 * **The review half of the vocabulary workflow** — the reviewed SKOS vocabulary
   ([SKOS & the ATRIUM vocabulary](../contracts/skos.md)).
@@ -93,12 +94,13 @@ as tools calling LINDAT's services.
 
 ## Sources
 
-Read from `ufal/atrium-nlp-enrich` at release **`v0.21.0`**. This table records
+Read from `ufal/atrium-nlp-enrich` at release **`v0.21.0`**; the keyword options it documented
+then have moved to keyword-extract. This table records
 **provenance**, not a build instruction.
 
 | Source                                                                                  | What was taken from it                                    |
 |-----------------------------------------------------------------------------------------|-----------------------------------------------------------|
-| `README.md` §§ TEITOK XML, Workflow Stages, Inputs and Outputs, flexiconv               | purpose, the step order, the outputs, the optional stages |
+| `README.md` §§ TEITOK XML, Workflow Stages, Inputs and Outputs, flexiconv               | purpose, the step order, the outputs, the optional stage  |
 | `para_config.txt`                                                                       | the licence components                                    |
 | `service/README.md`                                                                     | the HTTP service                                          |
 | SSH Open Marketplace `EMhu3X`                                                           | the record identifier                                     |

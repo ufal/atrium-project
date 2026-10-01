@@ -14,8 +14,8 @@ the point of it is.
 
 !!! info "Scope"
     Every workflow that runs through **page-classification** or the **translator** is
-    described in full. The five that belong only to alto-postprocess, nlp-enrich and
-    llm-enrich are listed under [Other workflows](#other-workflows).
+    described in full. The ones that belong only to ocr-postprocess, nlp-enrich, keyword-extract
+    and digital-convert are listed under [Other workflows](#other-workflows).
 
 This page follows the tools together. Each tool's **own** workflow — its steps, formats and
 licence, told the way its SSH Open Marketplace and Galaxy records tell it — is on
@@ -33,39 +33,40 @@ licence, told the way its SSH Open Marketplace and Galaxy records tell it — is
 | W6  | [E2E smoke](#w6--e2e-smoke-the-integration-contract)                             | the automated test that runs the whole chain                                                                 |
 | W7  | [Vocabulary harvesting](#w7--vocabulary-harvesting--review-the-translators-half) | building the term list that keeps translations consistent                                                    |
 | W8  | [Training and evaluation](#w8--training-and-evaluation-page-classification)      | making and scoring a page-classification model                                                               |
-| W9  | Parameter optimisation                                                           | tuning alto-postprocess's line-categorisation rules                                                          |
+| W9  | Parameter optimisation                                                           | tuning ocr-postprocess's line-categorisation rules                                                           |
 | W10 | Document-understanding benchmark                                                 | comparing models on sampled documents                                                                        |
-| W11 | Format adaptation                                                                | bringing PDF, office files, PAGE XML, hOCR, … in: as line tables (alto-postprocess) or as TEITOK (flexiconv) |
+| W11 | Format adaptation                                                                | bringing PDF, office files, PAGE XML, hOCR, … in: as line tables (ocr-postprocess) or as TEITOK (flexiconv)  |
 | W12 | [Annotation round trip](#w12--annotation-round-trip-page-classifications-half)   | turning PDFs into a labelled training set, and corrections back into it                                      |
 | W13 | [RO-Crate export](#w13--ro-crate-export--fair-publication)                       | packaging finished records for a repository or catalogue                                                     |
 
 ## How the stages connect
 
-A pipeline diagram with five boxes in a row suggests five file handoffs. The files actually
+A pipeline diagram with a row of boxes suggests a file handoff between every two of them. The files actually
 move differently:
 
 * **page-classification informs a routing decision.** Its categories tell a person or a
   script which pages go to OCR, HTR, table or image extraction; the next stage,
-  alto-postprocess, works from the OCR output and does not read `page_categories`.
-* **alto-postprocess is where the files fan out.** It writes per-page ALTO (`PAGE_ALTO/`) for
-  the translator and a per-line table (`DOC_LINE_CATEG/`) for nlp-enrich and llm-enrich.
+  ocr-postprocess, works from the OCR output and does not read `page_categories`.
+* **ocr-postprocess is where the files fan out.** It writes per-page ALTO (`PAGE_ALTO/`) for
+  the translator and a per-line table (`DOC_LINE_CATEG/`) for nlp-enrich.
 * **The translator's output is an end product.** `TRANSLATED/` holds English editions for
   readers; no later stage reads it.
-* **nlp-enrich reads `DOC_LINE_CATEG/` and the original `ALTO/`**, and writes `TEITOK/`,
-  which llm-enrich reads.
+* **nlp-enrich reads `DOC_LINE_CATEG/` and the original `ALTO/`**, and writes `TEITOK/`, a
+  second end product.
+* **keyword-extract reads the record, not files.** It takes the record nlp-enrich left — or the
+  one digital-convert wrote, on the born-digital route — and adds keywords to it.
 
-So there are three file handoffs — `PAGE_ALTO/`, `DOC_LINE_CATEG/` and `TEITOK/` — and one
-thing that does run through every stage in order: the **record**. This page draws both
-layers.
+So there are two file handoffs — `PAGE_ALTO/` and `DOC_LINE_CATEG/` — and one thing that does run
+through every stage in order: the **record**. This page draws both layers.
 
 ### Layer 1 — the file DAG
 
-It fans out from `alto-postprocess` and terminates at the translator.
+It fans out from `ocr-postprocess` and ends in two products, the translation and the TEITOK file.
 
 ```mermaid
 flowchart LR
   SCAN[Scanned page image] --> PC[page-classification]
-  PC -. informs a human<br/>routing decision .-> ALTO[alto-postprocess]
+  PC -. informs a human<br/>routing decision .-> ALTO[ocr-postprocess]
   OCR[ALTO XML from OCR] --> ALTO
   ALTO --> PA[PAGE_ALTO/]
   ALTO --> DLC[DOC_LINE_CATEG/]
@@ -74,9 +75,8 @@ flowchart LR
   TXL --> END(((end product)))
   DLC --> NLP[nlp-enrich]
   OCR --> NLP
-  DLC --> LLM[llm-enrich]
   NLP --> TT[TEITOK/]
-  TT --> LLM
+  TT --> END2(((end product)))
 ```
 
 ### Layer 2 — the record accretion chain
@@ -91,18 +91,18 @@ flowchart LR
   P1["1_pc.json<br/>page_categories"] --> P2["2_alto.json<br/>pages · content · lines · tables"]
   P2 --> P3["3_translate.json<br/>translations"]
   P3 --> P4["4_nlp.json<br/>entities"]
-  P4 --> P5["5_llm.json<br/>enrichment"]
+  P4 --> P5["keyword-extract<br/>keywords · enrichment"]
 ```
 
 Who may write what is declared once, in the hub-canonical `BLOCK_OWNERS`:
 
 | Block                                 | Owner                                                                   |
 |---------------------------------------|-------------------------------------------------------------------------|
-| `pages`, `content`, `lines`, `tables` | `alto-postprocess` **or** `digital-convert`, decided by `source.origin` |
+| `pages`, `content`, `lines`, `tables` | `ocr-postprocess` **or** `digital-convert`, decided by `source.origin`  |
 | `page_categories`                     | `page-classification`                                                   |
 | `translations`                        | `translator`                                                            |
 | `entities`                            | `nlp-enrich`                                                            |
-| `enrichment`, `forms`                 | `llm-enrich`                                                            |
+| `enrichment`, `forms`                 | `keyword-extract` (`llm-enrich` in older records)                       |
 
 That table authorises **writes**. The read-time answer to "who wrote this block in *this*
 record" is `assembled.blocks[<block>].program`, and for a field-split block
@@ -123,19 +123,19 @@ OCR.
 | # | Stage                                                     | Reads                                    | Writes                          | Block                                 |
 |---|-----------------------------------------------------------|------------------------------------------|---------------------------------|---------------------------------------|
 | 1 | [page-classification](tools/page-classification/index.md) | the page image                           | a Top-N CSV                     | `page_categories`                     |
-| 2 | alto-postprocess                                          | `ALTO/`                                  | `PAGE_ALTO/`, `DOC_LINE_CATEG/` | `pages`, `content`, `lines`, `tables` |
+| 2 | ocr-postprocess                                           | `ALTO/`                                  | `PAGE_ALTO/`, `DOC_LINE_CATEG/` | `pages`, `content`, `lines`, `tables` |
 | 3 | [translator](tools/translator/index.md)                   | `PAGE_ALTO/<doc>/<doc>-N.alto.xml`       | `TRANSLATED/`                   | `translations`                        |
 | 4 | nlp-enrich                                                | `DOC_LINE_CATEG/` + the original `ALTO/` | `TEITOK/`                       | `entities`                            |
-| 5 | llm-enrich                                                | `DOC_LINE_CATEG/`, `TEITOK/`             | enrichment output               | `enrichment`                          |
+| 5 | keyword-extract                                           | the record from stage 4                  | keywords with method and score  | `enrichment` (controlled kind)        |
 
-alto-postprocess also takes OCR output that is not ALTO — PAGE XML, hOCR, ABBYY FineReader XML,
+ocr-postprocess also takes OCR output that is not ALTO — PAGE XML, hOCR, ABBYY FineReader XML,
 DjVuXML, Tesseract TSV, OCR JSON, a PDF's OCR layer — through its text-lines and json-keys
 methods ([W11](#other-workflows)). Those give the same `DOC_LINE_CATEG/` table, but no
 `PAGE_ALTO/` for the translator and no page layout for nlp-enrich's TEITOK, which takes its
 boxes from the ALTO file (or from a flexiconv conversion). Its ALTO methods split ALTO v3 files
 only; v2 and v4 go through text-lines. The formats, their standards and what is kept of each are
-in alto-postprocess's
-[input formats reference](https://github.com/ufal/atrium-alto-postprocess/blob/master/docs/text_inputs.md).
+in ocr-postprocess's
+[input formats reference](https://github.com/ufal/atrium-ocr-postprocess/blob/master/docs/text_inputs.md).
 
 **Outputs.** The translated document, the TEITOK XML, and one `atrium_document` record that
 has accreted every stage's block — which `atrium_rocrate.py` can then map, granularity
@@ -144,7 +144,7 @@ intact, into an RO-Crate.
 **What the user actually gets.** A routing decision for each page (stage 1), a cleaned
 positional text layer with per-line quality scores (stage 2), an English reading of the
 document (stage 3), linguistic annotation and named entities (stage 4), and
-vocabulary-linked enrichment (stage 5) — with a provenance record that says which program,
+keywords of both kinds (stage 5) — with a provenance record that says which program,
 at which version, produced each of them.
 
 !!! note "Running the whole chain"
@@ -163,7 +163,7 @@ a web frontend, an Agent Skill or another service uses.
 **Inputs.** One file per request, uploaded as multipart, optionally with a baseline
 `document_json` to accrete onto.
 
-**Stages.** Every one of the five tools publishes an `atrium-<tool>-api` image from the same
+**Stages.** Every one of the tools publishes an `atrium-<tool>-api` image from the same
 Dockerfile as its batch image, and every one exposes the same meta-contract:
 
 | Endpoint                | Guarantee                                                                               |
@@ -179,10 +179,15 @@ runs; the repository's other images are the batch form of the same stage or rese
 | Stage                                     | Production image                              |
 |-------------------------------------------|-----------------------------------------------|
 | page categories                           | `ghcr.io/ufal/atrium-page-classification-api` |
-| OCR output and text files → scored lines  | `ghcr.io/ufal/atrium-alto-postprocess-api`    |
+| OCR output and text files → scored lines  | `ghcr.io/ufal/atrium-ocr-postprocess-api`     |
 | morphology, named entities, TEITOK        | `ghcr.io/ufal/atrium-nlp-enrich-api`          |
-| keywords from the controlled vocabularies | `ghcr.io/ufal/atrium-llm-enrich-api`          |
+| keywords, statistical and controlled      | `ghcr.io/ufal/atrium-keyword-extract-api`     |
 | English metadata                          | `ghcr.io/ufal/atrium-translator-api`          |
+
+The born-digital converter, digital-convert, runs as a command-line image today; its service
+(`api-digital`) is the next step of its plan. The images of the repositories that preceded these
+(`atrium-alto-postprocess`, `atrium-llm-enrich`) stay published for consumers pinned to them and
+are no longer built.
 
 What each production image may contain is declared in its repository
 (`.github/production-image.json`) and checked on every push: the stage's own code and the
@@ -201,7 +206,7 @@ service that does not answer with a JSON envelope, by design — it composes wit
 
 **What the user actually gets.** A stateless, horizontally scalable stage: nothing is
 retained between requests, so a Kubernetes `Deployment` can scale on queue depth. Error
-codes are harmonised across all five services — `413` too large, `400` or `415` a wrong
+codes are harmonised across the services — `413` too large, `400` or `415` a wrong
 content type, `422` unusable input, `500` a processing failure, `503` warming up or
 draining — so a client can treat them uniformly — with the one caveat that FastAPI's `detail` is a string
 for a service-raised error and a list of validation objects when FastAPI rejects the request
@@ -246,7 +251,7 @@ container, and the translator's model runs at LINDAT.
 
 ### W6 — E2E smoke: the integration contract
 
-**Purpose.** Prove that the five tools still compose. This is the only place the whole chain
+**Purpose.** Prove that the tools still compose. This is the only place the whole chain
 runs, and it is therefore the de-facto specification of the pipeline.
 
 **Inputs.** One synthetic single-page Czech document, `CTX000000003` — ALTO v3,
@@ -254,19 +259,20 @@ runs, and it is therefore the de-facto specification of the pipeline.
 page-classification stage renders one from the ALTO at run time, keeping the whole smoke
 test anchored to a single fixture.
 
-**Stages.** Five `docker run` invocations, each mounting one shared workspace and threading
-the record forward: `1_pc.json` → `2_alto.json` → `3_translate.json` → `4_nlp.json` →
-`5_llm.json`. Triggered on push to `main`, on dispatch, and on a cron every third day.
+**Stages.** Four `docker run` invocations, each mounting one shared workspace and threading
+the record forward: `1_pc.json` → `2_alto.json` → `3_translate.json` → `4_nlp.json`, then a
+smoke of keyword-extract's service on that record, which is not a numbered stage until the record
+carries a `keywords` block. Triggered on push to `main`, on dispatch, and on a cron every third day.
 
 **The `DOC_LINE_CATEG` bridge.** The E2E config sets `SKIP_CLASSIFY = true` for
-alto-postprocess, and the hub commits that stage's real output as a fixture instead —
-`DOC_LINE_CATEG/CTX000000003.csv`, in alto-postprocess's 37-column `CSV_HEADER` format, one
+ocr-postprocess, and the hub commits that stage's real output as a fixture instead —
+`DOC_LINE_CATEG/CTX000000003.csv`, in ocr-postprocess's 37-column `CSV_HEADER` format, one
 `Clear` line and one `Non-text` line.
 
-The reason is hardware: alto-postprocess's line-categorisation step (`langID_classify.py`)
+The reason is hardware: ocr-postprocess's line-categorisation step (`langID_classify.py`)
 **hard-requires CUDA**, and GitHub-hosted runners have no GPU. Skipping the stage and
-committing its output is what lets the remaining four stages be exercised at all — stages 4
-and 5 read the bridge file directly. It is a *pinned* fixture, unlike the vocabulary, because
+committing its output is what lets the remaining stages be exercised at all — stage 4 reads
+the bridge file directly. It is a *pinned* fixture, unlike the vocabulary, because
 the assertions depend on its content.
 
 !!! note "How to read a green run"
@@ -439,18 +445,18 @@ mapping is under
 
 ## Other workflows
 
-These run through alto-postprocess, nlp-enrich and llm-enrich only; each tool's own README
-describes them, and the stable core of each tool's workflow is on its Workflows page —
-[alto-postprocess](workflows/alto-postprocess.md), [nlp-enrich](workflows/nlp-enrich.md),
-[llm-enrich](workflows/llm-enrich.md).
+These run through ocr-postprocess, nlp-enrich, keyword-extract and digital-convert only; each
+tool's own README describes them, and the stable core of each tool's workflow is on its Workflows
+page — [ocr-postprocess](workflows/ocr-postprocess.md), [nlp-enrich](workflows/nlp-enrich.md),
+[keyword-extract](workflows/keyword-extract.md), [digital-convert](workflows/digital-convert.md).
 
 | #   | Workflow                               | What it is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 |-----|----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| W2  | Born-digital pipeline                  | Two stages, not six — a digital-born PDF or DOCX already has a text layer, so `digital-convert` originates the positional plane directly and origin-consistency refuses a second originator. A PDF whose text layer is an earlier OCR run is not born-digital and is refused: its originator is alto-postprocess (`--method text-lines`, `ocr:pdf-text-layer`)                                                                                                                                                                                                                                                                                                                                                  |
+| W2  | Born-digital pipeline                  | Two stages, not six — a digital-born PDF or DOCX already has a text layer, so `digital-convert` originates the positional plane directly and origin-consistency refuses a second originator. A PDF whose text layer is an earlier OCR run is not born-digital and is refused: its originator is ocr-postprocess (`--method text-lines`, `ocr:pdf-text-layer`)                                                                                                                                                                                                                                                                                                                                                  |
 | W3  | Digital → OCR re-origination           | How a digital-born document that turns out to need OCR is re-authorised, through `needs_ocr: true` — the single exception that lets two originators coexist                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| W9  | Parameter optimisation / rule coverage | alto-postprocess's sweep over its categorisation rules                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| W10 | Document-understanding benchmark       | llm-enrich's stratified sampling and model comparison                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| W11 | Format adaptation                      | Two routes for documents that are not ALTO. **alto-postprocess**'s `--method text-lines` reads them directly — PDF text layers, DOCX/ODT/XLSX/PPTX, EPUB, RTF, HTML, the OCR exports PAGE XML, hOCR, ABBYY FineReader XML, DjVuXML and Tesseract TSV, TEI/TEITOK, JSON, CSV, plain text — into the same per-line tables (`DOC_LINE_CATEG/`) nlp-enrich and llm-enrich read, with a truthful `source.origin` per format; it keeps text, not coordinates. **nlp-enrich**'s `api_flexiconv.sh` converts them (PDF, DOCX, PAGE XML, hOCR, …) *into* TEITOK; nlp-enrich then annotates them (`FLEXICONV_ANNOTATE`, or a converted file uploaded to `/enrich`) and llm-enrich reads them. flexiconv never writes ALTO |
+| W9  | Parameter optimisation / rule coverage | ocr-postprocess's sweep over its categorisation rules                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| W10 | Document-understanding benchmark       | keyword-extract's stratified sampling and model comparison (research, off the release line)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| W11 | Format adaptation                      | Two routes for documents that are not ALTO. **ocr-postprocess**'s `--method text-lines` reads them directly — PDF text layers, DOCX/ODT/XLSX/PPTX, EPUB, RTF, HTML, the OCR exports PAGE XML, hOCR, ABBYY FineReader XML, DjVuXML and Tesseract TSV, TEI/TEITOK, JSON, CSV, plain text — into the same per-line tables (`DOC_LINE_CATEG/`) nlp-enrich reads, with a truthful `source.origin` per format; it keeps text, not coordinates. **nlp-enrich**'s `api_flexiconv.sh` converts them (PDF, DOCX, PAGE XML, hOCR, …) *into* TEITOK; nlp-enrich then annotates them (`FLEXICONV_ANNOTATE`, or a converted file uploaded to `/enrich`). flexiconv never writes ALTO |
 
 ## Sources
 
@@ -468,5 +474,5 @@ instruction.
 | `atrium-translator` @ `master` `71feaef` — `main.py`, `service/api.py`, `load_vocab.py`, `processors/{vocab,translator,lemmatizer}.py`, `data_samples/vocabulary.csv`                                                                                    | W1 stage 3, W4, W7                                            |
 | both tools' `agent-skill` branches                                                                                                                                                                                                                       | W5                                                            |
 | `atrium-project/docs/templates/shared/atrium_rocrate.py`                                                                                                                                                                                                 | W13                                                           |
-| `atrium-alto-postprocess` @ `test` `2e2794d` — `text_formats.py` (`READERS`), `page_split.py` (`split_alto_xml`), `docs/text_inputs.md`                                                                                                                  | W11's alto-postprocess route; the note under W1's stage table |
-| `atrium-llm-enrich` @ `test` `c3575f5` (unreleased) — `api_util/digital_to_json.py` (`sniff`, `_refuse_ocr_layer`)                                                                                                                                       | W2's refusal of a prior OCR layer                             |
+| `atrium-alto-postprocess` @ `test` `2e2794d` (now `atrium-ocr-postprocess`) — `text_formats.py` (`READERS`), `page_split.py` (`split_alto_xml`), `docs/text_inputs.md`                                                                                    | W11's ocr-postprocess route; the note under W1's stage table  |
+| `atrium-llm-enrich` @ `test` `c3575f5` (now `atrium-digital-convert`) — `api_util/digital_to_json.py` (`sniff`, `_refuse_ocr_layer`)                                                                                                                     | W2's refusal of a prior OCR layer                             |

@@ -1,35 +1,38 @@
 # atrium-project — E2E smoke for the BORN-DIGITAL branch (W10, issue #10 tail).
 #
-#     digital-convert  ->  llm-enrich
+#     digital-convert
 #
-# Two stages, not six. This is a SIBLING of e2e-pipeline-smoke.yml, not a sixth
-# stage bolted onto it, and the data flow is what forces that — every scanned stage
-# is structurally unreachable from a born-digital record:
+# One stage. This is a SIBLING of e2e-pipeline-smoke.yml, not a stage bolted onto it, and the
+# data flow is what forces that — every scanned stage is structurally unreachable from a
+# born-digital record:
 #
 #   pc          needs a page image; a born-digital PDF has none, and no raster step
 #               exists to make one.
-#   alto        MUST NOT run. atrium_document's `_assert_origin_consistent()`
+#   ocr         MUST NOT run. atrium_document's `_assert_origin_consistent()`
 #               refuses every `pages`/`lines` write against a record whose
 #               `source.origin` is `digital-born-*`, pinned by
-#               `test_without_needs_ocr_alto_is_still_refused`. Chaining alto here
-#               would assert that the ownership rule is broken.
-#   translator  needs `PAGE_ALTO/`, which is alto's split output.
+#               `test_without_needs_ocr_alto_is_still_refused`. Chaining ocr-postprocess
+#               here would assert that the ownership rule is broken.
+#   translator  needs `PAGE_ALTO/`, which is ocr-postprocess's split output.
 #   nlp         needs the DOC_LINE_CATEG classify CSV *and* `INPUT_ALTO_DIR`.
-#   llm         WORKS AS-IS, no new code: `doc_to_visual_md.py` already dispatches
-#               on a `*.document.json` record alongside .pdf/.docx.
+#
+# The semantic stage that used to follow the converter here (llm-enrich's `/extract_keywords`
+# over the record) moved with all keyword extraction to keyword-extract on 2026-10-01
+# (atrium-keyword-extract#1). Its controlled kind joins this branch as a second stage when it
+# ships there, reading the converter's record exactly as the old step did.
 #
 # `digital-convert` is this branch's ORIGINATOR — like page-classification on the
 # scanned branch, it takes no `--document-json` baseline, it creates the record.
 #
 # ── What this covers that nothing else does ─────────────────────────────────────
-# The §1a arbitration. A born-digital record normally locks alto-postprocess out of
-# `pages`/`lines` entirely; the ONE thing that re-authorises it is the converter
-# setting `needs_ocr: true` — "there is a text layer here and I do not trust it".
-# That handoff is the whole reason two originators can coexist, and until this
-# workflow it was covered only by unit tests inside a single repo. Case 2 below
+# The §1a arbitration. A born-digital record normally locks ocr-postprocess (named
+# alto-postprocess until 2026-10-01) out of `pages`/`lines` entirely; the ONE thing that
+# re-authorises it is the converter setting `needs_ocr: true` — "there is a text layer here
+# and I do not trust it". That handoff is the whole reason two originators can coexist, and
+# until this workflow it was covered only by unit tests inside a single repo. Case 2 below
 # asserts it against a real published image.
 #
-# ── And what llm-enrich#18 added (Cases 4-6) ────────────────────────────────────
+# ── And what digital-convert#18 added (Cases 4-6) ───────────────────────────────
 # The converter stopped flattening: DOCX pages, headings, running headers/footers and
 # footnotes in `lines[].style`, tables joined to their lines, two-column PDFs in
 # reading order, and a PDF whose text layer is a prior OCR run refused (exit 3) rather
@@ -38,31 +41,22 @@
 # the image that converts them — because the two come from different places (below).
 #
 # ── Fixtures are GENERATED, never committed ─────────────────────────────────────
-# `atrium-llm-enrich/tests/fixtures/digital/make_fixtures.py` is a deterministic,
+# `atrium-digital-convert/tests/fixtures/digital/make_fixtures.py` is a deterministic,
 # pure-stdlib PDF/DOCX generator with sha256-pinned outputs — same design as this
 # repo's own `tools/e2e/render_alto_page.py`, and it needs no Pillow, reportlab or
 # pypdf. `--manifest` is pointed at the work dir on purpose: the generator REWRITES
 # its manifest by default, and writing into a checkout mid-run is exactly the
 # tree-mutation the docker reusable's `assert-clean-tree` now fails on.
 #
-# ── Sequencing, which is not optional ───────────────────────────────────────────
-# This needs `ghcr.io/ufal/atrium-llm-enrich-digital`, a SIXTH published image that
-# did not exist before W8 added the Dockerfile stage and the build target. So the
-# `:test` channel must be confirmed for the existing five FIRST, then the E2E
-# default flipped, and only then is this workflow's `image-tag: test` meaningful.
-# Do not conflate the three.
+# ── Sequencing ──────────────────────────────────────────────────────────────────
+# The repository was created on 2026-10-01 (atrium-project#72), and its images are published
+# under its own name: `ghcr.io/ufal/atrium-digital-convert-digital`. Until its first `test`
+# push or release there is no image at any tag, and the preflight says `MISSING` rather than
+# dying on a `denied` from the daemon. The predecessor's `atrium-llm-enrich-digital` images
+# stay where they are for consumers pinned to them, and are no longer tested here.
 #
-# STATUS 2026-09-07: the publication gap above is CLOSED, and the note is kept because
-# the preflight step it explains is still the right first thing to read when a run goes
-# red early. `atrium-llm-enrich` v0.6.0 (2026-08-19) was the first release carrying the
-# `digital` build target, so `-digital:latest` has existed since then; run 34090340995
-# pulled `-remote:latest` and `-digital:latest` without incident and got all the way to
-# the final assert. Option 2 in the preflight summary is what happened.
-#
-# The `:test` channel is a separate question. The gate that publishes it is at `v1`
-# (docker_gha_roadmap.md §7 W2, §10); a push-triggered run with `image-tag: test` is
-# what confirms it for `-digital`, and the preflight says `MISSING` rather than dying on
-# a `denied` from the daemon if it has not been published yet.
+# The `:test` channel moves on a push to the `test` branch (the `build-and-push` gate at `v1`
+# of docker-tool.reusable.yml); `:latest` moves only on a release tag.
 
 name: E2E Digital-Born Smoke Test
 
@@ -71,17 +65,13 @@ on:
     inputs:
       image-tag:
         description: >-
-          GHCR tag to exercise. `latest` = the last release (resolves for every
-          image since llm-enrich v0.6.0); `test` = the pre-release channel, which
+          GHCR tag to exercise. `latest` = the last release of digital-convert; `test` = the
+          pre-release channel, which
           may still be unpublished — see the STATUS note at the top of this file.
           The preflight step reports which one is missing and what unblocks it.
         type: choice
         options: [latest, test]
         default: latest
-      openrouter-model:
-        description: "OpenRouter model slug for the llm stage"
-        default: "openai/gpt-4o-mini"
-        type: string
   push:
     branches: [main]
     paths:
@@ -118,8 +108,7 @@ env:
   #                artifact consumers actually pull still work?
   #   dispatch  -> whatever was chosen.
   IMAGE_TAG: ${{ inputs.image-tag || (github.event_name == 'push' && 'test' || 'latest') }}
-  DIGITAL_IMAGE: ghcr.io/ufal/atrium-llm-enrich-digital
-  LLM_IMAGE: ghcr.io/ufal/atrium-llm-enrich-remote
+  DIGITAL_IMAGE: ghcr.io/ufal/atrium-digital-convert-digital
 
 jobs:
   digital-branch:
@@ -129,9 +118,6 @@ jobs:
       packages: read   # pull the -digital and -remote images from GHCR
       contents: read
       issues: write    # open an issue when the SCHEDULED run fails
-    env:
-      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_KEY }}
-      OPENROUTER_MODEL: ${{ inputs.openrouter-model || 'openai/gpt-4o-mini' }}
 
     steps:
       # NOT `repository: ufal/atrium-project` + `ref: v1`, which is what this
@@ -164,41 +150,21 @@ jobs:
       - name: Install e2e tooling dependencies
         run: pip install -r tools/e2e/requirements.txt
 
-      # llm-enrich is checked out ONLY for its fixture generator. The converter
+      # digital-convert is checked out ONLY for its fixture generator. The converter
       # itself runs from the published image, which is the thing under test.
       #
-      # The ref follows the image CHANNEL (llm-enrich#18, 2026-09-25): `:test` is built
-      # from llm-enrich's `test` branch, so the generator comes from there too. Every
-      # other channel takes the default branch, which is NOT the same thing as `:latest`
-      # — `:latest` moves only on a release tag, and the default branch can run ahead of
-      # it (on 2026-09-25 `main` == `test` == c3575f5, while `:latest` is still v0.7.0).
-      # That gap is why Cases 4-6 below also probe the image instead of trusting the
-      # fixture list; an empty ref is the checkout action's default branch.
-      - name: Checkout atrium-llm-enrich (fixture generator only)
+      # The ref follows the image CHANNEL: `:test` is built from digital-convert's `test`
+      # branch, so the generator comes from there too. Every other channel takes the default
+      # branch, which is NOT the same thing as `:latest` — `:latest` moves only on a release
+      # tag, and the default branch can run ahead of it. That gap is why Cases 4-6 below also
+      # probe the image instead of trusting the fixture list; an empty ref is the checkout
+      # action's default branch.
+      - name: Checkout atrium-digital-convert (fixture generator only)
         uses: actions/checkout@v7
         with:
-          repository: ufal/atrium-llm-enrich
+          repository: ufal/atrium-digital-convert
           ref: ${{ env.IMAGE_TAG == 'test' && 'test' || '' }}
-          path: work/llm-enrich-src
-
-      - name: Gate on OPENROUTER_KEY
-        id: gate
-        run: |
-          if [ -n "${OPENROUTER_API_KEY}" ]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::llm stage skipped — OPENROUTER_KEY is not set. The digital-convert stage still runs."
-          fi
-
-      # Same #18 rule as the scanned smoke: skipping on PR/dispatch is fine (forks
-      # hold no secret), but a stage that goes dark on the NIGHTLY is the failure
-      # this ecosystem has already paid for once.
-      - name: Require the secret on scheduled runs
-        if: steps.gate.outputs.enabled != 'true' && github.event_name == 'schedule'
-        run: |
-          echo "::error::OPENROUTER_KEY is not set — the scheduled digital E2E cannot exercise the llm stage."
-          exit 1
+          path: work/digital-convert-src
 
       # `packages: read` has been granted by this job since it was written, and
       # nothing ever used it — every step went straight to `docker run`, which for
@@ -218,6 +184,7 @@ jobs:
       #
       #   docker: Error response from daemon: Head
       #   "https://ghcr.io/v2/ufal/atrium-llm-enrich-digital/manifests/latest": denied
+      #   (the predecessor's package; the same applies to atrium-digital-convert-digital)
       #
       # which reads as a permissions problem and is not one. At the time `-digital`
       # had never been published at ANY tag, for two independent reasons (both
@@ -250,9 +217,6 @@ jobs:
           }
           echo "Resolving images for tag '${IMAGE_TAG}':"
           check "${DIGITAL_IMAGE}:${IMAGE_TAG}"
-          if [ "${{ steps.gate.outputs.enabled }}" = "true" ]; then
-            check "${LLM_IMAGE}:${IMAGE_TAG}"
-          fi
           if [ "$missing" -ne 0 ]; then
             echo "::error::No image published at ':${IMAGE_TAG}'. The born-digital branch cannot be smoked until one exists."
             {
@@ -262,17 +226,16 @@ jobs:
               echo ""
               echo "This is a publication gap, not a credentials problem. To unblock, either:"
               echo ""
-              echo "1. For \`image-tag: test\`: push \`atrium-llm-enrich\`'s \`test\` branch (the"
+              echo "1. For \`image-tag: test\`: push \`atrium-digital-convert\`'s \`test\` branch (the"
               echo "   \`build-and-push\` gate at \`v1\` publishes \`:test\` on it) and re-run; or"
-              echo "2. For \`latest\`: cut an \`atrium-llm-enrich\` release — every release since"
-              echo "   v0.6.0 includes the \`digital\` build target and publishes \`:latest\`."
+              echo "2. For \`latest\`: cut an \`atrium-digital-convert\` release, which publishes \`:latest\`."
               echo ""
               echo "Then mind the third gate, which bites immediately after the first two:"
               echo "a GHCR package is PRIVATE on creation, and it is owned by"
-              echo "\`atrium-llm-enrich\`, not by this repo. This job's \`GITHUB_TOKEN\` cannot"
+              echo "\`atrium-digital-convert\`, not by this repo. This job's \`GITHUB_TOKEN\` cannot"
               echo "read a private package belonging to a different repository, so the pull"
               echo "fails with \`denied\` even once the image exists. Fix it once, on the"
-              echo "package page: either set visibility to public (matching the other five"
+              echo "package page: either set visibility to public (matching the other ATRIUM images"
               echo "ATRIUM images), or under *Manage Actions access* grant"
               echo "\`ufal/atrium-project\` at least Read."
             } >> "$GITHUB_STEP_SUMMARY"
@@ -282,14 +245,14 @@ jobs:
       - name: Create workspace
         run: |
           W="${{ github.workspace }}/work"
-          mkdir -p "$W/digital_in" "$W/doc_json" "$W/llm_out"
+          mkdir -p "$W/digital_in" "$W/doc_json"
           # Every image runs as its own baked-in non-root user (atrium, uid 10001),
           # unrelated to the runner uid that just created these directories. Without
           # this, the first container write fails with EACCES.
           chmod -R a+rwX "$W"
 
       - name: Generate the digital fixtures
-        working-directory: work/llm-enrich-src
+        working-directory: work/digital-convert-src
         run: |
           set -euo pipefail
           W="${{ github.workspace }}/work"
@@ -311,7 +274,7 @@ jobs:
       # ── Case 1: the happy path ──────────────────────────────────────────────
       # minimal.pdf — 2 pages, a clean embedded text layer, no diacritics.
       #
-      # The output filename MUST end in `.document.json`: llm-enrich's
+      # The output filename MUST end in `.document.json`: the converter's
       # `doc_to_visual_md.py` dispatches on that exact suffix
       # (`_DOCUMENT_JSON_SUFFIX`), so a record named `d1_digital.json` would be
       # treated as an unknown input instead of a document record.
@@ -349,7 +312,7 @@ jobs:
       # ── Case 2: the needs_ocr handoff (§1a) ─────────────────────────────────
       # garbled.pdf — CP1250 bytes declared WinAnsi with no /ToUnicode, so the text
       # layer decodes to mojibake. The converter must NOTICE and say so, because
-      # that verdict is what re-authorises alto-postprocess to re-originate.
+      # that verdict is what re-authorises ocr-postprocess to re-originate.
       #
       # `--expect-needs-ocr` inverts the happy-path assertions, so this case cannot
       # pass vacuously: run it against minimal.pdf and it fails.
@@ -369,10 +332,11 @@ jobs:
       # ── Case 3: a record the semantic stage can actually read ───────────────
       # enrichable.pdf — one page of diacritic-free Czech archaeological prose.
       #
-      # This case exists because of run 34090340995 (issue #49). Stage D2 below used to be
-      # fed `minimal.document.json`, and minimal.pdf reads "Excavation report, block one,
+      # This case exists because of run 34090340995 (issue #49). The semantic stage that used to
+      # follow the converter (now keyword-extract's controlled kind) was fed
+      # `minimal.document.json`, and minimal.pdf reads "Excavation report, block one,
       # line one." — placeholder text chosen to make BLOCK BOUNDARIES reviewable, carrying
-      # no site, find, method, period or material. llm-enrich's own document-level prompt
+      # no site, find, method, period or material. the LLM stage's own document-level prompt
       # tells the model "If the document has no archaeologically relevant passages, return
       # an empty items list", so `records enriched: 0` was the model obeying it. The smoke
       # was asserting a semantic outcome against a fixture built to pin bboxes, and the
@@ -395,20 +359,20 @@ jobs:
           python tools/e2e/e2e_assert.py work/doc_json/enrichable.document.json \
             --llm-stage-ran false
 
-      # ── Cases 4-6: the llm-enrich#18 layout and refusal contract ─────────────
+      # ── Cases 4-6: the digital-convert#18 layout and refusal contract ─────────────
       # Two things must both be true, and they come from different places:
       #
       #   * the IMAGE converts them — probed from its own `--help`, because `--engine`
       #     arrived with #18 and a tag name says nothing about what is inside it;
       #   * the GENERATOR made the fixtures — rich.docx, two_column.pdf and ocr_layer.pdf
-      #     exist only from llm-enrich c3575f5 on.
+      #     exist only from digital-convert c3575f5 on.
       #
       # Either one missing SKIPS the case with a notice rather than failing: the nightly
       # on `:latest` = v0.7.0 has the new generator (default branch) and the old image,
       # and asserting #18 against a release that predates it would be red for a reason no
       # commit could fix. Once a release carries #18, the probe turns the cases on by
       # itself — nothing here needs editing.
-      - name: Probe the converter for the llm-enrich#18 contract
+      - name: Probe the converter for the digital-convert#18 contract
         id: caps
         run: |
           set -uo pipefail
@@ -420,7 +384,7 @@ jobs:
             capable=true
           else
             capable=false
-            echo "::notice::${DIGITAL_IMAGE}:${IMAGE_TAG} predates llm-enrich#18 (no --engine in its --help) — Cases 4-6 are skipped."
+            echo "::notice::${DIGITAL_IMAGE}:${IMAGE_TAG} predates digital-convert#18 (no --engine in its --help) — Cases 4-6 are skipped."
           fi
           case_for() {  # $1 = output name, $2 = fixture
             if [ "$capable" = true ] && [ -f "$IN/$2" ]; then
@@ -428,7 +392,7 @@ jobs:
             else
               echo "$1=false" >> "$GITHUB_OUTPUT"
               if [ "$capable" = true ]; then
-                echo "::notice::$2 was not generated (the llm-enrich checkout predates #18) — its case is skipped."
+                echo "::notice::$2 was not generated (the digital-convert checkout predates #18) — its case is skipped."
               fi
             fi
           }
@@ -475,7 +439,7 @@ jobs:
 
       # Case 6 — ocr_layer.pdf: a page image under invisible (render mode 3) text, i.e. a
       # prior OCR run. Not born-digital, so the converter must REFUSE it: exit 3 and no
-      # record. Its originator is alto-postprocess (`--method text-lines`, source.origin
+      # record. Its originator is ocr-postprocess (`--method text-lines`, source.origin
       # `ocr:pdf-text-layer`). A record here would be the §1a arbitration broken the
       # other way round — OCR text claimed as a digital text layer.
       - name: Stage D1f - digital-convert refuses a prior OCR layer
@@ -499,33 +463,6 @@ jobs:
             exit 1
           fi
           echo "✅ ocr_layer.pdf refused with exit 3 and no record written"
-
-      # ── Stage D2: llm-enrich reads the record the converter produced ─────────
-      # No new code path: openrouter_client.py takes the document-json pair, and
-      # doc_to_visual_md.py already renders a `*.document.json` record.
-      - name: Stage D2 - llm-enrich
-        if: steps.gate.outputs.enabled == 'true'
-        run: >
-          docker run --rm -e OPENROUTER_API_KEY -e OPENROUTER_MODEL
-          -v ${{ github.workspace }}:/workspace
-          ${LLM_IMAGE}:${IMAGE_TAG}
-          openrouter_client.py
-          --input /workspace/work/doc_json/enrichable.document.json
-          --output-dir /workspace/work/llm_out
-          --model ${{ env.OPENROUTER_MODEL }}
-          --provider-data-collection deny
-          --document-json /workspace/work/doc_json/enrichable.document.json
-          --document-json-out /workspace/work/doc_json/d2_llm.document.json
-
-      # `--stages` chains D1c -> D2, not D1 -> D2: the doc_id continuity being checked is
-      # the one along the path the record actually took, and D1's record is a different
-      # document (`minimal`) that D2 never saw.
-      - name: Assert the final accreted record
-        if: steps.gate.outputs.enabled == 'true'
-        run: |
-          python tools/e2e/e2e_assert.py work/doc_json/d2_llm.document.json \
-            --llm-stage-ran true \
-            --stages work/doc_json/enrichable.document.json work/doc_json/d2_llm.document.json
 
       - name: Upload records on failure
         if: failure()
@@ -562,8 +499,8 @@ jobs:
               '',
               'Where to look first:',
               '- `MISSING` in the preflight step means the image was never published, not',
-              '  that credentials are wrong. `-digital` reaches `:latest` only via an',
-              '  llm-enrich release tag, and reaches `:test` only once the hub `v1` tag',
+              '  that credentials are wrong. `-digital` reaches `:latest` only via a',
+              '  digital-convert release tag, and reaches `:test` only once the hub `v1` tag',
               '  carries the `build-and-push` gate that admits `refs/heads/test` pushes.',
               '- A sha256 mismatch in the fixture step means `make_fixtures.py` changed its',
               '  output; the generator is the contract, so re-pin the manifest deliberately.',
@@ -572,13 +509,6 @@ jobs:
               '  red: it is the §1a arbitration becoming untested.',
               '- A schema failure names the owning repo per block; `:latest` only moves on a',
               '  version tag, so a fix on `test` cannot green a `latest` run.',
-              '- \"`enrichment` block missing\" is about the CONTRACT, not about how much the',
-              '  model found. llm-enrich writes that block whenever it reached the model,',
-              '  with an empty `items` list when nothing was located, and exits non-zero',
-              '  without writing a record when it could not reach the model at all. So a',
-              '  missing block means an image older than atrium-project#49, a downstream tool',
-              '  dropping the block, or the assert being pointed at the baseline instead of',
-              '  the stage output. An EMPTY block is reported as a warning, not a failure.',
             ].join('\n');
 
             const existing = await github.paginate(github.rest.issues.listForRepo, {

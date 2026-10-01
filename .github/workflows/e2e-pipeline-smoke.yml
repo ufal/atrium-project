@@ -5,7 +5,10 @@ on:
   workflow_call:
     inputs:
       openrouter-model:
-        description: "OpenRouter model slug for the llm stage"
+        description: >-
+          Unused since the keyword stage moved to keyword-extract (atrium-keyword-extract#1): the
+          controlled (LLM) kind has no step here until it ships there. Kept so existing callers
+          do not break.
         default: "openai/gpt-4o-mini"
         type: string
         required: false
@@ -35,7 +38,7 @@ on:
         required: false
     secrets:
       OPENROUTER_KEY:
-        description: "OpenRouter API Key for the LLM enrichment stage"
+        description: "Unused until keyword-extract's controlled kind has a step here; kept for existing callers"
         required: false
   workflow_dispatch:
     inputs:
@@ -95,7 +98,7 @@ on:
 # instead. Flipping the DEFAULT to `test` is deliberately not done here: `:test` starts
 # being published only once each repo has pushed a branch commit under the issue #10
 # docker-tool change, so the tag does not exist for every repo yet. Flip it once
-# `docker pull ghcr.io/ufal/atrium-<tool>:test` succeeds for all five.
+# `docker pull ghcr.io/ufal/atrium-<tool>:test` succeeds for every tool.
 
 concurrency:
   group: e2e-pipeline-smoke-${{ github.ref }}
@@ -117,9 +120,6 @@ jobs:
       packages: read
       contents: read
       issues: write
-    env:
-      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_KEY }}
-      OPENROUTER_MODEL: ${{ inputs.openrouter-model || 'openai/gpt-4o-mini' }}
 
     steps:
       # NOT `repository: ufal/atrium-project` + `ref: v1`, which is what this step did
@@ -170,28 +170,11 @@ jobs:
       - name: Install e2e tooling dependencies
         run: pip install -r tools/e2e/requirements.txt
 
-      - name: Gate on OPENROUTER_KEY
-        id: gate
-        run: |
-          if [ -n "${OPENROUTER_API_KEY}" ]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::llm stage (Stage 5) skipped — OPENROUTER_KEY secret is not set."
-          fi
-
-      - name: Require the secret on scheduled runs
-        if: steps.gate.outputs.enabled != 'true' && github.event_name == 'schedule'
-        run: |
-          echo "::error::OPENROUTER_KEY is not set — the nightly E2E cannot exercise Stage 5 (llm-enrich)."
-          echo "::error::Add the OPENROUTER_KEY repository secret, or move this workflow off the schedule trigger."
-          exit 1
-
       - name: Create workspace
         run: |
           W="${{ github.workspace }}/work"
           mkdir -p "$W/input" "$W/ALTO" "$W/PAGE_ALTO" "$W/DOC_LINE_CATEG" \
-                   "$W/translated" "$W/nlp_out" "$W/llm_out" "$W/doc_json" "$W/paradata"
+                   "$W/translated" "$W/nlp_out" "$W/doc_json" "$W/paradata"
           cp "fixtures/e2e/ALTO/${E2E_DOC}.alto.xml" "$W/ALTO/"
           cp "fixtures/e2e/DOC_LINE_CATEG/${E2E_DOC}.csv" "$W/DOC_LINE_CATEG/"
           chmod -R a+rwX "$W"
@@ -212,7 +195,7 @@ jobs:
             "fixtures/e2e/ALTO/${E2E_DOC}.alto.xml" \
             --out "${{ github.workspace }}/work/input/${E2E_DOC}-1.png"
 
-      - name: Write alto-postprocess e2e config
+      - name: Write ocr-postprocess e2e config
         run: |
           W="${{ github.workspace }}/work"
           cat > "$W/config_e2e_alto.txt" <<EOF
@@ -263,34 +246,6 @@ jobs:
           SAVE_TEITOK=true
           FAIL_ON_EMPTY=true
           EOF
-
-      # ── Stage 5 vocabulary (2026-08-19) ────────────────────────────────────
-      # Points at llm-enrich's OWN committed vocabulary in the checkout Stage 5
-      # already mounts and runs from, rather than a fixture copy of it here.
-      #
-      # This step used to write a QUOTED path to a hub-side copy, and both halves
-      # were wrong (run 32208408456):
-      #
-      #   * llm-enrich's load_config kept the quote characters, so the path could
-      #     not exist. VocabularyManager fell through to a live AMCR harvest whose
-      #     terms all land in the "Other" theme — which is withheld from the
-      #     prompt — leaving a one-value enum that rejected every correct answer
-      #     the model gave. The run enriched nothing and still exited 0.
-      #   * the fixture had gone stale. llm-enrich replaced
-      #     data_samples/teater_nested_vocab.json with a built union of AMCR and
-      #     TEATER under data_samples/vocab/, so the hub copy no longer matched
-      #     the vocabulary the tool actually ships.
-      #
-      # llm-enrich now strips quotes and refuses to auto-sync, so either fix alone
-      # is sufficient; sourcing the vocabulary from the tool repo is what stops it
-      # drifting again, since there is no second copy to keep in step. Unquoted
-      # deliberately — these configs are shell-flavoured KEY=VALUE, not shell.
-      - name: Write llm-enrich e2e config
-        if: steps.gate.outputs.enabled == 'true'
-        run: |
-          W="${{ github.workspace }}/work"
-          VOCAB=/workspace/work/atrium-llm-enrich-main/data_samples/vocab/union_nested.json
-          echo "VOCAB_PATH=$VOCAB" > "$W/llm_config.txt"
 
       # ── HuggingFace model cache (2026-08-06) ────────────────────────────────
       # Stage 1 pulled `timm/regnety_160.swag_ft_in1k` from the Hub on EVERY run,
@@ -346,14 +301,14 @@ jobs:
             "${SEED_ARGS[@]}" \
             --document-json-out /workspace/work/doc_json/1_pc.json
 
-      - name: Fetch latest ALTO Postprocess source
+      - name: Fetch latest OCR Postprocess source
         uses: actions/checkout@v7
         with:
-          repository: ufal/atrium-alto-postprocess
-          path: work/atrium-alto-postprocess-main
+          repository: ufal/atrium-ocr-postprocess
+          path: work/atrium-ocr-postprocess-main
 
-      - name: Set permissions for ALTO Postprocess source
-        run: chmod -R a+rwX ${{ github.workspace }}/work/atrium-alto-postprocess-main
+      - name: Set permissions for OCR Postprocess source
+        run: chmod -R a+rwX ${{ github.workspace }}/work/atrium-ocr-postprocess-main
 
       # (B9 / #50, #62) Runs the image AS BUILT: no entrypoint override, and nothing
       # fetched or installed at run time. This step used to wrap the stage in a
@@ -361,7 +316,7 @@ jobs:
       # `refs/heads/master.zip` INSIDE the already-published image — overriding that
       # image's own commit pin at the moment of testing it, so whatever the lane
       # proved, it was not a property of the artefact we ship.
-      # alto-postprocess vendored the two alto-tools code paths it used (its
+      # ocr-postprocess (named alto-postprocess until 2026-10-01) vendored the two alto-tools code paths it used (its
       # `alto_tools.py`, Apache-2.0), so there is nothing left to fetch and no `PATH`
       # to re-export. `ENTRYPOINT ["python", "run_pipeline.py"]` (its Dockerfile,
       # stage `base` — the unsuffixed tag pulled here) now runs the stage, with the
@@ -369,11 +324,11 @@ jobs:
       #
       # `-w` still points at the checked-out source, so `run_pipeline.py` and the
       # `alto_tools` module beside it both resolve from that checkout.
-      - name: Stage 2 - ALTO Postprocess
+      - name: Stage 2 - OCR Postprocess
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
-          -w /workspace/work/atrium-alto-postprocess-main
-          ghcr.io/ufal/atrium-alto-postprocess:${{ inputs.image-tag || 'latest' }}
+          -w /workspace/work/atrium-ocr-postprocess-main
+          ghcr.io/ufal/atrium-ocr-postprocess:${{ inputs.image-tag || 'latest' }}
           --config /workspace/work/config_e2e_alto.txt
           --document-json /workspace/work/doc_json/1_pc.json
           --document-json-out /workspace/work/doc_json/2_alto.json
@@ -387,7 +342,7 @@ jobs:
       - name: Set permissions for Translator source
         run: chmod -R a+rwX ${{ github.workspace }}/work/atrium-translator-main
 
-      # (B9 / #62) Stages 3, 4 and 5 each used to replace the image's entrypoint with a
+      # (B9 / #62) Stages 3 and 4 (and the former stage 5) each used to replace the image's entrypoint with a
       # command BYTE-IDENTICAL IN EFFECT to the entrypoint it replaced. Three exact
       # no-ops: they cost nothing at runtime and everything in assurance, because the
       # lane then reported that it never exercised a real entrypoint -- while silently
@@ -396,20 +351,17 @@ jobs:
       #
       #   stage 3  translator  ENTRYPOINT ["python", "main.py"]          (base)
       #   stage 4  nlp-enrich  ENTRYPOINT ["python", "run_pipeline.py"]  (base)
-      #   stage 5  llm-enrich  ENTRYPOINT ["python"]                     (remote)
-      #
+            #
       # SAFE AGAINST `:latest`, NOT JUST `test`. This lane defaults to the RELEASED
       # image set (see the header note), so the deletions are only sound if the
       # PUBLISHED images carry those entrypoints. Checked at each repo's newest release
-      # tag before landing: translator v0.10.5, nlp-enrich v0.20.1, llm-enrich v0.6.3 --
-      # all three declare exactly the lines above.
+      # tag before landing: translator v0.10.5 and nlp-enrich v0.20.1 -- both declare exactly the
+      # lines above. (The former stage 5 is gone: see "Keyword Extract" below.)
       #
       # THE TRAP, and the one way to get this wrong: with the interpreter forced as the
       # entrypoint, `main.py` was argv[1] TO PYTHON. Without it, ENTRYPOINT already
       # supplies the script, so leaving `main.py` here would pass it as an argument TO
       # main.py. Stages 3 and 4 therefore drop the script name along with the override;
-      # stage 5 KEEPS `openrouter_client.py`, because llm-enrich's `remote` stage
-      # entrypoint is the bare interpreter and the script really is its first argument.
       # None of this is visible to YAML linting -- only to a run.
       #
       # `-w` still points at the checked-out source, so the relative script names in
@@ -451,111 +403,76 @@ jobs:
           --document-json /workspace/work/doc_json/3_translate.json
           --document-json-out /workspace/work/doc_json/4_nlp.json
 
-      - name: Fetch latest LLM Enrich source
-        if: steps.gate.outputs.enabled == 'true'
-        uses: actions/checkout@v7
-        with:
-          repository: ufal/atrium-llm-enrich
-          path: work/atrium-llm-enrich-main
-
-      - name: Set permissions for LLM Enrich source
-        if: steps.gate.outputs.enabled == 'true'
-        run: chmod -R a+rwX ${{ github.workspace }}/work/atrium-llm-enrich-main
-
-      - name: Stage 5 - LLM Enrich
-        id: llm
-        if: steps.gate.outputs.enabled == 'true'
-        # Runs the image as built -- see the note above Stage 3. `openrouter_client.py`
-        # STAYS: the `remote` stage's entrypoint is the bare interpreter, so the script
-        # name is a real argument to it, not a duplicate of it.
-        #
-        # The gate above proves the SECRET EXISTS. It cannot prove OpenRouter will accept
-        # it, and those are different failures. A revoked key, an exhausted balance or a
-        # provider-routing refusal comes back as an HTTP 4xx from the provider — and used
-        # to fail this job outright, reporting somebody else's billing problem as though
-        # the ATRIUM pipeline had regressed. Run 132 (2026-09-11) is the worked example:
-        # "403 Client Error: Forbidden", stages 1-4 green, nothing in this repo broken.
-        #
-        # So an UPSTREAM REFUSAL is demoted to the path a missing secret already takes:
-        # Stage 5 is marked not-run and the contract assertion below drops the 5_llm
-        # stage from its expected list. Every OTHER failure still fails hard, because
-        # that is the pipeline's own bug and this workflow exists to catch it.
-        #
-        # The SCHEDULED run is deliberately exempt and still fails: the nightly is what
-        # notices a dead key, and a warning nobody reads is how a key stays dead for a
-        # month. Same split as "Require the secret on scheduled runs" above.
-        run: |
-          set +e
-          docker run --rm -e OPENROUTER_API_KEY -e OPENROUTER_MODEL \
-            -v "${{ github.workspace }}:/workspace" \
-            -w /workspace/work/atrium-llm-enrich-main \
-            ghcr.io/ufal/atrium-llm-enrich-remote:${{ inputs.image-tag || 'latest' }} \
-            openrouter_client.py \
-            --input "/workspace/work/DOC_LINE_CATEG/${E2E_DOC}.csv" \
-            --output-dir /workspace/work/llm_out \
-            --config /workspace/work/llm_config.txt \
-            --model "${{ env.OPENROUTER_MODEL }}" \
-            --provider-data-collection deny \
-            --document-json /workspace/work/doc_json/4_nlp.json \
-            --document-json-out /workspace/work/doc_json/5_llm.json 2>&1 | tee "$RUNNER_TEMP/stage5.log"
-          rc=${PIPESTATUS[0]}
-          set -e
-
-          if [ "$rc" -eq 0 ]; then
-            echo "ran=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # An upstream refusal: the provider answered, and the answer was "no". Matched
-          # on openrouter_client.py's own retry-exhausted line so a 4xx buried in ordinary
-          # output cannot trip this — it has to be the failure that ended the call.
-          if grep -qE 'request failed after [0-9]+ attempts: (401|402|403|429) ' "$RUNNER_TEMP/stage5.log"; then
-            CODE=$(grep -oE 'attempts: (401|402|403|429) ' "$RUNNER_TEMP/stage5.log" | grep -oE '[0-9]{3}' | head -1)
-            if [ "${{ github.event_name }}" = "schedule" ]; then
-              echo "::error::Stage 5 unusable: OpenRouter refused the request (HTTP $CODE)."
-              echo "::error::OPENROUTER_KEY is set but rejected — check the key is live and the account funded."
-              exit 1
-            fi
-            echo "::warning::Stage 5 skipped: OpenRouter refused the request (HTTP $CODE)."
-            echo "::warning::This is an upstream credential/quota problem, not a pipeline defect."
-            echo "::warning::OPENROUTER_KEY is set but rejected — check the key is live and the account funded."
-            echo "ran=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          echo "::error::Stage 5 failed inside the pipeline (exit $rc), not an upstream refusal."
-          exit "$rc"
-
       # The stage records are passed in explicitly, not globbed, so this step
       # states which stages were expected to write one: a stage whose document
       # hook failed silently (nlp's degrades to a stderr warning and exit 0) then
       # fails HERE by name instead of vanishing from a glob (#10, D1/D2/J4).
       - name: Assert Final Document Contract
-        env:
-          # Threading Stage 5's OWN outcome is the G5 fix: e2e_assert.py used to assert
-          # the 'enrichment' block unconditionally, on the exact path this workflow makes
-          # optional. This reads the step, not the gate, because the secret being present
-          # no longer implies the stage ran — OpenRouter can refuse a key that exists.
-          LLM_STAGE_RAN: ${{ steps.llm.outputs.ran == 'true' }}
         run: |
-          FINAL="work/doc_json/5_llm.json"
-          [ -f "$FINAL" ] || FINAL="work/doc_json/4_nlp.json"
+          FINAL="work/doc_json/4_nlp.json"
           STAGES="work/doc_json/1_pc.json work/doc_json/2_alto.json"
           STAGES="$STAGES work/doc_json/3_translate.json work/doc_json/4_nlp.json"
-          if [ "$LLM_STAGE_RAN" = "true" ]; then
-            STAGES="$STAGES work/doc_json/5_llm.json"
-          fi
           SEED_ARGS=()
           if [ "$E2E_SEED" = "true" ]; then
             SEED_ARGS=(--seed work/doc_json/0_seed.json)
           fi
           echo "Asserting against: $FINAL"
+          # --llm-stage-ran false: the controlled (LLM) keyword kind has no step in this lane
+          # until keyword-extract ships it (atrium-keyword-extract#1), so `enrichment` is not required.
           # shellcheck disable=SC2086 — STAGES is a deliberate list of paths
           python tools/e2e/e2e_assert.py "$FINAL" \
-            --llm-stage-ran "$LLM_STAGE_RAN" \
+            --llm-stage-ran false \
             --stages $STAGES \
             --teitok-dir work/nlp_out/TEITOK \
             "${SEED_ARGS[@]}"
+
+      # ── Keyword Extract (atrium-keyword-extract#1) ───────────────────────────────────────
+      # Both keyword kinds moved out of nlp-enrich and llm-enrich into keyword-extract, whose one
+      # service is `POST /extract_keywords`. nlp-enrich's Stage 4 above no longer extracts
+      # keywords (`--stages manifest udp nt stats`), so this step is where the statistical kind
+      # is exercised: the production image, run as built (no entrypoint override), is handed the
+      # record Stage 4 wrote and must answer with keywords carrying a method and a score.
+      #
+      # It is not a numbered "Stage" yet: the keywords block of the record is atrium-project#73,
+      # so there is no `5_kw.json` for the contract assertion to read, and the controlled (LLM)
+      # kind joins when keyword-extract ships it. YAKE is requested because KeyBERT would pull a
+      # sentence-transformers model from the Hub on every run (the 429 documented above).
+      #
+      # The image is published from keyword-extract's first release (`latest`) or its first
+      # `test` push. Until then a missing image is a warning, and an error on the scheduled run,
+      # which is what is there to notice a stage that never got an image.
+      - name: Keyword Extract (statistical kind, service smoke)
+        run: |
+          IMAGE="ghcr.io/ufal/atrium-keyword-extract-api:${{ inputs.image-tag || 'latest' }}"
+          if ! docker pull "$IMAGE"; then
+            if [ "${{ github.event_name }}" = "schedule" ]; then
+              echo "::error::$IMAGE is not published: keyword-extract has no image at this tag."
+              exit 1
+            fi
+            echo "::warning::$IMAGE is not published yet (keyword-extract's first release or first test push); the keyword step is skipped."
+            exit 0
+          fi
+          CID=$(docker run -d -e PORT=8080 -p 8080:8080 "$IMAGE")
+          trap 'docker logs "$CID" | tail -40; docker rm -f "$CID" >/dev/null 2>&1' EXIT
+          # /ready is 503 until the startup warm-up has loaded the KeyBERT model (a first-run download).
+          for _ in $(seq 1 150); do
+            if curl -fsS http://localhost:8080/ready >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          curl -fsS http://localhost:8080/ready
+          curl -fsS -X POST http://localhost:8080/extract_keywords \
+            -F "document_json=@work/doc_json/4_nlp.json;type=application/json" \
+            -F kind=statistical -F method=yake -F num_keywords=5 -o work/keywords.json
+          python - <<'PY'
+          import json
+          r = json.load(open("work/keywords.json", encoding="utf-8"))
+          kws = r.get("keywords") or []
+          assert kws, f"no keywords in the response: {sorted(r)}"
+          for k in kws:
+              assert k.get("method") == "yake" and isinstance(k.get("score"), (int, float)), k
+          assert r.get("paradata"), "no CreateAction (paradata) in the response (atrium-project#71)"
+          print(f"keywords: {len(kws)} from {kws[0]['method']}, first: {kws[0]['keyword']!r}")
+          PY
 
       - name: Install the RO-Crate validator
         run: pip install -r tools/ci/requirements-rocrate.txt
@@ -567,8 +484,7 @@ jobs:
       # ATRIUM_RUN_AGENT, say), which is reported as a warning.
       - name: Validate the record crate (RO-Crate 1.2, Process Run Crate 0.5)
         run: |
-          FINAL="work/doc_json/5_llm.json"
-          [ -f "$FINAL" ] || FINAL="work/doc_json/4_nlp.json"
+          FINAL="work/doc_json/4_nlp.json"
           mapfile -t PARADATA < <(find work -path '*/paradata/*' -name '[!.]*.json' -type f | sort)
           echo "Paradata files: ${#PARADATA[@]}"
           python tools/ci/rocrate_check.py --record "$FINAL" --paradata "${PARADATA[@]}" --out work/crate
@@ -580,6 +496,7 @@ jobs:
           name: e2e-pipeline-outputs
           path: |
             work/doc_json/*.json
+            work/keywords.json
             work/nlp_out/TEITOK/*.teitok.xml
             work/crate/
 

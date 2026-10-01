@@ -43,11 +43,11 @@ explained here.
 | **paradata**            | data about the *process*: which program, version and configuration produced an output, when, and under which licence — one JSON file per run                                              |
 | **provenance**          | the record's account of who contributed what: per-block stamps plus a list of contributing runs                                                                                           |
 | **FAIR**                | Findable, Accessible, Interoperable, Reusable — the principles research data publication aims at; RO-Crate export is ATRIUM's route to them                                               |
-| **`PAGE_ALTO/`**        | alto-postprocess's output: one ALTO file per page, `<doc>/<doc>-N.alto.xml` — what the translator reads                                                                                   |
-| **`DOC_LINE_CATEG/`**   | alto-postprocess's per-line table: every text line with its quality category — what nlp-enrich and llm-enrich read                                                                        |
+| **`PAGE_ALTO/`**        | ocr-postprocess's output: one ALTO file per page, `<doc>/<doc>-N.alto.xml` — what the translator reads                                                                                   |
+| **`DOC_LINE_CATEG/`**   | ocr-postprocess's per-line table: every text line with its quality category — what nlp-enrich reads                                                                                      |
 | **TEITOK**              | a corpus format and platform built on TEI XML, keeping tokens linked to their position on the page — nlp-enrich's output                                                                  |
 | **GraphQL**             | a query language for web APIs, in which the client names exactly the fields it wants — how TEATER is queried                                                                              |
-| **originator**          | the program that creates the positional plane (`pages`, `content`, `lines`, `tables`) of a record: alto-postprocess for OCR, `digital-convert` otherwise                                  |
+| **originator**          | the program that creates the positional plane (`pages`, `content`, `lines`, `tables`) of a record: ocr-postprocess for OCR, `digital-convert` otherwise                                  |
 | **workflow narrative**  | a tool's workflow told step by step, with the formats in and out of every step — the text its SSH Open Marketplace and Galaxy records are built from; see [Workflows](workflows/index.md) |
 | **actionable workflow** | a workflow described on the SSH Open Marketplace that can also be run — in ATRIUM, as a Galaxy workflow                                                                                   |
 
@@ -60,11 +60,11 @@ maintained by the Library of Congress. It records not just the recognised text b
 the page each piece of it sits*: a document is `Page` → `TextBlock` → `TextLine` → `String`,
 and each `String` carries one token in a `CONTENT` attribute plus its bounding box.
 
-**Where ATRIUM uses it.** It is the backbone format of the whole pipeline. `alto-postprocess`
+**Where ATRIUM uses it.** It is the backbone format of the whole pipeline. `ocr-postprocess`
 consumes OCR ALTO and emits per-page ALTO under `PAGE_ALTO/`; the
 [translator](tools/translator/index.md) rewrites ALTO in place, preserving every coordinate;
 the E2E fixture is one ALTO v3 page. Versions v1–v4 are in scope, with one catch:
-alto-postprocess's ALTO methods split only v3 files (`page_split.py`), while its text-lines
+ocr-postprocess's ALTO methods split only v3 files (`page_split.py`), while its text-lines
 method and service read every version.
 
 **Why it is harder than it looks.** Because ALTO stores text *spatially*, translating or
@@ -106,8 +106,8 @@ the vocabulary ([W7](pipelines.md#w7--vocabulary-harvesting--review-the-translat
 translator's metadata mode finds the AMCR and OAI-PMH namespaces anywhere in a file, so that it
 can translate fields *inside* an OAI-PMH envelope as well as in a bare record.
 
-**Why it is listed here.** Three repositories harvest AMCR over it — the translator, nlp-enrich
-and llm-enrich.
+**Why it is listed here.** Three repositories harvested AMCR over it — the translator, nlp-enrich
+and llm-enrich. The two vocabulary builds of the last two now live in keyword-extract.
 
 **Onward:** <https://www.openarchives.org/pmh/>
 
@@ -155,17 +155,17 @@ under AGPL-3.0 or a commercial licence, and Ghostscript under AGPL-3.0.
 
 PAGE XML and hOCR (other OCR output formats), METS (a packaging standard for digitised
 objects), TEI P5 and TEITOK (text-encoding formats), and IOB2 (a token-level tagging scheme for
-named entities) belong to alto-postprocess and nlp-enrich. TEITOK in particular: nlp-enrich
+named entities) belong to ocr-postprocess and nlp-enrich. TEITOK in particular: nlp-enrich
 writes it (its "format 2" follows the conventions of the TEITOK tools — flexiconv, flexipipe,
-xmltokenizer, teitok-tools — and is tested against flexiconv's reader); llm-enrich and
-alto-postprocess read it.
+xmltokenizer, teitok-tools — and is tested against flexiconv's reader); digital-convert and
+ocr-postprocess read it.
 
 Each has a reference in the repository that uses it:
 
 * **OCR and text input formats** — ALTO, PAGE XML, hOCR, ABBYY FineReader XML, DjVuXML,
   Tesseract TSV, OCR JSON, PDF text layers, TEI/TEITOK, office, e-mail and plain-text files: the
-  standard behind each, the tools that write it and what alto-postprocess keeps of it, in
-  [Formats and their standards](https://github.com/ufal/atrium-alto-postprocess/blob/master/docs/text_inputs.md#formats-and-their-standards).
+  standard behind each, the tools that write it and what ocr-postprocess keeps of it, in
+  [Formats and their standards](https://github.com/ufal/atrium-ocr-postprocess/blob/master/docs/text_inputs.md#formats-and-their-standards).
 * **TEITOK as an output** — the standards it builds on, how nlp-enrich composes a file from the
   line table, UDPipe, NameTag and the ALTO layout, the tools that write or read it, and the
   pitfalls: nlp-enrich's README, from
@@ -280,7 +280,7 @@ rather than OAI-PMH.
 
 **Where ATRIUM uses it.** Together with the AMCR *heslář*, it is one of the two sources
 `load_vocab.py` unions into the translation glossary, and
-`llm-enrich` builds a nested union of both for its category enum. Its data is CC BY-NC 4.0, so
+`keyword-extract` builds a nested union of both for its category enum. Its data is CC BY-NC 4.0, so
 loading the vocabulary makes a run non-commercial.
 
 **Onward:** <https://teater.aiscr.cz/>
@@ -356,8 +356,9 @@ warns and leaves those columns blank. `eval/requirements-eval.txt` installs sacr
 ### Models used by the other stages
 
 `Qwen/Qwen2.5-0.5B`, `hantian/layoutreader`, `THUDM/glm-4v-9b`, NameTag 3 (LINDAT's named-entity
-recogniser), Korektor (its spelling corrector) and the keyword extractors belong to nlp-enrich
-and llm-enrich.
+recogniser), Korektor (its spelling corrector) and the keyword extractors belong to the tools of the
+other stages: ocr-postprocess, nlp-enrich and keyword-extract (which took over the keyword extractors
+and the language models of the former llm-enrich).
 
 ## Hosting, repository & registration
 
@@ -419,10 +420,10 @@ and the tools or services it uses as related records.
 **Where ATRIUM uses it.** Every ÚFAL tool has a tool-or-service record under the keyword
 `ATRIUM catalogue` — [`RER7Fw`](https://marketplace.sshopencloud.eu/tool-or-service/RER7Fw)
 (page-classification), [`YParYU`](https://marketplace.sshopencloud.eu/tool-or-service/YParYU)
-(alto-postprocess), [`CizIUW`](https://marketplace.sshopencloud.eu/tool-or-service/CizIUW)
+(ocr-postprocess), [`CizIUW`](https://marketplace.sshopencloud.eu/tool-or-service/CizIUW)
 (translator), [`EMhu3X`](https://marketplace.sshopencloud.eu/tool-or-service/EMhu3X)
 (nlp-enrich), [`j9fqxo`](https://marketplace.sshopencloud.eu/tool-or-service/j9fqxo)
-(llm-enrich). The translator's workflow has its own record,
+(llm-enrich, to be re-pointed to keyword-extract). The translator's workflow has its own record,
 [`13eHAZ`](https://marketplace.sshopencloud.eu/workflow/13eHAZ), and the AMČR text workflow,
 [`0xSpVP`](https://marketplace.sshopencloud.eu/workflow/0xSpVP), strings the tools together.
 The text these records are built from is on [Workflows](workflows/index.md).
@@ -771,11 +772,11 @@ every published image. It replaced a separate SBOM job that could race the image
 
 ### Infrastructure used by the other stages
 
-vLLM and Ollama (servers for running large language models locally) belong to llm-enrich;
-alto-tools (ALTO utilities, vendored as `alto_tools.py`) to alto-postprocess. flexiconv (UFAL's
+vLLM and Ollama (servers for running large language models locally) belong to keyword-extract (the controlled kind);
+alto-tools (ALTO utilities, vendored as `alto_tools.py`) to ocr-postprocess. flexiconv (UFAL's
 converter of PDF, DOCX, PAGE XML, hOCR, … into TEITOK; GPL-3.0-or-later, optional, pinned at
 v0.3.10) belongs to nlp-enrich, whose `api_flexiconv.sh` runs it on the command line only — no
-service image contains it; llm-enrich vendors the same adapter.
+service image contains it; digital-convert vendors the same adapter.
 
 ## The ATRIUM project itself
 
@@ -869,6 +870,6 @@ This table records **provenance**, not a build instruction.
 | `atrium-page-classification` @ `vit` `adee922` — `setup/{requirements,para_config,config}.txt`, `service/{api.py,inference.py,requirements.txt}`, `Dockerfile`, `docker-compose.yml`, `.github/dependabot.yml`, `.coveragerc`, `.pre-commit-config.yaml`, `data_scripts/`, `result/`, `README.md`, `CITATION.cff`                                                                       | Hugging Face, `ufal/vit-historical-page`, `regnety_160`, the ML stack, PDF rasterisation, Docker, the LINDAT dataset handle, ARÚP/ARÚB result files |
 | the shared files both tools vendor — `atrium_vocab.py`, `atrium_rocrate.py`, `atrium_document.py` + schema, `atrium_paradata.py`, `para_licenses.py`, `check_version.py`                                                                                                                                                                                                                | every metadata-standards entry; the licence and Turtle behaviour                                                                                    |
 | `atrium-project` @ `main` `7b0b84e` — `docker-tool.reusable.yml`, `security.reusable.yml`, `codeql.reusable.yml`, `docs/templates/Dockerfile`, `docs/templates/workflows/dependabot.example.yml`, `docs/rocrate_export.md` §3, `docs/skos_strategy.md`                                                                                                                                  | Trivy, CodeQL, SBOM, GHCR tagging, Dependabot, the DMP standards                                                                                    |
-| `atrium-alto-postprocess` @ `test` `2e2794d` — `page_split.py`, `text_formats.py`; its `docs/text_inputs.md` and `atrium-nlp-enrich`'s `README.md` § "TEITOK XML" as extended on 2026-09-24                                                                                                                                                                                             | the ALTO version note; the two format references                                                                                                    |
+| `atrium-alto-postprocess` (now `atrium-ocr-postprocess`) @ `test` `2e2794d` — `page_split.py`, `text_formats.py`; its `docs/text_inputs.md` and `atrium-nlp-enrich`'s `README.md` § "TEITOK XML" as extended on 2026-09-24                                                                                                                                                                                             | the ALTO version note; the two format references                                                                                                    |
 | SSH Open Marketplace records `RER7Fw`, `YParYU`, `CizIUW`, `EMhu3X`, `j9fqxo`, `13eHAZ`, `0xSpVP`, `IrpmkB`; `SSHOC/sshoc-marketplace-frontend` (metadata guidelines); `DARIAH-ERIC/atrium-galaxy-tools`; `usegalaxy-eu/infrastructure-playbook`, `usegalaxy-eu/usegalaxy-eu-tools`; `galaxyproject/galaxy` (`datatypes_conf.xml.sample`); `galaxyproject/iwc`, `galaxyproject/planemo` | SSH Open Marketplace, TaDiRAH, Galaxy, WorkflowHub                                                                                                  |
 | `https://api.aiscr.cz/2.2/oai?verb=Identify`                                                                                                                                                                                                                                                                                                                                            | the AMCR endpoint's self-description and metadata licence                                                                                           |

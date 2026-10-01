@@ -146,7 +146,7 @@ def test_guarded_relative_imports_are_followed(tmp_path):
 
 
 def test_bare_imports_resolve_in_the_entrypoints_own_directory(tmp_path):
-    """`python service/text_api.py` puts service/ first on sys.path (atrium-alto-postprocess)."""
+    """`python service/text_api.py` puts service/ first on sys.path (atrium-ocr-postprocess)."""
     files = base_files(**{"service/text_api.py": API + "import text_inference\n", "service/text_inference.py": ""})
     decl = declaration(
         entrypoint="service/text_api.py", core=["service/text_api.py", "tool_limits.py", "stage_core.py"]
@@ -184,10 +184,11 @@ def test_the_command_line_exit_codes(tmp_path, capsys):
     "tool",
     [
         "atrium-page-classification",
-        "atrium-alto-postprocess",
+        "atrium-ocr-postprocess",
         "atrium-translator",
-        "atrium-llm-enrich",
+        "atrium-digital-convert",
         "atrium-nlp-enrich",
+        "atrium-keyword-extract",
     ],
 )
 def test_the_sibling_tool_repositories_hold_to_their_declarations(tool):

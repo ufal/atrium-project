@@ -12,10 +12,10 @@ role: index
 
 <div class="atrium-pipeline" markdown="0">
 <a href="../page-classification/">page-classification</a>
-<a href="https://ufal.github.io/atrium-alto-postprocess/">alto-postprocess</a>
+<a href="https://ufal.github.io/atrium-ocr-postprocess/">ocr-postprocess</a>
 <span class="here">translator</span>
 <a href="https://ufal.github.io/atrium-nlp-enrich/">nlp-enrich</a>
-<a href="https://ufal.github.io/atrium-llm-enrich/">llm-enrich</a>
+<a href="https://github.com/ufal/atrium-keyword-extract">keyword-extract</a>
 </div>
 
 **Translates XML in place.** Every tag, every namespace, every attribute and — for ALTO —
@@ -25,7 +25,7 @@ another language, not a rendering of it.
 Two kinds of input, one core:
 
 * **ALTO OCR pages** — the positional text layer produced by
-  [alto-postprocess](https://ufal.github.io/atrium-alto-postprocess/).
+  [ocr-postprocess](https://ufal.github.io/atrium-ocr-postprocess/).
 * **[AMCR](../../external-tools.md#amcr-metadata-xml) metadata records**, bare or inside
   [OAI-PMH](../../external-tools.md#oai-pmh) envelopes — translated at XPath targets named
   in `amcr-fields.txt`.
@@ -44,18 +44,18 @@ an [Agent Skill](../../agent-skills.md).
 | **In**                   | One ALTO or AMCR XML file, or a directory of them, optionally with an ATRIUM document record to accrete onto                                                                   |
 | **Out**                  | `<name>_<target_lang>.<ext>` — the translated document; a `_log.csv` of every source/target text pair with a per-line `status`; a paradata JSON; optionally the updated record |
 | **Writes in the record** | The `translations` block, and `derived_from.translated_xml` — the name of the translated file                                                                                  |
-| **Reads from upstream**  | `PAGE_ALTO/<doc>/<doc>-N.alto.xml` from alto-postprocess                                                                                                                       |
+| **Reads from upstream**  | `PAGE_ALTO/<doc>/<doc>-N.alto.xml` from ocr-postprocess                                                                                                                        |
 
 ## Where it sits — the translator is a terminal branch
 
-The translator reads the per-page ALTO that alto-postprocess writes, and its output is an
+The translator reads the per-page ALTO that ocr-postprocess writes, and its output is an
 **end product**: an English edition of the page or record, for readers and for
 publication. The later stages work on the original text — `nlp-enrich` reads
 `DOC_LINE_CATEG/` and the original `ALTO/` — so no stage reads `TRANSLATED/`.
 
 What persists in the pipeline is a **reference**: the translated document is recorded in
 the document record as `derived_from.translated_xml`, and the `translations` block records
-how it was made. So the file topology fans out from `alto-postprocess` and stops here,
+how it was made. So the file topology fans out from `ocr-postprocess` and stops here,
 while the *record* runs on through every stage. [Pipelines](../../pipelines.md) draws both
 layers.
 

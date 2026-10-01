@@ -1,9 +1,16 @@
 # ATRIUM Kubernetes Deployment Reference
 
+> **Names (2026-10-01):** below the service map, `ocr-postprocess` is the former `alto-postprocess`.
+> The LLM service of `llm-enrich` and its settings (`LLM_BACKEND`, `OLLAMA_*`, `OPENROUTER_*`) are still
+> in `digital-convert`'s tree, where they were copied, until keyword-extract ships the controlled kind
+> and takes them over; the rows below name the repository that holds them today.
+
 > **Status:** Active Document (added 2026-09-07, issue #55)
 > **Scope:** `atrium-translator`, `atrium-nlp-enrich`, `atrium-page-classification`,
-> `atrium-alto-postprocess`, `atrium-llm-enrich` — the five `-api` images, one production
-> image per stage (the map below, added for issue #72).
+> `atrium-ocr-postprocess`, `atrium-keyword-extract` — the five `-api` images, one production
+> image per stage (the map below, added for issue #72) — and `atrium-digital-convert`, whose
+> service (`api-digital`) is not built yet. The repositories `atrium-alto-postprocess` and
+> `atrium-llm-enrich` that preceded two of these are archived (2026-10-01).
 >
 > This document is the deployment-side half of issue #55 (`HEALTHCHECK` + `SIGTERM`
 > handling). The code-side half — `ServiceState`, `/ready`, `serve_lifecycle`,
@@ -27,23 +34,21 @@ also fails a probed image that has PyMuPDF (AGPL-3.0) installed.
 | Stage                                     | Repository                   | Production image (`api` target)               | Endpoints                                                              | Program id in the record | Blocks it writes                                  | GPU (report item 8)                              | Other published images                                                                                 |
 |-------------------------------------------|------------------------------|-----------------------------------------------|------------------------------------------------------------------------|--------------------------|---------------------------------------------------|--------------------------------------------------|--------------------------------------------------------------------------------------------------------|
 | page categories                           | `atrium-page-classification` | `ghcr.io/ufal/atrium-page-classification-api` | `POST /predict_image`, `POST /predict_document`                        | `page-classification`    | `page_categories`, `pages[].category*`            | first GPU                                        | `…-page-classification`: batch CLI (`run.py`)                                                          |
-| OCR output and text files → lines, scores | `atrium-alto-postprocess`    | `ghcr.io/ufal/atrium-alto-postprocess-api`    | `POST /process`                                                        | `alto-postprocess`       | `pages`, `content`, `lines`, `tables`             | first GPU                                        | `…-alto-postprocess`: batch pipeline (`run_pipeline.py`)                                               |
-| morphology, named entities, TEITOK        | `atrium-nlp-enrich`          | `ghcr.io/ufal/atrium-nlp-enrich-api`          | `POST /enrich`, `/enrich_text`, `/rescale`, `/project_record`, `/jobs` | `nlp-enrich`             | `entities`, `lines[].lemma/upos/feats/teitok_ref` | — (LINDAT UDPipe and NameTag)                    | `…-nlp-enrich`: batch pipeline; `…-nlp-enrich-llm`: the keyword stage's GPU batch                      |
-| keywords from the controlled vocabularies | `atrium-llm-enrich`          | `ghcr.io/ufal/atrium-llm-enrich-api`          | `POST /extract_keywords`, `/extract_keywords_text`                     | `llm-enrich`             | `enrichment`, `forms`, `entities[].pid`           | — (a client of the LLM server on the second GPU) | `…-remote`, `…-llm`: batch LLM runs; `…-digital`: the born-digital converter's CLI (`digital-convert`) |
+| OCR output and text files → lines, scores | `atrium-ocr-postprocess`     | `ghcr.io/ufal/atrium-ocr-postprocess-api`     | `POST /process`                                                        | `ocr-postprocess`        | `pages`, `content`, `lines`, `tables`             | first GPU                                        | `…-ocr-postprocess`: batch pipeline (`run_pipeline.py`)                                                |
+| morphology, named entities, TEITOK        | `atrium-nlp-enrich`          | `ghcr.io/ufal/atrium-nlp-enrich-api`          | `POST /enrich`, `/enrich_text`, `/rescale`, `/project_record`, `/jobs` | `nlp-enrich`             | `entities`, `lines[].lemma/upos/feats/teitok_ref` | — (LINDAT UDPipe and NameTag)                    | `…-nlp-enrich`: batch pipeline                                                                         |
+| keywords, statistical and controlled      | `atrium-keyword-extract`     | `ghcr.io/ufal/atrium-keyword-extract-api`     | `POST /extract_keywords`, `/extract_keywords_text`                     | `keyword-extract`        | `enrichment`, `forms`, `entities[].pid`           | KeyBERT on the first GPU; the controlled kind is a client of the LLM server on the second | `…-keyword-extract`: batch CLI; `…-keyword-extract-llm`: the research LLM target                       |
 | English metadata                          | `atrium-translator`          | `ghcr.io/ufal/atrium-translator-api`          | `POST /translate`                                                      | `translator`             | `translations`                                    | — (LINDAT)                                       | `…-translator`: batch CLI (`main.py`)                                                                  |
+| born-digital PDF and DOCX → the record    | `atrium-digital-convert`     | not yet: `api-digital` is the next step       | —                                                                      | `digital-convert`        | `pages`, `content`, `lines`, `tables` (born-digital) | —                                             | `…-digital-convert-digital`: the converter's CLI                                                       |
 
 Tags follow `docker_gha.md` §3.1–3.2: the release version without its `v` (`1.9.0-beta`), and
 `test` for the integration branch. Deploy only release tags; `docs/release_trust.md` describes
 what makes them immutable.
 
-The meeting of 30 September moves three of these (keywords into a new keyword-extractor,
-[atrium-nlp-enrich#40](https://github.com/ufal/atrium-nlp-enrich/issues/40); llm-enrich into the
-born-digital converter with its own `api-digital` service,
-[atrium-llm-enrich#28](https://github.com/ufal/atrium-llm-enrich/issues/28) and
-[#29](https://github.com/ufal/atrium-llm-enrich/issues/29); alto-postprocess renamed
-ocr-postprocess, [atrium-alto-postprocess#56](https://github.com/ufal/atrium-alto-postprocess/issues/56)).
-This table changes with each move; the `production-image.json` of the moved repositories changes
-with it.
+Program ids in records written before 1 October 2026 are `alto-postprocess` and `llm-enrich`; the
+record contract accepts both names for each writer (`PROGRAM_SUCCESSORS`, `docs/document_schema.md`).
+The images of the archived repositories (`atrium-alto-postprocess{,-api}`,
+`atrium-llm-enrich-{api,remote,llm,digital}`, and `atrium-nlp-enrich-llm`) stay published for consumers
+pinned to them and receive no new tags.
 
 ## Why this document exists — a Dockerfile `HEALTHCHECK` is invisible to Kubernetes
 
@@ -110,7 +115,7 @@ a rolling restart actually exercises them:
    `drain_timeout` (see `atrium_service.py`): `5 + 20 + 25 = 50`, with the manifest's `60`
    giving 10s of headroom. The kubelet `SIGKILL`s at this deadline no matter what the
    process is doing; size it to the slowest legitimate in-flight request a repo expects —
-   translator's per-chunk LINDAT calls and llm-enrich's per-line LLM calls are the two
+   translator's per-chunk LINDAT calls and keyword-extract's per-line LLM calls are the two
    services most likely to need this widened, since a single request there can
    legitimately run for minutes (see "Known limits" below — this default protects a
    *typical* request, it does not make every possible request-duration safe).
@@ -120,9 +125,9 @@ a rolling restart actually exercises them:
 ## Configuring the port and bind address
 
 The manifest's `env:` block sets `PORT`, and all five images honour it — `service/api.py`'s
-`__main__` block (alto-postprocess: `service/text_api.py`) reads `PORT`, `HOST`,
+`__main__` block (ocr-postprocess: `service/text_api.py`) reads `PORT`, `HOST`,
 `GRACEFUL_SHUTDOWN_S` and `RELOAD` from the environment, with the manifest's values as
-defaults. Until atrium-project#58 this was true of alto-postprocess only: the other four
+defaults. Until atrium-project#58 this was true of ocr-postprocess only: the other four
 baked `--port 8000` into an exec-form `ENTRYPOINT`, where no shell exists to expand a
 variable, so the declared setting did nothing.
 
@@ -186,8 +191,8 @@ silently gets the raw one:
 
 | Variable                                                | Code default — Kubernetes gets this                                         | Compose default                                                                                                                                                                       | Consequence                                                                                                                                                                                                            |
 |---------------------------------------------------------|-----------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ALLOWED_ORIGINS`                                       | `*` — every origin                                                          | alto-postprocess `http://localhost:8080,http://localhost:5500`; page-classification `http://localhost:8080,http://127.0.0.1:8080`; llm-enrich / nlp-enrich / translator: not narrowed | A Kubernetes deployment that omits this serves CORS to anything. Set it explicitly. (`localhost` and `127.0.0.1` are *different* origins to a browser, which is why the two compose defaults are not interchangeable.) |
-| `OLLAMA_HOST` (llm-enrich)                              | `http://localhost:11434` — the **pod's own** loopback, where no Ollama runs | `http://host.docker.internal:11434`                                                                                                                                                   | Omitting it in Kubernetes does not fall back to the working compose value — it gives a URL that cannot reach an Ollama anywhere. Point it at the Ollama Service's DNS name.                                            |
+| `ALLOWED_ORIGINS`                                       | `*` — every origin                                                          | ocr-postprocess `http://localhost:8080,http://localhost:5500`; page-classification `http://localhost:8080,http://127.0.0.1:8080`; keyword-extract / nlp-enrich / translator: not narrowed | A Kubernetes deployment that omits this serves CORS to anything. Set it explicitly. (`localhost` and `127.0.0.1` are *different* origins to a browser, which is why the two compose defaults are not interchangeable.) |
+| `OLLAMA_HOST` (digital-convert, for now)                     | `http://localhost:11434` — the **pod's own** loopback, where no Ollama runs | `http://host.docker.internal:11434`                                                                                                                                                   | Omitting it in Kubernetes does not fall back to the working compose value — it gives a URL that cannot reach an Ollama anywhere. Point it at the Ollama Service's DNS name.                                            |
 | `MAX_CONCURRENT_JOBS`, `DEFAULT_KW_METHOD` (nlp-enrich) | `2` / `keybert`                                                             | the same values, passed through `.env`                                                                                                                                                | Under Kubernetes these behave normally and can be changed via the `env:` block; under `docker compose` prior to atrium-project#60 they could not be changed from `.env` at all.                                        |
 
 > ⚠️ **`value: ""` is not the same as omitting the entry.** In an `env:` block,
@@ -202,14 +207,14 @@ number.** The limit is a property of what each service ingests:
 | Repo                | `MAX_UPLOAD_MB` | Set at           | Why this number                                                  |
 |---------------------|-----------------|------------------|------------------------------------------------------------------|
 | translator          | `50`            | `tool_limits.py` | highest — ALTO XML in, ALTO XML out                              |
-| alto-postprocess    | `25`            | `tool_limits.py` | ALTO XML for a whole scanned volume, or a PDF or office document |
-| llm-enrich          | `10`            | `tool_limits.py` | a CSV of lines                                                   |
+| ocr-postprocess    | `25`            | `tool_limits.py` | ALTO XML for a whole scanned volume, or a PDF or office document |
+| digital-convert          | `10`            | `tool_limits.py` | a CSV of lines                                                   |
 | page-classification | `10`            | `tool_limits.py` | a multi-page PDF                                                 |
 | nlp-enrich          | `5`             | `tool_limits.py` | lowest — a 5 MB CSV is already at the `MAX_WORDS` ceiling        |
 
-The manifest's commented `MAX_UPLOAD_MB: "10"` is llm-enrich's and page-classification's
+The manifest's commented `MAX_UPLOAD_MB: "10"` is digital-convert's and page-classification's
 number. Uncommenting it as-is silently *raises* nlp-enrich's limit 2× and *lowers*
-alto-postprocess's 2.5× and translator's 5×.
+ocr-postprocess's 2.5× and translator's 5×.
 
 **Table B — per-repo operator deltas.** Operator-facing only; each repo's `.env.example` is the
 complete ledger, and what is here is what a deployment legitimately sets.
@@ -227,11 +232,11 @@ often sets; the READMEs list all of them.
 
 | Repo                | Variable                                                                 | Default                              | Why an operator sets it                                                                                                                                                                                                                                                    |
 |---------------------|--------------------------------------------------------------------------|--------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| alto-postprocess    | `MODEL_DIR`                                                              | `<repo>/models`                      | Point at a mounted PVC instead of the image layer — this is the knob that turns the crash-on-model-load-failure in *Known limits* into a fixable condition.                                                                                                                |
+| ocr-postprocess    | `MODEL_DIR`                                                              | `<repo>/models`                      | Point at a mounted PVC instead of the image layer — this is the knob that turns the crash-on-model-load-failure in *Known limits* into a fixable condition.                                                                                                                |
 |                     | `LANGID_CONFIG`                                                          | `<repo>/setup/config.txt`            | Language-ID config, when mounted from a ConfigMap.                                                                                                                                                                                                                         |
 |                     | `DOCUMENT_JSON_DIR`                                                      | *(none)*                             | Where `document.json` output is written.                                                                                                                                                                                                                                   |
 |                     | `ATRIUM_TEXT_INGEST_MAX_PAGES` / `ATRIUM_TEXT_INGEST_MAX_FILE_MB`        | `20000` / `256`                      | `[limit]` Reader caps; every `[TEXT_INGEST]` key of `setup/config.txt` is also `ATRIUM_TEXT_INGEST_<KEY>`, which wins over the file. Over one → 413 `limit_exceeded`.                                                                                                      |
-| llm-enrich          | `LLM_BACKEND`                                                            | `openrouter`                         | `openrouter` or `ollama`; decides which block below applies.                                                                                                                                                                                                               |
+| digital-convert          | `LLM_BACKEND`                                                            | `openrouter`                         | `openrouter` or `ollama`; decides which block below applies.                                                                                                                                                                                                               |
 |                     | `OPENROUTER_API_KEY`                                                     | —                                    | **Required, secret** — raises at startup when empty.                                                                                                                                                                                                                       |
 |                     | `OPENROUTER_MODEL`                                                       | —                                    | **Required** — raises at startup when empty.                                                                                                                                                                                                                               |
 |                     | `OLLAMA_HOST` / `OLLAMA_MODEL`                                           | see callout / —                      | Ollama backend; `OLLAMA_MODEL` **required** for it.                                                                                                                                                                                                                        |
@@ -268,8 +273,8 @@ shows the shape; creating the `Secret` is your step.
   necessity — this issue makes the *typical* in-flight request safe across a rolling
   restart, it does not make every possible one safe regardless of duration. Four of the
   five services process a request synchronously within the HTTP request/response cycle
-  itself (page-classification's multi-page PDF loop, alto-postprocess's per-file
-  inference, translator's per-chunk LINDAT calls, llm-enrich's per-line LLM calls,
+  itself (page-classification's multi-page PDF loop, ocr-postprocess's per-file
+  inference, translator's per-chunk LINDAT calls, keyword-extract's per-line LLM calls,
   nlp-enrich's own synchronous `/enrich`/`/enrich_text`/`/rescale`); a request that runs
   longer than the container's grace period is still forcibly cut when the kubelet
   `SIGKILL`s. Raise `terminationGracePeriodSeconds` **and** the Dockerfile's
@@ -284,7 +289,7 @@ shows the shape; creating the `Secret` is your step.
   the job API safe to poll across a restart.
 - **`replicas: 1` is the template default**, not a recommendation to stay at one. Raising it
   is safe for the four request/response services (translator, page-classification,
-  alto-postprocess, llm-enrich) once ARÚP/ARÚB's own load-balancing is in place; nlp-enrich's
+  ocr-postprocess, keyword-extract) once ARÚP/ARÚB's own load-balancing is in place; nlp-enrich's
   in-memory job store means a client's poll can land on a *different* replica than the one
   running its job, which reads as 404 rather than "still running" — the same limitation as
   above, just visible sooner under >1 replica.
@@ -293,20 +298,20 @@ shows the shape; creating the `Secret` is your step.
   secret for GHCR if the images are private, and no node-affinity/GPU scheduling for the
   services that benefit from a GPU. Those are ARÚP/ARÚB's own cluster's concerns and
   deliberately left out rather than guessed at.
-- **alto-postprocess's lifespan raises on model-load failure**
+- **ocr-postprocess's lifespan raises on model-load failure**
   (`service/text_api.py:63-65`), so a misconfigured alto pod crash-loops on `startupProbe`
   rather than starting and reporting unready. This is correct, intentional behaviour (a
   service that cannot load its models should not silently sit "not ready" forever) — worth
   knowing so a crash-loop on this one service specifically is read as a config problem, not
   a regression in this manifest.
-- **The reference manifest cannot deploy llm-enrich unmodified.** `service/api.py:128-134`
-  raises at startup when `OPENROUTER_API_KEY` or `OPENROUTER_MODEL` is empty (and `:150`
-  likewise for `OLLAMA_MODEL` on the ollama backend), so an llm-enrich pod applied straight
-  from this template crash-loops on `startupProbe` — and it will look exactly like a probe
-  defect in the acceptance runbook unless the key is supplied first. Create a `Secret` out of
-  band and uncomment the `secretKeyRef` stanza. This is the one repo of the five where
-  "substitute `<tool>` and `<version>`, then apply" is not the whole procedure (see "What to
-  change per repo" below).
+- **The reference manifest cannot deploy keyword-extract's controlled kind unmodified.** The service
+  of the former llm-enrich (`service/api.py:128-134` there) raised at startup when `OPENROUTER_API_KEY`
+  or `OPENROUTER_MODEL` was empty (and likewise for `OLLAMA_MODEL` on the ollama backend), so a pod
+  with that kind applied straight from this template crash-loops on `startupProbe` — and it will look
+  exactly like a probe defect in the acceptance runbook unless the key is supplied first. Create a
+  `Secret` out of band and uncomment the `secretKeyRef` stanza. keyword-extract's statistical kind
+  needs no key, and a statistical-only deployment is the whole procedure "substitute `<tool>` and
+  `<version>`, then apply" (see "What to change per repo" below).
 
 ## What to change per repo
 
@@ -315,5 +320,5 @@ Replace `<tool>` and `<version>` in the manifest with the real image
 naming/tag-channel conventions), and size `resources.limits.memory` against the model(s) that
 repo actually loads. Everything else in the manifest is identical across all five services —
 that uniformity is the point: one reference contract, applied five times, rather than five
-independently-negotiated deployment specs — **with one exception**: llm-enrich additionally
-needs the `Secret` described in "Known limits" above before it will start at all.
+independently-negotiated deployment specs — **with one exception**: keyword-extract's controlled kind
+additionally needs the `Secret` described in "Known limits" above before it will start at all.

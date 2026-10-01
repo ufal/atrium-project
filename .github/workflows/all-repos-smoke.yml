@@ -2,17 +2,20 @@
 #
 # Runs each tool repo's own `-m "not slow"` suite against its default branch, so a
 # hub-side change (a moved `v1`, an edited canonical template) is caught against all
-# five repos at once rather than one repo at a time.
+# six repos at once rather than one repo at a time.
 #
 # ⚠️ This is NOT the JSON pipeline end-to-end test. That is `e2e-pipeline-smoke.yml`,
-# which threads a real `atrium_document` record through all five published container
+# which threads a real `atrium_document` record through the published container
 # images and asserts the accretion contract. This file only runs unit suites.
 #
 # Issue #10, G10 — everything below was wrong before this rewrite:
 #   * It was called "Reusable E2E Pipeline Smoke (JSON Matrix)" and shared the real
 #     E2E's cron, but threaded no document JSON at all. A reader comparing the two
 #     names would reasonably conclude the JSON path had redundant coverage. It did not.
-#   * `llm-enrich` was missing from the matrix — the one repo whose engine had no
+#   * (2026-10-01: the matrix follows the repository moves of atrium-project#72 -- alto-postprocess
+#     is now ocr-postprocess, llm-enrich is now digital-convert, and the keyword stage that
+#     nlp-enrich and llm-enrich shared is keyword-extract.)
+#   * `llm-enrich` (today digital-convert + keyword-extract) was missing from the matrix — the one repo whose engine had no
 #     direct tests until 2026-07-22, and the owner of `enrichment`/`forms`.
 #   * No `-m "not slow"`, so it tried to run model/GPU/network tests that no runner
 #     here can serve. Every repo's own `docker.yml` filters them; this did not.
@@ -32,8 +35,8 @@ on:
   schedule:
     # 04:00, NOT 02:00: e2e-pipeline-smoke.yml already holds '0 2 */3 * *', and this
     # workflow's own header lists that collision as one of the defects it fixed —
-    # it had been reintroduced. Both jobs are heavy (the E2E pulls five images over
-    # ~40 min; this matrix runs five pip installs + suites over ~20 min), so
+    # it had been reintroduced. Both jobs are heavy (the E2E pulls its images over
+    # ~40 min; this matrix runs six pip installs + suites over ~20 min), so
     # colliding them contends for runners and interleaves two unrelated failure
     # reports in the same digest window.
     - cron: '0 4 */3 * *' # 04:00 on every 3rd day-of-month, 2h after the E2E
@@ -53,15 +56,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
-      # Never fail-fast: the point is a full picture of all five repos in one run.
+      # Never fail-fast: the point is a full picture of all six repos in one run.
       fail-fast: false
       matrix:
         repo:
           - page-classification
-          - alto-postprocess
+          - ocr-postprocess
           - translator
           - nlp-enrich
-          - llm-enrich
+          - keyword-extract
+          - digital-convert
 
     steps:
       - name: Checkout ufal/atrium-${{ matrix.repo }}
@@ -78,8 +82,8 @@ jobs:
       - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
-          # Repos differ in layout: page-classification and alto-postprocess keep
-          # their manifests under setup/, the other three at the root. Install
+          # Repos differ in layout: page-classification and ocr-postprocess keep
+          # their manifests under setup/, the other four at the root. Install
           # whichever exist. Runtime requirements come first because several test
           # modules import the real package they exercise.
           for f in requirements.txt setup/requirements.txt \

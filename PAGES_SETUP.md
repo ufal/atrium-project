@@ -271,3 +271,19 @@ known-broken `alto-postprocess/service/README.md:93` anchor) would not have been
 The site's markdown source lives on the hub's default branch at `docs_site/`, where GitHub renders it
 as markdown in the normal repository browser. Nothing is hidden behind a Pages build, whether or not
 the switch is ever flipped.
+
+## 2026-10-01 · the repositories that followed the stages
+
+The three repositories created on 1 October (atrium-project#72) are not covered by the tables above,
+which describe the state of 21 September.
+
+| Repository                | Replaces                              | Landing page to set up                                              |
+|---------------------------|---------------------------------------|---------------------------------------------------------------------|
+| `atrium-ocr-postprocess`  | `atrium-alto-postprocess`             | `gh-pages` / `/ (root)`; GitHub's homepage field still names the old site |
+| `atrium-keyword-extract`  | the keyword part of `atrium-nlp-enrich` | Pages is off; the homepage field names the nlp-enrich site          |
+| `atrium-digital-convert`  | the rest of `atrium-llm-enrich`       | Pages is off; the homepage field names the llm-enrich site          |
+
+GitHub does not redirect Pages when a repository is replaced, so the old addresses keep serving the old
+cards until the old repositories are archived, and `_generators/make_stubs.py` writes the cards of the
+new three from `_generators/repos.py`. The hub's site links the landing page of `ocr-postprocess` only;
+the other two link their source until their Pages is on.

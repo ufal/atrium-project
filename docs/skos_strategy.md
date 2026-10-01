@@ -1,5 +1,11 @@
 # 🔗 ATRIUM SKOS Strategy — vocabularies as an internal alignment framework
 
+> **Repository names (2026-10-01).** This document predates the repository moves of atrium-project#72 and
+> uses the names of its time: `alto-postprocess` is now `ocr-postprocess`; `llm-enrich` split into
+> `keyword-extract` (its keyword stage, with the keyword extraction of `nlp-enrich`) and `digital-convert`
+> (the born-digital converter). The old repositories are archived. Read the names below through that map;
+> the current ones are in [`docs_site/ecosystem/repository-map.md`](../docs_site/ecosystem/repository-map.md).
+
 _Issue: [ufal/atrium-project#51](https://github.com/ufal/atrium-project/issues/51) · Milestone: Q3 [WP8 / WP7] · Date: 2026-09-08_
 _Status: **normative for the vocabulary layer of all six repos.** Supersedes
 [`../agent_dev_logs/plans/51.plan.md`](../agent_dev_logs/plans/51.plan.md) §A ("do nothing")._

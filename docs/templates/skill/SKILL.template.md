@@ -31,8 +31,8 @@ agent calls directly.
 ## <Domain reference: categories / languages / stages / vocabularies> <emoji>
 
 <the tool's vocabulary as a table: categories + routing semantics (page-classification,
-alto-postprocess), mode/language matrix (translator), stage plan + keyword methods
-(nlp-enrich), backends + vocabulary contract (llm-enrich)>
+ocr-postprocess), mode/language matrix (translator), stage plan (nlp-enrich),
+keyword methods + backends + vocabulary contract (keyword-extract)>
 
 ## Workflows 🪄
 

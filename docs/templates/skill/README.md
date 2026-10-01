@@ -2,8 +2,8 @@
 
 Validated versions of [`docs/agent_skill_strategy.md`](../../agent_skill_strategy.md)
 Appendices A–D, promoted here after the first full rollout run across all five
-service repos (page-classification hardening + nlp-enrich / alto-postprocess /
-translator / llm-enrich skill layers). Copy, then replace every `<placeholder>`.
+service repos (page-classification hardening + nlp-enrich / ocr-postprocess /
+translator / keyword-extract skill layers). Copy, then replace every `<placeholder>`.
 
 | File | Appendix | Purpose |
 |------|----------|---------|
@@ -23,10 +23,10 @@ Deviations from the original appendices, learned by building the real branches:
 
 1. **Read timeouts are service-specific.** 300 s suits model inference
    (page-classification); pipeline services need more (nlp-enrich 900 s), and
-   LLM extraction needs much more (llm-enrich 1800 s). Encode the ceiling in
+   LLM extraction needs much more (keyword-extract 1800 s). Encode the ceiling in
    the client's default timeout, not in agent patience.
 2. **429-aware messaging is part of the client contract** for services with a
-   concurrency guard (nlp-enrich, llm-enrich): print an actionable hint
+   concurrency guard (nlp-enrich, keyword-extract): print an actionable hint
    (async jobs / retry later) instead of the generic server-error line.
 3. **Non-tabular outputs drop `--format`.** The translator returns an XML
    attachment, so its client uses `-o FILE` / `-o -` semantics instead of

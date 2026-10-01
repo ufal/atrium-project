@@ -21,22 +21,24 @@ GITHUB_ORG="ufal"
 
 # Repositories to process
 REPOS=(
-    "atrium-alto-postprocess"
+    "atrium-ocr-postprocess"
     "atrium-page-classification"
     "atrium-nlp-enrich"
+    "atrium-keyword-extract"
     "atrium-translator"
     "atrium-project"
-    "atrium-llm-enrich"
+    "atrium-digital-convert"
 )
 
 # Repository-specific virtual environments (relative to BASE_DIR/<repo>)
 declare -A VENV_PATHS=(
-    ["atrium-alto-postprocess"]="venv-alto"
+    ["atrium-ocr-postprocess"]="venv-alto"
     ["atrium-page-classification"]="venv"
     ["atrium-nlp-enrich"]="venv-nlp"
+    ["atrium-keyword-extract"]="venv-kw"
     ["atrium-translator"]="venv-trans"
     ["atrium-project"]="venv-atrium"
-    ["atrium-llm-enrich"]="venv-llm"
+    ["atrium-digital-convert"]="venv-llm"
 )
 
 # ------------------------------------------------------------

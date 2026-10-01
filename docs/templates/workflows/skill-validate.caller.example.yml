@@ -9,9 +9,9 @@
 #   -----------------------------------------------------------------------------------------------------
 #   atrium-page-classification  scripts/atrium_classify.py     service.api       /predict_image /predict_document
 #   atrium-translator           scripts/atrium_translate.py    service.api       /translate
-#   atrium-alto-postprocess     scripts/atrium_postprocess.py  service.text_api  /process
+#   atrium-ocr-postprocess      scripts/atrium_postprocess.py  service.text_api  /process
 #   atrium-nlp-enrich           scripts/atrium_enrich.py       service.api       /enrich /enrich_text /rescale /jobs
-#   atrium-llm-enrich           scripts/atrium_keywords.py     service.api       /extract_keywords /extract_keywords_text
+#   atrium-keyword-extract      scripts/atrium_keywords.py     service.api       /extract_keywords /extract_keywords_text
 
 name: Skill Branch Validation
 

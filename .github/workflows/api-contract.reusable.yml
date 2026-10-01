@@ -6,7 +6,7 @@
 # OpenAPI 3.x validity against the in-process app. The test is importorskip-guarded,
 # so a repo whose service needs the heavy model stack skips cleanly here and runs the
 # same test for real in its full (model-enabled) suite — the torch-free services
-# (alto, nlp, llm-enrich) run it here directly.
+# (ocr, nlp, keyword-extract, digital-convert) run it here directly.
 #
 # The byte-parity of the shared service/atrium_service.py helper is enforced
 # separately by para-drift.reusable.yml.

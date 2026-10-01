@@ -355,7 +355,7 @@ def test_the_selftest_passes():
 
 # ── one oasdiff version everywhere ──────────────────────────────────────────────────────────
 # The breaking-change rules (RAISED_RULES, the anyOf → oneOf normalisation) were measured
-# against OASDIFF_VERSION. Seven workflows install oasdiff — the hub's own two and the five
+# against OASDIFF_VERSION. Eight workflows install oasdiff — the hub's own two and the six
 # tool repos' release.yml — each with the version spelled out, so a bump that misses one runs
 # that gate on rules nobody measured.
 
@@ -363,10 +363,11 @@ _HUB_ROOT = Path(__file__).resolve().parent.parent
 _SIBLINGS = Path(os.environ.get("ATRIUM_SIBLING_ROOT", _HUB_ROOT.parent))
 _TOOL_REPOS = (
     "atrium-page-classification",
-    "atrium-alto-postprocess",
+    "atrium-ocr-postprocess",
     "atrium-nlp-enrich",
+    "atrium-keyword-extract",
     "atrium-translator",
-    "atrium-llm-enrich",
+    "atrium-digital-convert",
 )
 
 

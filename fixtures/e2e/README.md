@@ -32,7 +32,7 @@ all five; push and schedule runs use `CTX000000003`. The other four are multi-pa
 
 Each fixture is a pair: `ALTO/<id>.alto.xml` (the input) and `DOC_LINE_CATEG/<id>.csv` (the GPU
 bridge, below). The three synthetic ALTO files are byte-identical to
-`atrium-alto-postprocess/data_samples/ALTO/` at `test` HEAD. **The CSVs are snapshots, not copies:**
+`atrium-ocr-postprocess/data_samples/ALTO/` at `test` HEAD (the repository was `atrium-alto-postprocess` until 2026-10-01). **The CSVs are snapshots, not copies:**
 they are in an older `CSV_HEADER` (40 columns; the two real scans 37) than alto's current
 `data_samples/DOC_LINE_CATEG/` (42), which the downstream stages read by column name.
 
@@ -76,8 +76,9 @@ intentionally ships no `data_samples` of its own". That stopped being true: llm-
 and commits a union of the AMCR and TEATER thesauri under `data_samples/vocab/`, and the hub copy
 silently became a snapshot of a file that no longer exists upstream.
 
-Stage 5 already checks out llm-enrich into `work/atrium-llm-enrich-main` and runs from it, so it now
-reads `data_samples/vocab/union_nested.json` straight out of that checkout. A fixture the hub has to
+Until 2026-10-01 Stage 5 checked out llm-enrich into `work/atrium-llm-enrich-main` and read
+`data_samples/vocab/union_nested.json` straight out of that checkout. That stage is gone from the lane (the controlled keywords
+move to keyword-extract, which will publish the vocabulary as a versioned CC0 release asset for the lane to read). A fixture the hub has to
 re-copy by hand whenever another repo rebuilds its vocabulary is a drift source, and this one drifted
 undetected until run [32208408456](https://github.com/ufal/atrium-project/actions/runs/32208408456)
 — where a missing vocabulary caused a live AMCR harvest, a one-term category enum, and an

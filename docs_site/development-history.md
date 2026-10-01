@@ -8,7 +8,7 @@ issue: 57
 
 # Development history
 
-How the ecosystem got here, across all six repositories.
+How the ecosystem got here, across all seven repositories.
 
 ## Per-repository histories
 
@@ -18,10 +18,11 @@ milestones that shaped it — and links the raw records rather than republishing
 | Repository                   | History page                                                                                                  |
 |------------------------------|---------------------------------------------------------------------------------------------------------------|
 | `atrium-page-classification` | **[page-classification → History](tools/page-classification/history.md)**                                     |
-| `atrium-alto-postprocess`    | [`DEVLOG.md`](https://github.com/ufal/atrium-alto-postprocess/blob/master/agent_dev_logs/DEVLOG.md) on GitHub |
+| `atrium-ocr-postprocess`     | [`DEVLOG.md`](https://github.com/ufal/atrium-ocr-postprocess/blob/master/agent_dev_logs/DEVLOG.md) on GitHub  |
 | `atrium-translator`          | **[translator → History](tools/translator/history.md)**                                                       |
 | `atrium-nlp-enrich`          | [`DEVLOG.md`](https://github.com/ufal/atrium-nlp-enrich/blob/master/agent_dev_logs/DEVLOG.md) on GitHub       |
-| `atrium-llm-enrich`          | [`DEVLOG.md`](https://github.com/ufal/atrium-llm-enrich/blob/main/agent_dev_logs/DEVLOG.md) on GitHub         |
+| `atrium-keyword-extract`     | [`DEVLOG.md`](https://github.com/ufal/atrium-keyword-extract/blob/master/agent_dev_logs/DEVLOG.md) on GitHub  |
+| `atrium-digital-convert`     | [`DEVLOG.md`](https://github.com/ufal/atrium-digital-convert/blob/main/agent_dev_logs/DEVLOG.md) on GitHub    |
 | `atrium-project` (hub)       | **[the cross-repository chronology](#the-cross-repository-chronology)**, below                                |
 
 ## The cross-repository chronology
@@ -100,6 +101,17 @@ byte-identical.
 |---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------|
 | 09-16 → 09-23 | The documentation site: MkDocs Material, built with `mkdocs build --strict` from `docs_site/` and published to the hub's `gh-pages`, with a landing card per repository. Pages are written rather than generated, so that each says something no single repository can say | why this site builds from `docs_site/` only |
 
+### 30 September → 1 October 2026 · the repositories follow the stages
+
+The meeting of 30 September cut the tools along the pipeline's stages instead of along their
+history (atrium-project#72). `alto-postprocess` became `ocr-postprocess`; the keyword extraction of
+`nlp-enrich` and `llm-enrich` moved into one new repository, `keyword-extract`; and what was left of
+`llm-enrich` became `digital-convert`, the born-digital converter. The three were created as new
+repositories on 1 October, so the old ones were archived rather than redirected. In the hub the
+change is the repository lists, the end-to-end workflows, these pages and the record contract's
+successor map (`PROGRAM_SUCCESSORS`), which lets the new program ids write beside the old ones
+without rewriting a stamp already in a record.
+
 ## What the record keeps repeating
 
 The same four lessons recur across six months of entries, in different words each time:
@@ -117,7 +129,7 @@ The same four lessons recur across six months of entries, in different words eac
 
 ## Why the raw records are not published here
 
-`agent_dev_logs/` across the six repositories holds issue digests, plans, verbatim issue
+`agent_dev_logs/` across the repositories holds issue digests, plans, verbatim issue
 exports, periodic `project_state_*` snapshots and one `DEVLOG.md` timeline per repository. They
 stay in their repositories and on GitHub, for two reasons:
 

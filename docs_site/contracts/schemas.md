@@ -13,8 +13,8 @@ and the translator write.
 
 !!! info "Scope"
     The schemas cover every block. The annotations below cover the fields owned by
-    page-classification and the translator; the blocks of alto-postprocess, nlp-enrich and
-    llm-enrich are described in the schema itself.
+    page-classification and the translator; the blocks of ocr-postprocess, nlp-enrich,
+    keyword-extract and digital-convert are described in the schema itself.
 
 Both files are canonical in the hub (`docs/templates/shared/`) and vendored byte-identically into
 every tool, where `para-drift` checks them.

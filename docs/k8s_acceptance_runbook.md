@@ -13,15 +13,16 @@ Kubernetes," so validating it is necessarily out-of-band.
 
 ## Before you start
 
-1. **llm-enrich needs a key before it will start at all.** `service/api.py:128-134` raises
-   when `OPENROUTER_API_KEY` or `OPENROUTER_MODEL` is empty, so an llm-enrich pod applied
+1. **keyword-extract's controlled kind needs a key before it will start at all** (the LLM service of the former
+   llm-enrich: `service/api.py:128-134` there raised
+   when `OPENROUTER_API_KEY` or `OPENROUTER_MODEL` was empty), so a pod with that kind applied
    straight from the template crash-loops on `startupProbe`. Create the `Secret` and
    uncomment the `secretKeyRef` stanza first (`docs/k8s_deployment.md` §"Environment
    variables") — otherwise acceptance criterion 1 records a probe failure for a
    configuration reason, which is exactly the kind of wrong result this runbook exists to
    avoid.
 2. **Check your smoke file against the repo's upload limit.** `MAX_UPLOAD_MB` differs per
-   service — translator 50, alto-postprocess 25, llm-enrich 10, page-classification 10,
+   service — translator 50, ocr-postprocess 25, keyword-extract 10, page-classification 10,
    **nlp-enrich 5**. A file over the limit returns 413 immediately, the request is no
    longer in flight when the restart lands, and criterion 2 passes vacuously. nlp-enrich is
    the live collision: its smoke request below asks for "a large CSV" against the fleet's
@@ -30,8 +31,8 @@ Kubernetes," so validating it is necessarily out-of-band.
    browser on a network where that matters, set it in the manifest before applying, not
    after.
 4. **`replicas: 1` is the template default, and it is not safe to raise for every repo.**
-   Raising it is fine for translator, page-classification, alto-postprocess and
-   llm-enrich once your own load-balancing is in place. **Not for nlp-enrich**: its job
+   Raising it is fine for translator, page-classification, ocr-postprocess and
+   keyword-extract once your own load-balancing is in place. **Not for nlp-enrich**: its job
    registry (`service/jobs.py`) is in-memory and per-replica, so a client polling
    `GET /jobs/<id>` (the smoke request below) can land on a *different* replica than the
    one that ran the job — which reads as 404, not "still running." Keep nlp-enrich at
@@ -126,22 +127,22 @@ restart proves nothing about draining.
 | Repo                | Smoke request                                                                                                  | Why it's slow enough to matter                                                                                             |
 |---------------------|----------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
 | page-classification | `curl -s -X POST localhost:8000/predict_document -F "file=@<multi-page.pdf>"`                                  | Multi-page PDF: one inference per page, in sequence                                                                        |
-| alto-postprocess    | `curl -s -X POST localhost:8000/process -F "file=@<large.alto.xml>"`                                           | Per-line language ID + quality classification over a large file                                                            |
+| ocr-postprocess     | `curl -s -X POST localhost:8000/process -F "file=@<large.alto.xml>"`                                           | Per-line language ID + quality classification over a large file                                                            |
 | translator          | `curl -s -X POST localhost:8000/translate -F "file=@<large.alto.xml>"`                                         | One retried remote LINDAT call per chunk — the slowest request shape in the fleet                                          |
 | nlp-enrich          | `curl -s -X POST localhost:8000/jobs -F "file=@<large.csv>"` then poll `GET /jobs/<id>` until `status=="done"` | The one repo with a background job queue — this is the request shape issue #55's `state.track()` fix specifically protects |
-| llm-enrich          | `curl -s -X POST localhost:8000/extract_keywords -F "file=@<many-lines.csv>"`                                  | One remote LLM call per line — can legitimately run for minutes                                                            |
+| keyword-extract     | `curl -s -X POST localhost:8000/extract_keywords -F "document_json=@<large.document.json>"`                    | One remote LLM call per line — can legitimately run for minutes                                                            |
 
 ## Results log (fill in)
 
 | Repo                | Deploys clean | Probes behave | Rolling restart drops nothing | Non-default `PORT` | Env contract honoured | Notes        |
 |---------------------|---------------|---------------|-------------------------------|--------------------|-----------------------|--------------|
 | page-classification | ☐             | ☐             | ☐                             | ☐                  | ☐                     |              |
-| alto-postprocess    | ☐             | ☐             | ☐                             | ☐                  | ☐                     |              |
+| ocr-postprocess     | ☐             | ☐             | ☐                             | ☐                  | ☐                     |              |
 | translator          | ☐             | ☐             | ☐                             | ☐                  | ☐                     |              |
 | nlp-enrich          | ☐             | ☐             | ☐                             | ☐                  | ☐                     | replicas: 1? |
-| llm-enrich          | ☐             | ☐             | ☐                             | ☐                  | ☐                     |              |
+| keyword-extract     | ☐             | ☐             | ☐                             | ☐                  | ☐                     |              |
 
-> Record in Notes the values you set for criterion 4, and for llm-enrich the backend you used.
+> Record in Notes the values you set for criterion 4, and for keyword-extract's controlled kind the backend you used.
 
 > Environment note: this runbook cannot be run from this session or from any hub CI job —
 > there is no Kubernetes cluster in scope here, by design (#40). The nearest in-repo proxy is

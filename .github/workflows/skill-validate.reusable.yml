@@ -166,7 +166,7 @@ jobs:
 
           # An endpoint claim is `GET /x` / `POST /x` — a verb plus a path. A bare
           # backticked `/x` is deliberately NOT treated as one: the branch READMEs
-          # use that form for the Claude Code slash-command name (`/atrium-llm-enrich`)
+          # use that form for the Claude Code slash-command name (`/atrium-keyword-extract`)
           # and for static mounts (`/frontend`), neither of which is an API route.
           _VERB = re.compile(r"\b(?:GET|POST|PUT|DELETE|PATCH)\s+(/[A-Za-z0-9_{}/.-]*)")
           _ROUTE = re.compile(

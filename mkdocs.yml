@@ -120,10 +120,11 @@ nav:
   - Workflows:
       - Overview: workflows/index.md
       - page-classification: workflows/page-classification.md
-      - alto-postprocess: workflows/alto-postprocess.md
+      - ocr-postprocess: workflows/ocr-postprocess.md
       - translator: workflows/translator.md
       - nlp-enrich: workflows/nlp-enrich.md
-      - llm-enrich: workflows/llm-enrich.md
+      - keyword-extract: workflows/keyword-extract.md
+      - digital-convert: workflows/digital-convert.md
   - External tools & services: external-tools.md
   - Ecosystem:
       - Architecture: ecosystem/architecture.md

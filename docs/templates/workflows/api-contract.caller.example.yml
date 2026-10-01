@@ -18,7 +18,7 @@
 # steps later as "pytest: command not found" (exit 127). If this repo keeps its real
 # lists under setup/, add a one-line forwarding stub at the root:
 #     -r setup/requirements-test.txt
-# See atrium-alto-postprocess/requirements-test.txt for the documented pattern.
+# See atrium-ocr-postprocess/requirements-test.txt for the documented pattern.
 
 name: API Meta-Contract
 

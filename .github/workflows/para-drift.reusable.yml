@@ -23,7 +23,7 @@ on:
         description: >-
           Space-separated ufal repositories this caller vendors files from with SHA pins, in
           tests/test_vendored_*_parity.py (atrium-project#72 B: the tool-to-tool shared layers,
-          e.g. llm-enrich's copy of nlp-enrich's TEITOK reader). When set, the vendored-parity
+          e.g. digital-convert's copy of nlp-enrich's TEITOK reader). When set, the vendored-parity
           job clones each owner beside the caller at vendored-ref and runs the pin tests, whose
           sibling half then compares every copy byte for byte with the owner's current file: a
           copy that fell behind its owner turns red here, in the consumer. Empty (the default)
