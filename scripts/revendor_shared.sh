@@ -66,10 +66,11 @@ SIBLING_ROOT="${ATRIUM_SIBLING_ROOT:-$(dirname "$HUB_ROOT")}"
 
 ALL_REPOS=(
     atrium-page-classification
-    atrium-alto-postprocess
+    atrium-ocr-postprocess
     atrium-nlp-enrich
+    atrium-keyword-extract
     atrium-translator
-    atrium-llm-enrich
+    atrium-digital-convert
 )
 
 MANIFEST_JSON="$SHARED_DIR/MANIFEST.json"
