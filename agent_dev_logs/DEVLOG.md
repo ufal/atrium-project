@@ -1943,3 +1943,35 @@ releases; the gate's diff review covers *"only the files that go into the image 
   production image, so a run that uses it is declared AGPL; the same class of finding as PyMuPDF (#72). Decision for #72.
 
   Not pushed from here: files delivered in chat.
+
+## 2026-10-04 — W3 in the shared module: the quality model scores a born-digital record (atrium-digital-convert#2/#4)
+* **Canonical `atrium_document.py`:**
+  * `SCORING_FIELDS` (`lines`: categ/quality_score/lang; `pages`: quality_score/quality_band) and
+    `SCORING_PROGRAM = "ocr-postprocess"`.
+  * A merge by ocr-postprocess limited to them, into a plane another originator wrote, is noted, not refused (also
+    under `strict`). It updates existing rows only (an unmatched row is a complaint) and is stamped
+    `contribution: "scoring"`.
+  * `merge_document_records()` does not read such a stamp as a second originator.
+  * The origin check now receives a merge's writable fields; deferred checks keep them.
+  * The schema JSON is unchanged, so no service spec changes and no freeze-register entry.
+* **Canonical tests and E2E:** `test_document_originators.py` +8; `tools/e2e/e2e_assert.py` accepts the scoring stamp
+  on the born-digital branch (+2 tests).
+* **`scripts/revendor_shared.sh`:** a `SIBLING_FILES` list of tool-to-tool copies refreshed by the same run (first
+  row: `text_formats.py`, atrium-ocr-postprocess → atrium-digital-convert; `--check`, `--repo` = consumer, a NOTE to
+  update the consumer's SHA pin). Plain strings, so `test_shared_manifest`'s no-literal-array rule holds. Re-vendored
+  into the six repositories: parity, 24 selftests, 73 originator tests in each.
+* **Docs:**
+  * `docs/document_schema.md` (the co-contribution, a changelog);
+  * `docs/k8s_deployment.md`:
+    * digital-convert's service map row, Table B settings and upload limit (50 MB);
+    * the LLM rows → keyword-extract's two OpenRouter names.
+  * `docs_site/pipelines.md`, `docs_site/workflows/digital-convert.md`.
+* **Checks:** hub suite 641 passed. One local-only failure: `test_table_b_names_exist_in_their_own_repos_env_example`
+  reads keyword-extract's `.env.example`, which gets `OPENROUTER_*` with keyword-extract#2; it skips in CI. nlp-enrich
+  (918) and keyword-extract (725) green on the new module; translator's failures are pre-existing (identical either
+  way).
+* **For the tracker:** `source_digest_mismatch` is still registered at runtime by digital-convert. Adding it to the
+  canonical `atrium_service.py` changes every service's published registry, so it waits for one re-vendor round
+  with spec regeneration in all six. The proposed additive `pages[].text_layer` is for the #71 schema round.
+
+  Not pushed from here: files delivered in chat.

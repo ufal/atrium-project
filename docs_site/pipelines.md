@@ -183,9 +183,12 @@ runs; the repository's other images are the batch form of the same stage or rese
 | morphology, named entities, TEITOK        | `ghcr.io/ufal/atrium-nlp-enrich-api`          |
 | keywords, statistical and controlled      | `ghcr.io/ufal/atrium-keyword-extract-api`     |
 | English metadata                          | `ghcr.io/ufal/atrium-translator-api`          |
+| born-digital files → the record           | `ghcr.io/ufal/atrium-digital-convert-api`     |
 
-The born-digital converter, digital-convert, runs as a command-line image today; its service
-(`api-digital`) is the next step of its plan. The images of the repositories that preceded these
+The born-digital converter, digital-convert, also runs as a command-line image (`-digital`). Its
+service, `api-digital` (since v1.1.0-beta), has `POST /reformat` for the AMČR route, which calls no
+other service, and `POST /describe`, a per-page assessment that asks page-classification and
+ocr-postprocess when they are configured. The images of the repositories that preceded these
 (`atrium-alto-postprocess`, `atrium-llm-enrich`) stay published for consumers pinned to them and
 are no longer built.
 

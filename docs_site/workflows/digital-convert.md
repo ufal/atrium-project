@@ -35,25 +35,25 @@ an earlier OCR run is refused, because it belongs to [ocr-postprocess](ocr-postp
 
 ## At a glance
 
-|                    |                                                                                                                                                                                       |
-|--------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **In**             | PDF and DOCX files; optionally the AMČR seed record (`--document-json`)                                                                                                               |
-| **Out**            | the ATRIUM document record (JSON); on request the same document as Markdown; a paradata log (JSON)                                                                                    |
-| **Runs as**        | a command-line tool in a container image (`-digital`); an HTTP service (`api-digital`) is the next step of the tool's plan |
-| **Compute**        | CPU; the optional layout-model engine for complex PDFs is a local, opt-in build                                                                                                       |
-| **Network**        | none at run time; the optional layout-model engine fetches its models once, when its image is built                                                                                   |
-| **Code licence**   | MIT                                                                                                                                                                                   |
-| **Output licence** | MIT with the default engine, which uses permissively licensed libraries; the optional layout-model engine adds weights under CDLA-Permissive-2.0, which leaves the output unchanged  |
-| **Record**         | none of its own yet                                                                                               |
+|                    |                                                                                                                                                                                                 |
+|--------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **In**             | PDF, DOCX, ODT, ODS, XLSX and RTF files, and DOC/XLS through LibreOffice; optionally the AMČR seed record, whose `source.sha512` must match the file                                            |
+| **Out**            | the ATRIUM document record (JSON); on request the same document as Markdown; a paradata log (JSON)                                                                                              |
+| **Runs as**        | an HTTP service (`-api`: `POST /reformat`, and `POST /describe` for a per-page assessment) and a command-line tool (`-digital`), since v1.1.0-beta                                              |
+| **Compute**        | CPU; the optional layout-model engine for complex PDFs is a local, opt-in build                                                                                                                 |
+| **Network**        | none for `/reformat` and the command line; `/describe` calls page-classification and ocr-postprocess when their URLs are set; the optional layout-model engine fetches its models at build time |
+| **Code licence**   | MIT                                                                                                                                                                                             |
+| **Output licence** | MIT with the default engine, which uses permissively licensed libraries; the optional layout-model engine adds weights under CDLA-Permissive-2.0, which leaves the output unchanged             |
+| **Record**         | none of its own yet                                                                                                                                                                             |
 
 ## Steps
 
-| # | Step                   | What happens                                                                                                                                                                                                       | In → out        | Activity   |
-|---|------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|------------|
-| 1 | Read the file          | A light engine reads the PDF or DOCX structure directly; for complex PDFs a layout-model engine can be selected instead.                                                                                           | PDF, DOCX → IR  | Converting |
+| # | Step                   | What happens                                                                                                                                                                                                      | In → out        | Activity   |
+|---|------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|------------|
+| 1 | Read the file          | A light engine reads the PDF or DOCX structure directly; for complex PDFs a layout-model engine can be selected instead.                                                                                          | PDF, DOCX → IR  | Converting |
 | 2 | Check the text layer   | Every page's text layer is tested for decodability. A page that does not decode is marked `needs_ocr` with its reason; a PDF whose layer is an earlier OCR run is refused with a registered reason and no record. | IR → IR         | —          |
-| 3 | Build the record       | Pages, lines with boxes and block ids, line styles (heading level, running header or footer, footnote), tables and the source's identity are written as the blocks the tool owns.                                  | IR → JSON       | Converting |
-| 4 | Render, when asked for | The record is turned into Markdown in reading order — the form in which the keyword stage shows a document to a language model.                                                                                    | JSON → Markdown | —          |
+| 3 | Build the record       | Pages, lines with boxes and block ids, line styles (heading level, running header or footer, footnote), tables and the source's identity are written as the blocks the tool owns.                                 | IR → JSON       | Converting |
+| 4 | Render, when asked for | The record is turned into Markdown in reading order — the form in which the keyword stage shows a document to a language model.                                                                                   | JSON → Markdown | —          |
 
 ## Provenance and licence
 
@@ -90,9 +90,9 @@ Read from `ufal/atrium-llm-enrich` at release **`v0.8.0`** (the converter as a c
 tool) and from its plan for the repository's move to `ufal/atrium-digital-convert` (2026-10-01).
 This table records **provenance**, not a build instruction.
 
-| Source                                                                    | What was taken from it                         |
-|---------------------------------------------------------------------------|------------------------------------------------|
-| `README.md` §§ intro, the converter                                       | purpose, the steps, the inputs and outputs     |
-| `api_util/digital_to_json.py`, `api_util/doc_to_visual_md.py`             | the converter's route, its checks and its output |
-| `requirements_digital.txt`, `requirements_digital_docling.txt`, `para_config.txt` | the engines and the licence components         |
-| `DARIAH-ERIC/atrium-galaxy-tools`; `bgruening/galaxytools`                | the Galaxy analogues                           |
+| Source                                                                            | What was taken from it                           |
+|-----------------------------------------------------------------------------------|--------------------------------------------------|
+| `README.md` §§ intro, the converter                                               | purpose, the steps, the inputs and outputs       |
+| `api_util/digital_to_json.py`, `api_util/doc_to_visual_md.py`                     | the converter's route, its checks and its output |
+| `requirements_digital.txt`, `requirements_digital_docling.txt`, `para_config.txt` | the engines and the licence components           |
+| `DARIAH-ERIC/atrium-galaxy-tools`; `bgruening/galaxytools`                        | the Galaxy analogues                             |

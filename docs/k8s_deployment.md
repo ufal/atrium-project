@@ -1,15 +1,17 @@
 # ATRIUM Kubernetes Deployment Reference
 
 > **Names (2026-10-01):** below the service map, `ocr-postprocess` is the former `alto-postprocess`.
-> The LLM service of `llm-enrich` and its settings (`LLM_BACKEND`, `OLLAMA_*`, `OPENROUTER_*`) are still
-> in `digital-convert`'s tree, where they were copied, until keyword-extract ships the controlled kind
-> and takes them over; the rows below name the repository that holds them today.
+> The LLM service of `llm-enrich` and its settings (`LLM_BACKEND`, `OLLAMA_*`, `OPENROUTER_*`) left
+> `digital-convert`'s tree in its v1.1.0-beta (atrium-digital-convert#1); keyword-extract takes them over
+> with the controlled kind (atrium-keyword-extract#2), and the rows below name it for the two the
+> template manifest carries.
 
 > **Status:** Active Document (added 2026-09-07, issue #55)
 > **Scope:** `atrium-translator`, `atrium-nlp-enrich`, `atrium-page-classification`,
 > `atrium-ocr-postprocess`, `atrium-keyword-extract` — the five `-api` images, one production
 > image per stage (the map below, added for issue #72) — and `atrium-digital-convert`, whose
-> service (`api-digital`) is not built yet. The repositories `atrium-alto-postprocess` and
+> service (`api-digital`, `POST /reformat` and `POST /describe`) is built since its v1.1.0-beta and
+> follows the same contract. The repositories `atrium-alto-postprocess` and
 > `atrium-llm-enrich` that preceded two of these are archived (2026-10-01).
 >
 > This document is the deployment-side half of issue #55 (`HEALTHCHECK` + `SIGTERM`
@@ -38,7 +40,7 @@ also fails a probed image that has PyMuPDF (AGPL-3.0) installed.
 | morphology, named entities, TEITOK        | `atrium-nlp-enrich`          | `ghcr.io/ufal/atrium-nlp-enrich-api`          | `POST /enrich`, `/enrich_text`, `/rescale`, `/project_record`, `/jobs` | `nlp-enrich`             | `entities`, `lines[].lemma/upos/feats/teitok_ref`    | — (LINDAT UDPipe and NameTag)                                                             | `…-nlp-enrich`: batch pipeline                                                   |
 | keywords, statistical and controlled      | `atrium-keyword-extract`     | `ghcr.io/ufal/atrium-keyword-extract-api`     | `POST /extract_keywords`, `/extract_keywords_text`                     | `keyword-extract`        | `enrichment`, `forms`, `entities[].pid`              | KeyBERT on the first GPU; the controlled kind is a client of the LLM server on the second | `…-keyword-extract`: batch CLI; `…-keyword-extract-llm`: the research LLM target |
 | English metadata                          | `atrium-translator`          | `ghcr.io/ufal/atrium-translator-api`          | `POST /translate`                                                      | `translator`             | `translations`                                       | — (LINDAT)                                                                                | `…-translator`: batch CLI (`main.py`)                                            |
-| born-digital PDF and DOCX → the record    | `atrium-digital-convert`     | not yet: `api-digital` is the next step       | —                                                                      | `digital-convert`        | `pages`, `content`, `lines`, `tables` (born-digital) | —                                                                                         | `…-digital-convert-digital`: the converter's CLI                                 |
+| born-digital files → the record           | `atrium-digital-convert`     | `ghcr.io/ufal/atrium-digital-convert-api`     | `POST /reformat`, `POST /describe`                                     | `digital-convert`        | `pages`, `content`, `lines`, `tables` (born-digital) | —                                                                                         | `…-digital-convert-digital`: the converter's CLI                                 |
 
 Tags follow `docker_gha.md` §3.1–3.2: the release version without its `v` (`1.9.0-beta`), and
 `test` for the integration branch. Deploy only release tags; `docs/release_trust.md` describes
@@ -185,14 +187,13 @@ The `RELOAD` and `HEALTHCHECK_PATH` rows exist so their absence from the manifes
 decision, not an omission.
 
 **Two defaults, and which one applies to you.** Every value in the *Code default* column above
-is what you get in Kubernetes. Three of them are not what you get under `docker compose`, and
+is what you get in Kubernetes. Some of them are not what you get under `docker compose`, and
 each difference runs the same direction — compose supplies the safer value, and Kubernetes
 silently gets the raw one:
 
 | Variable                                                | Code default — Kubernetes gets this                                         | Compose default                                                                                                                                                                           | Consequence                                                                                                                                                                                                            |
 |---------------------------------------------------------|-----------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `ALLOWED_ORIGINS`                                       | `*` — every origin                                                          | ocr-postprocess `http://localhost:8080,http://localhost:5500`; page-classification `http://localhost:8080,http://127.0.0.1:8080`; keyword-extract / nlp-enrich / translator: not narrowed | A Kubernetes deployment that omits this serves CORS to anything. Set it explicitly. (`localhost` and `127.0.0.1` are *different* origins to a browser, which is why the two compose defaults are not interchangeable.) |
-| `OLLAMA_HOST` (digital-convert, for now)                | `http://localhost:11434` — the **pod's own** loopback, where no Ollama runs | `http://host.docker.internal:11434`                                                                                                                                                       | Omitting it in Kubernetes does not fall back to the working compose value — it gives a URL that cannot reach an Ollama anywhere. Point it at the Ollama Service's DNS name.                                            |
 | `MAX_CONCURRENT_JOBS`, `DEFAULT_KW_METHOD` (nlp-enrich) | `2` / `keybert`                                                             | the same values, passed through `.env`                                                                                                                                                    | Under Kubernetes these behave normally and can be changed via the `env:` block; under `docker compose` prior to atrium-project#60 they could not be changed from `.env` at all.                                        |
 
 > ⚠️ **`value: ""` is not the same as omitting the entry.** In an `env:` block,
@@ -207,14 +208,14 @@ number.** The limit is a property of what each service ingests:
 | Repo                | `MAX_UPLOAD_MB` | Set at           | Why this number                                                  |
 |---------------------|-----------------|------------------|------------------------------------------------------------------|
 | translator          | `50`            | `tool_limits.py` | highest — ALTO XML in, ALTO XML out                              |
+| digital-convert     | `50`            | `tool_limits.py` | a born-digital document: a PDF or an office file                 |
 | ocr-postprocess     | `25`            | `tool_limits.py` | ALTO XML for a whole scanned volume, or a PDF or office document |
-| digital-convert     | `10`            | `tool_limits.py` | a CSV of lines                                                   |
 | page-classification | `10`            | `tool_limits.py` | a multi-page PDF                                                 |
 | nlp-enrich          | `5`             | `tool_limits.py` | lowest — a 5 MB CSV is already at the `MAX_WORDS` ceiling        |
 
-The manifest's commented `MAX_UPLOAD_MB: "10"` is digital-convert's and page-classification's
-number. Uncommenting it as-is silently *raises* nlp-enrich's limit 2× and *lowers*
-ocr-postprocess's 2.5× and translator's 5×.
+The manifest's commented `MAX_UPLOAD_MB: "10"` is page-classification's number. Uncommenting it
+as-is silently *raises* nlp-enrich's limit 2× and *lowers* ocr-postprocess's 2.5× and
+translator's and digital-convert's 5×.
 
 **Table B — per-repo operator deltas.** Operator-facing only; each repo's `.env.example` is the
 complete ledger, and what is here is what a deployment legitimately sets.
@@ -236,13 +237,12 @@ often sets; the READMEs list all of them.
 |                     | `LANGID_CONFIG`                                                          | `<repo>/setup/config.txt`            | Language-ID config, when mounted from a ConfigMap.                                                                                                                                                                                                                         |
 |                     | `DOCUMENT_JSON_DIR`                                                      | *(none)*                             | Where `document.json` output is written.                                                                                                                                                                                                                                   |
 |                     | `ATRIUM_TEXT_INGEST_MAX_PAGES` / `ATRIUM_TEXT_INGEST_MAX_FILE_MB`        | `20000` / `256`                      | `[limit]` Reader caps; every `[TEXT_INGEST]` key of `setup/config.txt` is also `ATRIUM_TEXT_INGEST_<KEY>`, which wins over the file. Over one → 413 `limit_exceeded`.                                                                                                      |
-| digital-convert     | `LLM_BACKEND`                                                            | `openrouter`                         | `openrouter` or `ollama`; decides which block below applies.                                                                                                                                                                                                               |
-|                     | `OPENROUTER_API_KEY`                                                     | —                                    | **Required, secret** — raises at startup when empty.                                                                                                                                                                                                                       |
-|                     | `OPENROUTER_MODEL`                                                       | —                                    | **Required** — raises at startup when empty.                                                                                                                                                                                                                               |
-|                     | `OLLAMA_HOST` / `OLLAMA_MODEL`                                           | see callout / —                      | Ollama backend; `OLLAMA_MODEL` **required** for it.                                                                                                                                                                                                                        |
-|                     | `LLM_TIMEOUT` / `LLM_MAX_RETRIES`                                        | `300` / `3`                          | `[limit]` Per-call read timeout and attempts; only a timeout, a connection error, 429 or 5xx is retried.                                                                                                                                                                   |
-|                     | `LLM_CONTEXT_WINDOW`                                                     | `128000` openrouter / `32000` ollama | `[limit]` Set it to the selected model's window: it sizes the vocabulary prompt (terms that do not fit are left out, and every response says so) and the largest document one call takes (over it → 413). Sent to Ollama as `num_ctx`.                                     |
-|                     | `LLM_MAX_NEW_TOKENS`                                                     | `2048`                               | `[limit]` Reply cap (OpenRouter `max_tokens`, Ollama `num_predict`); a reply cut at it is never used.                                                                                                                                                                      |
+| digital-convert     | `PAGE_CLASSIFICATION_URL` / `OCR_POSTPROCESS_URL`                        | *(none)*                             | `/describe` only: the in-cluster Services of page-classification and ocr-postprocess. Unset → that stage is reported `not_configured` and the request still succeeds; `/reformat` never calls them.                                                                        |
+|                     | `STAGE_TIMEOUT_S`                                                        | `120`                                | `[limit]` Seconds per stage call; over it the stage is `unavailable`. With stages configured, raise `GRACEFUL_SHUTDOWN_S` and the grace period above it.                                                                                                                   |
+|                     | `MAX_PAGES` / `MAX_CONCURRENT_JOBS`                                      | `2000` / `2`                         | `[limit]` Pages per document (422 `limit_exceeded`) and conversions at once (429 `busy`).                                                                                                                                                                                  |
+|                     | `OCR_LAYER_DOCUMENT_SHARE`                                               | `0.5`                                | Policy: at or above this share of prior-OCR pages a PDF is refused `ocr_text_layer` (route it to OCR); below it those pages are flagged `needs_ocr`.                                                                                                                       |
+|                     | `LIBREOFFICE_BIN` / `LIBREOFFICE_TIMEOUT_S`                              | `soffice` (image) / `120`            | DOC/XLS conversion (the image carries LibreOffice); over the time → 422 `limit_exceeded`.                                                                                                                                                                                  |
+| keyword-extract     | `OPENROUTER_API_KEY` / `OPENROUTER_MODEL`                                | —                                    | The controlled kind's OpenRouter key (**secret**) and model, the two the template manifest carries; they arrive with that kind (atrium-keyword-extract#2). The statistical kind needs neither.                                                                             |
 | nlp-enrich          | `UDPIPE_URL` / `NAMETAG_URL`                                             | LINDAT public hosts                  | Attach a self-hosted UDPipe 2 / NameTag 3 (atrium-project#63).                                                                                                                                                                                                             |
 |                     | `MAX_CONCURRENT_JOBS` / `MAX_QUEUED_JOBS`                                | `2` / `8`                            | `[limit]` Pipelines running at once — bounds real CPU (each job is a subprocess tree) and shields the shared LINDAT endpoints — and `/jobs` submissions that may wait for one. Over either → 429 `busy`.                                                                   |
 |                     | `API_JOB_TIMEOUT` / `JOB_TTL_S`                                          | `600` / `3600`                       | `[limit]` Seconds one run may take — then it and every process it started are stopped (504 `limit_exceeded`) — and seconds a finished job's result is kept.                                                                                                                |

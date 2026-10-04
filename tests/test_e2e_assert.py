@@ -472,6 +472,24 @@ def test_born_digital_record_passes_without_the_layout_flag(tmp_path):
     e2e_assert.assert_document_contract(final, llm_stage_ran=False)
 
 
+def test_a_scoring_stamp_on_the_converters_lines_passes(tmp_path, capsys):
+    """atrium-digital-convert#4 W3: ocr-postprocess may score digital-convert's rows; the
+    stamp says so (`contribution: scoring`), and the rows are still the converter's."""
+    record = _digital_record()
+    record["assembled"]["blocks"]["lines"].update(program="ocr-postprocess", contribution="scoring")
+    final = _write(tmp_path, "scored.json", record)
+    e2e_assert.assert_document_contract(final, llm_stage_ran=False)
+    assert "contribution: scoring" in capsys.readouterr().out
+
+
+def test_an_unmarked_ocr_stamp_on_born_digital_lines_still_fails(tmp_path):
+    record = _digital_record()
+    record["assembled"]["blocks"]["lines"]["program"] = "ocr-postprocess"
+    final = _write(tmp_path, "mixed.json", record)
+    with pytest.raises(AssertionError, match="expected 'digital-convert'"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=False)
+
+
 def test_layout_cues_pass_and_are_reported(tmp_path, capsys):
     final = _write(tmp_path, "rich.json", _digital_record())
     e2e_assert.assert_document_contract(final, llm_stage_ran=False, expect_layout=True)

@@ -42,6 +42,17 @@
 # pass" stops being true the moment a selftest step exists that this script does
 # not know about. See SELFTESTS below.
 #
+# SIBLING-OWNED FILES (atrium-project#72 B). A few layers are owned by one TOOL and
+# vendored by another: not hub-canonical, so not in MANIFEST.json and not in the
+# hub-parity diff, but refreshed by the same run so a maintainer has one command.
+# Each SIBLING_FILES row reads `owner|path in owner|consumer|path in consumer`. The
+# consumer pins its copy by SHA-256 in tests/test_vendored_*_parity.py and para-drift's
+# vendored-parity job compares it with the owner's `test` head, so after a COPY here the
+# consumer's pin has to be updated in the same commit (`python3 <pin test>` prints it);
+# this script says which. --repo filters on the CONSUMER; an owner or consumer without a
+# checkout is skipped, like a tool repo. The TEITOK set nlp-enrich lends digital-convert
+# and keyword-extract keeps its own procedure (tests/test_vendored_teitok_parity.py).
+#
 # Usage:
 #   scripts/revendor_shared.sh                      # re-vendor into ../atrium-*
 #   scripts/revendor_shared.sh --root ~/src         # siblings live elsewhere
@@ -71,6 +82,11 @@ ALL_REPOS=(
     atrium-keyword-extract
     atrium-translator
     atrium-digital-convert
+)
+
+# owner|path in owner|consumer|path in consumer — see SIBLING-OWNED FILES above.
+SIBLING_FILES=(
+    "atrium-ocr-postprocess|text_formats.py|atrium-digital-convert|text_formats.py"
 )
 
 MANIFEST_JSON="$SHARED_DIR/MANIFEST.json"
@@ -210,6 +226,53 @@ for repo in "${REPOS[@]}"; do
     done
 done
 
+# Sibling-owned files: owner's copy -> consumer's copy (see SIBLING-OWNED FILES above).
+SIBLING_COPIED=()
+if [[ ${#SIBLING_FILES[@]} -gt 0 ]]; then
+    echo
+    echo "== sibling-owned files (owner -> consumer; pinned by the consumer's tests/test_vendored_*_parity.py)"
+fi
+for row in "${SIBLING_FILES[@]}"; do
+    IFS='|' read -r owner owner_path consumer consumer_path <<< "$row"
+    selected=0
+    for repo in "${REPOS[@]}"; do
+        [[ "$repo" == "$consumer" ]] && selected=1
+    done
+    [[ "$selected" -eq 1 ]] || continue
+    src="$SIBLING_ROOT/$owner/$owner_path"
+    dest="$SIBLING_ROOT/$consumer/$consumer_path"
+    label="$consumer/$consumer_path <- $owner/$owner_path"
+    if [[ ! -f "$src" || ! -d "$SIBLING_ROOT/$consumer" ]]; then
+        echo "  SKIP  $label — no checkout of the owner or the consumer"
+        SKIPPED=$((SKIPPED + 1))
+        FAILED=1
+        continue
+    fi
+    if cmp -s "$src" "$dest"; then
+        echo "  ok    $label"
+        UNCHANGED=$((UNCHANGED + 1))
+        continue
+    fi
+    if [[ "$CHECK_ONLY" -eq 1 ]]; then
+        echo "  DRIFT $label — differs from the owner's copy:"
+        diff -u "$dest" "$src" || true
+        DRIFTED=$((DRIFTED + 1))
+        continue
+    fi
+    mkdir -p "$(dirname "$dest")"
+    cp -p "$src" "$dest"
+    echo "  COPY  $label"
+    COPIED=$((COPIED + 1))
+    SIBLING_COPIED+=("$consumer")
+    if ! cmp -s "$src" "$dest"; then
+        echo "  MISMATCH $label after copying"
+        FAILED=1
+    fi
+done
+if [[ ${#SIBLING_COPIED[@]} -gt 0 ]]; then
+    echo "  NOTE  a sibling copy changed: update the SHA pins in $(printf '%s ' "${SIBLING_COPIED[@]}")(python3 tests/test_vendored_<name>_parity.py prints them), in the same commit"
+fi
+
 # Verify AFTER writing rather than trusting cp: this is the same `diff -u` the
 # para-drift step runs, so a clean run here means that check passes. A silent
 # half-copy (full disk, read-only checkout, dangling symlink) is exactly the
@@ -274,7 +337,7 @@ if [[ "$FAILED" -ne 0 || "$DRIFTED" -ne 0 ]]; then
     exit 1
 fi
 
-echo "RESULT: all ${#SHARED_FILES[@]} canonical files are in parity across ${#REPOS[@]} repo(s)."
+echo "RESULT: all ${#SHARED_FILES[@]} canonical files are in parity across ${#REPOS[@]} repo(s), and every selected sibling-owned copy matches its owner."
 echo
 echo "Next, per issue #10 finding G4: commit the tool-repo copies and the hub"
 echo "edit in ONE window, then move \`v1\` — never before the copies have landed."

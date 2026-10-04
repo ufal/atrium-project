@@ -483,11 +483,19 @@ def assert_digital_contract(doc, json_path):
     assert "lines" in doc, "❌ 'lines' block missing from digital-convert"
 
     stamped = (doc.get("assembled") or {}).get("blocks") or {}
-    lines_program = (stamped.get("lines") or {}).get("program")
-    assert lines_program == "digital-convert", (
+    lines_stamp = stamped.get("lines") or {}
+    lines_program = lines_stamp.get("program")
+    # atrium-digital-convert#4 W3: ocr-postprocess's `/score_record` may add the quality model's
+    # fields to the converter's rows (atrium_document.SCORING_FIELDS). Rule 4 then stamps it as
+    # the block's latest writer, marked `contribution: "scoring"`; that is a score, not an
+    # origination, and the rows are still digital-convert's.
+    scored = lines_stamp.get("contribution") == "scoring" and canonical_program(lines_program) == "ocr-postprocess"
+    assert lines_program == "digital-convert" or scored, (
         f"❌ 'lines' was written by {lines_program!r}, expected 'digital-convert'. On the "
         "born-digital branch alto-postprocess must never originate lines (§1a)."
     )
+    if scored:
+        print("ℹ️  lines: scored by ocr-postprocess (contribution: scoring) on digital-convert's rows")
 
     # Blocks that CANNOT exist here. A record carrying them means either the branch
     # was fed a scanned document, or a tool wrote a block it does not own.

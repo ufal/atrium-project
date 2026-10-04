@@ -245,6 +245,21 @@ acquired, which really was a digital-born PDF. Who wrote the plane is `assembled
 .program`, as always, and `pages[].ocr` (never granted to `digital-convert`) records that an
 engine ran, so "was this OCR'd" stays answerable.
 
+**One documented co-contribution — the quality model's scores (atrium-digital-convert#4 W3).**
+`ocr-postprocess` owns the common line-quality model, and a born-digital record needs its answer
+as much as a scanned one. A `merge_block()` by `ocr-postprocess` whose writable fields are a
+non-empty subset of `SCORING_FIELDS` — `lines[]` *categ, quality_score, lang*, `pages[]`
+*quality_score, quality_band* — into a plane another tool originated is a scoring
+co-contribution: noted, not refused, even under `strict=True`. It only updates rows the
+originator wrote (a row with no match is not appended), and its stamp reads
+`{"program": "ocr-postprocess", …, "contribution": "scoring"}` so neither a reader nor the fan-in
+check of `merge_document_records()` mistakes it for a second originator (the stamp's object
+admits extra keys; the schema is unchanged). Anything else `ocr-postprocess` writes on such a
+record (`text`, `bbox`, `ocr`, a new row, `content`, `tables`) is still refused unless the
+record asks for OCR (`needs_ocr`). Which lines are scored is the caller's policy:
+`ocr-postprocess`'s `POST /score_record` never re-scores a line carrying `digital-convert`'s
+decode verdict (`categ` `Garbage` or `Inverted`).
+
 > ⚠️ **`BLOCK_OWNERS` authorises writes; it is not the read-time contract.** To find out who
 > wrote a block in a *given* record, read `assembled.blocks[<block>].program` — and for a
 > field-split block, `provenance.contributors[]`, since the stamp names only the most recent
@@ -1122,3 +1137,27 @@ change, so the re-vendor and the `v1` move follow, hub first.
 
 Tests: `docs/templates/shared/test_document_originators.py` (the successor cases),
 `test_atrium_vocab.py`, `test_atrium_rocrate.py`; hub `tests/test_e2e_assert.py`.
+
+## Changelog — 2026-10-04 (atrium-digital-convert#4 W3: the quality model scores a born-digital record)
+
+**An additive change to `atrium_document.py`; no `SCHEMA_VERSION` bump, the schema JSON is
+unchanged, `doc-schema-v1` stays the reference.**
+
+* **`SCORING_FIELDS`** (`lines`: *categ, quality_score, lang*; `pages`: *quality_score,
+  quality_band*) and `SCORING_PROGRAM = "ocr-postprocess"`. A merge by `ocr-postprocess` limited to
+  them, into a plane another originator wrote, is a co-contribution: `_assert_origin_consistent()`
+  notes it (it gets the merge's writable fields now; a deferred check keeps them), `merge_block()`
+  does not append unmatched rows for it (and complains, which raises under `strict`), and
+  `_stamp()` marks the block `contribution: "scoring"`.
+* **`merge_document_records()`**: a stamp marked `contribution: "scoring"` by `ocr-postprocess` is
+  not a second positional originator.
+* **Unchanged:** every other foreign write is refused as before; the `needs_ocr` hand-off; the
+  originator's own merges (no `contribution` key, rows appended).
+* **Consumers:** `ocr-postprocess` v1.9.0-beta's `POST /score_record` (`document_hook.write_scores`),
+  which atrium-digital-convert v1.1.0-beta's `POST /describe` calls; `tools/e2e/e2e_assert.py`
+  accepts a scoring stamp on the born-digital branch's `lines`.
+* **Tests:** `test_document_originators.py` (canonical) — the scoring merge under `strict`, no new
+  row, `text`/full grant/`content` still refused, only `ocr-postprocess` scores, the originator's own
+  merges unchanged, the deferred check, the fan-in.
+* **Re-vendored** into the six tool repositories with `scripts/revendor_shared.sh`, which also
+  gained its first sibling-owned row (`text_formats.py`, atrium-ocr-postprocess → atrium-digital-convert).
