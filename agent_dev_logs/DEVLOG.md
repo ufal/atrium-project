@@ -1902,7 +1902,7 @@ releases; the gate's diff review covers *"only the files that go into the image 
   five `release.yml` already work with immutable releases). `scripts/pin_hub_reusables.py` (the sweep, `--check`),
   `scripts/release_trust.py` (status, checks, immutable, tag-rules, branch-rules; `--dry-run`),
   `docs/release_trust.md` (the order). `docs/docker_gha.md` updated (reusables, ref-pin box, known-open item 1).
-* **Tag drafts** for all five tools (pc `v1.10.0-beta`, alto `v1.7.0-beta`, translator `v1.3.1-beta`, llm `v0.9.0`,
+* **Tag drafts** for all five tools (pc `v1.10.0-beta`, shipped as `v1.9.1-beta`; alto `v1.7.0-beta`, translator `v1.3.1-beta`, llm `v0.9.0`,
   nlp `v0.23.0`), to follow `release_trust.py immutable`.
 * **Next (the user's):** land the hub, move `v1`, land the five; `release_trust.py status` → `immutable` → `tag-rules`
   → `branch-rules`; the tags; the pin sweep, then `--require-sha-pins`; the AMČR label run.
@@ -2030,7 +2030,7 @@ releases; the gate's diff review covers *"only the files that go into the image 
   gate until `v1.0.0-beta` is marked a pre-release; atrium-llm-enrich's scheduled smoke is red on `main`, to be
   retired by archiving.
 
-  Not pushed from here: files delivered in chat.
+  Files delivered in chat; pushed by the maintainer as `4cbf900`, and `v1` moved to it.
 
 ## 2026-10-05 — The shared-module round: W4's per-page OCR hand-off, `pages[].text_layer`, `source_digest_mismatch`
 * **Why:** the three items ufal/atrium-project#71 listed as "proposed next" on 5 October, taken in this round
@@ -2062,8 +2062,8 @@ releases; the gate's diff review covers *"only the files that go into the image 
 * **Re-vendored** into the six tool repositories with `scripts/revendor_shared.sh` (30 files; parity and the 24
   selftests OK), and every service spec regenerated: each gains `source_digest_mismatch`, and each spec that
   embeds the record schema gains `text_layer`. Each is *compatible* with the repository's latest release.
-* **Consumers:** ocr-postprocess `v1.10.0-beta` (`/process` takes an ATR ALTO page with the record and an optional
-  `page`); digital-convert `v1.2.0-beta` (writes `text_layer`; no longer registers the reason itself).
+* **Consumers:** ocr-postprocess `v1.9.1-beta` (`/process` takes an ATR ALTO page with the record and an optional
+  `page`); digital-convert `v1.1.1-beta` (writes `text_layer`; no longer registers the reason itself).
 * **Found by the end-to-end check** (converter record → ocr-postprocess `/process` → `merge_document_records()` →
   `e2e_assert.py` → keyword-extract): keyword-extract skipped `Trash`/`Empty` only, so it extracted keywords from a
   born-digital record's `Garbage` lines. Fixed there from `atrium_vocab.UNTRUSTWORTHY_LINE_CATEGORIES`, and recorded
@@ -2071,4 +2071,41 @@ releases; the gate's diff review covers *"only the files that go into the image 
 * **Checks:** hub suite 659 passed, 10 skipped; the 7 failures are the same as on the clean export (they need sibling
   git checkouts). `tools/ci/workflow_lint.py` OK; ruff clean.
 
-  Not pushed from here: files delivered in chat. Push the hub, move `v1`, then the six tool repositories.
+  Files delivered in chat; pushed by the maintainer as `e8b1335` (end-of-file fix `260d394`), `v1` moved to `260d394`, then the six tool repositories.
+
+## 2026-10-05 (evening) — Issue logs and docs refreshed after the 4–5 October releases
+* **Why:** the digest/plan pairs predated the releases of the three new repositories, the shared-module round and
+  the tag runs.
+* **Read:**
+  * the seven `test` heads and their newest tags;
+  * the hub E2E runs at `da4d0c9`, all green: seeded 37304422223, born-digital 37304422187, and the dispatch on
+    `-digital:latest`, 37305992407;
+  * the six tool repositories' Docker runs;
+  * the one red tag run, page-classification `v1.9.2-beta` (37269822039): a model warm-up timeout, fixed by
+    `4cbf900`;
+  * the releases API: `immutable` is on in 3 of 6 tool repositories.
+* **Pairs:**
+  * #53, #67, #69, #71, #72 and #73 rewritten;
+  * #58 rewritten for the six `-api` images (all green; only the deliberate red run is left);
+  * #40 given a 2026-10-05 status block.
+* **Found:**
+  * page-classification returns no `paradata` (`/predict_image` gives `null`, `/predict_document` omits it), which
+    contradicts #71's 2026-10-01 comment;
+  * docs still cited `v1.10.0-beta` / `v1.2.0-beta`, though the releases shipped as `v1.9.1-beta` / `v1.1.1-beta`;
+  * `<HUB_COMMIT>` in #69's 2026-09-30 comment is `1917c4c`;
+  * #67 still has its `#NEW-SPLIT` / `#NEW-BASELINE` placeholders;
+  * the hub docs call `atrium-alto-postprocess` and `atrium-llm-enrich` archived, though neither is yet.
+* **Docs:**
+  * version numbers in `tools/e2e/e2e_assert.py`, `tests/test_document_required.py` and `docs/document_schema.md`
+    (in `da4d0c9`);
+  * `docs/release_trust.md`: five → six tool repositories, the rulesets on all seven repositories, and a bundle
+    only where a repository has one.
+* **DEVLOG:** the "Tag draft … Not pushed" lines of the earlier 2026-10-05 entries now name what shipped.
+
+  Files delivered in chat. The maintainer pushed:
+  * #71's first version in `da4d0c9`;
+  * the #67, #69, #72 and #73 pairs as `f18ce5f`;
+  * #53 and #71's update as `4133d5a`;
+  * #40 and `docs/release_trust.md` as `1c62e43`.
+
+  The #58 pair and this DEVLOG entry were delivered last.
