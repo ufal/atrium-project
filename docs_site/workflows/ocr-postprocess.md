@@ -32,16 +32,16 @@ translator, the line tables feed the NLP enrichment, and the record feeds keywor
 
 ## At a glance
 
-|                    |                                                                                                                                                                                                     |
-|--------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **In**             | ALTO XML from OCR; OCR output in JSON; other text-bearing formats as listed in the tool's [input-format reference](https://github.com/ufal/atrium-ocr-postprocess/blob/master/docs/text_inputs.md) |
-| **Out**            | per-page ALTO and plain text; page statistics (CSV); per-document tables of text lines with their language and category (CSV); a paradata log (JSON); optionally the ATRIUM document record (JSON)  |
-| **Runs as**        | a command-line pipeline (`run_pipeline.py`, or one script per step); a container image; an HTTP service image (`POST /process`); an [Agent Skill](../agent-skills.md)                               |
-| **Compute**        | the line classification step is built for a GPU                                                                                                                                                     |
-| **Network**        | the Hugging Face Hub for its models on first use                                                                                                                                                    |
-| **Code licence**   | MIT; the vendored alto-tools are Apache-2.0                                                                                                                                                         |
-| **Output licence** | CC BY-NC 4.0 at minimum, because the language-identification model is used on every line; higher with some text-extraction methods (see below)                                                      |
-| **Record**         | SSH Open Marketplace tool [`YParYU`](https://marketplace.sshopencloud.eu/tool-or-service/YParYU)                                                                                                    |
+|                    |                                                                                                                                                                                                                                          |
+|--------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **In**             | ALTO XML from OCR; OCR output in JSON; other text-bearing formats as listed in the tool's [input-format reference](https://github.com/ufal/atrium-ocr-postprocess/blob/master/docs/text_inputs.md)                                       |
+| **Out**            | per-page ALTO and plain text; page statistics (CSV); per-document tables of text lines with their language and category (CSV); a paradata log (JSON); optionally the ATRIUM document record (JSON)                                       |
+| **Runs as**        | a command-line pipeline (`run_pipeline.py`, or one script per step); a container image; an HTTP service image (`POST /process`, and `POST /score_record` to score the lines of an existing record); an [Agent Skill](../agent-skills.md) |
+| **Compute**        | the line classification step is built for a GPU                                                                                                                                                                                          |
+| **Network**        | the Hugging Face Hub for its models on first use                                                                                                                                                                                         |
+| **Code licence**   | MIT; the vendored alto-tools are Apache-2.0                                                                                                                                                                                              |
+| **Output licence** | CC BY-NC 4.0 at minimum, because the language-identification model is used on every line; higher with some text-extraction methods (see below)                                                                                           |
+| **Record**         | SSH Open Marketplace tool [`YParYU`](https://marketplace.sshopencloud.eu/tool-or-service/YParYU)                                                                                                                                         |
 
 ## Steps
 

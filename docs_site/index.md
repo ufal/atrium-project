@@ -78,8 +78,9 @@ together — seven repositories in all.
 
     ---
 
-    Reads born-digital PDF and DOCX files into the document record without OCR, and flags the
-    pages whose text layer does not decode, so only those go to OCR.
+    Reads born-digital PDF, DOCX, ODT, ODS, XLSX and RTF files (and DOC/XLS through LibreOffice)
+    into the document record without OCR, and flags the pages whose text layer does not decode, so
+    only those go to OCR.
 
     [Workflow](workflows/digital-convert.md) · [Source](https://github.com/ufal/atrium-digital-convert)
 

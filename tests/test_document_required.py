@@ -243,7 +243,7 @@ VALID_SHAPES = {
         "regenerable": {"markdown": {"from": "CTX000000001.document.json", "converter": "json_to_md@1.0"}},
         "enrichment": {"items": [], "summary": None, "topics": []},
     },
-    # llm-enrich/api_util/digital_to_json.py::to_record -- the digital-born originator, which DOES call
+    # digital-convert/api_util/digital_to_json.py::to_record -- the digital-born originator, which DOES call
     # set_source() first, deliberately.
     "digital-convert originator": {
         **_FLOOR,
@@ -254,7 +254,7 @@ VALID_SHAPES = {
         "content": {"text": "t"},
         "tables": [{"table_id": "t1", "page": "1"}],
     },
-    # llm-enrich/api_util/digital_to_json.py::to_record for a DOCX (llm-enrich#18), trimmed from a real
+    # digital-convert/api_util/digital_to_json.py::to_record for a DOCX (llm-enrich#18), trimmed from a real
     # rich.docx record: no bbox and no canvas (a DOCX has no page geometry), a counted page_count,
     # and the layout cues in lines[].style -- heading_level, and `region` for the running header and
     # the footnote. `region` was written before the schema declared it (additionalProperties: true);

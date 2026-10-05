@@ -130,7 +130,7 @@ derived and disposable. Both belong in `regenerable` as a recipe:
 }
 ```
 
-**Detail profiles** (`regenerable.*.detail`, atrium-project#70 item 1; implemented in llm-enrich's
+**Detail profiles** (`regenerable.*.detail`, atrium-project#70 item 1; implemented in digital-convert's
 renderer, `api_util/layout_md.py`, `json_to_md@1.1`). The Markdown's **text lines are the same in
 all three**; a lighter profile drops layout cues only, and the cue sets nest
 (minimal ⊂ standard ⊂ full):

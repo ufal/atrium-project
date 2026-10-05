@@ -1974,4 +1974,32 @@ releases; the gate's diff review covers *"only the files that go into the image 
   canonical `atrium_service.py` changes every service's published registry, so it waits for one re-vendor round
   with spec regeneration in all six. The proposed additive `pages[].text_layer` is for the #71 schema round.
 
+  Files delivered in chat; pushed by the maintainer as `fc06875`, and `v1` moved to it. The six tool repositories
+  carry the re-vendored copies on `test` (digital-convert `b1cbb0c`, page-classification `41c84ca`, ocr-postprocess
+  `648aae7`, nlp-enrich `5065929`, keyword-extract `dffe368`, translator `561d4a6`); para-drift is green in each.
+
+## 2026-10-05 — Ecosystem alignment after the digital-convert v1.1.0-beta round
+* **Why:** a sweep of all eight ATRIUM repositories (`origin/test`) for current-state text that this round made
+  wrong: digital-convert is its own repository with eight formats and two endpoints, page-classification's release is
+  `v1.9.2-beta`, and W3 lets one scoring-only write onto a born-digital record.
+* **Fixed here:**
+  * `.github/workflows/e2e-digital-smoke.yml`: the header names the W3 exception to "ocr MUST NOT run"; the
+    `packages: read` comment no longer mentions a `-remote` image;
+  * `.github/workflows/docker-tool.reusable.yml` (comment only; rides the next `v1` move) and
+    `docs/agent_skill_strategy.md`: no second HTTP image / `openapi-digital.json` is planned any more;
+  * `docs/skos_strategy.md` (who declares `line-category` and `quality-band`), `docs/document_schema.md` (the
+    renderer is digital-convert's), `PAGES_SETUP.md` (what digital-convert replaces), two comments in
+    `tests/test_document_required.py`;
+  * docs site: the home page, the workflows index, the repository map (formats; the provenance paragraph), the
+    ocr-postprocess workflow (`POST /score_record`), page-classification's reference (`pages`, `page_label`, the
+    422/413 cases) and changelog (v1.9.0–v1.9.2).
+* **Elsewhere, same pass:** ocr-postprocess (comments and docstrings that placed digital-convert inside
+  llm-enrich; `text_formats.py`, re-vendored into digital-convert with a new pin), nlp-enrich README ("Where things
+  went"), llm-enrich README (the successor banner), digital-convert `release.yml` (image tags carry no `v`).
+* **Checked, nothing to change:** shared-file parity (`revendor_shared.sh --check`: 145 files, the sibling copy
+  in parity), image names in compose/E2E/k8s docs, version mentions.
+* **For the maintainer (GitHub settings, not files):** digital-convert's description and homepage, keyword-extract's
+  and ocr-postprocess's homepages, and archiving atrium-llm-enrich / atrium-alto-postprocess, which the hub README
+  already calls archived.
+
   Not pushed from here: files delivered in chat.

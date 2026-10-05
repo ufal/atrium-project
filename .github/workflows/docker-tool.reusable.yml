@@ -518,8 +518,9 @@ jobs:
           # /info `openapi_sha256` must be the digest of what is served. This is the check the
           # AMČR pipeline runs against a deployed image, and the only container-level proof for
           # a torch-bound service whose light lane generates the spec with a stub (pc). A spec
-          # per service is matched by content, so a repo with two HTTP images (digital-convert's
-          # planned api-digital, service/openapi-digital.json) passes against its own file.
+          # per service is matched by content, so a repo with two HTTP images would pass against
+          # its own file (none has two today: digital-convert's planned second image became its
+          # one service, `-api`, with one service/openapi.json).
           # Skipped where the repo has not adopted the typed contract yet (no committed spec, or
           # no vendored atrium_openapi.py), because the hub's `v1` moves for all five at once.
           if ls service/openapi*.json >/dev/null 2>&1 && [ -f atrium_openapi.py ]; then

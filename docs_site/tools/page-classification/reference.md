@@ -126,15 +126,16 @@ model or the ensemble, and read the Top-N back.
 
 ### Request fields
 
-Both prediction endpoints take the same multipart form:
+Both prediction endpoints take the same multipart form; `pages` is `/predict_document`'s alone:
 
-| Field               | Type      | Default  | Notes                                                                                                        |
-|---------------------|-----------|----------|--------------------------------------------------------------------------------------------------------------|
-| `file`              | upload    | required | `/predict_image`: `content_type` must start `image/`. `/predict_document`: must be exactly `application/pdf` |
-| `version`           | form      | `"all"`  | One of `v1.4`…`v5.4`, or `all` for the ensemble                                                              |
-| `topn`              | form      | `3`      |                                                                                                              |
-| `document_json`     | upload    | —        | Baseline ATRIUM record to accrete onto                                                                       |
-| `document_json_out` | form bool | `False`  | Ask for the updated record in the response                                                                   |
+| Field               | Type      | Default  | Notes                                                                                                                 |
+|---------------------|-----------|----------|-----------------------------------------------------------------------------------------------------------------------|
+| `file`              | upload    | required | `/predict_image`: `content_type` must start `image/`. `/predict_document`: must be exactly `application/pdf`          |
+| `version`           | form      | `"all"`  | One of `v1.4`…`v5.4`, or `all` for the ensemble                                                                       |
+| `topn`              | form      | `3`      |                                                                                                                       |
+| `document_json`     | upload    | —        | Baseline ATRIUM record to accrete onto                                                                                |
+| `document_json_out` | form bool | `False`  | Ask for the updated record in the response                                                                            |
+| `pages`             | form      | —        | `/predict_document` only, since v1.9.2-beta: the 1-based pages to classify, such as `1,3,5-7`; empty means every page |
 
 ### Response shapes
 
@@ -147,8 +148,10 @@ Both prediction endpoints take the same multipart form:
   "document_json_schema_error": null }
 ```
 
-`POST /predict_document` — one entry per PDF page, numbered from 1; `document_json` is
-added only when a record was asked for:
+`POST /predict_document` — one entry per classified page (every page, or the `pages`
+selection), `page` being its 1-based position in the PDF. When the baseline's page rows carry
+`page_index` (a born-digital record, named by PDF page labels), each entry's `page_label` names the
+row its category was written under. `document_json` is added only when a record was asked for:
 
 ```json
 { "type": "document",
@@ -175,14 +178,14 @@ automated caller can test instead of grepping the service log.
 Every error body is `{"status", "reason", "detail"}` (atrium-project#32/#53); since #32 round 2
 the spec committed as `service/openapi.json` and attached to every release types each of them.
 
-| Code  | `reason`                 | When                                                                                                                   |
-|-------|--------------------------|------------------------------------------------------------------------------------------------------------------------|
-| `413` | `limit_exceeded`         | Over `MAX_UPLOAD_MB`, `MAX_PDF_PAGES` or `MAX_IMAGE_PIXELS`                                                            |
-| `415` | `unsupported_media_type` | Wrong content type for the endpoint (a `400` before #32 round 2)                                                       |
-| `422` | `invalid_record`         | The uploaded `document_json` baseline is unparseable, or written by a newer schema                                     |
-| `422` | `null`                   | An unknown `version`, an unreadable image or PDF, or request validation                                                |
-| `500` | `null`                   | Inference failure (a page the model could not classify included), or the service's own output failed schema validation |
-| `503` | `null`                   | Draining after SIGTERM                                                                                                 |
+| Code  | `reason`                 | When                                                                                                                           |
+|-------|--------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| `413` | `limit_exceeded`         | Over `MAX_UPLOAD_MB`, `MAX_PDF_PAGES` (counted over the pages classified) or `MAX_IMAGE_PIXELS`                                |
+| `415` | `unsupported_media_type` | Wrong content type for the endpoint (a `400` before #32 round 2)                                                               |
+| `422` | `invalid_record`         | The uploaded `document_json` baseline is unparseable, or written by a newer schema                                             |
+| `422` | `null`                   | An unknown `version`, an unreadable image or PDF, a malformed `pages` or a page past the end of the PDF, or request validation |
+| `500` | `null`                   | Inference failure (a page the model could not classify included), or the service's own output failed schema validation         |
+| `503` | `null`                   | Draining after SIGTERM                                                                                                         |
 
 ## The canonical ensemble
 
@@ -268,7 +271,9 @@ the shared `para_licenses.py`, the same in every ATRIUM tool.
 ## Sources
 
 Read from `ufal/atrium-page-classification` at branch **`vit`**, commit `adee922`
-(2026-09-23). This table records **provenance**, not a build instruction.
+(2026-09-23); the `/predict_document` fields, response entries and errors were re-read at
+`test` `41c84ca` (v1.9.2-beta, 2026-10-05). This table records **provenance**, not a build
+instruction.
 
 | Source                                   | What was taken from it                                  |
 |------------------------------------------|---------------------------------------------------------|

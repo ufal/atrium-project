@@ -345,8 +345,8 @@ spec in the same commit.
 digest the spec, so it ships in every image and release bundle, like `atrium_document.py`;
 `tests/test_openapi_contract.py` (vendored) and `tests/openapi_contract_data.py` (per repo:
 `SERVICES`, `ENV_PERTURB`, `PIN_FILES`, `PREPARE` — page-classification's stubs the torch-bound
-model manager). A repo with two HTTP services lists both (llm-enrich's planned `api-digital`:
-`service/openapi-digital.json`).
+model manager). A repo with two HTTP services lists both (none has two today: digital-convert's
+planned `api-digital` became its one service, with one `service/openapi.json`).
 
 **Release.** `release.yml` (all five): `atrium_openapi.py check` (the committed spec is what the
 tag's code generates) → `stamp` (`info.version` = the release version; `openapi.json` +

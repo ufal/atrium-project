@@ -9,10 +9,12 @@
 #   pc          needs a page image; a born-digital PDF has none, and no raster step
 #               exists to make one.
 #   ocr         MUST NOT run. atrium_document's `_assert_origin_consistent()`
-#               refuses every `pages`/`lines` write against a record whose
+#               refuses every positional `pages`/`lines` write against a record whose
 #               `source.origin` is `digital-born-*`, pinned by
 #               `test_without_needs_ocr_alto_is_still_refused`. Chaining ocr-postprocess
-#               here would assert that the ownership rule is broken.
+#               here would assert that the ownership rule is broken. (The one write it
+#               lets through is a scoring-only merge of `SCORING_FIELDS`, ocr-postprocess's
+#               `POST /score_record` — atrium-digital-convert#4 W3 — which adds no rows.)
 #   translator  needs `PAGE_ALTO/`, which is ocr-postprocess's split output.
 #   nlp         needs the DOC_LINE_CATEG classify CSV *and* `INPUT_ALTO_DIR`.
 #
@@ -115,7 +117,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      packages: read   # pull the -digital and -remote images from GHCR
+      packages: read   # pull the -digital image from GHCR
       contents: read
       issues: write    # open an issue when the SCHEDULED run fails
 
