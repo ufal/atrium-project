@@ -2,7 +2,7 @@
 
 > **Status:** Active document (added 2026-09-30, issues [#72](https://github.com/ufal/atrium-project/issues/72)
 > and [#40](https://github.com/ufal/atrium-project/issues/40)).
-> **Scope:** the hub and the five tool repositories.
+> **Scope:** the hub and the six tool repositories.
 
 AMČR builds its production images from ÚFAL release tags, after its own checks: contract tests,
 security and licence scans, and a diff review against the last trusted tag (report item 7,
@@ -10,17 +10,17 @@ aiscr-docs-pipeline#8). That only works if a tag means one thing, permanently. #
 an acceptance criterion: *"production release tags cannot be silently retargeted."* Three
 mechanisms give it, each with a tool in this repository.
 
-| Mechanism                                                 | What it guarantees                                                                                                                                           | Tool                                                        |
-|-----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
-| **Immutable releases** (five tool repos)                  | a published release, its tag and its assets never change                                                                                                     | `scripts/release_trust.py immutable`                        |
-| **Tag ruleset** (all six)                                 | a release tag, `v1` or `doc-schema-v*` cannot be moved or deleted, except by a repository admin, and GitHub logs that bypass                                 | `scripts/release_trust.py tag-rules`                        |
-| **Branch ruleset** (all six)                              | the default branch and `test` cannot be deleted or force-pushed; changes arrive by pull request, optionally with required checks; admins may bypass (logged) | `scripts/release_trust.py branch-rules`                     |
-| **Reusable workflows pinned by commit** (five tool repos) | a moving `v1` cannot change what a repository's CI runs                                                                                                      | `scripts/pin_hub_reusables.py`, `tools/ci/workflow_lint.py` |
+| Mechanism                                                | What it guarantees                                                                                                                                           | Tool                                                        |
+|----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
+| **Immutable releases** (six tool repos)                  | a published release, its tag and its assets never change                                                                                                     | `scripts/release_trust.py immutable`                        |
+| **Tag ruleset** (all seven)                              | a release tag, `v1` or `doc-schema-v*` cannot be moved or deleted, except by a repository admin, and GitHub logs that bypass                                 | `scripts/release_trust.py tag-rules`                        |
+| **Branch ruleset** (all seven)                           | the default branch and `test` cannot be deleted or force-pushed; changes arrive by pull request, optionally with required checks; admins may bypass (logged) | `scripts/release_trust.py branch-rules`                     |
+| **Reusable workflows pinned by commit** (six tool repos) | a moving `v1` cannot change what a repository's CI runs                                                                                                      | `scripts/pin_hub_reusables.py`, `tools/ci/workflow_lint.py` |
 
 ## What the release workflows need — nothing
 
-An immutable release refuses an asset added after it is published. All five `release.yml`
-attach `openapi.json`, `openapi.json.sha256` and their bundle in the one
+An immutable release refuses an asset added after it is published. All six `release.yml`
+attach `openapi.json`, `openapi.json.sha256` and, where they have one, their bundle in the one
 `softprops/action-gh-release` step that creates the release, and that action (v3.0.3, pinned)
 creates a non-prerelease release as a **draft**, uploads the assets, then publishes it. So they
 work unchanged once immutability is on. `tools/ci/workflow_lint.py` keeps it that way: it fails
@@ -87,7 +87,7 @@ by the next version, never by moving its tag or replacing an asset.
    `@<sha>  # v1`, and the two reusables that read hub files (`para-drift`, `workflow-lint`) get
    `hub-ref: <sha>` too. The linter already accepts both forms and fails a caller whose pin and
    `hub-ref` differ, so a Dependabot bump that moves only one of them turns red.
-8. **Once all five are pinned**, make the pin mandatory: pass `--require-sha-pins` to
+8. **Once all six are pinned**, make the pin mandatory: pass `--require-sha-pins` to
    `workflow_lint.py` in `workflow-lint.reusable.yml`. From then on a hub change reaches a tool
    repository only through a reviewed pin move (the same script with a new `--sha`, or a
    Dependabot PR).
