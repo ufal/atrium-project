@@ -519,7 +519,7 @@ def assert_digital_contract(doc, json_path):
 
     # `pages[].text_layer` (2026-10-05): the converter flags exactly the pages whose layer is
     # `garbled`, `ocr` or `none`. Checked only where a page carries the field, so a record from a
-    # converter older than v1.2.0-beta still passes.
+    # converter older than v1.1.1-beta still passes.
     for page in pages:
         layer = page.get("text_layer")
         if layer is None:

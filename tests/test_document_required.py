@@ -254,7 +254,7 @@ VALID_SHAPES = {
         "enrichment": {"items": [], "summary": None, "topics": []},
     },
     # digital-convert/api_util/digital_to_json.py::to_record -- the digital-born originator, which DOES call
-    # set_source() first, deliberately. Every page row carries `text_layer` since v1.2.0-beta.
+    # set_source() first, deliberately. Every page row carries `text_layer` since v1.1.1-beta.
     "digital-convert originator": {
         **_FLOOR,
         "source": {"sha256": "b" * 64, "media_type": "application/pdf", "origin": "digital-born-pdf"},

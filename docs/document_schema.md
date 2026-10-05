@@ -1193,7 +1193,7 @@ one method.
 
 * **What:** `digital | garbled | ocr | none | blank`, the converter's verdict on a page's embedded text
   layer, written by `digital-convert` (granted in `BLOCK_FIELD_OWNERS`, no other tool) on every page
-  from its v1.2.0-beta. The route step reads a value instead of parsing `needs_ocr_reason`'s prose
+  from its v1.1.1-beta. The route step reads a value instead of parsing `needs_ocr_reason`'s prose
   (proposed on ufal/atrium-project#71).
 * **Meaning:** `garbled`, `ocr` and `none` are exactly the pages the converter flags `needs_ocr`
   (`tools/e2e/e2e_assert.py` checks it where the field is present). `blank` is an empty page of a
@@ -1217,7 +1217,7 @@ one method.
   the hand-off as the single-record path does, and per page.
 * **Unchanged:** the scoring co-contribution (W3); every write by the record's own originator; an
   `ocr-postprocess` write onto a born-digital record that flags nothing (still refused).
-* **Consumers:** ocr-postprocess v1.10.0-beta (`POST /process` with an ATR ALTO page, the record and
+* **Consumers:** ocr-postprocess v1.9.1-beta (`POST /process` with an ATR ALTO page, the record and
   the optional `page` form field; `document_hook.write_document_block()` for its batch stages);
   `tools/e2e/e2e_assert.py`, whose born-digital branch accepts a hand-off stamp when a page is
   flagged.
