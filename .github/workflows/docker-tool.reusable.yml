@@ -423,6 +423,40 @@ jobs:
           sys.exit(1 if found else 0)
           PY
 
+      - name: Share one model cache across the probe containers
+        # Every step below starts a FRESH container from the same image. An image whose service
+        # downloads its models at warm-up (page-classification: five ViT revisions from the
+        # Hugging Face Hub into HF_HOME) therefore downloaded them once per step, four times per
+        # job, and an ATRIUM service's warm-up runs in its lifespan, before uvicorn listens. On
+        # page-classification's v1.9.2-beta tag (run 37269822039) the PORT=9000 container was
+        # still loading its fifth model when Docker's HEALTHCHECK budget (start-period 180s +
+        # 3 x 30s) ran out, and that step blamed $PORT. One named volume at the image's own
+        # HF_HOME, mounted into every probe container of this job, lets the first container pay
+        # for the download and the others start from disk. An image that sets no HF_HOME gets no
+        # mount, so its probes are exactly as before.
+        #
+        # A named volume rather than a bind mount: Docker seeds an empty named volume with the
+        # image's directory, ownership included, so the image's non-root user can write to it.
+        # Hosted runners are discarded after the job, so the volume needs no cleanup.
+        if: contains(fromJSON(inputs.probe-targets), matrix.target)
+        env:
+          IMAGE: atrium-smoke/${{ inputs.image-name }}:${{ matrix.target }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          hf_home=$(docker image inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$IMAGE" \
+            | sed -n 's/^HF_HOME=//p' | head -n 1)
+          if [ -z "$hf_home" ]; then
+            echo "the image sets no HF_HOME: the probe containers share no model cache"
+            exit 0
+          fi
+          volume="atrium-smoke-hf-${TARGET}"
+          docker volume create "$volume" >/dev/null
+          # One argument, so the four `docker run` lines below take it as
+          # ${SMOKE_CACHE_MOUNT:+"$SMOKE_CACHE_MOUNT"}: nothing when unset, one quoted word when set.
+          echo "SMOKE_CACHE_MOUNT=--volume=${volume}:${hf_home}" >> "$GITHUB_ENV"
+          echo "the probe containers share the model cache: volume ${volume} at ${hf_home}"
+
       - name: Run container and wait for HEALTHCHECK (issue #55)
         # Opt-in per target via probe-targets — most build-targets are batch CLIs with
         # no HTTP server to probe. This is the assertion that would have caught "no
@@ -434,7 +468,7 @@ jobs:
           IMAGE: atrium-smoke/${{ inputs.image-name }}:${{ matrix.target }}
         run: |
           set -euo pipefail
-          cid=$(docker run -d -p 18080:8000 "$IMAGE")
+          cid=$(docker run -d ${SMOKE_CACHE_MOUNT:+"$SMOKE_CACHE_MOUNT"} -p 18080:8000 "$IMAGE")
           echo "container: $cid"
           trap 'docker logs "$cid" || true; docker rm -f "$cid" >/dev/null 2>&1 || true' EXIT
 
@@ -616,7 +650,7 @@ jobs:
           IMAGE: atrium-smoke/${{ inputs.image-name }}:${{ matrix.target }}
         run: |
           set -euo pipefail
-          cid=$(docker run -d -e PORT=9000 -p 18080:9000 "$IMAGE")
+          cid=$(docker run -d ${SMOKE_CACHE_MOUNT:+"$SMOKE_CACHE_MOUNT"} -e PORT=9000 -p 18080:9000 "$IMAGE")
           echo "container: $cid (PORT=9000)"
           trap 'docker logs "$cid" || true; docker rm -f "$cid" >/dev/null 2>&1 || true' EXIT
 
@@ -630,7 +664,9 @@ jobs:
             [ "$status" = "healthy" ] && break
             if [ "$status" = "unhealthy" ]; then
               echo "container reported unhealthy at PORT=9000: the in-container probe" >&2
-              echo "could not reach the listener, so \$PORT is not being honoured" >&2
+              echo "could not reach the listener. Either \$PORT is not being honoured, or the" >&2
+              echo "service had not finished starting (its warm-up) within the HEALTHCHECK" >&2
+              echo "budget; the container log below shows which" >&2
               exit 1
             fi
             sleep 5
@@ -665,7 +701,7 @@ jobs:
           IMAGE: atrium-smoke/${{ inputs.image-name }}:${{ matrix.target }}
         run: |
           set -euo pipefail
-          cid=$(docker run -d -e HOST=127.0.0.1 -p 18081:8000 "$IMAGE")
+          cid=$(docker run -d ${SMOKE_CACHE_MOUNT:+"$SMOKE_CACHE_MOUNT"} -e HOST=127.0.0.1 -p 18081:8000 "$IMAGE")
           echo "container: $cid (HOST=127.0.0.1)"
           trap 'docker logs "$cid" || true; docker rm -f "$cid" >/dev/null 2>&1 || true' EXIT
 
@@ -720,7 +756,7 @@ jobs:
           IMAGE: atrium-smoke/${{ inputs.image-name }}:${{ matrix.target }}
         run: |
           set -euo pipefail
-          cid=$(docker run -d -e LOG_LEVEL=WARNING -p 18080:8000 "$IMAGE")
+          cid=$(docker run -d ${SMOKE_CACHE_MOUNT:+"$SMOKE_CACHE_MOUNT"} -e LOG_LEVEL=WARNING -p 18080:8000 "$IMAGE")
           echo "container: $cid (LOG_LEVEL=WARNING)"
           trap 'docker logs "$cid" || true; docker rm -f "$cid" >/dev/null 2>&1 || true' EXIT
 

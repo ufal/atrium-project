@@ -2002,4 +2002,32 @@ releases; the gate's diff review covers *"only the files that go into the image 
   and ocr-postprocess's homepages, and archiving atrium-llm-enrich / atrium-alto-postprocess, which the hub README
   already calls archived.
 
+  Files delivered in chat; pushed by the maintainer as `ab607cf`, and `v1` moved to it.
+
+## 2026-10-05 (later) — The docker smoke's probe containers share one model cache
+* **Why:** page-classification's v1.9.2-beta tag run (37269822039) went red in `docker-build-smoke (api)`, at the
+  `PORT=9000` step, although the same commit passed on `test` and `vit`, and `build-and-push` had already published
+  the images.
+  * The four probe steps (default port, `PORT=9000`, `HOST=127.0.0.1`, `LOG_LEVEL=WARNING`) each start a fresh
+    container.
+  * page-classification's lifespan warms five models before uvicorn listens, and its image downloads them from
+    the Hugging Face Hub into `HF_HOME`, so every step downloaded them again.
+  * On a slow Hub day the third container was still at the fifth model when the HEALTHCHECK budget (180 s
+    start + 3 × 30 s) ran out, and the step blamed `$PORT`.
+* **Fix (`.github/workflows/docker-tool.reusable.yml`, `docker-build-smoke`):**
+  * a new step reads `HF_HOME` from the image and creates one named volume;
+  * all four `docker run` lines mount it (`${SMOKE_CACHE_MOUNT:+"$SMOKE_CACHE_MOUNT"}`), so the first container
+    downloads and the others start from disk;
+  * an image without `HF_HOME` (nlp-enrich, digital-convert) gets no mount, so its probes are unchanged;
+  * a named volume, not a bind mount: Docker seeds it with the image's `/cache/huggingface`, which
+    page-classification, ocr-postprocess, keyword-extract and translator create owned by `atrium`, so the
+    non-root user can write;
+  * the `PORT=9000` "unhealthy" message now also names an unfinished warm-up.
+* **Checks:** YAML parses; actionlint with shellcheck reports no new findings (the 6 it reports were there before);
+  `tools/ci/workflow_lint.py` OK; hub suite 390 passed; shared templates 232 passed. Docker could not run here, so
+  the proof is the next smoke after `v1` moves.
+* **Also found in the same survey (not files):** digital-convert's `v1.1.0-beta` release is blocked by the API
+  gate until `v1.0.0-beta` is marked a pre-release; atrium-llm-enrich's scheduled smoke is red on `main`, to be
+  retired by archiving.
+
   Not pushed from here: files delivered in chat.
