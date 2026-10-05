@@ -32,16 +32,16 @@ translator, the line tables feed the NLP enrichment, and the record feeds keywor
 
 ## At a glance
 
-|                    |                                                                                                                                                                                                                                          |
-|--------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **In**             | ALTO XML from OCR; OCR output in JSON; other text-bearing formats as listed in the tool's [input-format reference](https://github.com/ufal/atrium-ocr-postprocess/blob/master/docs/text_inputs.md)                                       |
-| **Out**            | per-page ALTO and plain text; page statistics (CSV); per-document tables of text lines with their language and category (CSV); a paradata log (JSON); optionally the ATRIUM document record (JSON)                                       |
-| **Runs as**        | a command-line pipeline (`run_pipeline.py`, or one script per step); a container image; an HTTP service image (`POST /process`, and `POST /score_record` to score the lines of an existing record); an [Agent Skill](../agent-skills.md) |
-| **Compute**        | the line classification step is built for a GPU                                                                                                                                                                                          |
-| **Network**        | the Hugging Face Hub for its models on first use                                                                                                                                                                                         |
-| **Code licence**   | MIT; the vendored alto-tools are Apache-2.0                                                                                                                                                                                              |
-| **Output licence** | CC BY-NC 4.0 at minimum, because the language-identification model is used on every line; higher with some text-extraction methods (see below)                                                                                           |
-| **Record**         | SSH Open Marketplace tool [`YParYU`](https://marketplace.sshopencloud.eu/tool-or-service/YParYU)                                                                                                                                         |
+|                    |                                                                                                                                                                                                                                                                                                      |
+|--------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **In**             | ALTO XML from OCR; OCR output in JSON; other text-bearing formats as listed in the tool's [input-format reference](https://github.com/ufal/atrium-ocr-postprocess/blob/master/docs/text_inputs.md)                                                                                                   |
+| **Out**            | per-page ALTO and plain text; page statistics (CSV); per-document tables of text lines with their language and category (CSV); a paradata log (JSON); optionally the ATRIUM document record (JSON)                                                                                                   |
+| **Runs as**        | a command-line pipeline (`run_pipeline.py`, or one script per step); a container image; an HTTP service image (`POST /process`, which also merges an OCR'd page into a born-digital record, and `POST /score_record` to score the lines of an existing record); an [Agent Skill](../agent-skills.md) |
+| **Compute**        | the line classification step is built for a GPU                                                                                                                                                                                                                                                      |
+| **Network**        | the Hugging Face Hub for its models on first use                                                                                                                                                                                                                                                     |
+| **Code licence**   | MIT; the vendored alto-tools are Apache-2.0                                                                                                                                                                                                                                                          |
+| **Output licence** | CC BY-NC 4.0 at minimum, because the language-identification model is used on every line; higher with some text-extraction methods (see below)                                                                                                                                                       |
+| **Record**         | SSH Open Marketplace tool [`YParYU`](https://marketplace.sshopencloud.eu/tool-or-service/YParYU)                                                                                                                                                                                                     |
 
 ## Steps
 
@@ -81,6 +81,10 @@ text layer of a scanned document: the `pages`, `content`, `lines` and `tables` b
   [Pipelines → W1](../pipelines.md#w1--scanned--ocr-document-pipeline).
 * **One route of format adaptation** for documents that are not ALTO —
   [Pipelines → W11](../pipelines.md#other-workflows).
+* **The OCR hand-off of the born-digital route.** A page [digital-convert](digital-convert.md)
+  flags `needs_ocr` is OCR'd, and its ALTO comes here with the record: the page's lines are
+  replaced by the OCR lines, and the other pages are left as the converter wrote them —
+  [Pipelines → W3](../pipelines.md#other-workflows).
 * **ALTO post-processing and quality control** step of the AMČR text workflow
   [`0xSpVP`](https://marketplace.sshopencloud.eu/workflow/0xSpVP).
 

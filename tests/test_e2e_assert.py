@@ -490,6 +490,51 @@ def test_an_unmarked_ocr_stamp_on_born_digital_lines_still_fails(tmp_path):
         e2e_assert.assert_document_contract(final, llm_stage_ran=False)
 
 
+def _handed_off_record():
+    """`_digital_record()` after W4: page 2 was flagged, OCR'd, and its lines came back."""
+    record = _digital_record()
+    record["pages"][0]["text_layer"] = "digital"
+    record["pages"][1].update(
+        needs_ocr=True, needs_ocr_reason="no extractable text layer", text_layer="none", ocr={"engine": "ocr:pero"}
+    )
+    record["lines"][-1] = {"page": "2", "line": 1, "text": "Nálezy", "categ": "Clear", "quality_score": 0.9}
+    for block in ("pages", "lines"):
+        record["assembled"]["blocks"][block].update(program="ocr-postprocess", contribution="ocr-handoff")
+    return record
+
+
+def test_an_ocr_hand_off_of_flagged_pages_passes(tmp_path, capsys):
+    """atrium-digital-convert#4 W4: the flagged page's lines are ocr-postprocess's, the rest the
+    converter's, and the stamp says hand-off. With --expect-needs-ocr the Garbage evidence is gone
+    by design (the page now holds the OCR lines), so the gate accepts the hand-off instead."""
+    final = _write(tmp_path, "handoff.json", _handed_off_record())
+    e2e_assert.assert_document_contract(final, llm_stage_ran=False, expect_needs_ocr=True)
+    out = capsys.readouterr().out
+    assert "OCR hand-off by ocr-postprocess" in out and "re-acquired by OCR" in out
+
+
+def test_a_hand_off_stamp_without_a_flagged_page_fails(tmp_path):
+    record = _handed_off_record()
+    for page in record["pages"]:
+        page.pop("needs_ocr", None)
+        page.pop("text_layer", None)
+    final = _write(tmp_path, "unflagged.json", record)
+    with pytest.raises(AssertionError, match="no page asks for OCR"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=False)
+
+
+@pytest.mark.parametrize("layer, needs_ocr", [("digital", True), ("garbled", False), ("none", None), ("blank", True)])
+def test_text_layer_and_needs_ocr_must_agree(tmp_path, layer, needs_ocr):
+    """The converter flags exactly the garbled, ocr and none pages (`pages[].text_layer`)."""
+    record = _digital_record()
+    record["pages"][0]["text_layer"] = layer
+    if needs_ocr is not None:
+        record["pages"][0].update(needs_ocr=needs_ocr, needs_ocr_reason="r")
+    final = _write(tmp_path, "layer.json", record)
+    with pytest.raises(AssertionError, match="flags exactly the garbled, ocr and none pages"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=False)
+
+
 def test_layout_cues_pass_and_are_reported(tmp_path, capsys):
     final = _write(tmp_path, "rich.json", _digital_record())
     e2e_assert.assert_document_contract(final, llm_stage_ran=False, expect_layout=True)

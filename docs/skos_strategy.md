@@ -330,6 +330,16 @@ things out of step, not the pipeline. Either way it is a contract change, not a 
 `atrium_document.schema.json`'s `page_categories` examples were `{"1": "Text", "2": "Plate"}`.
 Neither is in `CATEGORIES`.
 
+### V-6 — keyword-extract read the converter's `Garbage`/`Inverted` lines ✅ fixed 2026-10-05
+
+atrium-keyword-extract's `service/api.py` left out lines categorised `Trash` and `Empty` only, a set
+written out by hand. The lines atrium-digital-convert labels `Garbage` or `Inverted` (a born-digital
+text layer that does not decode) were therefore read as text, and keywords were extracted from
+mojibake (`sondì`, `høeby`). Found by this round's end-to-end check of the OCR hand-off (converter
+record → ocr-postprocess → keyword-extract). Its skip set is now
+`UNTRUSTWORTHY_LINE_CATEGORIES` plus `Empty`, pinned by a test against the registry — the V-1
+lesson again: a consumer filters on the registry's set, never on a copy of it.
+
 ## 🗂️ 7. Follow-ups (not done here, deliberately)
 
 | #      | Item                                                                                        | Why not now                                                                                                                                                                                                                                                                                                                                                                     |

@@ -48,12 +48,12 @@ an earlier OCR run is refused, because it belongs to [ocr-postprocess](ocr-postp
 
 ## Steps
 
-| # | Step                   | What happens                                                                                                                                                                                                      | In → out        | Activity   |
-|---|------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|------------|
-| 1 | Read the file          | A light engine reads the PDF or DOCX structure directly; for complex PDFs a layout-model engine can be selected instead.                                                                                          | PDF, DOCX → IR  | Converting |
-| 2 | Check the text layer   | Every page's text layer is tested for decodability. A page that does not decode is marked `needs_ocr` with its reason; a PDF whose layer is an earlier OCR run is refused with a registered reason and no record. | IR → IR         | —          |
-| 3 | Build the record       | Pages, lines with boxes and block ids, line styles (heading level, running header or footer, footnote), tables and the source's identity are written as the blocks the tool owns.                                 | IR → JSON       | Converting |
-| 4 | Render, when asked for | The record is turned into Markdown in reading order — the form in which the keyword stage shows a document to a language model.                                                                                   | JSON → Markdown | —          |
+| # | Step                   | What happens                                                                                                                                                                                                                                                                                      | In → out        | Activity   |
+|---|------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|------------|
+| 1 | Read the file          | A light engine reads the PDF or DOCX structure directly; for complex PDFs a layout-model engine can be selected instead.                                                                                                                                                                          | PDF, DOCX → IR  | Converting |
+| 2 | Check the text layer   | Every page's text layer is tested and its verdict recorded as `text_layer` (`digital`, `garbled`, `ocr`, `none`, `blank`). A page without a usable layer is marked `needs_ocr` with its reason; a PDF whose layer is mostly an earlier OCR run is refused with a registered reason and no record. | IR → IR         | —          |
+| 3 | Build the record       | Pages, lines with boxes and block ids, line styles (heading level, running header or footer, footnote), tables and the source's identity are written as the blocks the tool owns.                                                                                                                 | IR → JSON       | Converting |
+| 4 | Render, when asked for | The record is turned into Markdown in reading order — the form in which the keyword stage shows a document to a language model.                                                                                                                                                                   | JSON → Markdown | —          |
 
 ## Provenance and licence
 
@@ -72,8 +72,9 @@ record is `digital-convert`, as before the move.
 * **First stage of the born-digital route** — [Pipelines → W2](../pipelines.md#other-workflows).
   Scans and images go through OCR and ocr-postprocess instead; the route step of the AMČR
   pipeline chooses by the file type AMČR detected.
-* **The OCR hand-off.** Pages flagged `needs_ocr` go to the ATR service, and its lines come
-  back into the same record.
+* **The OCR hand-off.** Pages flagged `needs_ocr` go to the ATR service. ocr-postprocess then
+  merges the ATR ALTO of each such page back into the same record, page by page; the born-digital
+  pages stay as the converter wrote them.
 * **What follows it.** The record goes on to [keyword-extract](keyword-extract.md), which reads
   the converter's lines like any other record's.
 

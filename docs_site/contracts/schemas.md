@@ -44,12 +44,12 @@ a value into its SKOS URI with `atrium_vocab.concept_uri("page-category", value)
 
 ### `pages[]` — shared, keyed by `page`
 
-| Field                                                                                           | Type                 | Written by              |                                                                                  |
-|-------------------------------------------------------------------------------------------------|----------------------|-------------------------|----------------------------------------------------------------------------------|
-| `page`                                                                                          | string, **required** | whoever creates the row | a label, so `iv` or `A-1` survive; never derive order from it — use `page_index` |
-| `category`                                                                                      | string               | page-classification     | the same label as `page_categories` for that page                                |
-| `category_confidence`                                                                           | number, 0–1          | page-classification     | the top-1 score, `SCORE-1` of the result table                                   |
-| `page_index`, `quality_score`, `quality_band`, `needs_ocr`, `needs_ocr_reason`, `ocr`, `canvas` |                      | the originator          | not written by either documented tool                                            |
+| Field                                                                                                         | Type                 | Written by                                          |                                                                                  |
+|---------------------------------------------------------------------------------------------------------------|----------------------|-----------------------------------------------------|----------------------------------------------------------------------------------|
+| `page`                                                                                                        | string, **required** | whoever creates the row                             | a label, so `iv` or `A-1` survive; never derive order from it — use `page_index` |
+| `category`                                                                                                    | string               | page-classification                                 | the same label as `page_categories` for that page                                |
+| `category_confidence`                                                                                         | number, 0–1          | page-classification                                 | the top-1 score, `SCORE-1` of the result table                                   |
+| `page_index`, `quality_score`, `quality_band`, `needs_ocr`, `needs_ocr_reason`, `ocr`, `canvas`, `text_layer` |                      | the originator (`text_layer`: digital-convert only) | not written by either documented tool                                            |
 
 Items allow additional properties. page-classification writes `category` and
 `category_confidence` through a **keyed merge** on `page`, so a row another stage created is

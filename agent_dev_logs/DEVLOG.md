@@ -2031,3 +2031,45 @@ releases; the gate's diff review covers *"only the files that go into the image 
   retired by archiving.
 
   Not pushed from here: files delivered in chat.
+
+## 2026-10-05 — The shared-module round: W4's per-page OCR hand-off, `pages[].text_layer`, `source_digest_mismatch`
+* **Why:** the three items ufal/atrium-project#71 listed as "proposed next" on 5 October, taken in this round
+  without new issues: the OCR hand-off (atrium-digital-convert#4 W4, AMČR's "merges those pages into a record that
+  digital-convert started, keeping its born-digital pages"), the text-layer verdict as a field, and the reason code
+  AMČR accepted on atrium-digital-convert#2 in the shared registry.
+* **`docs/templates/shared/atrium_document.py`:**
+  * the hand-off is **per page**: `_assert_origin_consistent()` takes the pages a row write touches, refuses a row on
+    a page the record does not flag, and refuses a wholesale `set_block()` under the hand-off (before, one flagged
+    page opened the whole plane, `content` and `tables` included);
+  * `DocumentRecord.replace_page_rows()` (new) replaces whole pages of a `page`-keyed block and keeps the block in
+    page order (`page_index`), so an OCR'd page holds the OCR lines only;
+  * `OCR_HANDOFF = "ocr-handoff"` on both stamps; `merge_document_records()` accepts it while the merged `pages[]`
+    flags a page (the fan-in question #71 left open); `ocr_handoff_pages()`, `handoff_pages()`;
+  * `BLOCK_FIELD_OWNERS["pages"]["digital-convert"]` gains `text_layer`.
+* **Schema:** `pages[].text_layer`, a closed enum `digital | garbled | ocr | none | blank` (registered in
+  `test_schema_freeze.py`, changelog 2026-10-05 in `docs/document_schema.md`); the `needs_ocr` description says the
+  hand-off is per page. No `SCHEMA_VERSION` bump.
+* **`atrium_service.py`:** `source_digest_mismatch` (422), digital-convert's published wording.
+* **Tests:** `test_document_originators.py` +13; `tests/test_document_required.py` (a W4 record shape, the
+  `text_layer` enum); `tests/test_atrium_service.py` (published codes); `tests/test_e2e_assert.py` +6.
+* **`tools/e2e/e2e_assert.py`** (born-digital branch): accepts an `ocr-handoff` stamp when a page is flagged (and
+  only then); checks `needs_ocr` against `text_layer` where a page has it; `--expect-needs-ocr` accepts the
+  hand-off in place of the `Garbage` evidence the OCR pass replaced.
+* **Docs:** `docs/document_schema.md` (the hand-off rules, the ownership row, the register, the changelog),
+  `docs/agent_skill_strategy.md` (the reason table), `docs/skos_strategy.md` (V-6, below), and the docs site:
+  `contracts/schemas.md`, `pipelines.md` (W3), `workflows/digital-convert.md`, `workflows/ocr-postprocess.md`,
+  `workflows/keyword-extract.md`.
+* **Re-vendored** into the six tool repositories with `scripts/revendor_shared.sh` (30 files; parity and the 24
+  selftests OK), and every service spec regenerated: each gains `source_digest_mismatch`, and each spec that
+  embeds the record schema gains `text_layer`. Each is *compatible* with the repository's latest release.
+* **Consumers:** ocr-postprocess `v1.10.0-beta` (`/process` takes an ATR ALTO page with the record and an optional
+  `page`); digital-convert `v1.2.0-beta` (writes `text_layer`; no longer registers the reason itself).
+* **Found by the end-to-end check** (converter record → ocr-postprocess `/process` → `merge_document_records()` →
+  `e2e_assert.py` → keyword-extract): keyword-extract skipped `Trash`/`Empty` only, so it extracted keywords from a
+  born-digital record's `Garbage` lines. Fixed there from `atrium_vocab.UNTRUSTWORTHY_LINE_CATEGORIES`, and recorded
+  as V-6 in `docs/skos_strategy.md`.
+* **Checks:** hub suite 659 passed, 10 skipped; the 7 failures are the same as on the clean export (they need sibling
+  git checkouts). `tools/ci/workflow_lint.py` OK; ruff clean.
+
+  Not pushed from here: files delivered in chat. Push the hub, move `v1`, then the six tool repositories.
+

@@ -79,6 +79,16 @@ def _stamp(*names: str, run_uuid: str = "") -> Dict[str, Any]:
     }
 
 
+def _handoff_stamp() -> Dict[str, Any]:
+    """`assembled` after ocr-postprocess's OCR hand-off (atrium-digital-convert#4 W4): its `pages`
+    and `lines` stamps carry `contribution: "ocr-handoff"`; `content` is still the converter's."""
+    assembled = _stamp("pages", "lines", "content", run_uuid=_RUN_UUID)
+    for name in ("pages", "lines"):
+        assembled["blocks"][name].update(program="ocr-postprocess", contribution="ocr-handoff")
+    assembled["blocks"]["content"]["program"] = "digital-convert"
+    return assembled
+
+
 def _unstamped() -> Dict[str, Any]:
     """`assembled` as a record that only ever had set_source() carries it: no `blocks` key at all
     (checked against a real alto-postprocess page_split/text_split record)."""
@@ -244,12 +254,12 @@ VALID_SHAPES = {
         "enrichment": {"items": [], "summary": None, "topics": []},
     },
     # digital-convert/api_util/digital_to_json.py::to_record -- the digital-born originator, which DOES call
-    # set_source() first, deliberately.
+    # set_source() first, deliberately. Every page row carries `text_layer` since v1.2.0-beta.
     "digital-convert originator": {
         **_FLOOR,
         "source": {"sha256": "b" * 64, "media_type": "application/pdf", "origin": "digital-born-pdf"},
         "assembled": _stamp("pages", "lines", "content", "tables"),
-        "pages": [{"page": "1", "page_index": 1}],
+        "pages": [{"page": "1", "page_index": 1, "text_layer": "digital"}],
         "lines": [{"page": "1", "line": 0, "text": "t"}],
         "content": {"text": "t"},
         "tables": [{"table_id": "t1", "page": "1"}],
@@ -308,6 +318,44 @@ VALID_SHAPES = {
                 "cells": [{"row": 0, "col": 0, "is_header": True, "group_id": "tbl0-r0c0"}],
             }
         ],
+    },
+    # ocr-postprocess/service/text_api.py::process_document -> document_hook.write_document_block ->
+    # DocumentRecord.replace_page_rows (atrium-digital-convert#4 W4): a born-digital PDF whose page ii
+    # did not decode, after its ATR ALTO came back. Page ii holds the OCR lines only and gains `ocr`;
+    # `needs_ocr`, `text_layer`, `canvas` and `category` stay; `source` and `content` are the converter's.
+    "ocr-postprocess W4 hand-off on a born-digital PDF": {
+        **_FLOOR,
+        "source": {
+            "sha256": "d" * 64,
+            "sha512": "e" * 128,
+            "filename": "C-202000543A-DT-27.pdf",
+            "media_type": "application/pdf",
+            "origin": "digital-born-pdf",
+            "page_count": 2,
+        },
+        "assembled": _handoff_stamp(),
+        "pages": [
+            {"page": "i", "page_index": 1, "quality_score": 1.0, "quality_band": "Clear", "text_layer": "digital"},
+            {
+                "page": "ii",
+                "page_index": 2,
+                "canvas": {"width": 595.0, "height": 842.0, "unit": "pt"},
+                "needs_ocr": True,
+                "needs_ocr_reason": "embedded text layer does not decode: 2 of 2 lines carry CP1250 bytes",
+                "text_layer": "garbled",
+                "category": "TEXT_P",
+                "category_confidence": 0.93,
+                "quality_score": 0.9,
+                "quality_band": "Clear",
+                "ocr": {"engine": "ocr:pero"},
+            },
+        ],
+        "lines": [
+            {"page": "i", "line": 0, "text": "Nálezová zpráva", "bbox": [72.0, 64.0, 388.0, 80.0]},
+            {"page": "ii", "line": 1, "text": "sondě", "categ": "Clear", "quality_score": 0.91, "lang": "ces"},
+            {"page": "ii", "line": 2, "text": "hřeby", "categ": "Clear", "quality_score": 0.88, "lang": "ces"},
+        ],
+        "content": {"text": "Nálezová zpráva", "reading_order": "layout"},
     },
     # atrium_document.merge_document_records() -- record_type differs, and `blocks` may legitimately
     # be {} when every input was a source-only record. That is why minProperties lives inside the
@@ -379,6 +427,20 @@ def test_style_region_is_a_closed_enum():
     for wrong in ("sidebar", "header", "Page_Header"):
         shape["lines"][0]["style"]["region"] = wrong
         assert not _is_valid(shape), f"style.region {wrong!r} validates -- the enum has been widened or dropped"
+
+
+def test_text_layer_is_a_closed_enum():
+    """`pages[].text_layer` (2026-10-05) is a closed enum: a routing step branches on it, so a
+    misspelled verdict must be refused, not routed as an unknown page. Additive under the freeze's
+    rule: the converter writes one of the five values, and a record without the field validates."""
+    pytest.importorskip("jsonschema")
+    shape = json.loads(json.dumps(VALID_SHAPES["ocr-postprocess W4 hand-off on a born-digital PDF"]))
+    assert _is_valid(shape)
+    for wrong in ("scanned", "Digital", "", None):
+        shape["pages"][1]["text_layer"] = wrong
+        assert not _is_valid(shape), f"text_layer {wrong!r} validates -- the enum has been widened or dropped"
+    del shape["pages"][1]["text_layer"]
+    assert _is_valid(shape)
 
 
 def test_the_floor_is_what_to_dict_guarantees():

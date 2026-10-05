@@ -671,6 +671,7 @@ PUBLISHED_REASON_CODES = (
     "unsupported_media_type",  # #32 round 2
     "invalid_record",  # #32 round 2 (#67 R1's seed path)
     "ocr_text_layer",  # #32 round 2 (atrium-llm-enrich#10 W6, raised by api-digital)
+    "source_digest_mismatch",  # 2026-10-05 (atrium-digital-convert#2; in digital-convert's spec since v1.1.0-beta)
 )
 
 

@@ -236,14 +236,34 @@ Calling `set_source()` before the first block write is the natural order but is 
 required**: a block written earlier is re-checked as soon as an origin arrives, and again in
 `to_dict()`.
 
-**One documented exception — the digital→OCR hand-off.** A record whose own `pages[]` sets
-`needs_ocr: true` authorises `alto-postprocess` to re-originate its positional plane, even
-though `source.origin` is a `digital-born-*` value. That is what the `needs_ocr` grant to
-`digital-convert` exists for (Issue #10: an embedded text layer that decodes to corrupt
-diacritics), and it keeps `source.origin` truthful — it records how the **original input** was
-acquired, which really was a digital-born PDF. Who wrote the plane is `assembled.blocks[…]
-.program`, as always, and `pages[].ocr` (never granted to `digital-convert`) records that an
-engine ran, so "was this OCR'd" stays answerable.
+**One documented exception — the digital→OCR hand-off, page by page (atrium-digital-convert#4
+W4).** A page whose own `pages[]` row sets `needs_ocr: true` authorises `ocr-postprocess` to
+re-originate **that page**, even though `source.origin` is a `digital-born-*` value. That is what
+the `needs_ocr` grant to `digital-convert` exists for (Issue #10: an embedded text layer that
+decodes to corrupt diacritics; a scanned insert; a prior OCR layer), and it keeps `source.origin`
+truthful — it records how the **original input** was acquired, which really was a digital-born
+PDF. The rules (`OCR_HANDOFF` in `atrium_document.py`):
+
+* **Per page.** A `pages`/`lines` row on a page that is not flagged is refused, and so is a
+  wholesale `set_block()` of `content` or `tables`: one scanned insert must not let the OCR pass
+  write the born-digital pages. Until 2026-10-05 any one flagged page opened the whole plane.
+* **Replaced, not mixed.** `DocumentRecord.replace_page_rows("lines", pages, rows)` removes the
+  converter's rows of the flagged pages and merges the OCR rows in their place, then keeps the
+  block in page order (`page_index`). A `merge_block()` alone would leave the converter's lines
+  past the OCR line count on the page. `pages[]` rows are merged, never replaced: they carry
+  `page_index`, `canvas`, `category` and `text_layer` from the other tools.
+* **Stamped.** Both blocks' stamps read `{"program": "ocr-postprocess", …, "contribution":
+  "ocr-handoff"}`, and `merge_document_records()` does not read that as a second originator while
+  the merged `pages[]` still flags a page.
+* **What stays.** `source` (the original's), `content` (the converter's reading-order text of its
+  born-digital pages; per-page text is in `lines`), and `needs_ocr` itself — it is the
+  converter's request. That the request was served is `pages[].ocr` (the engine), never granted
+  to `digital-convert`, so "was this page OCR'd" stays answerable. Who wrote the plane is
+  `assembled.blocks[…].program`, as always.
+
+`ocr-postprocess` makes this write through `document_hook.write_document_block()`, so its
+`POST /process` (an ATR ALTO page with the record and the page key) and its batch stages behave
+the same.
 
 **One documented co-contribution — the quality model's scores (atrium-digital-convert#4 W3).**
 `ocr-postprocess` owns the common line-quality model, and a born-digital record needs its answer
@@ -255,8 +275,8 @@ originator wrote (a row with no match is not appended), and its stamp reads
 `{"program": "ocr-postprocess", …, "contribution": "scoring"}` so neither a reader nor the fan-in
 check of `merge_document_records()` mistakes it for a second originator (the stamp's object
 admits extra keys; the schema is unchanged). Anything else `ocr-postprocess` writes on such a
-record (`text`, `bbox`, `ocr`, a new row, `content`, `tables`) is still refused unless the
-record asks for OCR (`needs_ocr`). Which lines are scored is the caller's policy:
+record (`text`, `bbox`, `ocr`, a new row, `content`, `tables`) is still refused, except the
+hand-off of a page the record flags `needs_ocr` (above). Which lines are scored is the caller's policy:
 `ocr-postprocess`'s `POST /score_record` never re-scores a line carrying `digital-convert`'s
 decode verdict (`categ` `Garbage` or `Inverted`).
 
@@ -270,7 +290,7 @@ decode verdict (`categ` `Garbage` or `Inverted`).
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | page-classification | `page_categories` · `pages[]` *category, category_confidence*                                                                                                                                                                                               |
 | ocr-postprocess ¹   | `pages[]` *page_index, quality_score, quality_band, needs_ocr, needs_ocr_reason, ocr, canvas* · `content` · `lines[]` *categ, quality_score, lang, text* · `tables[]` — **originator, documents with an OCR-class origin** (`ABBYY-ALTO`, `ocr:…`, `vlm:…`) |
-| digital-convert     | `pages[]` *page_index, canvas, quality_score, quality_band, needs_ocr, needs_ocr_reason* · `content` · `lines[]` *text, bbox, group_id, style, lang, quality_score, categ* · `tables[]` — **originator, digital-born documents only**                       |
+| digital-convert     | `pages[]` *page_index, canvas, quality_score, quality_band, needs_ocr, needs_ocr_reason, text_layer* · `content` · `lines[]` *text, bbox, group_id, style, lang, quality_score, categ* · `tables[]` — **originator, digital-born documents only**           |
 | translator          | `translations` · `entities[]` *translation_en* — **reserved**: granted, written by no tool (#70; see below)                                                                                                                                                 |
 | nlp-enrich          | `entities[]` · `lines[]` *lemma, upos, feats, teitok_ref, bbox* · `pages[]` *teitok_surface* · `derived_from.teitok`                                                                                                                                        |
 | keyword-extract ¹   | `enrichment` · `forms` · `entities[]` *pid* · `regenerable.markdown`                                                                                                                                                                                        |
@@ -467,12 +487,13 @@ that repository's own copy.
 
 ### Post-freeze register
 
-| Pointer                                                                            | Change                                                                       | Issue                     | Changelog                                                                             |
-|------------------------------------------------------------------------------------|------------------------------------------------------------------------------|---------------------------|---------------------------------------------------------------------------------------|
-| `/properties/lines/items/properties/style/properties/region`                       | added: closed enum `page_header` / `page_footer` / `footnote`; absent = body | ufal/atrium-llm-enrich#18 | [2026-09-25](#changelog--2026-09-25-llm-enrich18-linesstyleregion-cdla-permissive-20) |
-| `/properties/source/properties/sha512`                                             | added: optional, `^[a-f0-9]{128}$`, the archive's digest of the original     | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)           |
-| `/properties/provenance/properties/contributors/items/properties/run_uuid`         | added: optional, `urn:uuid:` + a lower-case UUID                             | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)           |
-| `/properties/assembled/properties/blocks/additionalProperties/properties/run_uuid` | added: optional, the same pattern                                            | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)           |
+| Pointer                                                                            | Change                                                                        | Issue                     | Changelog                                                                             |
+|------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|---------------------------|---------------------------------------------------------------------------------------|
+| `/properties/lines/items/properties/style/properties/region`                       | added: closed enum `page_header` / `page_footer` / `footnote`; absent = body  | ufal/atrium-llm-enrich#18 | [2026-09-25](#changelog--2026-09-25-llm-enrich18-linesstyleregion-cdla-permissive-20) |
+| `/properties/source/properties/sha512`                                             | added: optional, `^[a-f0-9]{128}$`, the archive's digest of the original      | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)           |
+| `/properties/provenance/properties/contributors/items/properties/run_uuid`         | added: optional, `urn:uuid:` + a lower-case UUID                              | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)           |
+| `/properties/assembled/properties/blocks/additionalProperties/properties/run_uuid` | added: optional, the same pattern                                             | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)           |
+| `/properties/pages/items/properties/text_layer`                                    | added: optional, closed enum `digital` / `garbled` / `ocr` / `none` / `blank` | ufal/atrium-project#71    | [2026-10-05](#changelog--2026-10-05-w4-the-ocr-hand-off-per-page-pagestext_layer)     |
 
 Not registered, because it does not constrain: the `lines[].style` description correction of the
 same pass.
@@ -1161,3 +1182,57 @@ unchanged, `doc-schema-v1` stays the reference.**
   merges unchanged, the deferred check, the fan-in.
 * **Re-vendored** into the six tool repositories with `scripts/revendor_shared.sh`, which also
   gained its first sibling-owned row (`text_formats.py`, atrium-ocr-postprocess → atrium-digital-convert).
+
+## Changelog — 2026-10-05 (W4: the OCR hand-off per page, `pages[].text_layer`)
+
+**Additive: no `SCHEMA_VERSION` bump, `doc-schema-v1` stays the reference.** One schema node is new
+(registered above). The module changes tighten a write path that only ocr-postprocess uses and add
+one method.
+
+### `pages[].text_layer` — declared, as a closed enum
+
+* **What:** `digital | garbled | ocr | none | blank`, the converter's verdict on a page's embedded text
+  layer, written by `digital-convert` (granted in `BLOCK_FIELD_OWNERS`, no other tool) on every page
+  from its v1.2.0-beta. The route step reads a value instead of parsing `needs_ocr_reason`'s prose
+  (proposed on ufal/atrium-project#71).
+* **Meaning:** `garbled`, `ocr` and `none` are exactly the pages the converter flags `needs_ocr`
+  (`tools/e2e/e2e_assert.py` checks it where the field is present). `blank` is an empty page of a
+  format without page images (DOCX, ODT, a sheet): nothing to re-acquire.
+* **Why additive:** every record written before it validates (the field is optional, and `pages`
+  items already admitted extra keys), and the one producer writes only the five values.
+
+### The OCR hand-off, page by page (atrium-digital-convert#4 W4)
+
+* **`OCR_HANDOFF = "ocr-handoff"`, `OCR_HANDOFF_PROGRAM`, `ocr_handoff_pages()`,
+  `DocumentRecord.handoff_pages()`**.
+* **`_assert_origin_consistent()`** takes the pages a row write touches: under the hand-off, a row on
+  a page the record does not flag is refused, and so is a wholesale `set_block()` (it raises under
+  `strict`, like every §1a refusal). Before, any flagged page opened the whole plane.
+* **`DocumentRecord.replace_page_rows(name, pages, records)`** (new): the rows of whole pages of a
+  block keyed by `page` are replaced, then the block is put in page order. The origin check runs
+  before anything is removed. An empty `records` empties the pages.
+* **`merge_block()`** stamps such a write `contribution: "ocr-handoff"`.
+  **`merge_document_records()`** accepts that stamp by `ocr-postprocess` while the merged `pages[]`
+  flags a page. This settles the question left open on ufal/atrium-project#71: the fan-in honours
+  the hand-off as the single-record path does, and per page.
+* **Unchanged:** the scoring co-contribution (W3); every write by the record's own originator; an
+  `ocr-postprocess` write onto a born-digital record that flags nothing (still refused).
+* **Consumers:** ocr-postprocess v1.10.0-beta (`POST /process` with an ATR ALTO page, the record and
+  the optional `page` form field; `document_hook.write_document_block()` for its batch stages);
+  `tools/e2e/e2e_assert.py`, whose born-digital branch accepts a hand-off stamp when a page is
+  flagged.
+* **Tests:** `test_document_originators.py` (canonical, +13): the per-page refusal, the replacement
+  and its ordering, the stamp, the empty OCR pass, the wholesale refusal, the fan-in with and without
+  a flagged page, the deferred check, the converter-only `text_layer` grant.
+  `tests/test_document_required.py`: a hand-off record shape and the `text_layer` enum.
+  `tests/test_e2e_assert.py`: +6.
+
+### Also in this round
+
+* `atrium_service.REASON_CODES` registers **`source_digest_mismatch`** (HTTP 422), with the wording
+  digital-convert has published since v1.1.0-beta (atrium-digital-convert#2). Every service's spec
+  publishes the registry, so all six specs were regenerated in the same re-vendor round.
+* **Re-vendored** into the six tool repositories with `scripts/revendor_shared.sh`:
+  `atrium_document.py`, `atrium_document.schema.json`, `atrium_service.py`,
+  `test_document_originators.py`, `test_schema_freeze.py`.
+

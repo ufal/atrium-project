@@ -473,7 +473,9 @@ def assert_digital_contract(doc, json_path):
     `source.origin` is digital-born (`_assert_origin_consistent`), and the ONE
     thing that legitimately re-opens that door is `needs_ocr: true` — the converter
     finding a text layer it does not trust. Until now that handoff was covered only
-    by unit tests inside one repo.
+    by unit tests inside one repo. Since W4 (atrium-digital-convert#4) the door opens
+    per page: ocr-postprocess re-originates the flagged pages only, and its stamp says
+    `contribution: "ocr-handoff"`.
     """
     origin = (doc.get("source") or {}).get("origin")
     print(f"ℹ️  born-digital branch: source.origin = {origin!r}")
@@ -482,20 +484,50 @@ def assert_digital_contract(doc, json_path):
     assert "pages" in doc, "❌ 'pages' block missing from digital-convert"
     assert "lines" in doc, "❌ 'lines' block missing from digital-convert"
 
+    pages = doc.get("pages") or []
+    needs_ocr_pages = [p for p in pages if p.get("needs_ocr")]
+
     stamped = (doc.get("assembled") or {}).get("blocks") or {}
     lines_stamp = stamped.get("lines") or {}
     lines_program = lines_stamp.get("program")
+    by_quality_model = canonical_program(lines_program) == "ocr-postprocess"
     # atrium-digital-convert#4 W3: ocr-postprocess's `/score_record` may add the quality model's
     # fields to the converter's rows (atrium_document.SCORING_FIELDS). Rule 4 then stamps it as
     # the block's latest writer, marked `contribution: "scoring"`; that is a score, not an
     # origination, and the rows are still digital-convert's.
-    scored = lines_stamp.get("contribution") == "scoring" and canonical_program(lines_program) == "ocr-postprocess"
-    assert lines_program == "digital-convert" or scored, (
+    scored = lines_stamp.get("contribution") == "scoring" and by_quality_model
+    # W4: the pages the converter flagged `needs_ocr` came back from OCR, and ocr-postprocess
+    # re-originated exactly those (atrium_document.OCR_HANDOFF), marked `contribution:
+    # "ocr-handoff"`. The flag is the authorisation, so a hand-off stamp with no flagged page is a
+    # second originator after all.
+    handed_off = lines_stamp.get("contribution") == "ocr-handoff" and by_quality_model
+    assert lines_program == "digital-convert" or scored or handed_off, (
         f"❌ 'lines' was written by {lines_program!r}, expected 'digital-convert'. On the "
         "born-digital branch alto-postprocess must never originate lines (§1a)."
     )
     if scored:
         print("ℹ️  lines: scored by ocr-postprocess (contribution: scoring) on digital-convert's rows")
+    if handed_off:
+        assert needs_ocr_pages, (
+            "❌ 'lines' is stamped as an OCR hand-off (contribution: ocr-handoff), but no page asks "
+            "for OCR (needs_ocr): nothing authorised ocr-postprocess to re-originate a page (§1a)."
+        )
+        print(
+            "ℹ️  lines: OCR hand-off by ocr-postprocess (contribution: ocr-handoff) for page(s) "
+            f"{[p.get('page') for p in needs_ocr_pages]}"
+        )
+
+    # `pages[].text_layer` (2026-10-05): the converter flags exactly the pages whose layer is
+    # `garbled`, `ocr` or `none`. Checked only where a page carries the field, so a record from a
+    # converter older than v1.2.0-beta still passes.
+    for page in pages:
+        layer = page.get("text_layer")
+        if layer is None:
+            continue
+        assert (page.get("needs_ocr") is True) == (layer in ("garbled", "ocr", "none")), (
+            f"❌ page {page.get('page')!r}: text_layer {layer!r} but needs_ocr {page.get('needs_ocr')!r}. "
+            "The converter flags exactly the garbled, ocr and none pages."
+        )
 
     # Blocks that CANNOT exist here. A record carrying them means either the branch
     # was fed a scanned document, or a tool wrote a block it does not own.
@@ -509,8 +541,6 @@ def assert_digital_contract(doc, json_path):
             f"is not actually born-digital, or a tool wrote a block it does not own."
         )
 
-    pages = doc.get("pages") or []
-    needs_ocr_pages = [p for p in pages if p.get("needs_ocr")]
     return pages, needs_ocr_pages
 
 
@@ -616,13 +646,20 @@ def assert_document_contract(
             # At least one line must be flagged Garbage. NOT "all lines" — the
             # converter flags per line, and the garbled fixture deliberately mixes
             # decodable and undecodable lines (1 of 3), so an all-lines assert would
-            # fail against correct behaviour.
+            # fail against correct behaviour. After the OCR hand-off (W4) the flagged
+            # pages hold the OCR lines instead, so the evidence is gone by design.
             garbage = [ln for ln in (doc.get("lines") or []) if ln.get("categ") == "Garbage"]
-            assert garbage, (
+            handed_off = ((doc.get("assembled") or {}).get("blocks") or {}).get("lines", {}).get(
+                "contribution"
+            ) == "ocr-handoff"
+            assert garbage or handed_off, (
                 "❌ needs_ocr is set but no line carries categ 'Garbage' — the page-level "
                 "verdict and the line-level evidence disagree."
             )
-            print(f"✅ {len(garbage)} line(s) flagged Garbage, consistent with the page verdict")
+            if garbage:
+                print(f"✅ {len(garbage)} line(s) flagged Garbage, consistent with the page verdict")
+            else:
+                print("✅ the flagged pages were re-acquired by OCR (contribution: ocr-handoff)")
         else:
             assert not needs_ocr_pages, (
                 f"❌ {len(needs_ocr_pages)} page(s) unexpectedly set needs_ocr on the happy-path "
