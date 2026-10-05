@@ -1235,4 +1235,3 @@ one method.
 * **Re-vendored** into the six tool repositories with `scripts/revendor_shared.sh`:
   `atrium_document.py`, `atrium_document.schema.json`, `atrium_service.py`,
   `test_document_originators.py`, `test_schema_freeze.py`.
-

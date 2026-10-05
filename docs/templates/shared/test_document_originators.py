@@ -1274,4 +1274,3 @@ def test_a_deferred_hand_off_is_judged_per_page(tmp_path, mock_paradata):
     with pytest.raises(ValueError, match=r"page\(s\) \['2'\]"):
         doc.set_source(origin="digital-born-pdf", filename="CTX000000001.pdf")
         doc.to_dict()
-
