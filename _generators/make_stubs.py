@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the five tool-repo gh-pages stub trees (issue #57; round 2, docs links round 7).
+"""Generate the six tool-repo gh-pages stub trees (issue #57; round 2, docs links round 7).
 
 Each tree becomes the ROOT of that repository's `gh-pages` branch. The branch is
 an orphan: it shares no history with test/master/main/vit and carries no source.
@@ -22,7 +22,7 @@ from repos import HUB_SITE, ORG, REPOS  # noqa: E402
 OUT = pathlib.Path(__file__).parent.parent / "stubs"
 CSS = (pathlib.Path(__file__).parent / "style.css").read_text()
 
-GENERATED = "2026-09-25"
+GENERATED = "2026-10-07"
 
 
 def esc(s: str) -> str:

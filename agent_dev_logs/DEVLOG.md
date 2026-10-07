@@ -2109,3 +2109,36 @@ releases; the gate's diff review covers *"only the files that go into the image 
   * #40 and `docs/release_trust.md` as `1c62e43`.
 
   The #58 pair and this DEVLOG entry were delivered last.
+
+## 2026-10-07 — Board round: the digital E2E on `-api`, and the six landing cards regenerated
+* **Why:** a pass over every open issue of the seven repositories for what can close. Two hub-side items stood
+  between issues and closing.
+* **`.github/workflows/e2e-digital-smoke.yml`, Case 7 (atrium-digital-convert#2 H.1):**
+  * a new step starts `ghcr.io/ufal/atrium-digital-convert-api:${IMAGE_TAG}` on `PORT=8080` and calls
+    `POST /reformat`:
+    * `minimal.pdf` with the AMČR seed → `e2e_assert.py --seed`; `paradata` checked with
+      `atrium_rocrate.action_problems()`, its `@id` the run_uuid of every block the converter stamped;
+    * `garbled.pdf` → `--expect-needs-ocr`, which checks `text_layer` against `needs_ocr`;
+    * a seed with a wrong `sha512` → 422 `source_digest_mismatch`;
+    * `ocr_layer.pdf`, when Case 6 is enabled → 422 `ocr_text_layer`;
+  * a missing image warns on a push or a dispatch and fails on the schedule (the keyword step's rule); the responses
+    join the failure artefact; `API_IMAGE` in the workflow env; the header names Case 7;
+  * checked locally against the service under uvicorn, with `docker` stubbed (no daemon here): the four cases pass,
+    and three negative checks (a wrong reason, a wrong status, a stamp that is not the action's run) fail as they
+    should. actionlint with shellcheck: no new findings; `tools/ci/workflow_lint.py` OK;
+  * **done when** it is green on `image-tag: latest`; dc#2 and dc#4 then close together (their plan, H.1).
+* **Landing cards (#57; the "Pages" items of ocr-postprocess#6 and digital-convert#1):**
+  * the `gh-pages` branches of the three new repositories held their predecessors' cards (keyword-extract's was
+    nlp-enrich's), every card's pipeline strip linked atrium-alto-postprocess and atrium-llm-enrich, and
+    ocr-postprocess's "Documentation →" pointed at the removed `workflows/alto-postprocess/`;
+  * `_generators/repos.py`: nlp-enrich's title after the split, digital-convert's eight formats and its README's
+    record chip, ocr-postprocess's title as its README writes it. `make_stubs.py`: `GENERATED = "2026-10-07"`;
+  * `PAGES_SETUP.md`: the gh-pages table lists the six current tool repositories, the predecessors as such;
+  * all six cards regenerated (`index.html`, `404.html`, `README.md`; `assets/style.css` and `.nojekyll` unchanged).
+    Every link resolves to a current repository or an existing `docs_site` page; none names a predecessor.
+* **Checks:** hub suite 666 passed, 10 skipped; ruff clean.
+* **For the maintainer (not files):** the 18 card files onto the six `gh-pages` branches; Pages on for keyword-extract
+  and digital-convert; the homepage fields of ocr-postprocess, digital-convert and keyword-extract, and "documenta" in
+  digital-convert's description.
+
+  Files delivered in chat.

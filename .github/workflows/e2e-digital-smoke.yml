@@ -42,6 +42,13 @@
 # They run only when BOTH halves carry #18 — the generator that makes the fixtures and
 # the image that converts them — because the two come from different places (below).
 #
+# ── And the service (Case 7, atrium-digital-convert#2 H.1) ──────────────────────
+# Cases 1-6 run the `-digital` CLI image. The AMČR route calls the `-api` image's
+# `POST /reformat`, so Case 7 asserts the contract once more through the service: the
+# seed's identity, the run's CreateAction (atrium-project#71 R2), the `needs_ocr` /
+# `text_layer` verdict, and the two refusals the route acts on (422
+# `source_digest_mismatch`, 422 `ocr_text_layer`).
+#
 # ── Fixtures are GENERATED, never committed ─────────────────────────────────────
 # `atrium-digital-convert/tests/fixtures/digital/make_fixtures.py` is a deterministic,
 # pure-stdlib PDF/DOCX generator with sha256-pinned outputs — same design as this
@@ -111,13 +118,14 @@ env:
   #   dispatch  -> whatever was chosen.
   IMAGE_TAG: ${{ inputs.image-tag || (github.event_name == 'push' && 'test' || 'latest') }}
   DIGITAL_IMAGE: ghcr.io/ufal/atrium-digital-convert-digital
+  API_IMAGE: ghcr.io/ufal/atrium-digital-convert-api
 
 jobs:
   digital-branch:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      packages: read   # pull the -digital image from GHCR
+      packages: read   # pull the -digital and -api images from GHCR
       contents: read
       issues: write    # open an issue when the SCHEDULED run fails
 
@@ -466,6 +474,107 @@ jobs:
           fi
           echo "✅ ocr_layer.pdf refused with exit 3 and no record written"
 
+      # ── Case 7: the production service, digital-convert's `-api` image ─────────────
+      # Every case above runs the `-digital` CLI. AMČR's Temporal activity calls the `-api`
+      # image instead (`POST /reformat`; atrium-digital-convert#2 H.1, which closes #2 and #4
+      # once this is green on `latest`). Through the service:
+      #   * the AMČR seed survives, and the response's `paradata` is a valid CreateAction whose
+      #     `@id` is the run_uuid stamped into every block the converter wrote (#71 R2);
+      #   * garbled.pdf comes back with its page flagged `needs_ocr` and a `text_layer` verdict;
+      #   * a seed whose sha512 is not the file's is 422 `source_digest_mismatch`;
+      #   * a prior OCR layer is 422 `ocr_text_layer` (when the caps probe enabled Case 6).
+      # A missing image is a warning on a push or a dispatch and an error on the schedule, as in
+      # e2e-pipeline-smoke.yml's keyword step: `-api` reaches `:latest` only via a release.
+      - name: Stage D2 - digital-convert service (-api)
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          OCR_LAYER_CASE: ${{ steps.caps.outputs.ocr_layer }}
+        run: |
+          set -euo pipefail
+          IMAGE="${API_IMAGE}:${IMAGE_TAG}"
+          if ! docker pull "$IMAGE"; then
+            if [ "$EVENT_NAME" = "schedule" ]; then
+              echo "::error::$IMAGE is not published: digital-convert has no -api image at this tag."
+              exit 1
+            fi
+            echo "::warning::$IMAGE is not published yet (no digital-convert release or test push at this tag); Case 7 is skipped."
+            exit 0
+          fi
+          CID=$(docker run -d -e PORT=8080 -p 8080:8080 "$IMAGE")
+          trap 'docker logs "$CID" 2>&1 | tail -40; docker rm -f "$CID" >/dev/null 2>&1' EXIT
+          for _ in $(seq 1 90); do
+            if curl -fsS http://localhost:8080/ready >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          curl -fsS http://localhost:8080/ready && echo
+          mkdir -p work/api
+
+          reformat() {  # $1 = response file, $2 = fixture, then extra -F parts; prints the HTTP status
+            local out="$1" fixture="$2"
+            shift 2
+            curl -sS -o "$out" -w '%{http_code}' -X POST http://localhost:8080/reformat \
+              -F "file=@${fixture};type=application/pdf" "$@"
+          }
+          record_of() {  # $1 = 200 response file, $2 = where its record goes
+            python -c 'import json, sys; json.dump(json.load(open(sys.argv[1], encoding="utf-8"))["document_json"], open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False)' "$1" "$2"
+          }
+          expect() {  # $1 = expected status, $2 = expected reason ("" for 200), $3 = response file, $4 = status answered
+            local reason=""
+            [ -z "$2" ] || reason=$(python -c 'import json, sys; print(json.load(open(sys.argv[1], encoding="utf-8")).get("reason"))' "$3")
+            if [ "$4" != "$1" ] || [ "$reason" != "$2" ]; then
+              echo "::error::expected $1${2:+ $2}, got $4: $(head -c 800 "$3")"
+              exit 1
+            fi
+            echo "✅ $3: $1${2:+ $2}"
+          }
+
+          # The seeded happy path: the record, then the run's CreateAction against its stamps.
+          code=$(reformat work/api/minimal.json work/digital_in/minimal.pdf \
+            -F "document_json=@work/doc_json/minimal.seed.json;type=application/json")
+          expect 200 "" work/api/minimal.json "$code"
+          record_of work/api/minimal.json work/doc_json/api_minimal.seeded.document.json
+          python tools/e2e/e2e_assert.py work/doc_json/api_minimal.seeded.document.json \
+            --llm-stage-ran false --seed work/doc_json/minimal.seed.json
+          PYTHONPATH=docs/templates/shared python - <<'PY'
+          import json
+
+          from atrium_rocrate import action_problems
+
+          body = json.load(open("work/api/minimal.json", encoding="utf-8"))
+          action, stamps = body.get("paradata"), body["document_json"]["assembled"]["blocks"]
+          problems = action_problems(action)
+          assert not problems, f"the response's CreateAction: {problems}"
+          ours = {name: stamp.get("run_uuid") for name, stamp in stamps.items() if stamp.get("program") == "digital-convert"}
+          assert ours and set(ours.values()) == {action["@id"]}, f"stamps {ours} vs the action {action['@id']}"
+          print(f"✅ paradata {action['@id']} = the run_uuid of {sorted(ours)}")
+          PY
+
+          # The needs_ocr hand-off, with the text_layer verdict (e2e_assert checks the two agree).
+          code=$(reformat work/api/garbled.json work/digital_in/garbled.pdf)
+          expect 200 "" work/api/garbled.json "$code"
+          record_of work/api/garbled.json work/doc_json/api_garbled.document.json
+          python tools/e2e/e2e_assert.py work/doc_json/api_garbled.document.json \
+            --llm-stage-ran false --expect-needs-ocr
+
+          # A seed whose sha512 is not the file's digest.
+          python - <<'PY'
+          import json
+
+          seed = json.load(open("work/doc_json/minimal.seed.json", encoding="utf-8"))
+          digest = seed["source"]["sha512"]
+          seed["source"]["sha512"] = ("1" if digest[0] == "0" else "0") + digest[1:]
+          json.dump(seed, open("work/api/wrong_digest.seed.json", "w", encoding="utf-8"))
+          PY
+          code=$(reformat work/api/wrong_digest.json work/digital_in/minimal.pdf \
+            -F "document_json=@work/api/wrong_digest.seed.json;type=application/json")
+          expect 422 source_digest_mismatch work/api/wrong_digest.json "$code"
+
+          # A prior OCR layer: refused, so the route sends the document to OCR.
+          if [ "$OCR_LAYER_CASE" = true ]; then
+            code=$(reformat work/api/ocr_layer.json work/digital_in/ocr_layer.pdf)
+            expect 422 ocr_text_layer work/api/ocr_layer.json "$code"
+          fi
+
       - name: Upload records on failure
         if: failure()
         uses: actions/upload-artifact@v7
@@ -473,6 +582,7 @@ jobs:
           name: e2e-digital-outputs
           path: |
             work/doc_json/*.json
+            work/api/*.json
             work/digital_in/MANIFEST.json
           if-no-files-found: warn
 

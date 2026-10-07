@@ -239,12 +239,16 @@ A `gh-pages` branch changes **zero** references.
 |------------------------------|------------------------------------|-------------------------------------------------------|------------------------------------------------------|
 | `atrium-project`             | the built MkDocs site              | `.github/workflows/pages.yml` on every push to `main` | <https://ufal.github.io/atrium-project/>             |
 | `atrium-page-classification` | orphan branch, static landing card | `_generators/make_stubs.py`, by hand                  | <https://ufal.github.io/atrium-page-classification/> |
-| `atrium-alto-postprocess`    | orphan branch, static landing card | `_generators/make_stubs.py`, by hand                  | <https://ufal.github.io/atrium-alto-postprocess/>    |
+| `atrium-ocr-postprocess`     | orphan branch, static landing card | `_generators/make_stubs.py`, by hand                  | <https://ufal.github.io/atrium-ocr-postprocess/>     |
 | `atrium-translator`          | orphan branch, static landing card | `_generators/make_stubs.py`, by hand                  | <https://ufal.github.io/atrium-translator/>          |
 | `atrium-nlp-enrich`          | orphan branch, static landing card | `_generators/make_stubs.py`, by hand                  | <https://ufal.github.io/atrium-nlp-enrich/>          |
-| `atrium-llm-enrich`          | orphan branch, static landing card | `_generators/make_stubs.py`, by hand                  | <https://ufal.github.io/atrium-llm-enrich/>          |
+| `atrium-keyword-extract`     | orphan branch, static landing card | `_generators/make_stubs.py`, by hand                  | <https://ufal.github.io/atrium-keyword-extract/>     |
+| `atrium-digital-convert`     | orphan branch, static landing card | `_generators/make_stubs.py`, by hand                  | <https://ufal.github.io/atrium-digital-convert/>     |
 
-The five tool-repo branches are **orphan** branches holding a static landing card. They share no
+The predecessors `atrium-alto-postprocess` and `atrium-llm-enrich` keep their 2026-09 cards until they are
+archived; they are not regenerated.
+
+The six tool-repo branches are **orphan** branches holding a static landing card. They share no
 history with `test`/`master`/`main`/`vit` and never need regenerating — which is the main
 simplification the branch source buys over an Actions source. `57.plan.md` §G's
 `pages-stub.reusable.yml` plus a per-repo caller is therefore **obsolete**: the stubs shipped as
@@ -287,3 +291,10 @@ GitHub does not redirect Pages when a repository is replaced, so the old address
 cards until the old repositories are archived, and `_generators/make_stubs.py` writes the cards of the
 new three from `_generators/repos.py`. The hub's site links the landing page of `ocr-postprocess` only;
 the other two link their source until their Pages is on.
+
+**2026-10-07:** the `gh-pages` branches of the new three held copies of the predecessors' cards
+(keyword-extract's was nlp-enrich's), and every card's pipeline strip still linked
+`atrium-alto-postprocess` and `atrium-llm-enrich`. All six cards were regenerated from
+`_generators/repos.py` (`GENERATED = "2026-10-07"`); `assets/style.css` and `.nojekyll` are unchanged.
+Still for the maintainer: Pages on for keyword-extract and digital-convert, and the three homepage
+fields above.

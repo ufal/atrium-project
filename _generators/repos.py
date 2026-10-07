@@ -2,7 +2,8 @@
 
 Every value here was read out of the repository tree, not invented: titles from each
 README's `#` line, taglines from the GitHub repo description, chips from each README's
-own badge block, default branches from the repo metadata (first read 2026-09-18). The
+own badge block, default branches from the repo metadata (first read 2026-09-18;
+re-read 2026-10-07 for the repositories of the 1 October split). The
 Python chip follows the version the images and CI use; a README badge that lags it is a
 finding for that repository, not a reason to publish the old value.
 
@@ -43,7 +44,7 @@ REPOS = [
         "docs_path": "workflows/ocr-postprocess/",
         "stage": 2,
         "default_branch": "master",
-        "title": "OCR output postprocessing pipeline",
+        "title": "OCR Output Postprocessing Pipeline",
         "subtitle": "split · stats · extract · classify · aggregate",
         "tagline": "Post-processing of OCR output — ALTO XML, and also PAGE XML, hOCR, PDF, office and "
         "text files — into extracted text and a scored line-quality table, plus per-page ALTO.",
@@ -84,7 +85,7 @@ REPOS = [
         "docs_path": "workflows/nlp-enrich/",
         "stage": 4,
         "default_branch": "master",
-        "title": "ALTO XML Postprocessing — NLP Enrichment of text",
+        "title": "NLP Enrichment of text",
         "subtitle": "UDPipe · NameTag · TEITOK",
         "tagline": "NLP enrichment of text lines from ALTO XML — morphology, named entities and "
         "TEITOK XML with bounding boxes preserved.",
@@ -123,13 +124,18 @@ REPOS = [
         "stage": 6,
         "default_branch": "main",
         "title": "Born-digital document conversion",
-        "subtitle": "PDF · DOCX → the document record",
+        "subtitle": "PDF · DOCX · ODT · ODS · XLSX · RTF · DOC · XLS → the document record",
         "tagline": "Digital-born documents transformed into JSON records, and page content information "
         "for the pages that still need OCR.",
         "role": "The born-digital route's first stage: reads the text layer, flags the pages that need OCR.",
         "chips": [
             ("python", "3.11+", "https://www.python.org/downloads/", "py"),
-            ("input", "PDF · DOCX", "https://github.com/ufal/atrium-digital-convert", "dep"),
+            (
+                "record",
+                "atrium_document 1.0",
+                "https://github.com/ufal/atrium-project/blob/main/docs/document_schema.md",
+                "data",
+            ),
             ("license", "MIT", "https://opensource.org/license/mit/", "lic"),
             ("funded by", "ATRIUM", "https://atrium-research.eu/", "atr"),
         ],
