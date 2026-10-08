@@ -39,7 +39,7 @@ end-to-end testing and hardening; and finally the standards layer — twelve-fac
 configuration, Kubernetes, SKOS, RO-Crate — and this site.
 
 !!! info "Scope"
-    Work that concerns only the other three tools, the project's papers, the data-storage
+    Work that concerns only the other four tools, the project's papers, the data-storage
     inventory, the document-understanding benchmark and the large-model GPU experiments is left to
     those tools' sections. So is `atrium-llm-enrich`'s arrival as the sixth repository in early
     July.

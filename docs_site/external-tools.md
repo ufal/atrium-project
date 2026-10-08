@@ -16,8 +16,8 @@ explained here.
 
 !!! info "Scope"
     Every entry page-classification and the translator depend on, including the shared
-    standards and infrastructure both tools vendor, and the platforms all five tools'
-    workflows are published on. Entries that only the other three tools use are named at the
+    standards and infrastructure both tools vendor, and the platforms all six tools'
+    workflows are published on. Entries that only the other four tools use are named at the
     end of each section.
 
 **On this page:**
@@ -140,16 +140,16 @@ different tools:
 
 | Where                                                                                                  | Tool                                  | Resolution                                                      |
 |--------------------------------------------------------------------------------------------------------|---------------------------------------|-----------------------------------------------------------------|
-| the service's `POST /predict_document`                                                                 | PyMuPDF (`fitz`), `page.get_pixmap()` | 300 dpi (`PDF_RENDER_DPI`); at most 50 pages (`service/api.py`) |
+| the service's `POST /predict_document`                                                                 | pypdfium2 (PDFium)                    | 300 dpi (`PDF_RENDER_DPI`); at most 50 pages (`MAX_PDF_PAGES`)  |
 | dataset preparation on Unix ([W12](pipelines.md#w12--annotation-round-trip-page-classifications-half)) | poppler's `pdftoppm`                  | 300 dpi by default                                              |
 | dataset preparation on Windows                                                                         | ImageMagick with Ghostscript          | 300 dpi by default                                              |
 
 **Worth knowing.** The service renders PDF pages at 300 dpi, the resolution the training pages
-were made at, rather than PyMuPDF's own 72 dpi default. `poppler-utils` is needed only on the
-machine that prepares a dataset: only `pdf2png.sh` calls `pdftoppm`. PyMuPDF is distributed
-under AGPL-3.0 or a commercial licence, and Ghostscript under AGPL-3.0.
+were made at, rather than a renderer's 72 dpi default. `poppler-utils` is needed only on the
+machine that prepares a dataset: only `pdf2png.sh` calls `pdftoppm`. pypdfium2 is Apache-2.0 or
+BSD-3-Clause (it replaced PyMuPDF, which is AGPL-3.0, in `v1.9.1-beta`), and Ghostscript is AGPL-3.0.
 
-**Onward:** <https://pymupdf.readthedocs.io/> · <https://poppler.freedesktop.org/>
+**Onward:** <https://pypdfium2.readthedocs.io/> · <https://poppler.freedesktop.org/>
 
 ### Formats used by the other stages
 
@@ -280,8 +280,8 @@ rather than OAI-PMH.
 
 **Where ATRIUM uses it.** Together with the AMCR *heslář*, it is one of the two sources
 `load_vocab.py` unions into the translation glossary, and
-`keyword-extract` builds a nested union of both for its category enum. Its data is CC BY-NC 4.0, so
-loading the vocabulary makes a run non-commercial.
+`keyword-extract` builds a nested union of both for its category enum. Its data is CC0, as AMČR
+has stated (atrium-project#6), so loading the vocabulary adds no restriction to a run.
 
 **Onward:** <https://teater.aiscr.cz/>
 
@@ -823,8 +823,9 @@ image that the partners run on their own Kubernetes ([Operations](operations.md)
 
 **What it is.** The Czech archaeological information infrastructure that publishes the AMCR
 database and the TEATER thesaurus, under the `aiscr.cz` domain. Its OAI-PMH endpoint identifies
-itself as *Archaeological Map of the Czech Republic (AMCR)* and licenses its metadata under
-CC BY-NC 4.0.
+itself as *Archaeological Map of the Czech Republic (AMCR)* and labels the repository's metadata
+CC BY-NC 4.0 as a whole. AMČR has stated that the keyword lists (the `heslo` set) and the TEATER
+thesaurus are CC0 (atrium-project#6), and the tools record them so.
 
 **Where ATRIUM uses it.** `aiscr.cz` hosts everything the translator harvests or links to: the AMCR
 OAI-PMH endpoint `api.aiscr.cz/2.2/oai`, AMCR's identifier namespace `api.aiscr.cz/id/` (also a

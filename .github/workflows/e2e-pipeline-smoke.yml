@@ -6,9 +6,9 @@ on:
     inputs:
       openrouter-model:
         description: >-
-          Unused since the keyword stage moved to keyword-extract (atrium-keyword-extract#1): the
-          controlled (LLM) kind has no step here until it ships there. Kept so existing callers
-          do not break.
+          OpenRouter model id for keyword-extract's controlled (LLM) kind (atrium-keyword-extract#1).
+          The step makes one call per line of the record, so it runs only on records of at most 25
+          lines (the default fixture makes one or two).
         default: "openai/gpt-4o-mini"
         type: string
         required: false
@@ -37,8 +37,13 @@ on:
         type: boolean
         required: false
     secrets:
+      HF_TOKEN:
+        description: "Optional Hugging Face token for Stage 1's model download (raises the anonymous rate limit)"
+        required: false
       OPENROUTER_KEY:
-        description: "Unused until keyword-extract's controlled kind has a step here; kept for existing callers"
+        description: >-
+          OpenRouter API key for keyword-extract's controlled kind. Without it that step is skipped
+          with a warning (an error on the scheduled run).
         required: false
   workflow_dispatch:
     inputs:
@@ -417,8 +422,9 @@ jobs:
             SEED_ARGS=(--seed work/doc_json/0_seed.json)
           fi
           echo "Asserting against: $FINAL"
-          # --llm-stage-ran false: the controlled (LLM) keyword kind has no step in this lane
-          # until keyword-extract ships it (atrium-keyword-extract#1), so `enrichment` is not required.
+          # --llm-stage-ran false: this record is nlp-enrich's, which is before keyword-extract's
+          # controlled (LLM) kind, so `enrichment` is not required here. The record after that
+          # kind is asserted below, in "Assert the record after keyword-extract".
           # shellcheck disable=SC2086 — STAGES is a deliberate list of paths
           python tools/e2e/e2e_assert.py "$FINAL" \
             --llm-stage-ran false \
@@ -433,10 +439,11 @@ jobs:
       # is exercised: the production image, run as built (no entrypoint override), is handed the
       # record Stage 4 wrote and must answer with keywords carrying a method and a score.
       #
-      # It is not a numbered "Stage" yet: the keywords block of the record is atrium-project#73,
-      # so there is no `5_kw.json` for the contract assertion to read, and the controlled (LLM)
-      # kind joins when keyword-extract ships it. YAKE is requested because KeyBERT would pull a
-      # sentence-transformers model from the Hub on every run (the 429 documented above).
+      # The statistical kind is not a numbered "Stage": its keywords block in the record is
+      # atrium-project#73, so this step reads the response only. The controlled (LLM) kind writes
+      # `enrichment`, so it is a stage: the next step, whose record is `5_kw.json`. YAKE is
+      # requested here because KeyBERT would pull a sentence-transformers model from the Hub on
+      # every run (the 429 documented above).
       #
       # The image is published from keyword-extract's first release (`latest`) or its first
       # `test` push. Until then a missing image is a warning, and an error on the scheduled run,
@@ -474,6 +481,112 @@ jobs:
           print(f"keywords: {len(kws)} from {kws[0]['method']}, first: {kws[0]['keyword']!r}")
           PY
 
+      # ── Keyword Extract, the controlled kind (atrium-keyword-extract#1, #2) ─────────────────
+      # The same production image, started with an LLM backend: the record Stage 4 wrote goes in,
+      # and the record with keyword-extract's `enrichment` block (and `entities[].pid`) comes out
+      # as `5_kw.json`. This is the one step of the lane that calls a paid, third-party model, so:
+      #   * it needs the OPENROUTER_KEY secret; without it the step is skipped with a warning, and
+      #     with an error on the scheduled run, which is there to notice a check that stopped;
+      #   * it makes one call per line the service sends, so it runs only on records of at most
+      #     E2E_CONTROLLED_MAX_LINES such lines (the two multi-page fixtures have hundreds);
+      #   * the model is `openrouter-model` (default openai/gpt-4o-mini). What it answers is
+      #     reported, not asserted: provider drift must not flap the gate. What is asserted is the
+      #     contract: the backend started, the call succeeded, the block is stamped by
+      #     keyword-extract, and the response's CreateAction is the stamp's run (atrium-project#71).
+      # keyword-extract's own live lane (controlled-live.yml) runs the same kind against a fixed
+      # record; this one is what proves it on the record the rest of the chain produced.
+      - name: Keyword Extract (controlled kind, OpenRouter)
+        id: kw_controlled
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_KEY }}
+          OPENROUTER_MODEL: ${{ inputs.openrouter-model || 'openai/gpt-4o-mini' }}
+          E2E_CONTROLLED_MAX_LINES: "25"
+        run: |
+          echo "ran=false" >> "$GITHUB_OUTPUT"
+          if [ -z "$OPENROUTER_API_KEY" ]; then
+            if [ "${{ github.event_name }}" = "schedule" ]; then
+              echo "::error::the OPENROUTER_KEY secret is not set: keyword-extract's controlled kind is no longer checked."
+              exit 1
+            fi
+            echo "::warning::no OPENROUTER_KEY secret; keyword-extract's controlled kind is not checked in this run."
+            exit 0
+          fi
+          # What the service will send: the record's lines, or, for a record that holds its text in
+          # `content.text` alone, every non-empty line of that (tools/e2e/controlled_rows.py).
+          LINES=$(python tools/e2e/controlled_rows.py work/doc_json/4_nlp.json)
+          if [ "$LINES" -gt "$E2E_CONTROLLED_MAX_LINES" ]; then
+            echo "::notice::${E2E_DOC} has $LINES lines and the controlled kind makes one paid call per line (limit $E2E_CONTROLLED_MAX_LINES): skipped. The small fixtures run it."
+            exit 0
+          fi
+          IMAGE="ghcr.io/ufal/atrium-keyword-extract-api:${{ inputs.image-tag || 'latest' }}"
+          if ! docker pull "$IMAGE"; then
+            echo "::warning::$IMAGE is not published; the controlled kind is not checked."
+            exit 0
+          fi
+          # KeyBERT is not the question here, so the statistical default is the one with nothing to load.
+          CID=$(docker run -d -e PORT=8080 -p 8080:8080 \
+            -e LLM_BACKEND=openrouter -e OPENROUTER_API_KEY -e OPENROUTER_MODEL \
+            -e DEFAULT_KW_METHOD=yake "$IMAGE")
+          trap 'docker logs "$CID" | tail -40; docker rm -f "$CID" >/dev/null 2>&1' EXIT
+          for _ in $(seq 1 90); do
+            if curl -fsS http://localhost:8080/ready >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          curl -fsS http://localhost:8080/ready
+          curl -fsS http://localhost:8080/info -o work/keywords_info.json
+          PYTHONPATH=docs/templates/shared python - <<'PY'
+          import json
+
+          info = json.load(open("work/keywords_info.json", encoding="utf-8")).get("controlled") or {}
+          assert info.get("ready") is True, f"the controlled kind did not start: {info}"
+          print(f"controlled kind ready: {info['backend']} / {info['model']}, {info['vocabulary']['prompt_terms']} vocabulary terms in the prompt")
+          PY
+          curl -fsS --max-time 900 -X POST http://localhost:8080/extract_keywords \
+            -F "document_json=@work/doc_json/4_nlp.json;type=application/json" \
+            -F kind=controlled -o work/keywords_controlled.json
+          PYTHONPATH=docs/templates/shared python - <<'PY'
+          import json
+
+          from atrium_rocrate import action_problems
+
+          body = json.load(open("work/keywords_controlled.json", encoding="utf-8"))
+          controlled = body.get("controlled") or {}
+          assert controlled.get("outcome") == "contributed", f"the model contributed nothing: {controlled}"
+          items = (body.get("enrichment") or {}).get("items") or []
+          assert items, f"no enrichment items in the response: {sorted(body)}"
+          assert "document_json_schema_error" not in body, body["document_json_schema_error"]
+          record = body["document_json"]
+          stamp = record["assembled"]["blocks"]["enrichment"]
+          assert stamp.get("program") == "keyword-extract", f"enrichment is stamped by {stamp.get('program')!r}"
+          action = body.get("paradata")
+          problems = action_problems(action)
+          assert not problems, f"the response's CreateAction: {problems}"
+          assert action["@id"] == stamp.get("run_uuid"), f"the action {action['@id']} is not the stamp's run {stamp.get('run_uuid')}"
+          json.dump(record, open("work/doc_json/5_kw.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+          for item in items:
+              print(f"P{item['page']} L{item['line']}: {item['teater_category']!r} cs={item.get('extracted_keywords_cs')}")
+          print(f"✅ {len(items)} line(s) by {controlled['model']}; paradata {action['@id']} = the enrichment stamp's run")
+          PY
+          echo "ran=true" >> "$GITHUB_OUTPUT"
+
+      # The contract on the record after keyword-extract: the same assertions as the final-contract
+      # step, with `enrichment` now required (the stage ran), over the five stage records.
+      - name: Assert the record after keyword-extract
+        if: steps.kw_controlled.outputs.ran == 'true'
+        run: |
+          SEED_ARGS=()
+          if [ "$E2E_SEED" = "true" ]; then
+            SEED_ARGS=(--seed work/doc_json/0_seed.json)
+          fi
+          STAGES="work/doc_json/1_pc.json work/doc_json/2_alto.json work/doc_json/3_translate.json"
+          STAGES="$STAGES work/doc_json/4_nlp.json work/doc_json/5_kw.json"
+          # shellcheck disable=SC2086 — STAGES is a deliberate list of paths
+          python tools/e2e/e2e_assert.py work/doc_json/5_kw.json \
+            --llm-stage-ran true \
+            --stages $STAGES \
+            --teitok-dir work/nlp_out/TEITOK \
+            "${SEED_ARGS[@]}"
+
       - name: Install the RO-Crate validator
         run: pip install -r tools/ci/requirements-rocrate.txt
 
@@ -497,6 +610,8 @@ jobs:
           path: |
             work/doc_json/*.json
             work/keywords.json
+            work/keywords_controlled.json
+            work/keywords_info.json
             work/nlp_out/TEITOK/*.teitok.xml
             work/crate/
 

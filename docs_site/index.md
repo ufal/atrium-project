@@ -72,7 +72,7 @@ together — seven repositories in all.
     Both kinds of keywords: statistical ones (KeyBERT, YAKE, KER), and terms of the AMČR and TEATER
     controlled vocabularies chosen by a language model.
 
-    [Workflow](workflows/keyword-extract.md) · [Source](https://github.com/ufal/atrium-keyword-extract)
+    [Workflow](workflows/keyword-extract.md) · [Landing page](https://ufal.github.io/atrium-keyword-extract/) · [Source](https://github.com/ufal/atrium-keyword-extract)
 
 -   **digital-convert**
 
@@ -82,7 +82,7 @@ together — seven repositories in all.
     into the document record without OCR, and flags the pages whose text layer does not decode, so
     only those go to OCR.
 
-    [Workflow](workflows/digital-convert.md) · [Source](https://github.com/ufal/atrium-digital-convert)
+    [Workflow](workflows/digital-convert.md) · [Landing page](https://ufal.github.io/atrium-digital-convert/) · [Source](https://github.com/ufal/atrium-digital-convert)
 
 -   **atrium-project** — the hub
 

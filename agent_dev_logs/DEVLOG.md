@@ -2142,3 +2142,37 @@ releases; the gate's diff review covers *"only the files that go into the image 
   digital-convert's description.
 
   Files delivered in chat.
+
+## 2026-10-07 (evening) — The controlled kind in the E2E lane; the docs sweep after the split
+* **`e2e-pipeline-smoke.yml` (atrium-keyword-extract#1, #2):** "Keyword Extract (controlled kind, OpenRouter)" starts
+  the production `-api` image with `LLM_BACKEND=openrouter` and the hub's `OPENROUTER_KEY`, sends it the record
+  nlp-enrich wrote, and keeps the answer as `5_kw.json`. "Assert the record after keyword-extract" then runs
+  `e2e_assert.py --llm-stage-ran true` over the five stage records. Asserted: `/info` reports the backend ready, the
+  outcome is `contributed`, the record validates, `enrichment` is stamped `keyword-extract`, and the response's
+  CreateAction passes `action_problems()` and is the stamp's run. What the model answers is printed, not asserted.
+  Without the secret the step warns, and fails on the schedule; a missing image warns; records over
+  `E2E_CONTROLLED_MAX_LINES` (25) are skipped. `HF_TOKEN` is declared as an optional secret of the reusable call
+  (an actionlint error already on `test`).
+* **The line gate counts what the service sends.** `tools/e2e/controlled_rows.py` (10 tests in
+  `tests/test_controlled_rows.py`): the chain's record can hold its text in `content.text` and no `lines[]` (OCR runs
+  with `SKIP_CLASSIFY=true`), and the service then sends every non-empty line of it. The first gate counted `lines[]`,
+  read 0 for such a record, and would have let the 372- and 485-row fixtures through to hundreds of paid calls.
+* **Checked locally** (no Docker daemon: `docker` stubbed, keyword-extract's service under uvicorn, a stand-in
+  OpenRouter): a record with `lines[]` runs; a content-only record of 3 lines runs; one of 400 is skipped by the
+  gate; no key warns, and errors on the schedule. actionlint and `workflow_lint.py` clean. **Not run on GitHub:** it
+  needs `OPENROUTER_KEY` and a published keyword-extract image; **done when** the first dispatch on
+  `image-tag: latest` is green.
+* **Docs sweep (#57, #72):** `docs_site/` and the `docs/` headers after the split and the 7 October releases: the
+  predecessors "superseded and kept as history" where a page said "archived" (the archive is the maintainer's action);
+  `workflows/llm-enrich.md` removed (keyword-extract and digital-convert have their pages); image names are the
+  `-api` services; the translator pages say CC0 for the AMČR and TEATER data (`para_config.txt`, 28 September) and
+  `v1.3.2-beta`; page-classification's PDF rendering is pypdfium2 (Apache-2.0), not PyMuPDF; `mkdocs.yml`,
+  `INDEX.md` (30 pages), `PAGES_SETUP.md` (Pages and the homepage fields done on 7 October; the archive is left) and the
+  `pages.yml` header; `docs/k8s_deployment.md` names `ghcr.io/ufal/atrium-<tool>-api:<version>`.
+* **Checks:** hub suite 677 passed, 9 skipped; `mkdocs build --strict` green over 30 pages; ruff clean.
+* **Dev logs:** the pairs of #4, #6, #32, #40, #53, #57, #66, #67, #72 and #73 refreshed (a dated section each; the
+  sections it supersedes are marked, not rewritten). Plan 4's Appendix E is rewritten for keyword-extract
+  `v1.1.0-beta`, and the versions of its Appendices A and F are bumped. The pairs of #18, #26, #27, #31, #54, #55, #58,
+  #68, #69, #70 and #71 belong to closed issues and can be deleted.
+
+  Files delivered in chat.

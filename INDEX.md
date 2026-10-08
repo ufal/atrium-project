@@ -177,7 +177,7 @@ language rules existed; each claim was re-read against the code and corrected:
 |-----------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
 | `mkdocs.yml`                            | site config. `docs_dir: docs_site`, `site_dir: site`, `strict: true`, `validation.links.anchors: warn`                   |
 | `PAGES_SETUP.md`                        | the publishing mechanics: why a branch source, how Pages is enabled, what the legacy Jekyll builder would have published |
-| `docs_site/**`                          | **29 pages** — 13 hub pages + 6 Workflows pages + 2 repos × 5 tool-section pages                                         |
+| `docs_site/**`                          | **30 pages** — 13 hub pages + 7 Workflows pages + 2 repos × 5 tool-section pages                                         |
 | `agent_dev_logs/digests/57.findings.md` | the unpublished findings register: everything round 6 removed from the pages, by owning repository, with a status        |
 | `docs_site/assets/extra.css`            | styling hook; the `.atrium-pipeline` strip on each tool index uses it                                                    |
 | `.github/workflows/pages.yml`           | builds `docs_site/` with `--strict`; publishes to `gh-pages` on push to `main`                                           |
@@ -191,15 +191,15 @@ language rules existed; each claim was re-read against the code and corrected:
 | `index.md`                                                                             | **written** — the portal, and how the ecosystem works                                                                              |
 | `pipelines.md`                                                                         | **partial** — workflow index; W1, W4–W8, W12, W13 in full; five listed                                                             |
 | `external-tools.md`                                                                    | **partial** — glossary of terms; every entry the two tools depend on; SSH Open Marketplace, TaDiRAH, Galaxy, WorkflowHub (round 7) |
-| `workflows/*`                                                                          | **written** — overview, 2 full narratives, 3 stable-core narratives (round 7)                                                      |
+| `workflows/*`                                                                          | **written** — overview, 2 full narratives, 4 stable-core narratives (round 7; renamed and split 7 October)                         |
 | `development-history.md`                                                               | **partial** — per-repo index and the cross-repository chronology                                                                   |
 | `tools/page-classification/*`                                                          | **written** — 5 pages, from `vit` @ `adee922` (round 6)                                                                            |
 | `tools/translator/*`                                                                   | **written** — 5 pages, from release `v1.2.1-beta` (round 8)                                                                        |
-| `ecosystem/repository-map.md`                                                          | **written** — six identity rows; depth for the two documented tools                                                                |
+| `ecosystem/repository-map.md`                                                          | **written** — seven identity rows; depth for the two documented tools                                                              |
 | `ecosystem/{architecture,document-contract}.md`, `contracts/{schemas,skos,rocrate}.md` | **partial** — written for page-classification and translator                                                                       |
 | `agent-skills.md`, `operations.md`, `contributing-standards.md`                        | **partial** — written for page-classification and translator                                                                       |
 
-`mkdocs.yml`'s `nav` and `docs_site/` agree in both directions, **29 ↔ 29**, checked by a
+`mkdocs.yml`'s `nav` and `docs_site/` agree in both directions, **30 ↔ 30**, checked by a
 green `mkdocs build --strict`. Under `strict: true` a nav entry with no file and a file with
 no nav entry are both build failures, which is why a tool section may only be added to the
 nav in the same commit as its pages. **No page on the site is a round-2 shell any more.**
@@ -207,11 +207,11 @@ nav in the same commit as its pages. **No page on the site is a round-2 shell an
 ## Why `docs_site/` and not `docs/`
 
 The hub's `docs/` already holds 13 canonical markdown files plus `docs/templates/` — and
-`docs/templates/shared/` is enforced byte-identical across all five tool repositories by
-`para-drift.reusable.yml`. Publishing from `docs/` would mean moving that tree, and
-`docs/templates` is referenced **363 times across the six repos**, with the paths baked into
+`docs/templates/shared/` is enforced byte-identical across all six tool repositories by
+`para-drift.reusable.yml` (five when this was measured). Publishing from `docs/` would mean moving that tree, and
+`docs/templates` is referenced **363 times across the six repos that then existed**, with the paths baked into
 the docstrings of the vendored files themselves. All 17 canonical files would have to be
-re-vendored inside one atomic window or CI goes red in five repositories at once.
+re-vendored inside one atomic window or CI goes red in every tool repository at once.
 `docs_site/` costs nothing.
 
 ## The shape a written tool page uses
@@ -320,15 +320,16 @@ As of round 5 (2026-09-23), on the maintainer's `88bc1a6` plus that round's file
   docs_site/tools/translator/history.md
   docs_site/workflows/index.md
   docs_site/workflows/page-classification.md
-  docs_site/workflows/alto-postprocess.md
+  docs_site/workflows/ocr-postprocess.md
   docs_site/workflows/translator.md
   docs_site/workflows/nlp-enrich.md
-  docs_site/workflows/llm-enrich.md
+  docs_site/workflows/keyword-extract.md
+  docs_site/workflows/digital-convert.md
 ```
 
 ## What these rounds deliberately do not do
 
-- **The other three tool sections.** alto-postprocess, nlp-enrich and llm-enrich keep their
+- **The other four tool sections.** ocr-postprocess, nlp-enrich, keyword-extract and digital-convert keep their
   reserved `nav_order` ranges; until their sections are written, their workflow page is what
   the site says about them.
 - **Any change to a tool repository's code or documentation.** The drift these pages document

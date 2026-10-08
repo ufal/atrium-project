@@ -102,8 +102,10 @@ is computed from the components it actually used, as declared in the tool's
 | code and fine-tuned models  | MIT          | always                              |
 | the LINDAT training dataset | CC BY-NC 4.0 | training (`--train`)                |
 | Ultralytics YOLO            | AGPL-3.0     | only with the optional YOLO backend |
+| pypdfium2 (PDFium)          | Apache-2.0   | the service renders an uploaded PDF |
 
-The HTTP service renders PDF pages with PyMuPDF, which is licensed AGPL-3.0.
+The HTTP service renders PDF pages with pypdfium2 (Apache-2.0 or BSD-3-Clause) since
+`v1.9.1-beta`; before that it used PyMuPDF, which is AGPL-3.0 and was not declared.
 
 In the [document record](../ecosystem/document-contract.md) the tool owns the
 `page_categories` block and each page's `category` and `category_confidence`.
@@ -135,10 +137,10 @@ method in [arXiv:2507.21114](https://arxiv.org/abs/2507.21114).
 | **Workflow inputs**           | a collection of page images — `png`, `jpg`                                                                                                                                                                                 |
 | **Parameters**                | model revision; single model or ensemble; how many categories to keep per page                                                                                                                                             |
 | **Workflow outputs**          | Top-N table — `tabular` (CSV); all-scores table — `tabular` (CSV); paradata — `json`; document record — `json`                                                                                                             |
-| **Container**                 | `ghcr.io/ufal/atrium-page-classification:<version>` — the command-line image                                                                                                                                               |
+| **Container**                 | `ghcr.io/ufal/atrium-page-classification-api:<version>` — the service image (`POST /predict_image`, `POST /predict_document`)                                                                                              |
 | **Compute**                   | CPU; a GPU destination speeds up large collections                                                                                                                                                                         |
 | **Network or reference data** | the Hugging Face Hub, for the model weights — or the weights staged on the server beforehand                                                                                                                               |
-| **Scanned PDFs**              | converted to page images by a step before this one                                                                                                                                                                         |
+| **Scanned PDFs**              | sent to `POST /predict_document` as they are (at most 50 pages, rendered at 300 dpi), or converted to page images by a step before this one                                                                                |
 | **Test data**                 | `small_data_samples/` in the tool repository — labelled page images, one folder per category                                                                                                                               |
 | **Credit**                    | the authors in the tool's `CITATION.cff`, with their ORCIDs; licence MIT                                                                                                                                                   |
 | **Closest Galaxy tools**      | `image_learner` (image classification with the same model families, built for training); `doclayoutyolo` (a document-image model in its own container); Galaxy's shared `huggingface` data table, for staged model weights |

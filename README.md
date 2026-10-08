@@ -13,6 +13,6 @@ This repository is for [planning of our work](https://github.com/orgs/ufal/proje
 - https://github.com/ufal/atrium-digital-convert
 
 `atrium-ocr-postprocess` continues `atrium-alto-postprocess`, and `atrium-keyword-extract` and `atrium-digital-convert`
-continue `atrium-llm-enrich` (the keyword extraction of `atrium-nlp-enrich` moved into the former); the old repositories are archived.
+continue `atrium-llm-enrich` (the keyword extraction of `atrium-nlp-enrich` moved into the former); the old repositories are superseded and kept as history.
 
 Presentation of the project (as of March 2026): [Google Slides](https://docs.google.com/presentation/d/13Be8n7tgebw3GVEgJuB3m1FdnrfKvAGHWvYHA9X4Ma4/edit?usp=sharing) [Zenodo](https://zenodo.org/records/19500212)

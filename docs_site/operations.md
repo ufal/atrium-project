@@ -12,7 +12,7 @@ Build, ship and run the services: the images and their tags, the gate a release 
 what the container proves before it is published, and how to run it on Kubernetes.
 
 !!! info "Scope"
-    The build and deployment machinery is shared by all five tools. The image, probe and
+    The build and deployment machinery is shared by all six tools. The image, probe and
     environment details below are those of page-classification and the translator.
 
 ## The deployment model
@@ -152,7 +152,7 @@ exited. Compose and Kubernetes both display it as a non-zero exit; it is the exp
 
 ## Running on Kubernetes
 
-The hub ships one reference manifest for all five services,
+The hub ships one reference manifest for all six services,
 `docs/templates/k8s/atrium-service.deployment.yaml`; `docs/k8s_deployment.md` is the full guide.
 What matters for these two services:
 

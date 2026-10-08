@@ -35,7 +35,7 @@ keeps every word tied to its place on the page image.
 
 |                    |                                                                                                                                                                                                                                  |
 |--------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **In**             | tables of text lines (CSV or XLSX with a `text` column) from ocr-postprocess; optionally the original ALTO files and the page images, for word positions                                                                        |
+| **In**             | tables of text lines (CSV or XLSX with a `text` column) from ocr-postprocess; optionally the original ALTO files and the page images, for word positions                                                                         |
 | **Out**            | CoNLL-U per document; named entities per page (TSV); tokens, lemmas and entities per document (CSV); an entity summary for the collection (CSV); TEITOK XML; a paradata log (JSON); optionally the ATRIUM document record (JSON) |
 | **Runs as**        | a command-line pipeline (four stages, or `run_pipeline.py`); a container image; an HTTP service image (`POST /enrich`); an [Agent Skill](../agent-skills.md)                                                                     |
 | **Compute**        | CPU; the annotation itself runs on LINDAT's servers                                                                                                                                                                              |
@@ -90,7 +90,8 @@ The LINDAT services it calls have their own records: UDPipe and NameTag.
 `tabular` for the tables and for CoNLL-U (Galaxy has no CoNLL-U datatype), and `json`. The
 closest tool already in Galaxy is `stanza_nlp`, which tokenises, tags, parses and finds named
 entities with local models; UDPipe and NameTag themselves have been wrapped for Galaxy before,
-as tools calling LINDAT's services.
+as tools calling LINDAT's services. The container is the CPU-only service image
+`ghcr.io/ufal/atrium-nlp-enrich-api:<version>` (`POST /enrich`, `/enrich_text`).
 
 ## Sources
 

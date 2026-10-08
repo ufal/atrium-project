@@ -11,7 +11,7 @@ authored: true
 
 # Keywords from archival text: statistical, and from the controlled vocabularies
 
-*The keyword-extract workflow.* Tool: [atrium-keyword-extract](https://github.com/ufal/atrium-keyword-extract).
+*The keyword-extract workflow.* Tool: [atrium-keyword-extract](https://ufal.github.io/atrium-keyword-extract/).
 It takes over both kinds of keywords that used to be made in two places: the statistical
 keywords of [nlp-enrich](nlp-enrich.md) and the vocabulary-controlled keywords of llm-enrich.
 [nlp-enrich](nlp-enrich.md) keeps only the LINDAT calls.
@@ -36,16 +36,16 @@ the output, and every keyword says which method produced it.
 
 ## At a glance
 
-|                    |                                                                                                                                                                                                    |
-|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **In**             | the ATRIUM document record, after nlp-enrich; or plain text                                                                                                                                        |
+|                    |                                                                                                                                                                                                      |
+|--------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **In**             | the ATRIUM document record, after nlp-enrich; or plain text                                                                                                                                          |
 | **Out**            | keywords with their method, score and rank, per document and per page; a paradata log (JSON). The record's `keywords` block and, for the controlled kind, `enrichment` follow in the record contract |
-| **Runs as**        | a command-line tool; a container image; an HTTP service image (`POST /extract_keywords`)                                                                                                           |
-| **Compute**        | CPU for YAKE and the legacy method; a GPU is used by KeyBERT when there is one; the controlled kind calls a language-model server and carries no weights                                          |
-| **Network**        | the Hugging Face Hub for the KeyBERT model on first use; for the controlled kind, the language-model server and the AIS CR services that the vocabulary is built from                              |
-| **Code licence**   | MIT                                                                                                                                                                                                |
-| **Output licence** | declared per run from the components used: KeyBERT and the legacy method add no restriction on their own; YAKE is AGPL-3.0; the AMČR and TEATER vocabularies are CC0                               |
-| **Record**         | none of its own yet; the earlier llm-enrich record is to be re-pointed to it                                                                                                                       |
+| **Runs as**        | a command-line tool; a container image; an HTTP service image (`POST /extract_keywords`)                                                                                                             |
+| **Compute**        | CPU for YAKE and the legacy method; a GPU is used by KeyBERT when there is one; the controlled kind calls a language-model server and carries no weights                                             |
+| **Network**        | the Hugging Face Hub for the KeyBERT model on first use; for the controlled kind, the language-model server and the AIS CR services that the vocabulary is built from                                |
+| **Code licence**   | MIT                                                                                                                                                                                                  |
+| **Output licence** | declared per run from the components used: KeyBERT and the legacy method add no restriction on their own; YAKE is AGPL-3.0; the AMČR and TEATER vocabularies are CC0                                 |
+| **Record**         | none of its own yet; the earlier llm-enrich record is to be re-pointed to it                                                                                                                         |
 
 ## Steps
 
@@ -95,7 +95,9 @@ to be re-pointed to it.
 
 **Galaxy.** Inputs map to `json` (the record) and `txt`; outputs to `json`. Inside ATRIUM,
 DARIAH's Galaxy tools already chain PDF text extraction with vocabulary-driven information
-extraction (task 4.2.1).
+extraction (task 4.2.1). The container is the service image
+`ghcr.io/ufal/atrium-keyword-extract-api:<version>` (`POST /extract_keywords`); for Galaxy the statistical
+kind is the capability to wrap, and the controlled kind stays a research target.
 
 ## Sources
 
@@ -103,9 +105,9 @@ Built from `ufal/atrium-nlp-enrich` at release **`v0.23.0`** (the statistical me
 and `ufal/atrium-llm-enrich` at release **`v0.9.0`** (the controlled kind and the vocabulary
 build, not yet moved). This table records **provenance**, not a build instruction.
 
-| Source                                                | What was taken from it                              |
-|-------------------------------------------------------|-----------------------------------------------------|
+| Source                                                                      | What was taken from it                                   |
+|-----------------------------------------------------------------------------|----------------------------------------------------------|
 | nlp-enrich `README.md` § Extract Keywords, `keywords.py`, `para_config.txt` | the three statistical methods, their scores and licences |
-| llm-enrich `README.md`, `llm_client_shared.py`, `vocab_build.py`            | the controlled kind, the vocabulary                 |
-| the keyword-extract plan (`agent_dev_logs/plans/40.plan.md`)                | the one service, the kinds, the record's blocks     |
-| `DARIAH-ERIC/atrium-galaxy-tools`                                           | the Galaxy analogue                                 |
+| llm-enrich `README.md`, `llm_client_shared.py`, `vocab_build.py`            | the controlled kind, the vocabulary                      |
+| the keyword-extract plan (`agent_dev_logs/plans/40.plan.md`)                | the one service, the kinds, the record's blocks          |
+| `DARIAH-ERIC/atrium-galaxy-tools`                                           | the Galaxy analogue                                      |

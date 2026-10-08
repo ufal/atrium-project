@@ -393,8 +393,8 @@ record of a batch.
 | `lindat_cubbitt`        | CC BY-NC-SA 4.0      | the `lindat` backend was used             |
 | `udpipe2_engine`        | MPL 2.0              | vocabulary lemma matching ran             |
 | `udpipe2_models`        | CC BY-NC-SA 4.0      | as above                                  |
-| `amcr_vocab`            | CC BY-NC 4.0         | the AMCR vocabulary was loaded            |
-| `teater_data`           | CC BY-NC 4.0         | the TEATER thesaurus was loaded           |
+| `amcr_vocab`            | CC0                  | the AMCR vocabulary was loaded            |
+| `teater_data`           | CC0                  | the TEATER thesaurus was loaded           |
 | `llm_api`               | *"LLM provider ToS"* | the `openai_compatible` backend was used  |
 | `ctranslate2`           | MIT                  | CT2 backend                               |
 | `eurollm` / `madlad400` | Apache-2.0           | CT2 models                                |
@@ -408,12 +408,13 @@ safe default for a prototype backend whose provider terms are not a CC or OSS li
 Every `CT2_MODEL_FAMILY` maps to one of the model rows above; an undeclared component
 would be logged as `UNKNOWN`, which resolves the same way.
 
-**The permissive recipe** — all three parts are required:
+**The permissive recipe** — both parts are required:
 
 1. `--backend ct2` with a permissive model — EuroLLM or MADLAD-400 (Apache-2.0) or
    Opus-MT (CC BY 4.0), **not** NLLB-200 — see [Overview](index.md#the-three-backends);
-2. an explicit `--source_lang`, so FastText never loads and its CC BY-NC weights never count;
-3. a permissive or empty vocabulary, so AMCR and TEATER never count.
+2. an explicit `--source_lang`, so FastText never loads and its CC BY-NC weights never count.
+
+The AMCR and TEATER vocabularies are CC0 and may stay: they add no restriction.
 
 ## Languages
 

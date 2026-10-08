@@ -3,7 +3,7 @@
 > **Repository names (2026-10-01).** This document predates the repository moves of atrium-project#72 and
 > uses the names of its time: `alto-postprocess` is now `ocr-postprocess`; `llm-enrich` split into
 > `keyword-extract` (its keyword stage, with the keyword extraction of `nlp-enrich`) and `digital-convert`
-> (the born-digital converter). The old repositories are archived. Read the names below through that map;
+> (the born-digital converter). The old repositories are superseded and kept as history. Read the names below through that map;
 > the current ones are in [`docs_site/ecosystem/repository-map.md`](../docs_site/ecosystem/repository-map.md).
 
 > **Status:** Closed out 2026-09-29 — every wave executed or retired, see **§10** ([#69](https://github.com/ufal/atrium-project/issues/69)) · **Date:** 2026-08-04 · **Issue:** [#18](https://github.com/ufal/atrium-project/issues/18), then [#69](https://github.com/ufal/atrium-project/issues/69)

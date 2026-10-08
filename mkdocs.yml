@@ -3,9 +3,10 @@
 # ROUND 3. The nav below matches docs_site/ exactly, in both directions.
 #
 # The `- Tools:` block carries the two sections that are WRITTEN --
-# page-classification and translator. The other three tool repositories
-# (alto-postprocess, nlp-enrich, llm-enrich) are deliberately absent: under
-# `strict: true` a nav entry with no file is a build failure, so a section
+# page-classification and translator. The other four tool repositories
+# (ocr-postprocess, nlp-enrich, keyword-extract, digital-convert) have their
+# workflow page under Workflows and a landing page of their own, and are
+# deliberately absent from this block: under `strict: true` a nav entry with no file is a build failure, so a section
 # appears here only once its pages exist. nav_order reserves 40-44 and 60-74
 # for them.
 #
@@ -18,7 +19,7 @@
 #
 # WHY docs_dir IS NOT `docs`: the hub's `docs/` already holds 13 canonical markdown
 # files plus `docs/templates/` -- including `docs/templates/shared/`, which
-# para-drift.reusable.yml enforces byte-identical across five repositories.
+# para-drift.reusable.yml enforces byte-identical across the six tool repositories.
 # Publishing from `docs/` would mean moving that tree, and `docs/templates` is
 # referenced 363 times across the six repos, with the paths baked into the
 # docstrings of the vendored files themselves. `docs_site/` costs nothing.
@@ -30,7 +31,8 @@
 site_name: ATRIUM — UFAL documentation
 site_description: >-
   Documentation for the UFAL side of the ATRIUM project: the page classifier, the
-  ALTO post-processor, the translator, and the NLP and LLM enrichers.
+  OCR post-processor, the translator, the NLP enricher, the keyword extractor and
+  the born-digital converter.
 site_url: https://ufal.github.io/atrium-project/
 repo_url: https://github.com/ufal/atrium-project
 repo_name: ufal/atrium-project

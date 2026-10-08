@@ -15,7 +15,7 @@ role: index
 <a href="https://ufal.github.io/atrium-ocr-postprocess/">ocr-postprocess</a>
 <span class="here">translator</span>
 <a href="https://ufal.github.io/atrium-nlp-enrich/">nlp-enrich</a>
-<a href="https://github.com/ufal/atrium-keyword-extract">keyword-extract</a>
+<a href="https://ufal.github.io/atrium-keyword-extract/">keyword-extract</a>
 </div>
 
 **Translates XML in place.** Every tag, every namespace, every attribute and — for ALTO —

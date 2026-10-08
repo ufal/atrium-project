@@ -91,13 +91,14 @@ the most restrictive one wins:
 | LINDAT translation (CUBBITT)              | CC BY-NC-SA 4.0            | the default backend is used                |
 | language-identification model (FastText)  | CC BY-NC 4.0               | the source language is detected, not given |
 | UDPipe 2 models / engine                  | CC BY-NC-SA 4.0 / MPL 2.0  | vocabulary terms are matched by lemma      |
-| AMČR vocabularies, TEATER thesaurus       | CC BY-NC 4.0               | a vocabulary built from them is loaded     |
+| AMČR vocabularies, TEATER thesaurus       | CC0                        | a vocabulary built from them is loaded     |
 | CTranslate2; EuroLLM, MADLAD-400; OPUS-MT | MIT; Apache-2.0; CC BY 4.0 | a self-hosted model of these families      |
 | NLLB-200                                  | CC BY-NC 4.0               | a self-hosted NLLB-200 model               |
 | OpenAI-compatible language-model API      | provider terms             | the language-model backend is used         |
 
-**A permissive run** needs all three: a self-hosted model of a permissive family (EuroLLM,
-MADLAD-400 or OPUS-MT), the source language named explicitly, and no AMČR or TEATER vocabulary.
+**A permissive run** needs both: a self-hosted model of a permissive family (EuroLLM,
+MADLAD-400 or OPUS-MT) and the source language named explicitly. The AMČR and TEATER
+vocabularies are CC0 and do not stand in its way.
 The full table is on [Reference → Licence](../tools/translator/reference.md#licence-is-computed-not-declared).
 
 In the [document record](../ecosystem/document-contract.md) the tool owns the `translations`
@@ -106,7 +107,7 @@ block and records the translated file as `derived_from.translated_xml`.
 ## Where it sits
 
 * **Translation branch** of the scanned-document pipeline — [Pipelines → W1](../pipelines.md#w1--scanned--ocr-document-pipeline).
-  It reads the per-page ALTO that alto-postprocess writes; its output ends that branch.
+  It reads the per-page ALTO that ocr-postprocess writes; its output ends that branch.
 * **Translation** step of the AMČR text workflow
   [`0xSpVP`](https://marketplace.sshopencloud.eu/workflow/0xSpVP), where it translates AMČR
   metadata records.
@@ -128,7 +129,7 @@ seven above. Related records: LINDAT Translation, UDPipe.
 | **Workflow inputs**      | a collection of documents — `alto` or `xml`; for metadata mode, the list of fields — `txt`; optionally the vocabulary — `csv`                                                                               |
 | **Parameters**           | target language; source language (or detection); backend; replace or append; optional XSD schema                                                                                                            |
 | **Workflow outputs**     | translated documents — `alto` or `xml`; translation logs — `tabular` (CSV); paradata — `json`; document record — `json`                                                                                     |
-| **Container**            | `ghcr.io/ufal/atrium-translator:<version>` — the command-line image                                                                                                                                         |
+| **Container**            | `ghcr.io/ufal/atrium-translator-api:<version>` — the service image (`POST /translate`); the XSD check (`--xsd`) is an option of the command-line image `ghcr.io/ufal/atrium-translator` only                |
 | **Compute**              | CPU                                                                                                                                                                                                         |
 | **Network**              | the LINDAT translation and UDPipe services, and the Hugging Face Hub for the language-identification model — or a self-hosted model with the source language given                                          |
 | **Credentials**          | an API key only for the language-model backend, passed through Galaxy's credentials mechanism                                                                                                               |
@@ -139,7 +140,7 @@ seven above. Related records: LINDAT Translation, UDPipe.
 ## Sources
 
 Read from `ufal/atrium-translator` at release **`v1.2.1-beta`** (branch **`master`**) and from
-this site's translator section. This table records **provenance**, not a
+this site's translator section; the licence table follows its `para_config.txt` at **`v1.3.2-beta`**. This table records **provenance**, not a
 build instruction.
 
 | Source                                                                                            | What was taken from it                                |

@@ -11,7 +11,7 @@ authored: true
 
 # Reading born-digital documents into the document record, without OCR
 
-*The digital-convert workflow.* Tool: [atrium-digital-convert](https://github.com/ufal/atrium-digital-convert).
+*The digital-convert workflow.* Tool: [atrium-digital-convert](https://ufal.github.io/atrium-digital-convert/).
 The tool was part of **llm-enrich** until 1 October 2026; it continues in a new repository under
 its own name, and the keyword extraction that llm-enrich also did moved to
 [keyword-extract](keyword-extract.md).
@@ -83,7 +83,8 @@ record is `digital-convert`, as before the move.
 **SSH Open Marketplace.** No record of its own yet.
 
 **Galaxy.** Inputs map to `pdf` and `docx`; the output to `json`. Galaxy's own `grobid` and
-`markitdown` tools convert born-digital documents but do not write the ATRIUM record.
+`markitdown` tools convert born-digital documents but do not write the ATRIUM record. The container is the
+service image `ghcr.io/ufal/atrium-digital-convert-api:<version>` (`POST /reformat`), released since `v1.1.1-beta`.
 
 ## Sources
 

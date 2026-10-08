@@ -96,7 +96,8 @@ text layer of a scanned document: the `pages`, `content`, `lines` and `tables` b
 for the text-bearing formats); outputs to `alto`, `txt`, `tabular` and `json`. The closest
 tools already in Galaxy are the OCR tools that produce ALTO — `tesseract`, and the Kraken tools
 in the Digital Humanities section — which would sit directly before this workflow; no Galaxy
-tool classifies OCR quality line by line.
+tool classifies OCR quality line by line. The container is the service image
+`ghcr.io/ufal/atrium-ocr-postprocess-api:<version>` (`POST /process`).
 
 ## Sources
 

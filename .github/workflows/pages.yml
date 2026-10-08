@@ -19,17 +19,16 @@
 # log reaches `Rendering: arub-p_contacts.md` and dies four files later. Nothing was
 # published only because it crashed, which is an accident, not a safeguard.
 #
-# `docs/_config.yml` now excludes those three plus docker_gha.md (whose one
+# A stopgap `docs/_config.yml` excluded those three plus docker_gha.md (whose one
 # `{{version}}` resolves to the empty string rather than raising, shipping a
-# silently wrong line) and `templates/` (vendored code, not documentation). The
-# legacy build is green and publishes nine reviewed files; `tests/test_docs_pages_exclude.py`
-# fails if anything new appears under docs/ that is neither excluded nor reviewed.
-# Both are stopgaps and should be deleted once the Pages source moves. See
+# silently wrong line) and `templates/` (vendored code, not documentation), with
+# `tests/test_docs_pages_exclude.py` failing on anything new under docs/. Both were
+# removed (f47bf54) once the Pages source moved to `gh-pages`, as planned. See
 # PAGES_SETUP.md.
 #
 # WHAT THIS WORKFLOW DOES INSTEAD. It builds the aggregate site with MkDocs Material
-# and publishes the RESULT to `gh-pages`, which is where the other five repositories
-# already publish from and what mkdocs.yml and PAGES_SETUP.md settled on. The branch
+# and publishes the RESULT to `gh-pages`, which is where the six tool repositories
+# publish from and what mkdocs.yml and PAGES_SETUP.md settled on. The branch
 # carries only built HTML, so nothing under docs/ can reach the site by accident.
 #
 # `actions/configure-pages` is deliberately NOT used. Its `findOrCreatePagesSite`

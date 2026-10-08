@@ -12,8 +12,8 @@ Give a coding agent — Claude Code, Codex, Antigravity — the ability to call 
 without teaching it the tool's code.
 
 !!! info "Scope"
-    All five tools have an `agent-skill` branch. The two described below are
-    page-classification's and the translator's; the other three follow the same pattern.
+    All six tools have an `agent-skill` branch. The two described below are
+    page-classification's and the translator's; the other four follow the same pattern.
 
 ## What a skill is here
 
@@ -186,7 +186,7 @@ Every ATRIUM service implements the same meta-contract, from the hub-canonical
 | `GET /health?deep=true` | 503 with a `detail` when a dependency is degraded, or while draining                                                                                                                                                                                                                |
 | `GET /ready`            | 503 `starting` until warm-up completes; 200 when ready to serve; 503 `draining` after SIGTERM — readiness                                                                                                                                                                           |
 
-The error codes are harmonised, so a client can treat all five services alike:
+The error codes are harmonised, so a client can treat all six services alike:
 
 | Code                  | Meaning                          | What a client does                                 |
 |-----------------------|----------------------------------|----------------------------------------------------|

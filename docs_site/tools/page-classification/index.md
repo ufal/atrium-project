@@ -15,7 +15,7 @@ role: index
 <a href="https://ufal.github.io/atrium-ocr-postprocess/">ocr-postprocess</a>
 <a href="../translator/">translator</a>
 <a href="https://ufal.github.io/atrium-nlp-enrich/">nlp-enrich</a>
-<a href="https://github.com/ufal/atrium-keyword-extract">keyword-extract</a>
+<a href="https://ufal.github.io/atrium-keyword-extract/">keyword-extract</a>
 </div>
 
 **Sorts a scanned page into one of 11 structural categories, so that a human — or a

@@ -4,7 +4,7 @@ _Rewritten 2026-09-21 for [issue #57](https://github.com/ufal/atrium-project/iss
 live state of the six repositories. The 2026-09-18 edition said `has_pages` was false on all six and
 that enablement "may already be automatic"; both were overtaken within a day._
 
-All six repositories publish from a **`gh-pages` branch, folder `/ (root)`**. Five of them already do.
+All seven repositories (the hub and the six tools) publish from a **`gh-pages` branch, folder `/ (root)`**. Five of the six tools did on 21 September; keyword-extract and digital-convert followed on 7 October.
 
 > **What publishes, and why, is decided in [`INDEX.md`](INDEX.md)** (round 3, 2026-09-21).
 > This file remains the mechanics and live-state record.
@@ -102,10 +102,10 @@ Jekyll runs Liquid over **all** markdown — inside fenced code blocks and inlin
 is not obvious — so the GitHub Actions expression quoted at `docs/docker_gha_roadmap.md:79` is read as
 a template variable and the parse dies. There are **nine such occurrences across two files**:
 
-| File                        | Lines                             |
-|-----------------------------|-----------------------------------|
-| `docs/docker_gha.md`        | 213                               |
-| `docs/docker_gha_roadmap.md`| 79, 80, 92, 99, 190, 252, 414, 437 |
+| File                         | Lines                              |
+|------------------------------|------------------------------------|
+| `docs/docker_gha.md`         | 213                                |
+| `docs/docker_gha_roadmap.md` | 79, 80, 92, 99, 190, 252, 414, 437 |
 
 Line 79 is the only hard failure; the other eight would render as empty strings, silently corrupting
 the two documents that explain the ecosystem's Docker and CI story.
@@ -225,10 +225,10 @@ GitHub Pages forces that plugin on.
 
 **And `/docs` is not the designed source anyway.** Pages' branch source offers exactly two folder
 choices, `/ (root)` and `/docs`. `/docs` already holds the hub's 13 canonical markdown files plus
-`docs/templates/` — and `docs/templates/shared/` is enforced byte-identical across all five tool
-repositories by `para-drift.reusable.yml`. Moving that tree would touch **363 references across the
-six repos**, with the paths baked into the docstrings of the vendored files themselves, requiring all
-17 canonical files to be re-vendored inside one atomic window or CI goes red in five repositories at
+`docs/templates/` — and `docs/templates/shared/` is enforced byte-identical across all six tool
+repositories by `para-drift.reusable.yml` (five when this was measured on 21 September). Moving that
+tree would touch **363 references across the six repos that then existed**, with the paths baked into the docstrings of the vendored files themselves, requiring all
+17 canonical files to be re-vendored inside one atomic window or CI goes red in every tool repository at
 once.
 
 A `gh-pages` branch changes **zero** references.
@@ -262,7 +262,7 @@ up within 24 h. Never commit to it by hand.
 
 ```bash
 pip install -r tools/docs/requirements.txt
-mkdocs build --strict          # docs_site/ -> site/, 38 pages
+mkdocs build --strict          # docs_site/ -> site/, 30 pages
 ```
 
 `site/` is gitignored. `mkdocs.yml` sets `strict: true` **and** `validation.links.anchors: warn` —
@@ -281,20 +281,20 @@ the switch is ever flipped.
 The three repositories created on 1 October (atrium-project#72) are not covered by the tables above,
 which describe the state of 21 September.
 
-| Repository               | Replaces                                          | Landing page to set up                                                    |
+| Repository               | Replaces                                          | Landing page                                                              |
 |--------------------------|---------------------------------------------------|---------------------------------------------------------------------------|
-| `atrium-ocr-postprocess` | `atrium-alto-postprocess`                         | `gh-pages` / `/ (root)`; GitHub's homepage field still names the old site |
-| `atrium-keyword-extract` | the keyword part of `atrium-nlp-enrich`           | Pages is off; the homepage field names the nlp-enrich site                |
-| `atrium-digital-convert` | the born-digital converter of `atrium-llm-enrich` | Pages is off; the homepage field names the llm-enrich site                |
+| `atrium-ocr-postprocess` | `atrium-alto-postprocess`                         | `gh-pages` / `/ (root)`; homepage field set to the new site on 7 October  |
+| `atrium-keyword-extract` | the keyword part of `atrium-nlp-enrich`           | Pages on and homepage field set on 7 October                              |
+| `atrium-digital-convert` | the born-digital converter of `atrium-llm-enrich` | Pages on and homepage field set on 7 October                              |
 
 GitHub does not redirect Pages when a repository is replaced, so the old addresses keep serving the old
 cards until the old repositories are archived, and `_generators/make_stubs.py` writes the cards of the
-new three from `_generators/repos.py`. The hub's site links the landing page of `ocr-postprocess` only;
-the other two link their source until their Pages is on.
+new three from `_generators/repos.py`. The hub's site links the landing pages of all six tools.
 
 **2026-10-07:** the `gh-pages` branches of the new three held copies of the predecessors' cards
 (keyword-extract's was nlp-enrich's), and every card's pipeline strip still linked
 `atrium-alto-postprocess` and `atrium-llm-enrich`. All six cards were regenerated from
 `_generators/repos.py` (`GENERATED = "2026-10-07"`); `assets/style.css` and `.nojekyll` are unchanged.
-Still for the maintainer: Pages on for keyword-extract and digital-convert, and the three homepage
-fields above.
+Pages was switched on for keyword-extract and digital-convert the same day, and the Website fields of all
+three repositories were pointed at the new sites. What is left is archiving `atrium-alto-postprocess` and
+`atrium-llm-enrich` (an organisation admin); until then their old sites keep serving the old cards.

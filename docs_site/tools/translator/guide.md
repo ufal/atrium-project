@@ -190,7 +190,9 @@ python load_vocab.py --out data_samples/vocabulary.csv      # rebuild it from AM
 vocabulary holds several thousand Czech–English term pairs, each traceable to the
 thesaurus concept it came from.
 
-Loading it changes the run's resolved licence: AMCR and TEATER data are both CC BY-NC 4.0.
+Loading it does not change the run's resolved licence: AMCR and TEATER data are both CC0
+(declared by their rights holder, atrium-project#6; paradata written before 28 September 2026
+records them as CC BY-NC 4.0).
 
 ## 7 · Use it from a coding agent
 

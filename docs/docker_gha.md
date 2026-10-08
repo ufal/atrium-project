@@ -4,7 +4,7 @@
 > **Scope:** `atrium-translator`, `atrium-nlp-enrich`, `atrium-page-classification`, `atrium-ocr-postprocess`,
 > `atrium-keyword-extract`, `atrium-digital-convert`, and `atrium-project` (templates). The first
 > three of those replaced `atrium-alto-postprocess` and `atrium-llm-enrich` on 2026-10-01
-> (atrium-project#72); the old repositories are archived and no longer part of the federation. Where
+> (atrium-project#72); the old repositories are superseded and no longer part of the federation. Where
 > this document describes what a workflow did in one of them, it names the repository as it was then.
 >
 > This document is the **current-state reference** for the ATRIUM GitHub Actions automation: what is

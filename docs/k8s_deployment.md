@@ -12,7 +12,7 @@
 > image per stage (the map below, added for issue #72) — and `atrium-digital-convert`, whose
 > service (`api-digital`, `POST /reformat` and `POST /describe`) is built since its v1.1.0-beta and
 > follows the same contract. The repositories `atrium-alto-postprocess` and
-> `atrium-llm-enrich` that preceded two of these are archived (2026-10-01).
+> `atrium-llm-enrich` that preceded two of these are superseded since 2026-10-01 and kept as history.
 >
 > This document is the deployment-side half of issue #55 (`HEALTHCHECK` + `SIGTERM`
 > handling). The code-side half — `ServiceState`, `/ready`, `serve_lifecycle`,
@@ -316,7 +316,7 @@ shows the shape; creating the `Secret` is your step.
 ## What to change per repo
 
 Replace `<tool>` and `<version>` in the manifest with the real image
-(`ghcr.io/ufal/atrium-nlp-enrich:v1.2.0-api`, etc. — see `docker_gha.md` §3.1–3.2 for the
+(`ghcr.io/ufal/atrium-nlp-enrich-api:v1.2.0`, etc. — see `docker_gha.md` §3.1–3.2 for the
 naming/tag-channel conventions), and size `resources.limits.memory` against the model(s) that
 repo actually loads. Everything else in the manifest is identical across all five services —
 that uniformity is the point: one reference contract, applied five times, rather than five

@@ -12,7 +12,7 @@ The family contribution standard — branch model, commit convention, pull-reque
 releases — read once, and then each repository's own conventions.
 
 !!! info "Scope"
-    The standard applies to all five tool repositories. The per-repository conventions below
+    The standard applies to all six tool repositories. The per-repository conventions below
     are page-classification's and the translator's.
 
 !!! note "A template, filled in per repository"
