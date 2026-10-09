@@ -45,6 +45,15 @@ converter recovers from a DOCX or a PDF with a layout (llm-enrich#18): a heading
 page furniture or a footnote in ``lines[].style``, and tables whose cells join back
 into ``lines[]``. See `assert_layout()`.
 
+The two read-outs of atrium-project#73 are checked on both branches. With
+``--keywords-stage-ran true``, keyword-extract's statistical kind ran, so the record must carry
+its ``keywords`` block: stamped by keyword-extract, every keyword with its method, score and
+rank, one method per block, ranks 1..n, pages that are pages of the record, and no controlled
+field in it (`_assert_keywords()`). A ``quality_summary`` is checked whenever the record carries
+one (``--quality-summary true`` requires it): stamped by ocr-postprocess, no band anywhere in it,
+and equal to what ``atrium_document.quality_summary()`` computes from the stage record that wrote
+it, unchanged since (`_assert_quality_summary()`).
+
 Usage:
     python tools/e2e/e2e_assert.py work/doc_json/5_llm.json \\
         --llm-stage-ran true \\
@@ -71,6 +80,7 @@ from atrium_document import (  # noqa: E402  (needs the path above)
     BLOCK_OWNERS,
     SEED_SOURCE_REQUIRED,
     canonical_program,
+    quality_summary,
     resolve_originator,
     validate_document,
     validate_seed,
@@ -458,6 +468,128 @@ def _assert_enrichment(doc, llm_stage_ran):
         )
 
 
+#: Fields of a controlled `enrichment` item; none may appear on a statistical keyword.
+_CONTROLLED_FIELDS = ("teater_category", "teater_category_ids", "extracted_keywords_cs", "extracted_keywords_en")
+
+
+def _assert_keywords(doc, keywords_stage_ran):
+    """keyword-extract's `keywords` block (atrium-project#73), when its statistical kind ran.
+
+    Asserted: the block, its stamp, the four fields of every keyword, ranks 1..n in each list, one
+    method per block, page labels that are the record's, and the separation from `enrichment`.
+    Reported: an empty document list (what a method finds in a fixture is not this gate's question).
+    """
+    stamped = (doc.get("assembled") or {}).get("blocks") or {}
+    if keywords_stage_ran == "auto":
+        keywords_stage_ran = "keywords" in stamped
+        print(
+            f"ℹ️  --keywords-stage-ran not given; inferring the statistical kind "
+            f"{'ran' if keywords_stage_ran else 'did not run'} from assembled.blocks."
+        )
+    if not keywords_stage_ran:
+        print("ℹ️  keyword-extract's statistical kind did not run — 'keywords' block not required.")
+        return
+    block = doc.get("keywords")
+    assert isinstance(block, dict), (
+        "❌ 'keywords' block missing: keyword-extract's statistical kind ran on this record and did not "
+        "write it (an image older than v1.2.0-beta?), or a later stage dropped it."
+    )
+    program = (stamped.get("keywords") or {}).get("program")
+    assert canonical_program(program) == "keyword-extract", (
+        f"❌ 'keywords' is stamped by {program!r}, not keyword-extract (BLOCK_OWNERS)"
+    )
+    labels = {str(row.get("page")) for key in ("pages", "lines") for row in doc.get(key) or [] if isinstance(row, dict)}
+    lists = [("document", block.get("document") or [])]
+    for group in block.get("pages") or []:
+        page = str(group.get("page"))
+        assert page in labels, f"❌ keywords: page {page!r} is not a page of the record ({sorted(labels)})"
+        lists.append((f"page {page}", group.get("keywords") or []))
+    methods = set()
+    for where, items in lists:
+        for rank, item in enumerate(items, start=1):
+            missing = [f for f in ("keyword", "method", "score", "rank") if f not in item]
+            assert not missing, f"❌ keywords, {where}: {item} has no {missing}"
+            assert item["rank"] == rank, (
+                f"❌ keywords, {where}: the ranks are {[i.get('rank') for i in items]}, not 1..{len(items)} in order"
+            )
+            mixed = [f for f in _CONTROLLED_FIELDS if f in item]
+            assert not mixed, (
+                f"❌ keywords, {where}: {item['keyword']!r} carries {mixed}: the controlled kind belongs in "
+                "'enrichment', and the two kinds are never one list"
+            )
+            methods.add(item["method"])
+    assert len(methods) <= 1, f"❌ keywords: one run writes one method's lists, this block mixes {sorted(methods)}"
+    for item in (doc.get("enrichment") or {}).get("items") or []:
+        assert not {"method", "rank"} & set(item), f"❌ enrichment item {item} carries a statistical keyword's fields"
+    method = next(iter(methods), None)
+    if block.get("document"):
+        print(
+            f"✅ keywords: {len(block['document'])} document keyword(s) and {len(block.get('pages') or [])} "
+            f"page list(s) by {method!r}, stamped keyword-extract"
+        )
+    else:
+        print("⚠️  keywords: block stamped by keyword-extract, but the document list is EMPTY")
+
+
+def _keys(node):
+    """Every mapping key at any depth of `node`."""
+    if isinstance(node, dict):
+        for key, value in node.items():
+            yield key
+            yield from _keys(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from _keys(value)
+
+
+def _assert_quality_summary(doc, stage_paths, quality_summary_expected):
+    """ocr-postprocess's `quality_summary` (atrium-project#73 R6), wherever a record carries one.
+
+    The block must be what `quality_summary()` computes from the record that wrote it — found among
+    `stage_paths` by its stamp — and the final record must carry it unchanged. Without that stage
+    record the final record is used, and a difference is reported, not asserted: a later stage may
+    legitimately add `lines[]` rows (a field contribution) after the summary was taken.
+    """
+    block = doc.get("quality_summary")
+    if block is None:
+        assert quality_summary_expected is not True, (
+            "❌ 'quality_summary' missing: ocr-postprocess (v1.10.0-beta and later) writes it whenever it "
+            "writes or scores pages and lines"
+        )
+        print("ℹ️  no 'quality_summary' in this record (no ocr-postprocess v1.10.0-beta+ wrote or scored it)")
+        return
+    stamp = ((doc.get("assembled") or {}).get("blocks") or {}).get("quality_summary") or {}
+    assert canonical_program(stamp.get("program")) == "ocr-postprocess", (
+        f"❌ 'quality_summary' is stamped by {stamp.get('program')!r}, not ocr-postprocess (BLOCK_OWNERS)"
+    )
+    bands = sorted({k for k in _keys(block) if "band" in str(k).lower()})
+    assert not bands, f"❌ quality_summary carries {bands}: it is numbers, the bands are computed at index time"
+    writer = None
+    for path in stage_paths:
+        record = _load(path)
+        if ((record.get("assembled") or {}).get("blocks") or {}).get("quality_summary") == stamp:
+            writer = (Path(path).name, record)
+            break
+    if writer is not None:
+        name, record = writer
+        expected = quality_summary(record)
+        assert record.get("quality_summary") == expected, (
+            f"❌ quality_summary in {name} is not quality_summary() of that record:\n"
+            f"   written:  {record.get('quality_summary')}\n   computed: {expected}"
+        )
+        assert block == record.get("quality_summary"), f"❌ quality_summary changed after {name} wrote it"
+        print(f"✅ quality_summary: {name}'s read-out of its pages and lines, unchanged since: {block}")
+        return
+    expected = quality_summary(doc)
+    if block == expected:
+        print(f"✅ quality_summary: this record's read-out of its pages and lines: {block}")
+    else:
+        print(
+            "⚠️  quality_summary differs from quality_summary() of this record, and no --stages record "
+            f"carries its stamp to check it against: {block} vs {expected}"
+        )
+
+
 def assert_digital_contract(doc, json_path):
     """The born-digital branch: `digital-convert -> llm-enrich`.
 
@@ -605,6 +737,8 @@ def assert_document_contract(
     teitok_dir=None,
     expect_layout=False,
     seed=None,
+    keywords_stage_ran=False,
+    quality_summary_expected="auto",
 ):
     doc = _load(json_path)
 
@@ -676,6 +810,8 @@ def assert_document_contract(
             assert_layout(doc)
 
         _assert_enrichment(doc, llm_stage_ran)
+        _assert_keywords(doc, keywords_stage_ran)
+        _assert_quality_summary(doc, list(stage_paths), quality_summary_expected)
         print(f"✅ e2e_assert.py: born-digital contract verified for {json_path}")
         return
 
@@ -732,6 +868,10 @@ def assert_document_contract(
 
     # 4. LLM Enrich: API Util Regeneration — conditional on the llm stage having run.
     _assert_enrichment(doc, llm_stage_ran)
+
+    # 4b. atrium-project#73: keyword-extract's statistical keywords, ocr-postprocess's summary.
+    _assert_keywords(doc, keywords_stage_ran)
+    _assert_quality_summary(doc, list(stage_paths), quality_summary_expected)
 
     # 5. NLP Enrich: the TEITOK file the record points into (only when asked for).
     if teitok_dir:
@@ -801,6 +941,20 @@ def main(argv=None):
         help="the AMČR seed the chain started from (tools/e2e/make_seed.py): every stage must keep its "
         "doc_id, source.sha512, file name and media type, and only the reading tool may add source.origin.",
     )
+    parser.add_argument(
+        "--keywords-stage-ran",
+        type=_tri_state,
+        default=False,
+        help="true when keyword-extract's statistical kind ran on this record: its 'keywords' block "
+        "(atrium-project#73) is then required and checked; auto = infer from assembled.blocks.",
+    )
+    parser.add_argument(
+        "--quality-summary",
+        type=_tri_state,
+        default="auto",
+        help="true = ocr-postprocess's 'quality_summary' is required; auto (default) = checked when "
+        "present; false = not required (still checked when present).",
+    )
     args = parser.parse_args(argv)
 
     assert_document_contract(
@@ -811,6 +965,8 @@ def main(argv=None):
         teitok_dir=args.teitok_dir,
         expect_layout=args.expect_layout,
         seed=args.seed,
+        keywords_stage_ran=args.keywords_stage_ran,
+        quality_summary_expected=args.quality_summary,
     )
     return 0
 

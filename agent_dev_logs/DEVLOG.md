@@ -2176,3 +2176,44 @@ releases; the gate's diff review covers *"only the files that go into the image 
   #68, #69, #70 and #71 belong to closed issues and can be deleted.
 
   Files delivered in chat.
+
+## 2026-10-09 — #73's two record blocks, the reason `upstream_unavailable`, the keyword record in the E2E
+* **Why:** #73 R5 and R6 in one additive schema round, as proposed on #67 (09-27); the registered reason motyc asked
+  for on atrium-nlp-enrich#41 (10-08).
+* **Shared modules (`docs/templates/shared/`):**
+  * `atrium_document.schema.json`: `keywords` (`{document, pages[{page, keywords}]}`, each keyword
+    `$defs/statistical_keyword` = `keyword`, `method`, `score`, `rank`, all required), `quality_summary`
+    (`pages{total, scored, mean, median, min, max}`, `lines{total, by_categ}`), and their stamp/payload clauses
+    `/allOf/12` and `/allOf/13`. `schema_version` stays `1.0`.
+  * `atrium_document.py`: `BLOCK_OWNERS` gives `keywords` to keyword-extract and `quality_summary` to ocr-postprocess;
+    `to_dict()` orders them; `quality_summary(record)` derives the block (sorted keys, four decimals, booleans not
+    counted as scores, the four statistics left out when no page is scored).
+  * `atrium_service.py`: `upstream_unavailable`, allowed with 502 only.
+  * `test_schema_freeze.py`: five `POST_FREEZE_CHANGES` entries; `test_document_originators.py`: 8 tests (owners,
+    refusals, invalid shapes, the summary on a born-digital record, determinism).
+  * Re-vendored into the six repositories with `scripts/revendor_shared.sh`; their `service/openapi.json` regenerated.
+* **Hub tests:** `tests/test_document_required.py` (4 valid shapes; the two new clauses are checked against the current
+  schema only, since the frozen one accepts a stamp without its block), `tests/test_atrium_service.py`.
+* **E2E:** `tools/e2e/e2e_assert.py`:
+  * `--keywords-stage-ran`: the block stamped keyword-extract, the four fields of every keyword, ranks 1..n per list,
+    one method per block, page labels of the record, no controlled fields mixed in;
+  * `--quality-summary` (default `auto`): when present, stamped ocr-postprocess and equal to `quality_summary()` of
+    the record of the stage that wrote it; no `band` key;
+  * 13 tests in `tests/test_e2e_assert.py`;
+  * `e2e-pipeline-smoke.yml`: the statistical step reads the image's `/info` version and, from `1.2.0-beta`, keeps
+    its record as `5_kw_stat.json` and asserts it; the controlled step reads that record; the final assert passes
+    `--keywords-stage-ran auto` over all stage records. `workflow_lint.py` OK; actionlint: no new findings.
+* **Docs:** `docs/document_schema.md` (ownership, the two read-outs, five register rows, "Changelog — 2026-10-09"),
+  `docs/agent_skill_strategy.md` §4.4 (the 502 row, the reason table), `docs_site/` (document-contract,
+  repository-map, the keyword-extract and ocr-postprocess workflow pages, pipelines, the translator's reference and
+  guide for `unsupported_lang`).
+* **Checks:** suite 720 passed, 9 skipped (`docs/templates/shared` alone: 259 passed, 5 skipped); ruff check and
+  format clean; `revendor_shared.sh --check`: 145 in parity, 0 drifted; `workflow_lint.py` OK; `mkdocs build --strict`
+  green.
+* **Dev logs:** the pairs of #73, #72, #51 and #67 refreshed.
+* **Not done:** `fixtures/atrium_document.example.json` keeps its blocks (it would change the RO-Crate entity count
+  that `docs/rocrate_export.md` and the E2E tests quote); the new shapes are in `VALID_SHAPES`. SHA pins wait for
+  `v1` to move. `atrium_vocab.py`'s theme maps for `heslar:jazyk` and TEATER branch `1` still predate
+  keyword-extract's 10-08 layout; recorded on #51 for the next shared-module round.
+
+  Files delivered in chat.

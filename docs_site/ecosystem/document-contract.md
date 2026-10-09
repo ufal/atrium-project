@@ -24,15 +24,15 @@ One JSON file per document, named `<doc_id>.document.json`, schema version **`1.
 The module that writes it, `atrium_document.py`, is vendored byte-identically into every tool, so
 every tool writes the record the same way; what differs is which calls each tool makes.
 
-| Part                                                                                                        | What it holds                                                                                                   |
-|-------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
-| `schema_version`, `record_type`, `doc_id`                                                                   | identity — `record_type` is `atrium-document`, or `atrium-document-merged` for a merge of parallel branches     |
-| `source`                                                                                                    | the original input: its identifier, checksum and how it was acquired (`source.origin`)                          |
-| `provenance`                                                                                                | the resolved licence of the whole record, and `contributors[]` — every run that wrote to it                     |
-| `assembled`                                                                                                 | one **stamp** per block: who wrote it last, in which run                                                        |
-| `page_categories`, `pages`, `content`, `lines`, `tables`, `entities`, `translations`, `enrichment`, `forms` | the tool blocks — one authorised writer each, see [Repository map](repository-map.md#who-may-write-which-block) |
-| `derived_from`                                                                                              | references to **persistent** outputs a stage produced                                                           |
-| `regenerable`                                                                                               | **recipes** for disposable outputs, never their paths                                                           |
+| Part                                                                                                                                       | What it holds                                                                                                   |
+|--------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
+| `schema_version`, `record_type`, `doc_id`                                                                                                  | identity — `record_type` is `atrium-document`, or `atrium-document-merged` for a merge of parallel branches     |
+| `source`                                                                                                                                   | the original input: its identifier, checksum and how it was acquired (`source.origin`)                          |
+| `provenance`                                                                                                                               | the resolved licence of the whole record, and `contributors[]` — every run that wrote to it                     |
+| `assembled`                                                                                                                                | one **stamp** per block: who wrote it last, in which run                                                        |
+| `page_categories`, `pages`, `content`, `lines`, `tables`, `quality_summary`, `entities`, `translations`, `enrichment`, `keywords`, `forms` | the tool blocks — one authorised writer each, see [Repository map](repository-map.md#who-may-write-which-block) |
+| `derived_from`                                                                                                                             | references to **persistent** outputs a stage produced                                                           |
+| `regenerable`                                                                                                                              | **recipes** for disposable outputs, never their paths                                                           |
 
 Five keys are required: `schema_version`, `record_type`, `doc_id`, `provenance`, `assembled`.
 Six are reserved — no tool can `set_block()` them: those five and `source`. The schema adds one

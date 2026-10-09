@@ -357,6 +357,65 @@ VALID_SHAPES = {
         ],
         "content": {"text": "Nálezová zpráva", "reading_order": "layout"},
     },
+    # keyword-extract/service/api.py::_run -> llm_client_shared.write_document_record(keywords=...)
+    # (atrium-project#73): the statistical kind on the record nlp-enrich wrote, document and pages.
+    "keyword-extract statistical keywords (keywords block)": {
+        **_FLOOR,
+        "source": {"sha256": "a" * 64, "filename": "CTX000000001.alto.xml", "origin": "ABBYY-ALTO"},
+        "assembled": _stamp("lines", "keywords", run_uuid=_RUN_UUID),
+        "lines": [{"page": "1", "line": 0, "text": "Hradiště u Horní Mezi", "categ": "Clear"}],
+        "keywords": {
+            "document": [
+                {"keyword": "hradiště", "method": "yake", "score": 1.0, "rank": 1},
+                {"keyword": "horní mez", "method": "yake", "score": 0.42, "rank": 2},
+            ],
+            "pages": [{"page": "1", "keywords": [{"keyword": "hradiště", "method": "yake", "score": 1.0, "rank": 1}]}],
+        },
+    },
+    # The same call with kind=both: `keywords` and `enrichment` side by side, never one list.
+    "keyword-extract both kinds (keywords beside enrichment)": {
+        **_FLOOR,
+        "source": {"sha256": "a" * 64, "filename": "CTX000000001.alto.xml", "origin": "ABBYY-ALTO"},
+        "assembled": _stamp("keywords", "enrichment", run_uuid=_RUN_UUID),
+        "keywords": {"document": [{"keyword": "sonda", "method": "keybert", "score": 0.64, "rank": 1}], "pages": []},
+        "enrichment": {
+            "items": [
+                {
+                    "page": "1",
+                    "line": 0,
+                    "extracted_keywords_cs": ["hradiště"],
+                    "extracted_keywords_en": ["hillfort"],
+                    "teater_category": "hradiště",
+                    "confidence_score": 0.9,
+                    "citation": "[Source: CTX000000001, Page 1]",
+                }
+            ]
+        },
+    },
+    # ocr-postprocess/document_hook.py::write_document_block (and ::write_scores) after its pages and
+    # lines (atrium-project#73 R6): the summary is recomputed from them on every such write.
+    "ocr-postprocess quality summary (quality_summary block)": {
+        **_FLOOR,
+        "source": {"sha256": "a" * 64, "filename": "CTX000000001.alto.xml", "origin": "ABBYY-ALTO"},
+        "assembled": _stamp("pages", "lines", "quality_summary", run_uuid=_RUN_UUID),
+        "pages": [{"page": "1", "quality_score": 0.75, "quality_band": "Clear"}],
+        "lines": [
+            {"page": "1", "line": 0, "text": "Hradiště u Horní Mezi", "categ": "Clear", "quality_score": 0.9},
+            {"page": "1", "line": 1, "text": "||| ..", "categ": "Trash", "quality_score": 0.1},
+        ],
+        "quality_summary": {
+            "pages": {"total": 1, "scored": 1, "mean": 0.75, "median": 0.75, "min": 0.75, "max": 0.75},
+            "lines": {"total": 2, "by_categ": {"Clear": 1, "Trash": 1}},
+        },
+    },
+    # The same writer on a born-digital record no page of which was scored: no statistics.
+    "ocr-postprocess quality summary, nothing scored": {
+        **_FLOOR,
+        "source": {"sha256": "d" * 64, "filename": "x.pdf", "origin": "digital-born-pdf"},
+        "assembled": _stamp("pages", "quality_summary", run_uuid=_RUN_UUID),
+        "pages": [{"page": "i", "page_index": 1, "text_layer": "blank"}],
+        "quality_summary": {"pages": {"total": 1, "scored": 0}, "lines": {"total": 0, "by_categ": {}}},
+    },
     # atrium_document.merge_document_records() -- record_type differs, and `blocks` may legitimately
     # be {} when every input was a source-only record. That is why minProperties lives inside the
     # anyOf branch rather than on assembled.blocks itself.
@@ -441,6 +500,43 @@ def test_text_layer_is_a_closed_enum():
         assert not _is_valid(shape), f"text_layer {wrong!r} validates -- the enum has been widened or dropped"
     del shape["pages"][1]["text_layer"]
     assert _is_valid(shape)
+
+
+def test_a_statistical_keyword_carries_its_method_score_and_rank():
+    """Every statistical keyword says how it was found (atrium-project#73): a score is comparable only
+    within its method, and `rank` is what orders a list across methods."""
+    pytest.importorskip("jsonschema")
+    shape = json.loads(json.dumps(VALID_SHAPES["keyword-extract statistical keywords (keywords block)"]))
+    assert _is_valid(shape)
+    for field in ("keyword", "method", "score", "rank"):
+        broken = json.loads(json.dumps(shape))
+        del broken["keywords"]["pages"][0]["keywords"][0][field]
+        assert not _is_valid(broken), f"a page keyword without {field!r} validates"
+    for field, wrong in (("rank", 0), ("rank", 1.5), ("keyword", ""), ("score", "high")):
+        broken = json.loads(json.dumps(shape))
+        broken["keywords"]["document"][0][field] = wrong
+        assert not _is_valid(broken), f"keyword {field}={wrong!r} validates"
+    del shape["keywords"]["pages"]
+    assert not _is_valid(shape), "a keywords block without `pages` validates"
+
+
+def test_the_blocks_of_73_have_stamp_payload_clauses():
+    """`/allOf/12` and `/allOf/13` (2026-10-09): a stamped `keywords` or `quality_summary` must be
+    present. Not in INVALID_SHAPES: the frozen schema predates both clauses, and the floor refuses
+    INVALID_SHAPES under the freeze as well."""
+    pytest.importorskip("jsonschema")
+    for block in ("keywords", "quality_summary"):
+        assert not _is_valid({**_FLOOR, "assembled": _stamp(block)}), f"a {block} stamp without its block validates"
+
+
+def test_the_quality_summary_is_numbers():
+    """`quality_summary` counts and averages; a statistic outside [0, 1] or a count below 0 is refused."""
+    pytest.importorskip("jsonschema")
+    shape = json.loads(json.dumps(VALID_SHAPES["ocr-postprocess quality summary (quality_summary block)"]))
+    for path, wrong in ((("pages", "mean"), 1.5), (("pages", "total"), -1), (("lines", "by_categ"), {"Clear": -2})):
+        broken = json.loads(json.dumps(shape))
+        broken["quality_summary"][path[0]][path[1]] = wrong
+        assert not _is_valid(broken), f"quality_summary.{'.'.join(path)}={wrong!r} validates"
 
 
 def test_the_floor_is_what_to_dict_guarantees():

@@ -263,9 +263,11 @@ page-classification stage renders one from the ALTO at run time, keeping the who
 test anchored to a single fixture.
 
 **Stages.** Four `docker run` invocations, each mounting one shared workspace and threading
-the record forward: `1_pc.json` → `2_alto.json` → `3_translate.json` → `4_nlp.json`, then a
-smoke of keyword-extract's service on that record, which is not a numbered stage until the record
-carries a `keywords` block. Triggered on push to `main`, on dispatch, and on a cron every third day.
+the record forward: `1_pc.json` → `2_alto.json` → `3_translate.json` → `4_nlp.json`, then
+keyword-extract's service on that record: its statistical kind writes the `keywords` block
+(`5_kw_stat.json`, from keyword-extract v1.2.0-beta), and its controlled kind, when the OpenRouter
+secret is present, adds `enrichment` (`5_kw.json`). Triggered on push to `main`, on dispatch, and on
+a cron every third day.
 
 **The `DOC_LINE_CATEG` bridge.** The E2E config sets `SKIP_CLASSIFY = true` for
 ocr-postprocess, and the hub commits that stage's real output as a fixture instead —

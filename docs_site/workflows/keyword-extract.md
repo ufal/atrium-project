@@ -36,16 +36,16 @@ the output, and every keyword says which method produced it.
 
 ## At a glance
 
-|                    |                                                                                                                                                                                                      |
-|--------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **In**             | the ATRIUM document record, after nlp-enrich; or plain text                                                                                                                                          |
-| **Out**            | keywords with their method, score and rank, per document and per page; a paradata log (JSON). The record's `keywords` block and, for the controlled kind, `enrichment` follow in the record contract |
-| **Runs as**        | a command-line tool; a container image; an HTTP service image (`POST /extract_keywords`)                                                                                                             |
-| **Compute**        | CPU for YAKE and the legacy method; a GPU is used by KeyBERT when there is one; the controlled kind calls a language-model server and carries no weights                                             |
-| **Network**        | the Hugging Face Hub for the KeyBERT model on first use; for the controlled kind, the language-model server and the AIS CR services that the vocabulary is built from                                |
-| **Code licence**   | MIT                                                                                                                                                                                                  |
-| **Output licence** | declared per run from the components used: KeyBERT and the legacy method add no restriction on their own; YAKE is AGPL-3.0; the AMČR and TEATER vocabularies are CC0                                 |
-| **Record**         | none of its own yet; the earlier llm-enrich record is to be re-pointed to it                                                                                                                         |
+|                    |                                                                                                                                                                                                                                      |
+|--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **In**             | the ATRIUM document record, after nlp-enrich; or plain text                                                                                                                                                                          |
+| **Out**            | keywords with their method, score and rank, per document and per page; a paradata log (JSON). With a record sent: the record with its `keywords` block (statistical kind) and its `enrichment` block (controlled kind), side by side |
+| **Runs as**        | a command-line tool; a container image; an HTTP service image (`POST /extract_keywords`)                                                                                                                                             |
+| **Compute**        | CPU for YAKE and the legacy method; a GPU is used by KeyBERT when there is one; the controlled kind calls a language-model server and carries no weights                                                                             |
+| **Network**        | the Hugging Face Hub for the KeyBERT model on first use; for the controlled kind, the language-model server and the AIS CR services that the vocabulary is built from                                                                |
+| **Code licence**   | MIT                                                                                                                                                                                                                                  |
+| **Output licence** | declared per run from the components used: KeyBERT and the legacy method add no restriction on their own; YAKE is AGPL-3.0; the AMČR and TEATER vocabularies are CC0                                                                 |
+| **Record**         | none of its own yet; the earlier llm-enrich record is to be re-pointed to it                                                                                                                                                         |
 
 ## Steps
 
@@ -71,9 +71,11 @@ is declared accordingly. The vocabularies are CC0. The terms of a language model
 apply to the controlled kind on top.
 
 In the [document record](../ecosystem/document-contract.md) the tool is the successor of
-llm-enrich as a writer: it writes the `enrichment` and `forms` blocks and `entities[].pid`, and it is to own the new
-`keywords` block (atrium-project#73), which the record contract does not carry yet. Records already
-written keep the program id `llm-enrich`; the contract accepts both names for the one writer.
+llm-enrich as a writer: it writes the `enrichment` and `forms` blocks and `entities[].pid`, and,
+since v1.2.0-beta, the `keywords` block (atrium-project#73): the statistical keywords of the
+document and of each page, every one with its method, score and rank. The two kinds stay in their
+own blocks and never share a list. Records already written keep the program id `llm-enrich`; the
+contract accepts both names for the one writer.
 
 ## Where it sits
 

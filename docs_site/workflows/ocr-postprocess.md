@@ -73,7 +73,10 @@ restricted than that; the layout-aware reading-order model (LayoutLMv3-based) ra
 that uses it to CC BY-NC-SA 4.0.
 
 In the [document record](../ecosystem/document-contract.md) the tool originates the positional
-text layer of a scanned document: the `pages`, `content`, `lines` and `tables` blocks.
+text layer of a scanned document: the `pages`, `content`, `lines` and `tables` blocks. As the
+owner of the quality model it also writes `quality_summary` on every origin (atrium-project#73,
+v1.10.0-beta): page-score statistics and line counts per category, recomputed from the record
+whenever it writes or scores pages and lines. It is numbers only; the bands are the consumer's.
 
 ## Where it sits
 

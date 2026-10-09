@@ -439,16 +439,18 @@ jobs:
       # is exercised: the production image, run as built (no entrypoint override), is handed the
       # record Stage 4 wrote and must answer with keywords carrying a method and a score.
       #
-      # The statistical kind is not a numbered "Stage": its keywords block in the record is
-      # atrium-project#73, so this step reads the response only. The controlled (LLM) kind writes
-      # `enrichment`, so it is a stage: the next step, whose record is `5_kw.json`. YAKE is
+      # Since keyword-extract v1.2.0-beta the statistical kind writes the record's `keywords`
+      # block (atrium-project#73), so the record it returns is `5_kw_stat.json`, the controlled
+      # step's input. An older image answers without the record: a warning, decided by the
+      # image's own /info version, so a newer image that drops the record fails. YAKE is
       # requested here because KeyBERT would pull a sentence-transformers model from the Hub on
-      # every run (the 429 documented above).
+      # every run (the 429 documented above): an explicit test choice, not the service default.
       #
       # The image is published from keyword-extract's first release (`latest`) or its first
       # `test` push. Until then a missing image is a warning, and an error on the scheduled run,
       # which is what is there to notice a stage that never got an image.
-      - name: Keyword Extract (statistical kind, service smoke)
+      - name: Keyword Extract (statistical kind)
+        id: kw_statistical
         run: |
           IMAGE="ghcr.io/ufal/atrium-keyword-extract-api:${{ inputs.image-tag || 'latest' }}"
           if ! docker pull "$IMAGE"; then
@@ -467,11 +469,16 @@ jobs:
             sleep 2
           done
           curl -fsS http://localhost:8080/ready
+          curl -fsS http://localhost:8080/info -o work/keywords_stat_info.json
           curl -fsS -X POST http://localhost:8080/extract_keywords \
             -F "document_json=@work/doc_json/4_nlp.json;type=application/json" \
             -F kind=statistical -F method=yake -F num_keywords=5 -o work/keywords.json
-          python - <<'PY'
+          PYTHONPATH=docs/templates/shared python - <<'PY'
           import json
+          import os
+
+          from atrium_openapi import version_key
+
           r = json.load(open("work/keywords.json", encoding="utf-8"))
           kws = r.get("keywords") or []
           assert kws, f"no keywords in the response: {sorted(r)}"
@@ -479,11 +486,46 @@ jobs:
               assert k.get("method") == "yake" and isinstance(k.get("score"), (int, float)), k
           assert r.get("paradata"), "no CreateAction (paradata) in the response (atrium-project#71)"
           print(f"keywords: {len(kws)} from {kws[0]['method']}, first: {kws[0]['keyword']!r}")
+          version = json.load(open("work/keywords_stat_info.json", encoding="utf-8")).get("version") or "0.0.0"
+          record = r.get("document_json")
+          if record is None:
+              assert version_key(version) < version_key("1.2.0-beta"), (
+                  f"keyword-extract {version} answered without the record: its `keywords` block is missing (atrium-project#73)"
+              )
+              print(f"::warning::keyword-extract {version} predates the record's `keywords` block (v1.2.0-beta); not checked in this run.")
+          else:
+              assert "document_json_schema_error" not in r, r["document_json_schema_error"]
+              assert record["keywords"]["document"] == kws, "the record's document keywords are not the response's"
+              assert record["keywords"]["pages"] == r.get("pages"), "the record's page keywords are not the response's"
+              json.dump(record, open("work/doc_json/5_kw_stat.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+              with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+                  out.write("record=true\n")
+              print(f"record: keywords block with {len(record['keywords']['pages'])} page list(s) -> 5_kw_stat.json")
           PY
 
+      # The record after the statistical kind: the final-contract assertions, with `keywords` required.
+      - name: Assert the record after keyword-extract (statistical kind)
+        if: steps.kw_statistical.outputs.record == 'true'
+        run: |
+          SEED_ARGS=()
+          if [ "$E2E_SEED" = "true" ]; then
+            SEED_ARGS=(--seed work/doc_json/0_seed.json)
+          fi
+          STAGES="work/doc_json/1_pc.json work/doc_json/2_alto.json work/doc_json/3_translate.json"
+          STAGES="$STAGES work/doc_json/4_nlp.json work/doc_json/5_kw_stat.json"
+          # STAGES is a deliberate list of paths.
+          # shellcheck disable=SC2086
+          python tools/e2e/e2e_assert.py work/doc_json/5_kw_stat.json \
+            --llm-stage-ran false \
+            --keywords-stage-ran true \
+            --stages $STAGES \
+            --teitok-dir work/nlp_out/TEITOK \
+            "${SEED_ARGS[@]}"
+
       # ── Keyword Extract, the controlled kind (atrium-keyword-extract#1, #2) ─────────────────
-      # The same production image, started with an LLM backend: the record Stage 4 wrote goes in,
-      # and the record with keyword-extract's `enrichment` block (and `entities[].pid`) comes out
+      # The same production image, started with an LLM backend: the record after the statistical
+      # kind (`5_kw_stat.json`, or Stage 4's when the image predates it) goes in, and the record
+      # with keyword-extract's `enrichment` block (and `entities[].pid`) beside `keywords` comes out
       # as `5_kw.json`. This is the one step of the lane that calls a paid, third-party model, so:
       #   * it needs the OPENROUTER_KEY secret; without it the step is skipped with a warning, and
       #     with an error on the scheduled run, which is there to notice a check that stopped;
@@ -511,9 +553,12 @@ jobs:
             echo "::warning::no OPENROUTER_KEY secret; keyword-extract's controlled kind is not checked in this run."
             exit 0
           fi
+          # The record the statistical kind returned, when there is one: both kinds accrete onto it.
+          KW_IN=work/doc_json/4_nlp.json
+          if [ -f work/doc_json/5_kw_stat.json ]; then KW_IN=work/doc_json/5_kw_stat.json; fi
           # What the service will send: the record's lines, or, for a record that holds its text in
           # `content.text` alone, every non-empty line of that (tools/e2e/controlled_rows.py).
-          LINES=$(python tools/e2e/controlled_rows.py work/doc_json/4_nlp.json)
+          LINES=$(python tools/e2e/controlled_rows.py "$KW_IN")
           if [ "$LINES" -gt "$E2E_CONTROLLED_MAX_LINES" ]; then
             echo "::notice::${E2E_DOC} has $LINES lines and the controlled kind makes one paid call per line (limit $E2E_CONTROLLED_MAX_LINES): skipped. The small fixtures run it."
             exit 0
@@ -542,7 +587,7 @@ jobs:
           print(f"controlled kind ready: {info['backend']} / {info['model']}, {info['vocabulary']['prompt_terms']} vocabulary terms in the prompt")
           PY
           curl -fsS --max-time 900 -X POST http://localhost:8080/extract_keywords \
-            -F "document_json=@work/doc_json/4_nlp.json;type=application/json" \
+            -F "document_json=@${KW_IN};type=application/json" \
             -F kind=controlled -o work/keywords_controlled.json
           PYTHONPATH=docs/templates/shared python - <<'PY'
           import json
@@ -579,10 +624,14 @@ jobs:
             SEED_ARGS=(--seed work/doc_json/0_seed.json)
           fi
           STAGES="work/doc_json/1_pc.json work/doc_json/2_alto.json work/doc_json/3_translate.json"
-          STAGES="$STAGES work/doc_json/4_nlp.json work/doc_json/5_kw.json"
+          STAGES="$STAGES work/doc_json/4_nlp.json"
+          if [ -f work/doc_json/5_kw_stat.json ]; then STAGES="$STAGES work/doc_json/5_kw_stat.json"; fi
+          STAGES="$STAGES work/doc_json/5_kw.json"
+          # --keywords-stage-ran auto: `keywords` is required when the statistical kind wrote it upstream.
           # shellcheck disable=SC2086 — STAGES is a deliberate list of paths
           python tools/e2e/e2e_assert.py work/doc_json/5_kw.json \
             --llm-stage-ran true \
+            --keywords-stage-ran auto \
             --stages $STAGES \
             --teitok-dir work/nlp_out/TEITOK \
             "${SEED_ARGS[@]}"
@@ -610,6 +659,7 @@ jobs:
           path: |
             work/doc_json/*.json
             work/keywords.json
+            work/keywords_stat_info.json
             work/keywords_controlled.json
             work/keywords_info.json
             work/nlp_out/TEITOK/*.teitok.xml

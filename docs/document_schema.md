@@ -286,14 +286,14 @@ decode verdict (`categ` `Garbage` or `Inverted`).
 > writer. Code that hardcodes `alto-postprocess` as the source of `lines[]` was reading the
 > wrong contract even before digital-born documents existed.
 
-| Tool                | Owns                                                                                                                                                                                                                                                        |
-|---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| page-classification | `page_categories` · `pages[]` *category, category_confidence*                                                                                                                                                                                               |
-| ocr-postprocess ¹   | `pages[]` *page_index, quality_score, quality_band, needs_ocr, needs_ocr_reason, ocr, canvas* · `content` · `lines[]` *categ, quality_score, lang, text* · `tables[]` — **originator, documents with an OCR-class origin** (`ABBYY-ALTO`, `ocr:…`, `vlm:…`) |
-| digital-convert     | `pages[]` *page_index, canvas, quality_score, quality_band, needs_ocr, needs_ocr_reason, text_layer* · `content` · `lines[]` *text, bbox, group_id, style, lang, quality_score, categ* · `tables[]` — **originator, digital-born documents only**           |
-| translator          | `translations` · `entities[]` *translation_en* — **reserved**: granted, written by no tool (#70; see below)                                                                                                                                                 |
-| nlp-enrich          | `entities[]` · `lines[]` *lemma, upos, feats, teitok_ref, bbox* · `pages[]` *teitok_surface* · `derived_from.teitok`                                                                                                                                        |
-| keyword-extract ¹   | `enrichment` · `forms` · `entities[]` *pid* · `regenerable.markdown`                                                                                                                                                                                        |
+| Tool                | Owns                                                                                                                                                                                                                                                                                           |
+|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| page-classification | `page_categories` · `pages[]` *category, category_confidence*                                                                                                                                                                                                                                  |
+| ocr-postprocess ¹   | `pages[]` *page_index, quality_score, quality_band, needs_ocr, needs_ocr_reason, ocr, canvas* · `content` · `lines[]` *categ, quality_score, lang, text* · `tables[]` — **originator, documents with an OCR-class origin** (`ABBYY-ALTO`, `ocr:…`, `vlm:…`) · `quality_summary` (every origin) |
+| digital-convert     | `pages[]` *page_index, canvas, quality_score, quality_band, needs_ocr, needs_ocr_reason, text_layer* · `content` · `lines[]` *text, bbox, group_id, style, lang, quality_score, categ* · `tables[]` — **originator, digital-born documents only**                                              |
+| translator          | `translations` · `entities[]` *translation_en* — **reserved**: granted, written by no tool (#70; see below)                                                                                                                                                                                    |
+| nlp-enrich          | `entities[]` · `lines[]` *lemma, upos, feats, teitok_ref, bbox* · `pages[]` *teitok_surface* · `derived_from.teitok`                                                                                                                                                                           |
+| keyword-extract ¹   | `enrichment` · `keywords` · `forms` · `entities[]` *pid* · `regenerable.markdown`                                                                                                                                                                                                              |
 
 ¹ The successor of `alto-postprocess` and of `llm-enrich` respectively, since the repository moves of
 2026-10-01. Each predecessor keeps the same grant beside it — see [Program successors](#program-successors-2026-10-01).
@@ -308,6 +308,22 @@ vowel/consonant ratio and a dictionary hit-rate — the Layer B sketch in llm-en
 which was never built. Which derivation produced a given value is answerable from `source.origin`, so the
 field is not split. Consumers that filter on it (`json_to_md --min-quality`) are filtering
 the same thing either way: *do not show this line to the model*.
+
+**The two read-outs of atrium-project#73 (2026-10-09).** Both are single-owner blocks outside the
+positional plane, so §1a does not apply to them.
+
+* `keywords` (keyword-extract): the statistical keywords of the document (`document`) and of each
+  page (`pages[]`, keyed by the `lines[].page` label), every one with its `method`, `score` and
+  `rank`. One run writes one method's lists, and a re-run replaces the block. The controlled
+  keywords stay in `enrichment`; the two kinds are never merged into one list. A score is
+  comparable only within its own list (KeyBERT: a cosine; YAKE: normalised per document; KER: a
+  count); `rank` orders every list.
+* `quality_summary` (ocr-postprocess): `atrium_document.quality_summary(record)` written into the
+  record whenever ocr-postprocess writes or scores `pages[]`/`lines[]` — `pages` {`total`,
+  `scored`, `mean`, `median`, `min`, `max`} of `quality_score`, and `lines` {`total`, `by_categ`}.
+  Numbers only: no band, no threshold, and no tool reads it to route or refuse a document.
+  `pages[].quality_score` stays the authoritative signal; the Digital Archive computes its bands
+  from these numbers at index time.
 
 ## Usage
 
@@ -487,13 +503,18 @@ that repository's own copy.
 
 ### Post-freeze register
 
-| Pointer                                                                            | Change                                                                        | Issue                     | Changelog                                                                             |
-|------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|---------------------------|---------------------------------------------------------------------------------------|
-| `/properties/lines/items/properties/style/properties/region`                       | added: closed enum `page_header` / `page_footer` / `footnote`; absent = body  | ufal/atrium-llm-enrich#18 | [2026-09-25](#changelog--2026-09-25-llm-enrich18-linesstyleregion-cdla-permissive-20) |
-| `/properties/source/properties/sha512`                                             | added: optional, `^[a-f0-9]{128}$`, the archive's digest of the original      | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)           |
-| `/properties/provenance/properties/contributors/items/properties/run_uuid`         | added: optional, `urn:uuid:` + a lower-case UUID                              | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)           |
-| `/properties/assembled/properties/blocks/additionalProperties/properties/run_uuid` | added: optional, the same pattern                                             | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)           |
-| `/properties/pages/items/properties/text_layer`                                    | added: optional, closed enum `digital` / `garbled` / `ocr` / `none` / `blank` | ufal/atrium-project#71    | [2026-10-05](#changelog--2026-10-05-w4-the-ocr-hand-off-per-page-pagestext_layer)     |
+| Pointer                                                                            | Change                                                                        | Issue                     | Changelog                                                                                 |
+|------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|---------------------------|-------------------------------------------------------------------------------------------|
+| `/properties/lines/items/properties/style/properties/region`                       | added: closed enum `page_header` / `page_footer` / `footnote`; absent = body  | ufal/atrium-llm-enrich#18 | [2026-09-25](#changelog--2026-09-25-llm-enrich18-linesstyleregion-cdla-permissive-20)     |
+| `/properties/source/properties/sha512`                                             | added: optional, `^[a-f0-9]{128}$`, the archive's digest of the original      | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)               |
+| `/properties/provenance/properties/contributors/items/properties/run_uuid`         | added: optional, `urn:uuid:` + a lower-case UUID                              | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)               |
+| `/properties/assembled/properties/blocks/additionalProperties/properties/run_uuid` | added: optional, the same pattern                                             | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)               |
+| `/properties/pages/items/properties/text_layer`                                    | added: optional, closed enum `digital` / `garbled` / `ocr` / `none` / `blank` | ufal/atrium-project#71    | [2026-10-05](#changelog--2026-10-05-w4-the-ocr-hand-off-per-page-pagestext_layer)         |
+| `/properties/keywords`                                                             | added: optional block, statistical keywords per document and per page         | ufal/atrium-project#73    | [2026-10-09](#changelog--2026-10-09-73-keywords-and-quality_summary-upstream_unavailable) |
+| `/$defs/statistical_keyword`                                                       | added: `keyword`, `method`, `score`, `rank`, all required                     | ufal/atrium-project#73    | [2026-10-09](#changelog--2026-10-09-73-keywords-and-quality_summary-upstream_unavailable) |
+| `/properties/quality_summary`                                                      | added: optional block, page-score statistics and line counts per `categ`      | ufal/atrium-project#73    | [2026-10-09](#changelog--2026-10-09-73-keywords-and-quality_summary-upstream_unavailable) |
+| `/allOf/12`                                                                        | added: a stamped `keywords` must be present                                   | ufal/atrium-project#73    | [2026-10-09](#changelog--2026-10-09-73-keywords-and-quality_summary-upstream_unavailable) |
+| `/allOf/13`                                                                        | added: a stamped `quality_summary` must be present                            | ufal/atrium-project#73    | [2026-10-09](#changelog--2026-10-09-73-keywords-and-quality_summary-upstream_unavailable) |
 
 Not registered, because it does not constrain: the `lines[].style` description correction of the
 same pass.
@@ -1235,3 +1256,51 @@ one method.
 * **Re-vendored** into the six tool repositories with `scripts/revendor_shared.sh`:
   `atrium_document.py`, `atrium_document.schema.json`, `atrium_service.py`,
   `test_document_originators.py`, `test_schema_freeze.py`.
+
+## Changelog — 2026-10-09 (#73: `keywords` and `quality_summary`; `upstream_unavailable`)
+
+**Additive: no `SCHEMA_VERSION` bump, `doc-schema-v1` stays the reference.** Two blocks, one
+`$defs` entry and their two stamp/payload clauses are new (registered above); every record written
+before them validates, and a record carrying them validates under the frozen schema too (the top
+level admits extra blocks).
+
+### `keywords` — keyword-extract's statistical keywords (#67 R5)
+
+* **What:** `{document: [k], pages: [{page, keywords: [k]}]}`, `k` =
+  `$defs/statistical_keyword` {`keyword`, `method`, `score`, `rank`}, all required.
+* **Who:** `BLOCK_OWNERS["keywords"] = "keyword-extract"`, from its v1.2.0-beta: `POST
+  /extract_keywords` with a record writes it whenever the statistical kind runs, beside
+  `enrichment` when the controlled kind runs too. No other program, `llm-enrich` included, may
+  write it.
+* **Consumers:** the Digital Archive's keyword facets, per document and per page
+  (ARUP-CAS/aiscr-digiarchiv-2#711); nlp-enrich's opt-in TEITOK projection, which reads the block
+  instead of a keyword CSV of its own (v1.1.0-beta).
+
+### `quality_summary` — the document-level quality read-out (#67 R6)
+
+* **What:** `atrium_document.quality_summary(record)`, a pure function of `pages[]` and `lines[]`:
+  `pages` {`total`, `scored`, `mean`, `median`, `min`, `max`} over `quality_score` (the statistics
+  are absent when no page is scored), `lines` {`total`, `by_categ`}. Rounded to four decimals,
+  keys sorted, so the same record gives the same block.
+* **Who:** `BLOCK_OWNERS["quality_summary"] = "ocr-postprocess"`, the quality model's owner. Its
+  record writers (`document_hook.write_document_block()`, `write_scores()`) recompute it whenever
+  they write or score `pages`/`lines`, so `/process`, `/score_record` and the batch stages leave it
+  current on both branches (v1.10.0-beta).
+* **Not:** a band, a threshold or a gate. `pages[].quality_score` stays the authoritative signal.
+
+### Also in this round
+
+* `atrium_service.REASON_CODES` registers **`upstream_unavailable`** (HTTP 502): a backing service
+  that did not answer after the tool's own retries (atrium-nlp-enrich#41, LINDAT UDPipe and
+  NameTag), so a client tells an outage from a 502 with `reason: null` such as an empty run. A
+  backing service's timeout stays a 504 `limit_exceeded` naming the timeout setting.
+* `DocumentRecord.to_dict()` orders the two blocks beside their neighbours (`quality_summary`
+  after `tables`, `keywords` after `enrichment`).
+* **Tests:** `test_document_originators.py` (canonical, +8): the two owners, both keyword kinds
+  side by side, the refusals, the stamp/payload clauses, the summary on a born-digital record, the
+  summary's numbers and its determinism. `test_schema_freeze.py`: five register entries.
+  `tests/test_document_required.py`: the new producer shapes. `tools/e2e/e2e_assert.py`:
+  `--keywords-stage-ran` and `--quality-summary`.
+* **Re-vendored** into the six tool repositories with `scripts/revendor_shared.sh`:
+  `atrium_document.py`, `atrium_document.schema.json`, `atrium_service.py`,
+  `test_document_originators.py`, `test_schema_freeze.py`; every service's spec regenerated.

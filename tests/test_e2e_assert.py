@@ -680,3 +680,142 @@ def test_cli_accepts_seed(tmp_path, record):
     seed, stages, final = _seeded_chain(tmp_path, record)
     final_path = _write(tmp_path, "5_llm.json", final)
     assert e2e_assert.main([final_path, "--llm-stage-ran", "true", "--stages", *stages, "--seed", seed]) == 0
+
+
+# ── atrium-project#73: `keywords` and `quality_summary` ─────────────────────────────────────
+
+
+def _with_keywords(record, **overrides):
+    """The example record after keyword-extract's statistical kind: a stamped `keywords` block."""
+    record = copy.deepcopy(record)
+    record["keywords"] = {
+        "document": [
+            {"keyword": "gotický kostel", "method": "yake", "score": 1.0, "rank": 1},
+            {"keyword": "základy", "method": "yake", "score": 0.4, "rank": 2},
+        ],
+        "pages": [{"page": "1", "keywords": [{"keyword": "kostel", "method": "yake", "score": 1.0, "rank": 1}]}],
+    }
+    record["keywords"].update(overrides)
+    record["assembled"]["blocks"]["keywords"] = {
+        "program": "keyword-extract",
+        "run_id": "261009-120000",
+        "paradata_ref": "",
+        "updated_at": "2026-10-09T12:00:00+00:00",
+    }
+    return record
+
+
+def test_a_keywords_block_from_keyword_extract_passes(tmp_path, record, capsys):
+    final = _write(tmp_path, "5_kw_stat.json", _with_keywords(record))
+    e2e_assert.assert_document_contract(final, llm_stage_ran=True, stage_paths=[final], keywords_stage_ran=True)
+    assert "2 document keyword(s) and 1 page list(s) by 'yake'" in capsys.readouterr().out
+
+
+def test_the_statistical_kind_that_ran_must_leave_its_block(tmp_path, record):
+    final = _write(tmp_path, "5_kw_stat.json", record)
+    with pytest.raises(AssertionError, match="'keywords' block missing"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=True, stage_paths=[final], keywords_stage_ran=True)
+    e2e_assert.assert_document_contract(final, llm_stage_ran=True, stage_paths=[final], keywords_stage_ran=False)
+
+
+@pytest.mark.parametrize(
+    "mutate, message",
+    [
+        (lambda r: r["assembled"]["blocks"]["keywords"].update(program="nlp-enrich"), "stamped by 'nlp-enrich'"),
+        (lambda r: r["keywords"]["document"][1].update(rank=3), "not 1..2 in order"),
+        (lambda r: r["keywords"]["document"][1].update(method="keybert"), "mixes"),
+        (lambda r: r["keywords"]["pages"][0].update(page="9"), "not a page of the record"),
+        (lambda r: r["keywords"]["document"][0].update(teater_category="kostel"), "never one list"),
+        (lambda r: r["enrichment"]["items"][0].update(rank=1), "statistical keyword's fields"),
+    ],
+)
+def test_a_wrong_keywords_block_fails(tmp_path, record, mutate, message):
+    shaped = _with_keywords(record)
+    mutate(shaped)
+    final = _write(tmp_path, "5_kw_stat.json", shaped)
+    with pytest.raises(AssertionError, match=message):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=True, stage_paths=[final], keywords_stage_ran=True)
+
+
+def _with_summary(record):
+    """The example record after ocr-postprocess v1.10.0-beta: its pages' and lines' read-out."""
+    record = copy.deepcopy(record)
+    record["quality_summary"] = e2e_assert.quality_summary(record)
+    record["assembled"]["blocks"]["quality_summary"] = {
+        "program": "ocr-postprocess",
+        "run_id": "261009-110000",
+        "paradata_ref": "",
+        "updated_at": "2026-10-09T11:00:00+00:00",
+    }
+    return record
+
+
+def test_a_quality_summary_is_checked_against_the_stage_that_wrote_it(tmp_path, record, capsys):
+    written = _with_summary(record)
+    stage = _write(tmp_path, "2_alto.json", written)
+    later = copy.deepcopy(written)
+    # A later stage adds a lines[] row (a field contribution): the summary still holds for 2_alto.json.
+    later["lines"].append({"page": "2", "line": 0, "text": "Tab. 1", "lemma": "tab"})
+    final = _write(tmp_path, "4_nlp.json", later)
+    e2e_assert.assert_document_contract(final, llm_stage_ran=True, stage_paths=[stage, final])
+    assert "✅ quality_summary: 2_alto.json's read-out" in capsys.readouterr().out
+
+
+def test_a_quality_summary_that_is_not_the_read_out_fails(tmp_path, record):
+    written = _with_summary(record)
+    written["quality_summary"]["pages"]["mean"] = 0.5
+    final = _write(tmp_path, "2_alto.json", written)
+    with pytest.raises(AssertionError, match="is not quality_summary"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=True, stage_paths=[final])
+
+
+def test_a_quality_summary_changed_downstream_fails(tmp_path, record):
+    written = _with_summary(record)
+    stage = _write(tmp_path, "2_alto.json", written)
+    changed = copy.deepcopy(written)
+    changed["quality_summary"]["lines"]["total"] = 99
+    final = _write(tmp_path, "4_nlp.json", changed)
+    with pytest.raises(AssertionError, match="changed after 2_alto.json"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=True, stage_paths=[stage, final])
+
+
+def test_a_quality_summary_with_a_band_or_another_writer_fails(tmp_path, record):
+    banded = _with_summary(record)
+    banded["quality_summary"]["pages"]["band"] = "Clear"
+    final = _write(tmp_path, "2_alto.json", banded)
+    with pytest.raises(AssertionError, match="it is numbers"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=True, stage_paths=[final])
+    other = _with_summary(record)
+    other["assembled"]["blocks"]["quality_summary"]["program"] = "digital-convert"
+    final = _write(tmp_path, "2_alto.json", other)
+    with pytest.raises(AssertionError, match="not ocr-postprocess"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=True, stage_paths=[final])
+
+
+def test_a_required_quality_summary_must_be_there(tmp_path, record):
+    final = _write(tmp_path, "4_nlp.json", record)
+    e2e_assert.assert_document_contract(final, llm_stage_ran=True, stage_paths=[final])
+    with pytest.raises(AssertionError, match="'quality_summary' missing"):
+        e2e_assert.assert_document_contract(
+            final, llm_stage_ran=True, stage_paths=[final], quality_summary_expected=True
+        )
+
+
+def test_cli_accepts_the_73_flags(tmp_path, record):
+    final = _write(tmp_path, "5_kw.json", _with_summary(_with_keywords(record)))
+    assert (
+        e2e_assert.main(
+            [
+                final,
+                "--llm-stage-ran",
+                "true",
+                "--keywords-stage-ran",
+                "true",
+                "--quality-summary",
+                "true",
+                "--stages",
+                final,
+            ]
+        )
+        == 0
+    )

@@ -672,6 +672,7 @@ PUBLISHED_REASON_CODES = (
     "invalid_record",  # #32 round 2 (#67 R1's seed path)
     "ocr_text_layer",  # #32 round 2 (atrium-llm-enrich#10 W6, raised by api-digital)
     "source_digest_mismatch",  # 2026-10-05 (atrium-digital-convert#2; in digital-convert's spec since v1.1.0-beta)
+    "upstream_unavailable",  # 2026-10-09 (atrium-nlp-enrich#41: a LINDAT outage, told apart from an empty run)
 )
 
 
@@ -683,6 +684,8 @@ def test_every_code_has_its_statuses_and_limit_exceeded_follows_atrium_limits():
     assert set(REASON_STATUSES) == set(REASON_CODES)
     assert REASON_STATUSES["limit_exceeded"] == tuple(atrium_limits.LIMIT_STATUSES)
     assert REASON_STATUSES["busy"] == (429,)
+    # An upstream outage is a 502 only: its timeout is a 504 limit_exceeded naming the timeout.
+    assert REASON_STATUSES["upstream_unavailable"] == (502,)
 
 
 def test_a_code_is_refused_with_a_status_it_is_not_registered_for():
