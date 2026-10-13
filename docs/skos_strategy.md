@@ -81,7 +81,7 @@ exports them"* — was exactly right, and it needed no namespace to fix.
 |------------------------|------------------------------------------|-----------------------------------------------------------------------------------|
 | **L1 Source**          | 1,460 AMCR + 4,134 TEATER                | The sources' own: `https://api.aiscr.cz/id/HES-…`, `https://teater.aiscr.cz/id/…` |
 | **L2 ATRIUM-authored** | 64 concepts in 6 schemes                 | Minted under `SKOS_BASE`                                                          |
-| **L3 Mappings**        | 75 in the registry + 707 harvested       | Assertions **between** L1/L2/external. Mint nothing.                              |
+| **L3 Mappings**        | 74 in the registry + 707 harvested       | Assertions **between** L1/L2/external. Mint nothing.                              |
 | **L4 Propagation**     | `entities[].pid`, and the `*_uri` fields | Reference L1/L2. Mint nothing.                                                    |
 
 ### 3.2 The one swappable constant
@@ -130,9 +130,9 @@ Hub-canonical, in `docs/templates/shared/`, vendored to all five tool repos and 
 | `quality-band`  | 3                         | `ocr-postprocess/document_hook.py`                                             |
 | `entity-type`   | 4                         | `nlp-enrich/api_util/teitok_alto.py`                                           |
 | `cnec`          | 28                        | the subset `_CNEC_TO_CONLL` maps                                               |
-| `theme`         | 11                        | `nlp-enrich/data_samples/taxonomy_config.json`                                 |
+| `theme`         | 11                        | `keyword-extract/data_samples/taxonomy_config.json`                            |
 
-Plus 75 mapping assertions: 28 CNEC→coarse type, 19 TEATER branch→theme, 27 heslář→theme, and one
+Plus 74 mapping assertions: 28 CNEC→coarse type, 19 TEATER branch→theme, 26 heslář→theme, and one
 `closeMatch` (see V-1). Renders to Turtle and JSON-LD; both are produced from **one** triple
 generator, so the two views cannot disagree — they did, briefly, during authoring, which is the
 whole argument in miniature.
@@ -313,10 +313,14 @@ Two consumers then read the field as if it held a theme directly:
   against §3's rule that ATRIUM mints nothing for a harvested concept, and one that resolves to
   nothing beside the real URI.
 
-**Mitigated, not closed.** `document_crate()` now prefers the source URI as a term's `@id`
-wherever the record carries one, so with F6 populated the crate identifies `kostel` as
-`https://api.aiscr.cz/id/HES-000021` and mints nothing. That removes the false claim and the
-dangling URI on the path that matters.
+**Mitigated, not closed — on 2026-10-13, not 2026-09-16.** This section said on 2026-09-16 that
+the crate preferred the source URI; the code never did, and kept minting
+`https://w3id.org/atrium/theme/<label>` until the shared round of 2026-10-13. Since then
+`document_crate()` names each concept in `enrichment.items[].teater_category_ids` (written by
+keyword-extract, declared in the schema the same day) by its source URI, so `kostel` is
+`https://api.aiscr.cz/id/HES-000021` and `https://teater.aiscr.cz/id/1333`, filed under the asset's
+`scheme/amcr-harvest` / `scheme/teater-harvest`. An item without ids contributes no term, and the
+label itself is never minted. That removes the false claim and the dangling URI.
 
 What is NOT decided, and needs an owner: whether `teater_category` should carry the source label
 (and the theme be derived through `HESLAR_TO_THEME` / `TEATER_BRANCH_TO_THEME` when wanted), or
@@ -346,14 +350,23 @@ lesson again: a consumer filters on the registry's set, never on a copy of it.
 |--------|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | ~~F1~~ | ~~Take the V-1 fix~~ ✅ **done 2026-09-25**                                                  | Taken. `DROP_CATEGORIES` now filters on `UNTRUSTWORTHY_LINE_CATEGORIES`, so `Trash` is dropped on the OCR path. **This changes what the model is shown.** Pinned by `test_convert_drops_trash_lines_on_the_ocr_path`. (This row said "done 2026-09-16" before the code carried it; atrium-alto-postprocess#31 found the constant unchanged and the test missing on 2026-09-25.) |
 | ~~F2~~ | ~~Fix V-2 by filtering to directories~~ ✅ **done 2026-09-23**                               | Taken. `collect_images()` filters to directories, so the shipped `small_data_samples/` no longer raises and class indices cannot silently shift. Three tests in `TestCollectImages`.                                                                                                                                                                                            |
-| F3     | Retire the translator's duplicate harvester in favour of nlp-enrich's artifacts             | ⚠️ **partly taken 2026-09-16** — see below. Full retirement still needs a release plan.                                                                                                                                                                                                                                                                                         |
+| F3     | Retire the translator's duplicate harvester in favour of keyword-extract's release asset    | ⚠️ **partly taken** — see below. The switch waits on AMČR accepting the asset's list.                                                                                                                                                                                                                                                                                           |
 | F4     | Add verified CNEC 2.0 glosses as `skos:definition`                                          | Needs the CNEC reference; inventing them would be worse than omitting                                                                                                                                                                                                                                                                                                           |
 | F5     | Register the `w3id.org/atrium` redirect                                                     | Optional; blocks nothing                                                                                                                                                                                                                                                                                                                                                        |
-| ~~F6~~ | ~~Add `*_uri` fields and populate `teater_category_uri`~~ ✅ **done 2026-09-16**             | `enrichment.items[].teater_category_uri` added (additive, no bump) and populated from `vocab_manager.concept_index()` — never through `nested_keep`, so the prompt is untouched. The crate now uses it as the term's `@id`; see V-5.                                                                                                                                            |
+| ~~F6~~ | ~~Give the crate the source concepts' ids~~ ✅ **done 2026-10-13**                           | `teater_category_uri` never reached any repository, though this row said so on 2026-09-16. What exists is keyword-extract's `enrichment.items[].teater_category_ids` (`[{source, id}]`, built outside the prompt); the schema declares it and the crate uses it for the term's `@id` since 2026-10-13; see V-5.                                                                 |
 | F7     | Re-harvest so `close_match`/`broad_match`/`citation_uri` populate the committed artifacts   | Needs network; the parser is ready and tested                                                                                                                                                                                                                                                                                                                                   |
-| ~~F8~~ | ~~Delete the orphaned `fixtures/e2e/VOCAB/teater_nested_vocab.json`~~ ✅ **done 2026-09-16** | Deleted. `fixtures/e2e/README.md` had described it as removed since 2026-08-19 while the file was still on disk.                                                                                                                                                                                                                                                                |
+| ~~F8~~ | ~~Delete the orphaned `fixtures/e2e/VOCAB/teater_nested_vocab.json`~~ ✅ **done 2026-10-13** | Deleted. This row said so on 2026-09-16 while the file was still committed, as `fixtures/e2e/README.md` had said since 2026-08-19.                                                                                                                                                                                                                                              |
 
-### F3, the half that was taken (2026-09-16)
+### F3, the half that was taken
+
+> **Corrected 2026-10-13.** The `--from-flat` path described below never reached the translator,
+> and its committed CSV was not regenerated: it has the five provenance columns but still the
+> 5,087 harvested rows. What exists instead is `load_vocab.py --from-release VERSION`
+> (translator `v1.4.0-beta`), which builds the CSV from keyword-extract's release asset
+> `atrium-vocabulary-<version>.zip` after checking its `.sha256`. Built from `v1.2.0-beta` it gives
+> the same 4,952 pairs and the same differences listed below. The switch waits on AMČR accepting
+> that list (atrium-project#72); the asset's own curated `vocabulary.csv` (4,715 pairs, exclusions
+> applied) is the other candidate. The text below is the 2026-09-16 design.
 
 `load_vocab.py` gained **`--from-flat DIR`**: it rebuilds `data_samples/vocabulary.csv` from
 nlp-enrich's committed `amcr_flat.csv` / `teater_flat.csv` instead of harvesting. The two formats
@@ -377,9 +390,10 @@ supported for weeks without ever being rebuilt:
 of truth instead of two that disagree. If the 159 matter more than reproducibility, the snapshot
 ref is the thing to move, not this path.
 
-> ⚠️ Unrelated but found in passing, and worth someone's attention:
-> `docs/templates/workflows/update_issues.sh:92` contains a hardcoded GitHub PAT. It is committed.
-> Not touched here; it should be revoked.
+> ⚠️ Unrelated but found in passing (2026-09-16): `docs/templates/workflows/update_issues.sh:92`
+> contained a hardcoded GitHub PAT. The script now reads `GITHUB_ACCESS_TOKEN` from the
+> environment; the token that was committed stays in the history, so it should be revoked if that
+> has not been done.
 
 ## ✅ 8. Verification
 
@@ -387,7 +401,7 @@ Everything below was run:
 
 | Check                                                                             | Result                                                                                      |
 |-----------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
-| `atrium_vocab.py --selftest`                                                      | 6 schemes, 64 concepts, 5 collections, 75 mappings — OK                                     |
+| `atrium_vocab.py --selftest`                                                      | 6 schemes, 64 concepts, 5 collections, 74 mappings — OK (75 before 2026-10-13)              |
 | Turtle + JSON-LD parsed by `rdflib`                                               | 507 triples each, **isomorphic**                                                            |
 | SKOS integrity (prefLabel uniqueness, inScheme, S27 broader/related disjointness) | 0 violations                                                                                |
 | `atrium_vocab.schema.json` vs the JSON-LD                                         | 0 errors, 121 nodes                                                                         |

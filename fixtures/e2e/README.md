@@ -68,13 +68,13 @@ After the assertions, the final record and every stage's paradata file are turne
 record's RO-Crate fragment and checked by the RO-Crate validator, against RO-Crate 1.2 and Process
 Run Crate 0.5 ([`tools/ci/rocrate_check.py`](../../tools/ci/rocrate_check.py)).
 
-### 🏷️ No vocabulary fixture (unused since 2026-08-19)
+### 🏷️ No vocabulary fixture (unused since 2026-08-19, deleted 2026-10-13)
 
-`VOCAB/teater_nested_vocab.json` is still in this directory, but **no workflow, script or test reads it**
-(checked 2026-09-29); delete it rather than start using it again. It used to be the vocabulary, on the stated grounds that "llm-enrich
-intentionally ships no `data_samples` of its own". That stopped being true: llm-enrich now builds
-and commits a union of the AMCR and TEATER thesauri under `data_samples/vocab/`, and the hub copy
-silently became a snapshot of a file that no longer exists upstream.
+`VOCAB/teater_nested_vocab.json` was deleted on 2026-10-13: no workflow, script or test read it
+(checked 2026-09-29 and again before the deletion). It used to be the vocabulary, on the stated
+grounds that "llm-enrich intentionally ships no `data_samples` of its own". That stopped being true
+long ago: the vocabulary is built by keyword-extract and released as
+`atrium-vocabulary-<version>.zip` (from `v1.2.0-beta`), so a hub copy would only be a stale snapshot.
 
 Until 2026-10-01 Stage 5 checked out llm-enrich into `work/atrium-llm-enrich-main` and read
 `data_samples/vocab/union_nested.json` straight out of that checkout. That stage is gone from the lane (the controlled keywords

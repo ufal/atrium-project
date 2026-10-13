@@ -2,7 +2,7 @@
   "_comment": [
     "The single list of canonical shared files (atrium-project#59). Every file under",
     "docs/templates/shared/ that para-drift.reusable.yml holds byte-identical across",
-    "the five tool repos has exactly one row here. Adding a file to this directory",
+    "the six tool repos has exactly one row here. Adding a file to this directory",
     "means adding one row here -- not editing scripts/revendor_shared.sh, tools/",
     "skill_drift_check.py, para-drift.reusable.yml and docs/templates/ruff.toml by",
     "hand in four places that used to drift independently. tests/test_shared_manifest.py",

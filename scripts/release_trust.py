@@ -15,7 +15,8 @@ read back as evidence:
                   request; `--checks` adds required status checks
 
 Every changing command takes `--dry-run` (print each API call and its body, change nothing) and
-`--repo NAME` (repeatable; default: all six, or the six tool repositories for `immutable`).
+`--repo NAME` (repeatable; default: all seven — the hub and the six tool repositories — or the six
+tool repositories for `immutable`).
 Re-running is safe: a ruleset is found by its name and updated in place.
 
 Repository admins may bypass the rulesets (logged by GitHub as a bypass, so not silent), which

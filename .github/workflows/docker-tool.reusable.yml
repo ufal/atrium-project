@@ -556,7 +556,7 @@ jobs:
           # its own file (none has two today: digital-convert's planned second image became its
           # one service, `-api`, with one service/openapi.json).
           # Skipped where the repo has not adopted the typed contract yet (no committed spec, or
-          # no vendored atrium_openapi.py), because the hub's `v1` moves for all five at once.
+          # no vendored atrium_openapi.py), because the hub's `v1` moves for all six at once.
           if ls service/openapi*.json >/dev/null 2>&1 && [ -f atrium_openapi.py ]; then
             echo "Comparing the served OpenAPI document with the committed one..."
             curl -sf http://127.0.0.1:18080/openapi.json -o "$RUNNER_TEMP/served.openapi.json"

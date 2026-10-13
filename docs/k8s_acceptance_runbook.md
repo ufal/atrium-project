@@ -6,7 +6,7 @@ on their Kubernetes."* Run against
 [`templates/k8s/atrium-service.deployment.yaml`](templates/k8s/atrium-service.deployment.yaml)
 (rationale: [`k8s_deployment.md`](k8s_deployment.md)), not against the bare image — there is
 nothing in a `HEALTHCHECK` directive Kubernetes reads on its own (see `k8s_deployment.md`'s
-opening section). **Requires a Kubernetes cluster and the five published `-api` images**;
+opening section). **Requires a Kubernetes cluster and the six published `-api` images**;
 this is a partner-side procedure, not something this repo's CI can run — the boundary
 decided on 2026-08-02 (#40, motyc) is exactly "a Docker image, run at ARÚP/ARÚB's own
 Kubernetes," so validating it is necessarily out-of-band.

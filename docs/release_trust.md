@@ -87,10 +87,12 @@ by the next version, never by moving its tag or replacing an asset.
    `@<sha>  # v1`, and the two reusables that read hub files (`para-drift`, `workflow-lint`) get
    `hub-ref: <sha>` too. The linter already accepts both forms and fails a caller whose pin and
    `hub-ref` differ, so a Dependabot bump that moves only one of them turns red.
-8. **Once all six are pinned**, make the pin mandatory: pass `--require-sha-pins` to
-   `workflow_lint.py` in `workflow-lint.reusable.yml`. From then on a hub change reaches a tool
-   repository only through a reviewed pin move (the same script with a new `--sha`, or a
-   Dependabot PR).
+8. **The pin is mandatory from the sweep on.** The sweep also writes `require-sha-pins: true`
+   into each tool repository's workflow-lint caller, so that repository's lint refuses a hub
+   reusable left at `@v1`. The input defaults to false and must stay so: the hub's own callers
+   (`hub-self-check.yml`) run at `@v1`, and making the flag the reusable's default would fail
+   them. From then on a hub change reaches a tool repository only through a reviewed pin move
+   (the same script with a new `--sha`, or a Dependabot PR).
 9. **Post the evidence**: the `status` output on #72 and #40.
 
 ## Reading the result

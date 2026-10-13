@@ -569,6 +569,53 @@ and no "workplan" document exists in this repo — so #55's acceptance had no tr
 milestone's 2026-09-30 due date; the milestone move is part of the GitHub-side follow-up, not a surprise for
 later. Full detail: `digests/55.digest.md` · `plans/55.plan.md`.
 
+## 2026-10-13 — #51's crate fix in code; the registry follows keyword-extract; the 502 retry text; docs for six
+* **Why:** verifying the six open issues found that #51's 2026-09-17 claims (F6, the V-5 mitigation, F8) were never
+  in the code: the crate kept minting `https://w3id.org/atrium/theme/<label>` for `teater_category`, and the F8
+  fixture was still committed. The registry's theme maps still predated keyword-extract's 10-08 layout, and the
+  shared 502 text told clients to retry every 502, an empty run included (atrium-nlp-enrich#41).
+* **Shared modules (`docs/templates/shared/`):**
+  * `atrium_rocrate.py`: the `teater_category` → `theme` row is gone. `SOURCE_CONCEPTS` and `_source_concepts()`
+    turn `enrichment.items[].teater_category_ids` into `DefinedTerm`s with the source URIs (`api.aiscr.cz/id/…`,
+    `teater.aiscr.cz/id/…`), filed under the asset's `scheme/amcr-harvest` / `scheme/teater-harvest`. An item without
+    ids gives no term; one concept under two labels is one term (the first label in sort order).
+  * `atrium_document.schema.json`: `enrichment.items[].teater_category_ids` declared (`[{source, id}]`, open);
+    `teater_category`'s description says it is a source label. `test_schema_freeze.py`: one register entry.
+  * `atrium_vocab.py`: `HESLAR_TO_THEME` drops `jazyk`, `TEATER_BRANCH_TO_THEME["1"]` is `Methods` (74 mappings);
+    scheme authorities name the successor repositories.
+  * `atrium_service.py`: the 502 description says to retry with `reason: upstream_unavailable` and to read `detail`
+    without a reason. Without a reason the 502 can still be an upstream failure (keyword-extract's LLM backend), so
+    the text does not call it final.
+  * `test_atrium_rocrate.py`: +5 (`TestSourceConcepts`).
+  * Re-vendored with `scripts/revendor_shared.sh` (36 copies); the six `service/openapi.json` regenerated.
+* **Hub:**
+  * `fixtures/atrium_document.example.json`: the `kostel` item carries its ids. The example crate has 50 entities
+    (was 48, one of them `theme/kostel`); `docs/rocrate_export.md` updated.
+  * `fixtures/e2e/VOCAB/teater_nested_vocab.json` deleted (F8).
+  * `docs/skos_strategy.md`: counts 74/26; V-5, F3, F6 and F8 corrected with dates; the PAT note brought up to date.
+  * `docs/document_schema.md`: "Changelog — 2026-10-13"; the text-inputs link points at ocr-postprocess.
+  * Client guidance for the 502: `docs/agent_skill_strategy.md` §4.4, `docs_site/agent-skills.md`, the skill
+    templates (`serviceREADME.template.md`, `atrium_client.skeleton.py`: `RETRY_502_REASONS`).
+  * #32 sweep: the normative sections of `agent_skill_strategy.md` (§4.1, §4.2 table for the six services, §4.4,
+    §4.8) and `docker_gha.md`, `k8s_deployment.md` (keyword-extract's upload row; "archived" → "superseded"),
+    `k8s_acceptance_runbook.md`, two reusable comments and `MANIFEST.json` say six.
+  * #72: `docs_site/workflows/llm-enrich.md` removed (out of the nav, still built and served); `pipelines.md` (CC0,
+    keyword-extract's asset, `--from-release`) and `workflows/translator.md`; `release_trust.py` docstring.
+  * `workflow-lint.reusable.yml` gains `require-sha-pins` (default false); `pin_hub_reusables.py` writes it `true`
+    into a tool repo's workflow-lint caller when it pins, so the strict lint holds from the sweep on;
+    `docs/release_trust.md` step 8 rewritten (its old text would have failed `hub-self-check.yml`). +1 test.
+  * #52: `docs_site/contracts/schemas.md` and the translator reference list `unsupported_source_langs`; the
+    translator changelog page gains `v1.2.2-beta`…`v1.4.0-beta`.
+* **Checks:** `tests/` 463 passed, 4 skipped; `docs/templates/shared` 265 passed, 5 skipped; ruff clean;
+  `workflow_lint.py` OK; `mkdocs build --strict` green over 30 pages; `revendor_shared.sh --check`: 145 in parity,
+  0 drifted.
+* **Dev logs:** the pairs of #72, #51, #32 and #67 refreshed.
+* **Not done:** SHA pins wait for `v1` to move to this round's commit (pinning to `16f2215` would fail para-drift
+  against the re-vendored copies). V-4's labels in the example fixture are unchanged. The V-5 contract question
+  stays with its owner.
+
+  Files delivered in chat.
+
 ---
 _Timeline index refreshed 2026-09-07 against live `test`/`main` HEAD, the current release/CI/issue state of all
 six repos (including direct CI-log inspection of the failing `e2e-digital-smoke.yml` run and its tracking issue

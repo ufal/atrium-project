@@ -8,8 +8,8 @@
 
 > **Status:** Active Document (added 2026-09-07, issue #55)
 > **Scope:** `atrium-translator`, `atrium-nlp-enrich`, `atrium-page-classification`,
-> `atrium-ocr-postprocess`, `atrium-keyword-extract` — the five `-api` images, one production
-> image per stage (the map below, added for issue #72) — and `atrium-digital-convert`, whose
+> `atrium-ocr-postprocess`, `atrium-keyword-extract` and `atrium-digital-convert` — the six `-api`
+> images, one production image per stage (the map below, added for issue #72). digital-convert's
 > service (`api-digital`, `POST /reformat` and `POST /describe`) is built since its v1.1.0-beta and
 > follows the same contract. The repositories `atrium-alto-postprocess` and
 > `atrium-llm-enrich` that preceded two of these are superseded since 2026-10-01 and kept as history.
@@ -48,7 +48,7 @@ what makes them immutable.
 
 Program ids in records written before 1 October 2026 are `alto-postprocess` and `llm-enrich`; the
 record contract accepts both names for each writer (`PROGRAM_SUCCESSORS`, `docs/document_schema.md`).
-The images of the archived repositories (`atrium-alto-postprocess{,-api}`,
+The images of the superseded repositories (`atrium-alto-postprocess{,-api}`,
 `atrium-llm-enrich-{api,remote,llm,digital}`, and `atrium-nlp-enrich-llm`) stay published for consumers
 pinned to them and receive no new tags.
 
@@ -95,8 +95,8 @@ is a commented, parameterised `Deployment` + `Service`. The load-bearing fields,
 a rolling restart actually exercises them:
 
 1. **`startupProbe` → `/ready`**, generous `failureThreshold × periodSeconds` (5 minutes by
-   default). Every one of these five services warms a model (or, for translator, a remote
-   backend) at startup; a short startup budget turns a slow-but-healthy first request into a
+   default). Every one of these six services warms up at startup (a model; for translator, a remote
+   backend; for digital-convert, its converters and the record schema); a short startup budget turns a slow-but-healthy first request into a
    restart loop — precisely the operational failure mode #55 exists to remove, reintroduced
    at the K8s layer if this budget is too tight.
 2. **`readinessProbe` → `/ready`** — the ongoing check. `failureThreshold: 2` with a 5s
@@ -126,7 +126,7 @@ a rolling restart actually exercises them:
 
 ## Configuring the port and bind address
 
-The manifest's `env:` block sets `PORT`, and all five images honour it — `service/api.py`'s
+The manifest's `env:` block sets `PORT`, and all six images honour it — `service/api.py`'s
 `__main__` block (ocr-postprocess: `service/text_api.py`) reads `PORT`, `HOST`,
 `GRACEFUL_SHUTDOWN_S` and `RELOAD` from the environment, with the manifest's values as
 defaults. Until atrium-project#58 this was true of ocr-postprocess only: the other four
@@ -154,7 +154,7 @@ is the only reason changing the port is a two-line edit rather than a five-line 
 > leave `HOST` at `0.0.0.0` unless you have a specific reason not to.
 
 The four variables above are what the port-and-bind discussion needs. The section below is
-the full operator-facing contract across all five services — including the three
+the full operator-facing contract across all six services — including the three
 (`ALLOWED_ORIGINS`, `MAX_UPLOAD_MB`, `LOG_LEVEL`) whose effective default depends on *how* you
 started the container, and the one service this manifest cannot deploy unmodified.
 
@@ -166,9 +166,9 @@ Each repo's own `.env.example` is the complete ledger this table is drawn down f
 is fixed by [`templates/env.example.template`](templates/env.example.template). A variable
 named in one place and not the other is a bug in whichever was edited last —
 atrium-project#60's CI guard (`tests/test_env_contract.py`, both hub-local and vendored into
-each of the five repos) fails on exactly that.
+each of the six repos) fails on exactly that.
 
-**Table A — common to all five**
+**Table A — common to all six**
 
 | Variable              | Code default  | In the template manifest | What it does / why you would change it                                                                                                                                                            |
 |-----------------------|---------------|--------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -177,7 +177,7 @@ each of the five repos) fails on exactly that.
 | `GRACEFUL_SHUTDOWN_S` | `20`          | commented                | uvicorn's bound on waiting for in-flight requests. Raise it together with `terminationGracePeriodSeconds`.                                                                                        |
 | `ALLOWED_ORIGINS`     | `*`           | commented                | CSV of CORS origins. `*` is every origin. An **empty** value is not the same as omitting it — see the callout below.                                                                              |
 | `MAX_UPLOAD_MB`       | *per service* | commented                | Canonical upload limit. There is no shared number — see the table below.                                                                                                                          |
-| `LOG_LEVEL`           | `INFO`        | commented                | Root logger level for the entrypoint. All five honour it identically (atrium-project#61); `tests/test_logging_contract.py` is vendored in each repo and fails if one drifts.                      |
+| `LOG_LEVEL`           | `INFO`        | commented                | Root logger level for the entrypoint. All six honour it identically (atrium-project#61); `tests/test_logging_contract.py` is vendored in each repo and fails if one drifts.                       |
 | `RELOAD`              | `false`       | **—, deliberately**      | uvicorn filesystem auto-reload. There is no correct value for a Deployment, so there is no commented entry to uncomment by accident.                                                              |
 | `HEALTHCHECK_PATH`    | `/health`     | **—**                    | The path the container's own `HEALTHCHECK` probes. Kubernetes does not read a `HEALTHCHECK` (see this document's opening section), so it is irrelevant here — change it only alongside the route. |
 | `MAX_UPLOAD_BYTES`    | —             | **—**                    | **Deprecated.** A byte-valued fallback that loses to `MAX_UPLOAD_MB` whenever both are set. Do not introduce it.                                                                                  |
@@ -202,7 +202,7 @@ silently gets the raw one:
 > `LOG_LEVEL` are worse — an empty value raises at startup and the pod crash-loops on
 > `startupProbe`. To leave a variable at its default, delete the entry; do not blank it.
 
-**`MAX_UPLOAD_MB` — what the five services share is the variable name and the resolver, not the
+**`MAX_UPLOAD_MB` — what the six services share is the variable name and the resolver, not the
 number.** The limit is a property of what each service ingests:
 
 | Repo                | `MAX_UPLOAD_MB` | Set at           | Why this number                                                  |
@@ -210,6 +210,7 @@ number.** The limit is a property of what each service ingests:
 | translator          | `50`            | `tool_limits.py` | highest — ALTO XML in, ALTO XML out                              |
 | digital-convert     | `50`            | `tool_limits.py` | a born-digital document: a PDF or an office file                 |
 | ocr-postprocess     | `25`            | `tool_limits.py` | ALTO XML for a whole scanned volume, or a PDF or office document |
+| keyword-extract     | `10`            | `tool_limits.py` | a record, per uploaded part, or a document's text                |
 | page-classification | `10`            | `tool_limits.py` | a multi-page PDF                                                 |
 | nlp-enrich          | `5`             | `tool_limits.py` | lowest — a 5 MB CSV is already at the `MAX_WORDS` ceiling        |
 
@@ -271,10 +272,11 @@ shows the shape; creating the `Secret` is your step.
 - **A synchronous request that outlives the whole shutdown chain is still cut short.**
   `GRACEFUL_SHUTDOWN_S` and `terminationGracePeriodSeconds` are finite by
   necessity — this issue makes the *typical* in-flight request safe across a rolling
-  restart, it does not make every possible one safe regardless of duration. Four of the
-  five services process a request synchronously within the HTTP request/response cycle
-  itself (page-classification's multi-page PDF loop, ocr-postprocess's per-file
-  inference, translator's per-chunk LINDAT calls, keyword-extract's per-line LLM calls,
+  restart, it does not make every possible one safe regardless of duration. All six
+  services process a request synchronously within the HTTP request/response cycle
+  itself (page-classification's multi-page PDF loop, digital-convert's per-document
+  conversion, ocr-postprocess's per-file inference, translator's per-chunk LINDAT calls,
+  keyword-extract's per-line LLM calls,
   nlp-enrich's own synchronous `/enrich`/`/enrich_text`/`/rescale`); a request that runs
   longer than the container's grace period is still forcibly cut when the kubelet
   `SIGKILL`s. Raise `terminationGracePeriodSeconds` **and** the Dockerfile's
@@ -318,7 +320,7 @@ shows the shape; creating the `Secret` is your step.
 Replace `<tool>` and `<version>` in the manifest with the real image
 (`ghcr.io/ufal/atrium-nlp-enrich-api:v1.2.0`, etc. — see `docker_gha.md` §3.1–3.2 for the
 naming/tag-channel conventions), and size `resources.limits.memory` against the model(s) that
-repo actually loads. Everything else in the manifest is identical across all five services —
-that uniformity is the point: one reference contract, applied five times, rather than five
+repo actually loads. Everything else in the manifest is identical across all six services —
+that uniformity is the point: one reference contract, applied six times, rather than six
 independently-negotiated deployment specs — **with one exception**: keyword-extract's controlled kind
 additionally needs the `Secret` described in "Known limits" above before it will start at all.

@@ -220,8 +220,8 @@ born-digital documents its text-lines method reads (DOCX, ODT/ODS/ODP, XLSX, PPT
 HTML, e-mail, a PDF with visible text). For those it writes `source` only. `digital-born…` then
 names `digital-convert`, which reads only PDF and DOCX, so for the other kinds no program writes
 the positional plane yet. A site whose files of such a kind really are transcriptions declares
-them `ocr:generic` with alto-postprocess's `[DOCUMENT].SOURCE_ORIGIN_BY_KIND`
-([`docs/text_inputs.md` §6](https://github.com/ufal/atrium-alto-postprocess/blob/master/docs/text_inputs.md#6-provenance-sourceorigin)).
+them `ocr:generic` with ocr-postprocess's `[DOCUMENT].SOURCE_ORIGIN_BY_KIND`
+([`docs/text_inputs.md` §6](https://github.com/ufal/atrium-ocr-postprocess/blob/master/docs/text_inputs.md#6-provenance-sourceorigin)).
 The `digital-born…` row stays a prefix by decision (atrium-alto-postprocess#31, 2026-09-25):
 narrowing it to `digital-born-pdf`/`-docx` would change the §1a contract for all five repos, and the
 per-kind override already lets a site say what its files are. Revisit it when digital-convert reads
@@ -1304,3 +1304,36 @@ level admits extra blocks).
 * **Re-vendored** into the six tool repositories with `scripts/revendor_shared.sh`:
   `atrium_document.py`, `atrium_document.schema.json`, `atrium_service.py`,
   `test_document_originators.py`, `test_schema_freeze.py`; every service's spec regenerated.
+
+## Changelog — 2026-10-13 (#51: `teater_category_ids` declared; the crate stops minting theme URIs)
+
+**Additive: no `SCHEMA_VERSION` bump, `doc-schema-v1` stays the reference.** One optional field is
+new (registered above); every record written before it validates.
+
+* **`enrichment.items[].teater_category_ids`**: `[{source, id}]`, the AMČR (`HES-…`) and TEATER
+  records the item's `teater_category` stands for, its own and those of the same label the
+  vocabulary build merged into it. keyword-extract has written it since the controlled kind moved
+  there (`EMIT_CATEGORY_IDS`); the schema now says so. `source` and `id` are required strings; no
+  enum, so an unknown source is reported downstream, never refused.
+* **`teater_category` is a source label** (`kostel`), as the vocabulary spells it, not one of the
+  ATRIUM themes. The description says so. Whether the field should carry the theme instead (V-5 in
+  `skos_strategy.md`) is still the contract owner's question; this round records what producers
+  write, it does not decide it.
+* **`atrium_rocrate.py`** stops minting `https://w3id.org/atrium/theme/<label>` for
+  `teater_category`: an ATRIUM identifier for an AMČR concept, and a false one when the label is
+  not a theme. The crate now names each concept in `teater_category_ids` by its source URI
+  (`https://api.aiscr.cz/id/<id>`, `https://teater.aiscr.cz/id/<id>`), in the harvest scheme the
+  released vocabulary asset files it under (`scheme/amcr-harvest`, `scheme/teater-harvest`). An item
+  without ids contributes no term. The 2026-09-17 note on #51 described this as done; it was not
+  in the code until now.
+* **`atrium_vocab.py`**: `HESLAR_TO_THEME` drops `jazyk` (keyword-extract excludes it) and
+  `TEATER_BRANCH_TO_THEME["1"]` is `Methods`, as in keyword-extract's `taxonomy_config.json` of
+  2026-10-08 (74 mappings). Scheme authorities name the successor repositories.
+* **`atrium_service.py`**: the shared 502 description says when to retry: with
+  `reason: upstream_unavailable`, three times with backoff; without a reason, `detail` names the
+  cause, and an input that yielded nothing fails the same way again (atrium-nlp-enrich#41).
+* **Tests:** `test_atrium_rocrate.py` (+5: source URIs, nothing minted without ids, unknown sources
+  skipped, one term per concept whatever the item order, degraded mode); `test_schema_freeze.py`:
+  one register entry.
+* **Re-vendored** into the six tool repositories with `scripts/revendor_shared.sh`; every service's
+  spec regenerated.

@@ -122,7 +122,7 @@ explicit rules so they are fixed there and never replicated.
 
 ## 📜 4. Standardized service contract (normative)
 
-### 4.1 Meta-endpoints — required in all five services
+### 4.1 Meta-endpoints — required in all six services
 
 **`GET /info`** — service identity and capabilities. Required fields:
 
@@ -159,13 +159,14 @@ HEAD checks of the LINDAT UDPipe/NameTag URLs).
 
 ### 4.2 Primary endpoints stay domain-specific
 
-| Service             | Primary endpoint(s)                                                                                                                           | Input                                                                                                  | Output                         |
-|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|--------------------------------|
-| page-classification | `POST /predict_image`, `POST /predict_document`                                                                                               | PNG/JPEG · PDF                                                                                         | JSON top-N labels (per page)   |
-| translator          | `POST /translate`                                                                                                                             | ALTO/metadata XML                                                                                      | translated XML attachment      |
-| alto-postprocess    | `POST /process`                                                                                                                               | ALTO XML · TXT · JSON · any text-bearing document (`task_type=document`: PDF, DOCX, PAGE XML, hOCR, …) | JSON per-line lang/quality     |
-| nlp-enrich          | `POST /enrich`, `POST /enrich_text`, `POST /rescale`, jobs API (`POST /jobs`, `GET /jobs/{id}`, `GET /jobs/{id}/result`, `DELETE /jobs/{id}`) | lines file (+ ALTO) / JSON lines / converted TEITOK                                                    | TEITOK XML + keywords envelope |
-| llm-enrich (new)    | `POST /extract_keywords`, `POST /extract_keywords_text`                                                                                       | TXT/MD/CSV/TEITOK / JSON lines                                                                         | JSON per-line vocab keywords   |
+| Service             | Primary endpoint(s)                                                                                                                                                   | Input                                                                                                             | Output                                                |
+|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------|
+| page-classification | `POST /predict_image`, `POST /predict_document`                                                                                                                       | PNG/JPEG · PDF                                                                                                    | JSON top-N labels (per page)                          |
+| digital-convert     | `POST /reformat`, `POST /describe`                                                                                                                                    | born-digital PDF/DOCX (+ AMČR seed record)                                                                        | the document record (+ per-page assessment)           |
+| ocr-postprocess     | `POST /process`, `POST /score_record`                                                                                                                                 | ALTO XML · TXT · JSON · any text-bearing document (`task_type=document`: PDF, DOCX, PAGE XML, hOCR, …) · a record | JSON per-line lang/quality; the record scored         |
+| nlp-enrich          | `POST /enrich`, `POST /enrich_text`, `POST /rescale`, `POST /project_record`, jobs API (`POST /jobs`, `GET /jobs/{id}`, `GET /jobs/{id}/result`, `DELETE /jobs/{id}`) | lines file (+ ALTO) / JSON lines / converted TEITOK / a finished record                                           | TEITOK XML; the record projected onto it              |
+| keyword-extract     | `POST /extract_keywords`, `POST /extract_keywords_text`                                                                                                               | TXT/MD/CSV/TEITOK / JSON lines / a record                                                                         | statistical `keywords` and/or controlled `enrichment` |
+| translator          | `POST /translate`                                                                                                                                                     | ALTO/metadata XML                                                                                                 | translated XML attachment                             |
 
 **No renames.** Uniformity lives in the meta-contract, not the paths. (A rejected alternative —
 one `/process` everywhere — would break every existing client and frontend for cosmetic gain.)
@@ -181,15 +182,15 @@ one `/process` everywhere — would break every existing client and frontend for
 
 ### 4.4 Error codes (normative table)
 
-| Code        | Meaning                                                                                                                                                                                                                                                                                                                                                                      | Client behavior (§6)                                   |
-|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|
-| 413         | the request content is over a limit (`reason: limit_exceeded`: upload, pages, words, tokens, pixels)                                                                                                                                                                                                                                                                         | report the limit; split the input or raise the setting |
-| 415         | unsupported media type (`reason: unsupported_media_type`, with `accepted`)                                                                                                                                                                                                                                                                                                   | report expected types                                  |
-| 422         | unusable/invalid input (wrong format, bad params); `reason: invalid_record` for a record that cannot be opened, `ocr_text_layer` for a PDF whose text layer is an earlier OCR run's, `source_digest_mismatch` for a seed whose `source.sha512` is not the uploaded file's; also `reason: limit_exceeded` when a parameter or a per-input processing budget is over its limit | report; no retry                                       |
-| 429         | busy (`reason: busy`: every slot or queue place is taken), with `Retry-After`                                                                                                                                                                                                                                                                                                | retry after `Retry-After` seconds                      |
-| 500         | processing failure                                                                                                                                                                                                                                                                                                                                                           | report server detail; no blind retry                   |
-| 501         | this deployment cannot read the input: a reader's optional dependency is not installed (alto-postprocess `dependency_missing`)                                                                                                                                                                                                                                               | report; the operator installs it                       |
-| 502/503/504 | not ready / warming up / proxy; 502 with `reason: upstream_unavailable` is a backing service that did not answer after the tool's retries; 504 with `reason: limit_exceeded` is a time limit that depends on an upstream service                                                                                                                                             | **retry 3× with backoff**                              |
+| Code        | Meaning                                                                                                                                                                                                                                                                                                                                                                      | Client behavior (§6)                                                                                |
+|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| 413         | the request content is over a limit (`reason: limit_exceeded`: upload, pages, words, tokens, pixels)                                                                                                                                                                                                                                                                         | report the limit; split the input or raise the setting                                              |
+| 415         | unsupported media type (`reason: unsupported_media_type`, with `accepted`)                                                                                                                                                                                                                                                                                                   | report expected types                                                                               |
+| 422         | unusable/invalid input (wrong format, bad params); `reason: invalid_record` for a record that cannot be opened, `ocr_text_layer` for a PDF whose text layer is an earlier OCR run's, `source_digest_mismatch` for a seed whose `source.sha512` is not the uploaded file's; also `reason: limit_exceeded` when a parameter or a per-input processing budget is over its limit | report; no retry                                                                                    |
+| 429         | busy (`reason: busy`: every slot or queue place is taken), with `Retry-After`                                                                                                                                                                                                                                                                                                | retry after `Retry-After` seconds                                                                   |
+| 500         | processing failure                                                                                                                                                                                                                                                                                                                                                           | report server detail; no blind retry                                                                |
+| 501         | this deployment cannot read the input: a reader's optional dependency is not installed (ocr-postprocess `dependency_missing`)                                                                                                                                                                                                                                                | report; the operator installs it                                                                    |
+| 502/503/504 | not ready / warming up / proxy; 502 with `reason: upstream_unavailable` is a backing service that did not answer after the tool's retries; 504 with `reason: limit_exceeded` is a time limit that depends on an upstream service                                                                                                                                             | **retry 3× with backoff**; a 502 only with `upstream_unavailable` (without a reason, read `detail`) |
 
 **Error body (atrium-project#32 item 2, landed with #53).** Every error a service returns —
 `HTTPException`, the router's 404/405, request validation, an uncaught failure — has one
@@ -201,7 +202,7 @@ JSON shape, installed by `atrium_service.attach_error_handlers(app)`:
 ```
 
 - `status` is the HTTP status as an integer. It exists only on error bodies; the string
-  `status` of `/health`, `/ready`, a job resource or alto-postprocess's `/info` is another field.
+  `status` of `/health`, `/ready`, a job resource or ocr-postprocess's `/info` is another field.
 - `reason` is a **registered** code (`atrium_service.REASON_CODES`) or `null` when no code is
   registered for the cause yet. A published code is never renamed or removed; a new cause gets a
   new code. Each code may be sent only with its statuses (`REASON_STATUSES`, enforced by
@@ -215,7 +216,7 @@ JSON shape, installed by `atrium_service.attach_error_handlers(app)`:
   | `busy`                   | 429           | #53       | every slot or queue place taken; `Retry-After`                                                                                                                                                                         |
   | `unsupported_media_type` | 415           | #32 rnd 2 | a type the endpoint does not read; the body's `accepted` lists what it reads                                                                                                                                           |
   | `invalid_record`         | 422           | #32 rnd 2 | the record sent with the request cannot be opened (not UTF-8 JSON, not an object, a newer `schema_version` major) — a record that opens but does not validate is accepted and reported in `document_json_schema_error` |
-  | `ocr_text_layer`         | 422           | #32 rnd 2 | a PDF whose text layer is an earlier OCR run's (llm-enrich#10 W6; raised by `api-digital`)                                                                                                                             |
+  | `ocr_text_layer`         | 422           | #32 rnd 2 | a PDF whose text layer is an earlier OCR run's (digital-convert#4 W6; raised by `api-digital`)                                                                                                                         |
   | `source_digest_mismatch` | 422           | dc#2      | the seed's `source.sha512` is not the uploaded file's digest, checked before anything is read (atrium-digital-convert#2; raised by `api-digital`)                                                                      |
   | `upstream_unavailable`   | 502           | nlp#41    | a backing service named at the start of `detail` (LINDAT UDPipe, NameTag) did not answer after the tool's retries; its timeout is a 504 `limit_exceeded` instead, and a 502 with `reason: null` is not an outage       |
 
@@ -223,7 +224,7 @@ JSON shape, installed by `atrium_service.attach_error_handlers(app)`:
   a client reading `detail` needs no change. Structured data goes into extra members: `limit`
   (for `limit_exceeded`), `errors` (the validation problems, or a non-string `HTTPException`
   detail), `accepted` (for `unsupported_media_type`) and `cause` — a finer, **unregistered**
-  cause such as alto-postprocess's reader codes (`image_needs_ocr`, `corrupt`, …), informational
+  cause such as ocr-postprocess's reader codes (`image_needs_ocr`, `corrupt`, …), informational
   and free to change; a client branches on `reason`, never on `cause`.
 - The status of a `limit_exceeded` refusal follows its cause: **413** request content too large,
   **422** a parameter or a per-input processing budget, **504** a time limit that depends on an
@@ -233,7 +234,7 @@ Harmonization (atrium-project#32 round 2, before the first release that attaches
 media-type refusal is **415** `unsupported_media_type` — it was 400 in alto-postprocess and
 page-classification and 422 in llm-enrich, nlp-enrich and the translator. alto-postprocess's
 `dependency_missing` moves from 400 to **501**. Caller errors that ended in the blanket 500 are
-422 now: a record that cannot be opened (`invalid_record`, in all five), a malformed CSV/TEITOK
+422 now: a record that cannot be opened (`invalid_record`, in all six), a malformed CSV/TEITOK
 (llm-enrich) or JSON upload (alto-postprocess), an unreadable image or PDF and an unknown model
 `version` (page-classification), an unknown `task_type` (alto-postprocess, which read it as
 `text`). A client that treats any 4xx as a caller error is unaffected.
@@ -245,15 +246,15 @@ The normative artifacts are `docs/templates/env.example.template` (the layout ev
 variable the api image reads, at its code default). This section states the *rules* those
 artifacts implement; it does not enumerate variables, and a variable named here and absent
 there is a bug in this section. atrium-project#60's CI guard (`tests/test_env_contract.py`,
-hub-local and vendored into all five tool repos) is what keeps that true.
+hub-local and vendored into all six tool repos) is what keeps that true.
 
-| Variable          | Scope  | Standard                                                                                                                                                                                                                                                                                                                          |
-|-------------------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ALLOWED_ORIGINS` | server | CSV of CORS origins, code default `*`. Compose files may supply a narrower default of their own for local development; Kubernetes never reads one, so the k8s-facing reference (`docs/k8s_deployment.md`) always states the code default.                                                                                         |
-| `MAX_UPLOAD_MB`   | server | canonical upload limit, resolved by `atrium_service.resolve_max_upload_mb`. **The number is per-service, not shared** — alto-postprocess 25, llm-enrich 10, nlp-enrich 5, page-classification 10, translator 50 (see `docs/k8s_deployment.md`). `MAX_UPLOAD_BYTES` remains a deprecated fallback and loses whenever both are set. |
-| service-specific  | server | keep as-is; enumerated per repo in that repo's `.env.example` §5 ("Service knobs — operator") and in `docs/k8s_deployment.md`'s Table B.                                                                                                                                                                                          |
-| **limits**        | server | **every limit is a setting** (atrium-project#53, below): declared once in the repo's `tool_limits.py`, tagged `[limit]` in `.env.example`, listed in the service README's `## Limits` table and in `docs/k8s_deployment.md`'s Table B, and reported in `/info` (§4.1).                                                            |
-| `ATRIUM_<XX>_URL` | client | per-tool base-URL override, [§6](#-6-zero-dependency-client-contract) / [Appendix E](#appendix-e--naming-tables).                                                                                                                                                                                                                 |
+| Variable          | Scope  | Standard                                                                                                                                                                                                                                                                                                                                                  |
+|-------------------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ALLOWED_ORIGINS` | server | CSV of CORS origins, code default `*`. Compose files may supply a narrower default of their own for local development; Kubernetes never reads one, so the k8s-facing reference (`docs/k8s_deployment.md`) always states the code default.                                                                                                                 |
+| `MAX_UPLOAD_MB`   | server | canonical upload limit, resolved by `atrium_service.resolve_max_upload_mb`. **The number is per-service, not shared** — translator 50, digital-convert 50, ocr-postprocess 25, keyword-extract 10, page-classification 10, nlp-enrich 5 (see `docs/k8s_deployment.md`). `MAX_UPLOAD_BYTES` remains a deprecated fallback and loses whenever both are set. |
+| service-specific  | server | keep as-is; enumerated per repo in that repo's `.env.example` §5 ("Service knobs — operator") and in `docs/k8s_deployment.md`'s Table B.                                                                                                                                                                                                                  |
+| **limits**        | server | **every limit is a setting** (atrium-project#53, below): declared once in the repo's `tool_limits.py`, tagged `[limit]` in `.env.example`, listed in the service README's `## Limits` table and in `docs/k8s_deployment.md`'s Table B, and reported in `/info` (§4.1).                                                                                    |
+| `ATRIUM_<XX>_URL` | client | per-tool base-URL override, [§6](#-6-zero-dependency-client-contract) / [Appendix E](#appendix-e--naming-tables).                                                                                                                                                                                                                                         |
 
 **What counts as a limit (atrium-project#53, factor III).** A *limit* is a value that
 (a) refuses an input; (b) cuts, samples or splits an input or a prompt; (c) caps an output; or
@@ -297,7 +298,7 @@ that branch. (Generalized from exemplar defect (b): the page-classification skil
 
 atrium-project#32 round 2 (2026-09-28), K4TEL's three additions to David Motyčka's 09-26 request,
 accepted 09-27. Implemented in `docs/templates/shared/atrium_service.py` (gen 3),
-`atrium_openapi.py` and `test_openapi_contract.py`, vendored into all five repos.
+`atrium_openapi.py` and `test_openapi_contract.py`, vendored into all six repos.
 
 **Typed responses.** Every primary endpoint's JSON 200 is a named model (`$ref`), and so is
 `/info` (an `InfoBase` subclass). Routes **document** their responses —
@@ -321,7 +322,7 @@ against the **published** schema (`atrium_openapi.validate_response`). page-clas
   (a binary part with `contentMediaType: application/json`, or a free-form object), because a
   #67 R1 seed (`doc_id`, `source`) fails the full schema and must stay valid input. Every tool
   opens a sent record through `parse_record_part()` (§4.4 `invalid_record`) and names it
-  `document_json`, in and out (alto-postprocess keeps `document_record` / `document_json_out`
+  `document_json`, in and out (ocr-postprocess keeps `document_record` / `document_json_out`
   as deprecated aliases);
 - every primary response declares an optional `paradata: CreateAction` (#67 §E), and since
   atrium-project#71 every successful response fills it: the call's Process Run Crate
@@ -350,7 +351,7 @@ digest the spec, so it ships in every image and release bundle, like `atrium_doc
 model manager). A repo with two HTTP services lists both (none has two today: digital-convert's
 planned `api-digital` became its one service, with one `service/openapi.json`).
 
-**Release.** `release.yml` (all five): `atrium_openapi.py check` (the committed spec is what the
+**Release.** `release.yml` (all six): `atrium_openapi.py check` (the committed spec is what the
 tag's code generates) → `stamp` (`info.version` = the release version; `openapi.json` +
 `openapi.json.sha256`) → `baseline` (the highest release below the tag that carries the asset;
 none is the bootstrap, which passes; an API error fails) → `compare --require-oasdiff`

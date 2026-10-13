@@ -43,6 +43,16 @@ on:
         required: false
         type: boolean
         default: false
+      require-sha-pins:
+        description: >-
+          Refuse a hub reusable called at a tag (`@v1`): every such caller must
+          name a commit (`@<40-char sha>  # v1`, with a matching `hub-ref`),
+          atrium-project#40 F / #72 E.2. Off by default, because the hub's own
+          callers run at `@v1`; scripts/pin_hub_reusables.py turns it on in a tool
+          repo's caller in the sweep that pins that repo.
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read   # least privilege: this only ever reads trees
@@ -91,11 +101,12 @@ jobs:
       - name: Check workflows and callers
         env:
           OFFLINE: ${{ inputs.offline && '--offline' || '' }}
+          REQUIRE_SHA_PINS: ${{ inputs.require-sha-pins && '--require-sha-pins' || '' }}
         run: |
-          # shellcheck disable=SC2086 — OFFLINE is a single optional flag
+          # shellcheck disable=SC2086 — OFFLINE and REQUIRE_SHA_PINS are single optional flags
           python hub-repo/tools/ci/workflow_lint.py \
             --repo-root tool-repo \
-            --hub-root hub-repo $OFFLINE
+            --hub-root hub-repo $OFFLINE $REQUIRE_SHA_PINS
 
       # atrium-project#72 A.3: a production image holds its stage and the approved shared
       # components, nothing else. The caller's .github/production-image.json lists the stage's

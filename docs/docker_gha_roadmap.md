@@ -770,7 +770,7 @@ tool repo's `workflow-lint` fails its compose rule until that repo's half lands.
   - That script is not reachable from an ENTRYPOINT.
 - alto's `setup/setup_api_server.sh` fetches the weights from `/resolve/main` for host setups (not the image).
 - llm's `digital-docling` stage downloads models as root with `HF_HOME` set, so any Hub cache it writes under `/cache` is root-owned. It is a build-only image.
-- `fixtures/e2e/VOCAB/teater_nested_vocab.json` is still committed and read by nothing.
+- ~~`fixtures/e2e/VOCAB/teater_nested_vocab.json` is still committed and read by nothing.~~ Deleted 2026-10-13.
 - The E2E CSV fixtures are in an older `CSV_HEADER` (40 or 37 columns) than alto's current 42.
 - `e2e-digital-smoke.yml` carries stale v0.5.2 notes.
 - nlp's `-llm` image ships without `data_samples/vocab`; this goes away with #67 R7.
@@ -813,8 +813,8 @@ Still open, each outside #69 and none blocking the pilot (owner @K4TEL unless no
   next dependency pass of each repo (a candidate for #72); do not simply delete it.
 - alto's `setup/setup_api_server.sh` `/resolve/main` fetch: host setups only; with #72.
 - llm's `digital-docling` root-owned Hub cache: build-only image; with llm-enrich#10 W7.
-- `fixtures/e2e/VOCAB/teater_nested_vocab.json` and the older E2E `CSV_HEADER`: with the seeded E2E
-  (#67 C.4), which rewrites those fixtures anyway.
+- The older E2E `CSV_HEADER`: with the seeded E2E (#67 C.4), which rewrites those fixtures anyway
+  (`VOCAB/teater_nested_vocab.json` deleted 2026-10-13).
 - nlp's `-llm` image without `data_samples/vocab`: goes with #67 R7.
 
 **#69 can close** citing this section: every wave has a verdict, W2's acceptance holds, and the only

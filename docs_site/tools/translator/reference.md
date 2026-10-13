@@ -361,12 +361,15 @@ the file is built is described in [Pipelines → W7](../../pipelines.md#w7--voca
   "target_lang": "en",
   "backend": "lindat",
   "output_mode": "replace",
-  "detected_source_lang": "cs"
+  "detected_source_lang": "cs",
+  "unsupported_source_langs": {"la": 1, "hu": 1}
 }
 ```
 
-`output_mode` and `detected_source_lang` ride along because `additionalProperties` is true on
-this block. A consumer that finds English in a field needs to know whether the Czech was kept
+`output_mode`, `detected_source_lang` and `unsupported_source_langs` ride along because
+`additionalProperties` is true on this block. The last appears only when an `auto` run met a
+language it identified with confidence but could not translate; those segments were translated
+from the fallback language, and their `_log.csv` rows say `unsupported_lang` (translator#52). A consumer that finds English in a field needs to know whether the Czech was kept
 beside it or overwritten; and with `source_lang: "auto"` the literal says nothing about the
 record, so the language the document resolved to is recorded beside it (only when detection
 ran).

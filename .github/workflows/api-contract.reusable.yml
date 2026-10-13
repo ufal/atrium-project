@@ -21,7 +21,7 @@
 #     `openapi.json` asset — the check each release.yml repeats as its gate — so a breaking
 #     change shows on the PR that makes it rather than on the tag. It skips where a repo has
 #     no committed spec (or no vendored atrium_openapi.py) yet, because `v1` moves for all
-#     five repos at once.
+#     six repos at once.
 #
 # W6's acceptance for issue #55/H10 asks that "the contract test asserts /health
 # against a container, not just an imported app." That assertion lives in

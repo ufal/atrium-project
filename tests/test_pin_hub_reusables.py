@@ -122,6 +122,24 @@ def test_the_swept_callers_pass_the_linter_even_when_it_requires_pins(tmp_path):
     assert rc == 0, out
 
 
+def test_the_sweep_makes_the_pinned_repos_own_lint_require_pins(tmp_path):
+    """Step 8 of docs/release_trust.md: the strict lint is switched on per pinned repository, by the
+    sweep, never in the reusable's default -- the hub's own callers run at `@v1`."""
+    callee = ".github/workflows/workflow-lint.reusable.yml"
+    assert pin.takes_input(callee, _HUB_ROOT, "require-sha-pins")
+    declared = yaml.safe_load((_HUB_ROOT / callee).read_text(encoding="utf-8"))[True]["workflow_call"]["inputs"]
+    assert declared["require-sha-pins"]["default"] is False
+    repo = _repo(tmp_path)
+    _run("--sha", SHA, "--root", str(tmp_path), "--repo", repo.name)
+    for path in (repo / ".github" / "workflows").iterdir():
+        job = next(iter(yaml.safe_load(path.read_text(encoding="utf-8"))["jobs"].values()))
+        expected = True if path.name == "workflow-lint.yml" else None
+        assert (job.get("with") or {}).get("require-sha-pins") is expected, path.name
+    assert "# keep this comment" in (repo / ".github" / "workflows" / "workflow-lint.yml").read_text()
+    assert _run("--sha", SHA, "--root", str(tmp_path), "--repo", repo.name, "--check")[0] == 0
+    assert _lint(repo, "--require-sha-pins")[0] == 0
+
+
 def test_a_second_sweep_changes_nothing_and_a_new_commit_moves_every_pin(tmp_path):
     repo = _repo(tmp_path)
     _run("--sha", SHA, "--root", str(tmp_path), "--repo", repo.name)
