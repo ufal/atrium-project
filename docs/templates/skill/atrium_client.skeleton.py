@@ -5,7 +5,10 @@ Copy to scripts/atrium_<verb>.py on the repo's agent-skill branch and fill in
 every <placeholder>. Keep the contract intact:
 
   - Python 3 stdlib only (argparse, urllib.request, mimetypes, json, uuid, csv).
-  - 3 retries with backoff on HTTP 502/503/504 only.
+  - 3 retries with backoff on HTTP 503/504, and on a 502 unless the service's error body
+    says it is final: a 502 with `reason: upstream_unavailable` (RETRY_502_REASONS; a backing
+    service did not answer) or from a proxy is retried, one with `reason: null` (e.g. an input
+    that yielded nothing) fails the same way again and is not.
   - Long read timeout (inference/warmup is slow by design) — tune per service:
     300 s (model inference) / 900 s (pipelines) / 1800 s (LLM).
   - Exit codes: 0 success · 1 usage/input error · 2 unreachable · 3 server error.
@@ -34,6 +37,9 @@ DEFAULT_BASE_URL = os.environ.get("ATRIUM_<XX>_URL", "http://localhost:8000")
 INPUT_SUFFIXES = {"<.ext>", "<.ext2>"}
 MAX_UPLOAD_MB = 10  # mirrors the server's MAX_UPLOAD_MB default
 RETRY_STATUS = {502, 503, 504}
+# A 502 is retried only with one of these reasons (atrium_service.REASON_CODES); without one,
+# `detail` names a cause that a retry does not change (atrium-nlp-enrich#41).
+RETRY_502_REASONS = {"upstream_unavailable"}
 RETRY_ATTEMPTS = 3
 RETRY_WAIT_S = 10
 TIMEOUT_S = 300  # tune per service, see module docstring
@@ -118,8 +124,22 @@ def build_multipart(fields: dict, file_field: str, file_path: Path) -> tuple[byt
     return body, f"multipart/form-data; boundary={boundary}"
 
 
+def is_retryable(status: int, body: str) -> bool:
+    """A 503/504 is. A 502 in the service's error body is retried only with a reason in
+    RETRY_502_REASONS; a 502 without that body came from a proxy in front of the service and is."""
+    if status != 502:
+        return True
+    try:
+        error = json.loads(body)
+    except ValueError:
+        return True  # not the service's answer: a proxy or gateway page
+    if not isinstance(error, dict) or "reason" not in error:
+        return True
+    return error["reason"] in RETRY_502_REASONS
+
+
 def http_json(url: str, data: bytes = None, content_type: str = None, timeout: int = TIMEOUT_S) -> dict:
-    """POST (or GET when data is None) and decode JSON, with retry on 502/503/504."""
+    """POST (or GET when data is None) and decode JSON, with retry on 503/504 and a retryable 502."""
     last_error = None
     for attempt in range(1, RETRY_ATTEMPTS + 1):
         request = urllib.request.Request(url, data=data, method="POST" if data else "GET")
@@ -130,7 +150,7 @@ def http_json(url: str, data: bytes = None, content_type: str = None, timeout: i
                 return json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             detail = e.read().decode("utf-8", errors="replace")
-            if e.code in RETRY_STATUS and attempt < RETRY_ATTEMPTS:
+            if e.code in RETRY_STATUS and attempt < RETRY_ATTEMPTS and is_retryable(e.code, detail):
                 print(f"[retry {attempt}/{RETRY_ATTEMPTS}] HTTP {e.code}, waiting {RETRY_WAIT_S}s...", file=sys.stderr)
                 time.sleep(RETRY_WAIT_S)
                 last_error = f"HTTP {e.code}: {detail}"

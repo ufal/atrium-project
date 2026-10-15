@@ -56,15 +56,17 @@ for `reason: "limit_exceeded"` (`key`, `env`, `value`, `observed`, `unit`), `acc
 one, an informational `cause` (unregistered; branch on `reason`). The registered codes and their
 statuses are listed in the spec's `x-atrium-reason-codes` (see [OpenAPI](#openapi-the-typed-contract)).
 
-| Code        | `reason`                        | Meaning                                                                                               |
-|-------------|---------------------------------|-------------------------------------------------------------------------------------------------------|
-| 413         | `limit_exceeded`                | request content over a limit (see [Limits](#limits))                                                  |
-| 415         | `unsupported_media_type`        | a type this endpoint does not read; `accepted` lists what it reads                                    |
-| 422         | `invalid_record`                | the `document_json` record cannot be opened (not JSON, not an object, a newer `schema_version` major) |
-| 422         | `null` / `limit_exceeded`       | unusable/invalid input; or a parameter / per-input budget over its limit                              |
-| 429         | `busy`                          | every slot or queue place taken — retry after `Retry-After` seconds                                   |
-| 500         | `null`                          | processing failure                                                                                    |
-| 502/503/504 | `null` / `limit_exceeded` (504) | not ready / warming up / upstream — **clients retry 3×**                                              |
+| Code    | `reason`                        | Meaning                                                                                               |
+|---------|---------------------------------|-------------------------------------------------------------------------------------------------------|
+| 413     | `limit_exceeded`                | request content over a limit (see [Limits](#limits))                                                  |
+| 415     | `unsupported_media_type`        | a type this endpoint does not read; `accepted` lists what it reads                                    |
+| 422     | `invalid_record`                | the `document_json` record cannot be opened (not JSON, not an object, a newer `schema_version` major) |
+| 422     | `null` / `limit_exceeded`       | unusable/invalid input; or a parameter / per-input budget over its limit                              |
+| 429     | `busy`                          | every slot or queue place taken — retry after `Retry-After` seconds                                   |
+| 500     | `null`                          | processing failure                                                                                    |
+| 502     | `upstream_unavailable`          | a backing service did not answer after this service's retries — **clients retry 3× with backoff**     |
+| 502     | `null`                          | the run produced nothing (`detail` names the cause) — no retry: it fails the same way again           |
+| 503/504 | `null` / `limit_exceeded` (504) | not ready / warming up / an upstream time limit — **clients retry 3×**                                |
 
 <drop rows that cannot occur for this service; add service-specific notes>
 

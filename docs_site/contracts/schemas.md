@@ -57,13 +57,14 @@ extended, never replaced.
 
 ### `translations` — written by the translator
 
-| Field                  | Type   | What the translator writes                                                                                        |
-|------------------------|--------|-------------------------------------------------------------------------------------------------------------------|
-| `source_lang`          | string | the source language as requested — a code such as `"cs"`, or `"auto"` when it was detected per block or field     |
-| `target_lang`          | string | e.g. `"en"`                                                                                                       |
-| `backend`              | string | the backend's registry name: `lindat`, `openai_compatible` or `ct2`                                               |
-| `output_mode`          | string | `replace` or `append` — carried as an additional property, which the block allows                                 |
-| `detected_source_lang` | string | with `source_lang: "auto"` only: the language the document resolved to, e.g. `"cs"` — also an additional property |
+| Field                      | Type   | What the translator writes                                                                                                                                                                                                                                                                                                                |
+|----------------------------|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `source_lang`              | string | the source language as requested — a code such as `"cs"`, or `"auto"` when it was detected per block or field                                                                                                                                                                                                                             |
+| `target_lang`              | string | e.g. `"en"`                                                                                                                                                                                                                                                                                                                               |
+| `backend`                  | string | the backend's registry name: `lindat`, `openai_compatible` or `ct2`                                                                                                                                                                                                                                                                       |
+| `output_mode`              | string | `replace` or `append` — carried as an additional property, which the block allows                                                                                                                                                                                                                                                         |
+| `detected_source_lang`     | string | with `source_lang: "auto"` only: the language the document resolved to, e.g. `"cs"` — also an additional property                                                                                                                                                                                                                         |
+| `unsupported_source_langs` | object | with `source_lang: "auto"` only, and only when it happened: language codes identified with confidence but not translatable, each with its number of segments, e.g. `{"la": 1}`; those segments were translated from the fallback language and their `_log.csv` rows say `unsupported_lang` (since `v1.4.0-beta`) — an additional property |
 
 No field is required. The translated text itself is not in this block: the file is referenced
 from `derived_from.translated_xml`.

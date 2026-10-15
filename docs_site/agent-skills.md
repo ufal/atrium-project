@@ -128,9 +128,13 @@ branch adds a small demonstration web page at `/frontend`.
     over 50 MB. There is no GPU mode — the model runs at LINDAT, not here.
 
 Both clients share one contract: **exit `0`** success · **`1`** a file not found or nothing
-produced · **`2`** server unreachable · **`3`** HTTP error after retries. On `502`, `503` or `504`
-they try **three times in total, ten seconds apart**. Every call uses one timeout — 300 s for the
-classifier, 900 s for the translator.
+produced · **`2`** server unreachable · **`3`** HTTP error after retries. On `503` or `504`
+they try **three times in total, ten seconds apart**, and on a `502` that is not final: one with
+`reason: upstream_unavailable` (a backing service such as LINDAT did not answer), or a proxy's page.
+A `502` with `reason: null` (an input that produced nothing) fails the same way again, so it is
+reported at once. The [client skeleton](https://github.com/ufal/atrium-project/blob/test/docs/templates/skill/atrium_client.skeleton.py)
+carries the rule as `RETRY_502_REASONS`; the two published clients (September 2026) predate it and
+retry every `502`. Every call uses one timeout — 300 s for the classifier, 900 s for the translator.
 
 ## Installing
 
@@ -188,14 +192,16 @@ Every ATRIUM service implements the same meta-contract, from the hub-canonical
 
 The error codes are harmonised, so a client can treat all six services alike:
 
-| Code                  | Meaning                          | What a client does                                 |
-|-----------------------|----------------------------------|----------------------------------------------------|
-| `413`                 | too large                        | report the limit; suggest splitting or downscaling |
-| `415`                 | unsupported media type           | report the expected types                          |
-| `422`                 | unusable input                   | report; do not retry                               |
-| `429`                 | busy                             | report; the caller may retry later                 |
-| `500`                 | processing failure               | report the detail; no blind retry                  |
-| `502` · `503` · `504` | warming up, draining, or a proxy | retry                                              |
+| Code                         | Meaning                          | What a client does                                 |
+|------------------------------|----------------------------------|----------------------------------------------------|
+| `413`                        | too large                        | report the limit; suggest splitting or downscaling |
+| `415`                        | unsupported media type           | report the expected types                          |
+| `422`                        | unusable input                   | report; do not retry                               |
+| `429`                        | busy                             | report; the caller may retry later                 |
+| `500`                        | processing failure               | report the detail; no blind retry                  |
+| `502` `upstream_unavailable` | a backing service did not answer | retry with backoff                                 |
+| `502` without a reason       | the run produced nothing         | report `detail`; do not retry                      |
+| `503` · `504`                | warming up, draining, or a proxy | retry                                              |
 
 See [Operations](operations.md) for how these endpoints behave inside a container and under
 Kubernetes.

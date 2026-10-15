@@ -443,8 +443,9 @@ The client is the only thing the agent executes. Normative spec (reference imple
 - **CLI shape:** positional input file(s) · `--base-url` (default `http://localhost:8000`,
   overridable via `ATRIUM_<XX>_URL` env) · `--info` (print `GET /info` and exit) ·
   `--format table|csv|json` (default `table`) · service-specific flags (Appendix E).
-- **Retries:** 3 attempts with backoff on HTTP 502/503/504 only (model warmup); no retry on
-  other codes.
+- **Retries:** 3 attempts with backoff on HTTP 503/504 (model warmup), and on a 502 that is not
+  final (`reason: upstream_unavailable`, or a proxy's page; `RETRY_502_REASONS` in the skeleton,
+  §4.4); no retry on a 502 with `reason: null` or on other codes.
 - **Timeouts:** short connect, long read (≥300 s) — model inference and first-call warmup are
   slow by design; a slow first call is not a failure.
 - **Exit codes:** `0` success · `1` usage/input error · `2` server unreachable ·

@@ -300,8 +300,9 @@ pairs and enforces it at translation time.
 controlled keyword lists of the Archaeological Map of the Czech Republic — over OAI-PMH, and the
 TEATER thesaurus over GraphQL. No credentials.
 
-**Stages.** `load_vocab.py` does 1–3 once; the translator does 4–6 on every run given
-`--vocabulary`.
+**Stages.** `load_vocab.py` does 1–3 once — or, with `--from-release`, takes the pairs from
+atrium-keyword-extract's vocabulary release instead (below); the translator does 4–6 on every run
+given `--vocabulary`.
 
 | # | Stage           | What actually happens                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 |---|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -317,9 +318,11 @@ which every protected term carries its agreed rendering.
 
 **What the user actually gets.** Consistent terminology across every translated document, with
 a count of protected terms per document in the paradata, and a glossary whose every row points
-back at the thesaurus concept it came from. A translation run with the vocabulary resolves to
-**CC BY-NC-SA 4.0**, determined by CUBBITT and the UDPipe models — the vocabulary adds two
-CC BY-NC 4.0 sources, but a CUBBITT run is already the more restrictive licence.
+back at the thesaurus concept it came from. Both vocabularies are **CC0** (the AMČR rights holder's
+statement of 28 September 2026, atrium-project#6), so they never make a run more restrictive: a
+LINDAT run resolves to **CC BY-NC-SA 4.0**, determined by CUBBITT and the UDPipe models, and a run
+on a permissively licensed self-hosted model with a named source language resolves to that model's
+licence.
 
 **Worth knowing.** The same Czech label can recur across AMCR's keyword lists, so the number
 of pairs is smaller than the number of AMCR records. The glossary is written in the five-column
@@ -327,10 +330,13 @@ form; a two-column `source_lemma,target_translation` file loads just as well. Ha
 verification on — if a certificate chain is incomplete, add the missing intermediate through
 `REQUESTS_CA_BUNDLE` rather than disabling verification.
 
-**The review half** belongs to nlp-enrich, which builds the reviewed SKOS vocabulary from the same
-two sources with its own harvester. The files are prefix-compatible by design — these five columns
-are the first five of nlp-enrich's `*_flat.csv` — but they are separate harvests, each from the
-live sources at the time it was run. See
+**The review half** belongs to atrium-keyword-extract, which builds the reviewed vocabulary (and
+its SKOS view) from the same two sources and attaches it, CC0, to each of its releases as
+`atrium-vocabulary-<version>.zip` with a `.sha256` beside it. The files are prefix-compatible by
+design — these five columns are the first five of its `amcr_flat.csv` and `teater_flat.csv` — so
+`load_vocab.py --from-release <version>` downloads the asset, checks the digest (a mismatch exits
+`3` and leaves the CSV untouched) and writes the glossary from it: a pinned release instead of what
+the live sources answered on the day of a harvest. See
 [SKOS → The translator and its glossary](contracts/skos.md#the-translator-and-its-glossary).
 
 ### W8 — Training and evaluation (page-classification)

@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 25 open issues (#67 added 2026-09-26). `test` = `fb64b29` (2026-09-29); tag `v1` = `fb64b29`; freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-09-30 (#72 round 1) — production images declared and checked, PyMuPDF replaced, release-trust tooling (delivered, not landed). Before it: 2026-09-30 (the meeting, #69/#70 closed out), 2026-09-29 (#69 round 5), 2026-09-28 (#32 round 2), typed contracts, registered reason codes and `openapi.json` as a release asset. CI green on `4f65b20` (Hub Self-Check 36256783734, pre-commit, CodeQL, Documentation Site)._
+> _Hub/planning repo. 15 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #51, #56, #66, #67, #72). `test` = `9b127da` (2026-10-14); tag `v1` = `f5578de` (2026-10-13); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-15, placed after the 2026-10-13 entry (this file is not in date order). It lists the 13 October round's pieces that never landed, redoes them, and consolidates 11 issue pairs. CI green on `9b127da` (the six fast lanes, the shared-module tests, workflow-lint, pre-commit, CodeQL, the site, RO-Crate validation)._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -613,6 +613,54 @@ later. Full detail: `digests/55.digest.md` · `plans/55.plan.md`.
 * **Not done:** SHA pins wait for `v1` to move to this round's commit (pinning to `16f2215` would fail para-drift
   against the re-vendored copies). V-4's labels in the example fixture are unchanged. The V-5 contract question
   stays with its owner.
+
+  Files delivered in chat; pushed in part as `f5578de` (`v1`). What did not land: the 2026-10-15 entry below.
+
+## 2026-10-15 — The 13 October round's missing pieces; 11 issue pairs consolidated
+* **What `f5578de` did not carry,** although the entry above lists it:
+  * the two deletions: `fixtures/e2e/VOCAB/teater_nested_vocab.json` (F8) and `docs_site/workflows/llm-enrich.md`.
+    `docs/skos_strategy.md:358`, `fixtures/e2e/README.md:73` and `docs/docker_gha_roadmap.md:773,817` already
+    report them as done on 2026-10-13;
+  * `docs_site/agent-skills.md`, `docs/templates/skill/serviceREADME.template.md` and
+    `docs/templates/skill/atrium_client.skeleton.py` (`RETRY_502_REASONS`);
+  * `docs_site/pipelines.md` (CC0, keyword-extract's asset, `--from-release`);
+  * `docs_site/contracts/schemas.md` (`unsupported_source_langs`) and the translator changelog page;
+  * keyword-extract's `tests/test_vocab_theme_maps.py`.
+* **Redone:**
+  * `atrium_client.skeleton.py`: `RETRY_502_REASONS = {"upstream_unavailable"}` and `is_retryable()`. A 503 or 504
+    is retried. A 502 is retried when its error body names a reason in the set, or when the body is not the
+    service's (a proxy's page). A 502 with `reason: null` is final.
+  * The same rule in `serviceREADME.template.md` (rows split), `docs_site/agent-skills.md`,
+    `docs/agent_skill_strategy.md` (the client's Retries line) and `docs/skills_catalog.md`. The skill clients
+    published in September still retry every 502; they follow when they are regenerated.
+  * `docs_site/pipelines.md` W7: the `load_vocab.py --from-release` stages, the CC0 paragraph, and the review half in
+    keyword-extract with its release asset.
+  * `docs_site/contracts/schemas.md`: the `unsupported_source_langs` row.
+  * `docs_site/tools/translator/changelog.md`: arc 6 and the rows `v1.2.2-beta` … `v1.4.0-beta`.
+  * The two files removed (`git rm`).
+  * keyword-extract's test: see that repository's DEVLOG.
+* **Issue logs:** the pairs of #4, #6, #10, #13, #16, #17, #24, #51, #66, #67 and #72 are consolidated: one header,
+  one Status, one "Where it stands — 2026-10-15", and a short History. New findings recorded there:
+  * **#72, release trust:** `immutable` is false on translator `v1.4.0-beta`, nlp-enrich `v1.0.1-beta` and
+    page-classification `v1.9.3-beta`. No repository has a ruleset, and no caller pins a hub SHA.
+  * **#72, AMČR's answers of 10-13:** the translator should read keyword-extract's curated list. The LLM backend is
+    to be a translation alternative fed the vocabulary with descriptions (translator#4).
+  * **#4 and #17, the public SSHOMP pages:**
+    * the 09-25 versions have been live since 09-30;
+    * CizIUW is still the 09-24 version, with CC BY-NC vocabularies;
+    * 0xSpVP 1.1.0's step text links the predecessors in steps 5, 6 and 8.
+  * **#16, new locations of real AMČR text:**
+    * keyword-extract (`KW_PER_DOC_LLM_*`, `gold_workbook.csv`, `corpus_term_evidence.csv`);
+    * digital-convert (`data_samples/`, the text of the 15 PDFs);
+    * the cluster paths, the digital-convert#5 attachments, and the FileSender delivery of `DOC_LINE_CATEG_1210`.
+
+    The ARUP-CAS forks lack the new files.
+  * **#10:** the done-criterion names a SHA-pinned hub ref, since `v1` moves.
+* **Checks:**
+  * `tests/`: 415 passed, 7 skipped (this environment; the 10-13 count was taken elsewhere);
+  * `tests/test_document_record_doc_id.py`: 18 passed;
+  * ruff check and format clean on the skeleton;
+  * `mkdocs build --strict` green, without the orphan-page notice now that `llm-enrich.md` is gone.
 
   Files delivered in chat.
 

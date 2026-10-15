@@ -64,10 +64,12 @@ Start the server with `bash <skill-name>/scripts/server.sh`, then run
 ## Contract & conventions (from [`agent_skill_strategy.md`](agent_skill_strategy.md))
 
 - **Client**: Python 3 stdlib only; `--base-url` / `ATRIUM_<XX>_URL`; `--format table|csv|json`
-  (except translator, which returns an XML attachment via `-o`); 3× retry on 502/503/504; exit
+  (except translator, which returns an XML attachment via `-o`); 3× retry on 503/504 and on a 502
+  that is not final (`upstream_unavailable` or a proxy; not `reason: null`); exit
   codes `0` ok · `1` usage/input · `2` unreachable · `3` server error.
 - **Errors**: `413` too large · `415` unsupported type · `422` unusable input · `429` busy ·
-  `500` failure · `502/503/504` warming up (retry).
+  `500` failure · `502` `upstream_unavailable` (retry) or without a reason (no retry) ·
+  `503/504` warming up (retry).
 - **Version**: read from `para_config.txt` `[tool]`, surfaced via `/info` — never hard-coded.
 - **Provenance**: services that write paradata route agents through the API so runs stay logged
   (a skill claims this only if its branch actually writes it).
