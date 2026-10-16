@@ -274,7 +274,7 @@ ocr-postprocess, and the hub commits that stage's real output as a fixture inste
 `DOC_LINE_CATEG/CTX000000003.csv`, in ocr-postprocess's 37-column `CSV_HEADER` format, one
 `Clear` line and one `Non-text` line.
 
-The reason is hardware: ocr-postprocess's line-categorisation step (`langID_classify.py`)
+The reason is hardware: ocr-postprocess's line-categorisation step (`classify_TEXT.py`)
 **hard-requires CUDA**, and GitHub-hosted runners have no GPU. Skipping the stage and
 committing its output is what lets the remaining stages be exercised at all — stage 4 reads
 the bridge file directly. It is a *pinned* fixture, unlike the vocabulary, because
