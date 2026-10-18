@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 15 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #51, #56, #66, #67, #72). `test` = `9b127da` (2026-10-14); tag `v1` = `f5578de` (2026-10-13); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-18, placed after the 2026-10-15 entry (this file is not in date order). It lists the 13 October round's pieces that never landed, redoes them, and consolidates 11 issue pairs. CI green on `9b127da` (the six fast lanes, the shared-module tests, workflow-lint, pre-commit, CodeQL, the site, RO-Crate validation)._
+> _Hub/planning repo. 16 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #51, #56, #66, #67, #72, #77). `test` = `9b127da` (2026-10-14); tag `v1` = `f5578de` (2026-10-13); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-18, placed after the 2026-10-15 entry (this file is not in date order). It lists the 13 October round's pieces that never landed, redoes them, and consolidates 11 issue pairs. CI green on `9b127da` (the six fast lanes, the shared-module tests, workflow-lint, pre-commit, CodeQL, the site, RO-Crate validation)._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -693,6 +693,11 @@ later. Full detail: `digests/55.digest.md` · `plans/55.plan.md`.
   * "LINDAT services for AMČR: written permission, monitoring, licence switch" (report item 9 had no issue).
 * **Not done in this round:** the hub docs listed for round 4 (`docs/k8s_deployment.md`, the workflow pages' sources,
   V-4, the F8 dates, SSHOMP texts).
+* **#77 opened** (K4TEL, 12:36) from the umbrella proposal; its pair written. Four findings that shape it:
+  * none of the six runbooks starts the published image or gives a fix per error;
+  * the translator fetches FastText at run time with no revision;
+  * the six `agent-skill` clients retry every 502, and two branches carry another tool's skill;
+  * the E2E lane runs `master`'s source, not `test`'s.
 
   Files delivered in chat.
 
