@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 15 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #51, #56, #66, #67, #72). `test` = `9b127da` (2026-10-14); tag `v1` = `f5578de` (2026-10-13); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-15, placed after the 2026-10-13 entry (this file is not in date order). It lists the 13 October round's pieces that never landed, redoes them, and consolidates 11 issue pairs. CI green on `9b127da` (the six fast lanes, the shared-module tests, workflow-lint, pre-commit, CodeQL, the site, RO-Crate validation)._
+> _Hub/planning repo. 15 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #51, #56, #66, #67, #72). `test` = `9b127da` (2026-10-14); tag `v1` = `f5578de` (2026-10-13); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-18, placed after the 2026-10-15 entry (this file is not in date order). It lists the 13 October round's pieces that never landed, redoes them, and consolidates 11 issue pairs. CI green on `9b127da` (the six fast lanes, the shared-module tests, workflow-lint, pre-commit, CodeQL, the site, RO-Crate validation)._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -661,6 +661,38 @@ later. Full detail: `digests/55.digest.md` · `plans/55.plan.md`.
   * `tests/test_document_record_doc_id.py`: 18 passed;
   * ruff check and format clean on the skeleton;
   * `mkdocs build --strict` green, without the orphan-page notice now that `llm-enrich.md` is gone.
+
+  Files delivered in chat.
+
+## 2026-10-18 — Round 1 of the 18 October plan: the translator; three issue pairs; heads-ups and two issue proposals
+* **Why:** the plan for the 14 open issues (after AMČR's grounding report of 30 September) orders the work: translator,
+  then born-digital, then keyword-extract, then the hub. On 18 October the user decided:
+  * the bake-off's LLM arm is a local vLLM serving Qwen3.8;
+  * the docs say "archiving pending" for alto-postprocess and llm-enrich until they are archived;
+  * the next tags of page-classification, nlp-enrich and the translator wait for immutable releases.
+* **Found:**
+  * ufal/atrium-alto-postprocess and ufal/atrium-llm-enrich are not archived (`archived: false`), although
+    `docs_site/development-history.md:110` and `docs/skills_catalog.md:38-39` say they are (round 4);
+  * no tool repository calls a hub reusable by SHA yet (42 callers at `@v1`);
+  * three releases since 10-15, all immutable: digital-convert `v1.1.2-beta`, ocr-postprocess `v1.12.0-beta`, and
+    keyword-extract `v1.3.0-beta` (vocabulary asset, 4,711 terms).
+* **Translator (#72's vocabulary agreement; translator#4, #46):** the curated list with descriptions; an LLM glossary
+  with descriptions; `VOCABULARY_PATH`; untranslatable pairs refused instead of rerouted to `cs-en`; the samples
+  realigned; the bake-off harness and job T1. Detail: translator `DEVLOG.md`, 2026-10-18.
+* **Issue pairs refreshed here:**
+  * **#13:** version 5 of the report uploaded to Zenodo (K4TEL, 10-17); 13 days to the deadline.
+  * **#22:** K4TEL's 10-12 comment applied. The Docling/MinerU bake-off is #22's again, deferred with it, and
+    digital-convert#5's Docling records are its first evidence.
+  * **#24:** the `v1.3.0-beta` vocabulary asset and the translator reading it.
+* **Heads-ups drafted:**
+  * #13 for David and Dana (the submission, the names, the Zenodo record);
+  * #4 for David (the record texts; submission around 22 October);
+  * #72 for Pavel (immutable releases in three repositories, rulesets, archiving the two predecessors).
+* **Issue proposals drafted:**
+  * a hub umbrella, "Pilot handover: production-test readiness of the six services";
+  * "LINDAT services for AMČR: written permission, monitoring, licence switch" (report item 9 had no issue).
+* **Not done in this round:** the hub docs listed for round 4 (`docs/k8s_deployment.md`, the workflow pages' sources,
+  V-4, the F8 dates, SSHOMP texts).
 
   Files delivered in chat.
 
