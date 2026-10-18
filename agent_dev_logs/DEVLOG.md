@@ -701,6 +701,31 @@ later. Full detail: `digests/55.digest.md` · `plans/55.plan.md`.
 
   Files delivered in chat.
 
+## 2026-10-18 (evening) — Round 2: born-digital releases prepared; the translator's T1 read; `k8s_deployment.md`
+* **Tool repositories** (detail in each DEVLOG):
+  * digital-convert `v1.2.0-beta` (#5): bold section titles as headings (`BOLD_HEADING_MAX_SHARE`), lines
+    ocr-postprocess could not score keep the converter's values with the stage `partial`, the report's page
+    quality over judged lines only. It tags after C4;
+  * nlp-enrich `v1.1.0-beta` (#42) and page-classification `v1.9.4-beta` (the loader fix): rows, version files and
+    specs; the tags wait for immutable releases (#72);
+  * translator: job T1 (7143997) gave the LINDAT baseline (1,230 segments, 0 failed) and ran the live lane (4
+    passed). The `ct2` arms failed on a missing CUDA 12 cuBLAS while their stages read ok, and vLLM refused Qwen3.8's
+    default batch, so `warm()` now runs a probe generation, the bake-off exits 2 on a variant that measures nothing,
+    and T1b re-runs those arms. The LINDAT replace samples, lost in the push, are restored again.
+* **`docs/k8s_deployment.md`:**
+  * ocr-postprocess's endpoints with `/score_record`;
+  * `MAX_UPLOAD_MB`: digital-convert's 200 is now the highest (1.5 GB AMČR originals: raise per deployment), 20× the
+    manifest's 10;
+  * Table B: ocr-postprocess `PPL_BATCH_LINES` 32 (9.5 GB beside page-classification's 4 GB); digital-convert
+    `STAGE_TIMEOUT_S` 360 and `BOLD_HEADING_MAX_SHARE`; page-classification `MAX_PDF_PAGES` behind `/describe`;
+    translator `VOCABULARY_PATH`.
+* **Issue pairs:** `{72}` (B.2 done, B.3 built, D.1 in the extras job, three releases held for E.2).
+* **Cluster:** digital-convert#5's C4 (the samples job in a fresh folder) and `issue5_extras_job.sh` (nlp-enrich#42 on
+  an AMČR record; the PyMuPDF label run); translator#4's T1b.
+* **Checks:** hub tests 462 passed, 5 skipped (the modules this environment can import).
+
+  Files delivered in chat.
+
 ---
 _Timeline index refreshed 2026-09-07 against live `test`/`main` HEAD, the current release/CI/issue state of all
 six repos (including direct CI-log inspection of the failing `e2e-digital-smoke.yml` run and its tracking issue
