@@ -68,9 +68,9 @@ After the assertions, the final record and every stage's paradata file are turne
 record's RO-Crate fragment and checked by the RO-Crate validator, against RO-Crate 1.2 and Process
 Run Crate 0.5 ([`tools/ci/rocrate_check.py`](../../tools/ci/rocrate_check.py)).
 
-### 🏷️ No vocabulary fixture (unused since 2026-08-19, deleted 2026-10-13)
+### 🏷️ No vocabulary fixture (unused since 2026-08-19, deleted 2026-10-15)
 
-`VOCAB/teater_nested_vocab.json` was deleted on 2026-10-13: no workflow, script or test read it
+`VOCAB/teater_nested_vocab.json` was deleted on 2026-10-15 (`c72b931`): no workflow, script or test read it
 (checked 2026-09-29 and again before the deletion). It used to be the vocabulary, on the stated
 grounds that "llm-enrich intentionally ships no `data_samples` of its own". That stopped being true
 long ago: the vocabulary is built by keyword-extract and released as

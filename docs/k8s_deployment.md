@@ -12,7 +12,7 @@
 > images, one production image per stage (the map below, added for issue #72). digital-convert's
 > service (`api-digital`, `POST /reformat` and `POST /describe`) is built since its v1.1.0-beta and
 > follows the same contract. The repositories `atrium-alto-postprocess` and
-> `atrium-llm-enrich` that preceded two of these are superseded since 2026-10-01 and kept as history.
+> `atrium-llm-enrich` that preceded two of these are superseded since 2026-10-01 and archived since 2026-10-19.
 >
 > This document is the deployment-side half of issue #55 (`HEALTHCHECK` + `SIGTERM`
 > handling). The code-side half — `ServiceState`, `/ready`, `serve_lifecycle`,

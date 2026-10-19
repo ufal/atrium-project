@@ -3,7 +3,7 @@
 > **Repository names (2026-10-01).** This document predates the repository moves of atrium-project#72 and
 > uses the names of its time: `alto-postprocess` is now `ocr-postprocess`; `llm-enrich` split into
 > `keyword-extract` (its keyword stage, with the keyword extraction of `nlp-enrich`) and `digital-convert`
-> (the born-digital converter). The old repositories are superseded and kept as history. Read the names below through that map;
+> (the born-digital converter). The old repositories are superseded and, since 2026-10-19, archived (read-only). Read the names below through that map;
 > the current ones are in [`docs_site/ecosystem/repository-map.md`](../docs_site/ecosystem/repository-map.md).
 
 > **Status:** Closed out 2026-09-29 — every wave executed or retired, see **§10** ([#69](https://github.com/ufal/atrium-project/issues/69)) · **Date:** 2026-08-04 · **Issue:** [#18](https://github.com/ufal/atrium-project/issues/18), then [#69](https://github.com/ufal/atrium-project/issues/69)
@@ -770,7 +770,7 @@ tool repo's `workflow-lint` fails its compose rule until that repo's half lands.
   - That script is not reachable from an ENTRYPOINT.
 - alto's `setup/setup_api_server.sh` fetches the weights from `/resolve/main` for host setups (not the image).
 - llm's `digital-docling` stage downloads models as root with `HF_HOME` set, so any Hub cache it writes under `/cache` is root-owned. It is a build-only image.
-- ~~`fixtures/e2e/VOCAB/teater_nested_vocab.json` is still committed and read by nothing.~~ Deleted 2026-10-13.
+- ~~`fixtures/e2e/VOCAB/teater_nested_vocab.json` is still committed and read by nothing.~~ Deleted 2026-10-15 (`c72b931`).
 - The E2E CSV fixtures are in an older `CSV_HEADER` (40 or 37 columns) than alto's current 42.
 - `e2e-digital-smoke.yml` carries stale v0.5.2 notes.
 - nlp's `-llm` image ships without `data_samples/vocab`; this goes away with #67 R7.
@@ -814,7 +814,7 @@ Still open, each outside #69 and none blocking the pilot (owner @K4TEL unless no
 - alto's `setup/setup_api_server.sh` `/resolve/main` fetch: host setups only; with #72.
 - llm's `digital-docling` root-owned Hub cache: build-only image; with llm-enrich#10 W7.
 - The older E2E `CSV_HEADER`: with the seeded E2E (#67 C.4), which rewrites those fixtures anyway
-  (`VOCAB/teater_nested_vocab.json` deleted 2026-10-13).
+  (`VOCAB/teater_nested_vocab.json` deleted 2026-10-15).
 - nlp's `-llm` image without `data_samples/vocab`: goes with #67 R7.
 
 **#69 can close** citing this section: every wave has a verdict, W2's acceptance holds, and the only

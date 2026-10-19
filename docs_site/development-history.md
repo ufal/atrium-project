@@ -107,7 +107,7 @@ The meeting of 30 September cut the tools along the pipeline's stages instead of
 history (atrium-project#72). `alto-postprocess` became `ocr-postprocess`; the keyword extraction of
 `nlp-enrich` and `llm-enrich` moved into one new repository, `keyword-extract`; and what was left of
 `llm-enrich` became `digital-convert`, the born-digital converter. The three were created as new
-repositories on 1 October, so the old ones were archived rather than redirected. In the hub the
+repositories on 1 October, so the old ones were archived (on 19 October) rather than redirected. In the hub the
 change is the repository lists, the end-to-end workflows, these pages and the record contract's
 successor map (`PROGRAM_SUCCESSORS`), which lets the new program ids write beside the old ones
 without rewriting a stamp already in a record.

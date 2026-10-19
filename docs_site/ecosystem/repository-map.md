@@ -87,7 +87,7 @@ e-mail gets no positional plane yet. The per-format list is in ocr-postprocess's
     `ocr-postprocess`, and `llm-enrich` was split — its keyword stage continues as `keyword-extract`,
     while its born-digital converter keeps the role id `digital-convert` and has its own repository. The hub's `PROGRAM_SUCCESSORS` map adds each successor **beside** its predecessor as an
     allowed writer: a record written before the move keeps its stamps, loads, merges and passes the
-    origin check, and nothing already written is re-attributed. The old repositories are superseded and kept as history;
+    origin check, and nothing already written is re-attributed. The old repositories are superseded and, since 2026-10-19, archived (read-only);
     their releases and images stay where they were, and the RO-Crate tool ids of old records keep
     pointing at them.
 

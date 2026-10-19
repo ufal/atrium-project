@@ -927,6 +927,11 @@ read. The migration mechanism exists for changes that need it; this is not one.
   is what a maintainer actually reads, and what `tests/test_fixture_schema.py` pins — kept the
   same wrong values. Nothing catches it today because the fixture test checks schema validity
   and the schema deliberately has no `enum`. Fix the fixture; do not add the enum.
+  **Fixed 2026-10-19:** the pages are `TEXT`/`PHOTO` and the line `Clear`, and
+  `test_fixture_controlled_values_are_registry_members` keeps the fixture's page categories,
+  quality bands, line categories and entity types inside `atrium_vocab`'s registry. `kostel`
+  was never wrong: `teater_category` holds the vocabulary's own label (the schema's description
+  uses it as the example), not a registry value.
 
 ### New: `atrium_rocrate.py` — the RO-Crate view
 

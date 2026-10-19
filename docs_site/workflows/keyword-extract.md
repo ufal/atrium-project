@@ -20,62 +20,79 @@ keywords of [nlp-enrich](nlp-enrich.md) and the vocabulary-controlled keywords o
     This page gives the **stable core** of the workflow: its purpose, its steps, the formats
     it reads and writes, and the licence floor of its output. The methods' options, the
     models and the prompts are documented with the code — in the tool's
-    [README](https://github.com/ufal/atrium-keyword-extract#readme) — because they change as
-    methods are compared and chosen. The tool is being assembled from its two sources: the
-    statistical kind is in place, the controlled kind follows it.
+    [README](https://github.com/ufal/atrium-keyword-extract#readme) and its
+    [service README](https://github.com/ufal/atrium-keyword-extract/blob/master/service/README.md) —
+    because they change as methods are compared and chosen. Both kinds now live in the tool:
+    the statistical kind since its first release, the controlled kind since v1.1.0-beta. No
+    controlled category has been checked against a reviewed answer yet, so treat the
+    categories as research output.
 
 ## Purpose
 
 Finding an archival document by what it is about needs its keywords, and two kinds answer
 different questions. **Statistical keywords** are the phrases that characterise a document or
 a page against the rest of its text; they need no vocabulary and say how they were found.
-**Controlled keywords** are terms of the AMČR keyword lists and the TEATER thesaurus, chosen by
-a language model that can only pick terms that exist in the vocabulary — with Czech and English
-labels, a thematic category and the page that supports each. The two kinds are kept apart in
-the output, and every keyword says which method produced it.
+**Controlled keywords** are given per line: a language model picks the term of the AMČR keyword
+lists or the TEATER thesaurus that describes the line, and can only pick a term that exists in
+the vocabulary. With the term come the records behind it, the Czech keywords found in the line
+with their English translations, and the page and line it came from. The two kinds are kept
+apart in the output, and every statistical keyword says which method produced it.
 
 ## At a glance
 
-|                    |                                                                                                                                                                                                                                      |
-|--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **In**             | the ATRIUM document record, after nlp-enrich; or plain text                                                                                                                                                                          |
-| **Out**            | keywords with their method, score and rank, per document and per page; a paradata log (JSON). With a record sent: the record with its `keywords` block (statistical kind) and its `enrichment` block (controlled kind), side by side |
-| **Runs as**        | a command-line tool; a container image; an HTTP service image (`POST /extract_keywords`)                                                                                                                                             |
-| **Compute**        | CPU for YAKE and the legacy method; a GPU is used by KeyBERT when there is one; the controlled kind calls a language-model server and carries no weights                                                                             |
-| **Network**        | the Hugging Face Hub for the KeyBERT model on first use; for the controlled kind, the language-model server and the AIS CR services that the vocabulary is built from                                                                |
-| **Code licence**   | MIT                                                                                                                                                                                                                                  |
-| **Output licence** | declared per run from the components used: KeyBERT and the legacy method add no restriction on their own; YAKE is AGPL-3.0; the AMČR and TEATER vocabularies are CC0                                                                 |
-| **Record**         | none of its own yet; the earlier llm-enrich record is to be re-pointed to it                                                                                                                                                         |
+|                    |                                                                                                                                                                                                                                                                                                                            |
+|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **In**             | the ATRIUM document record, after nlp-enrich; or plain text. The batch tools read files instead: nlp-enrich's CoNLL-U or TEITOK for the statistical kind; line tables (CSV), TEITOK or records for the controlled kind                                                                                                     |
+| **Out**            | statistical keywords with their method, score and rank, per document and per page; controlled keywords per line (JSON); the run's paradata (JSON). With a record sent: the record with its `keywords` block (statistical kind) and its `enrichment` block (controlled kind), side by side. The batch CLI writes CSV tables |
+| **Runs as**        | an HTTP service image (`POST /extract_keywords`, `/extract_keywords_text`), the production image; a command-line tool for the statistical kind (`keywords.py`) and its image; batch clients for the controlled kind; a research run on GPUs (`llm_run.py`) and its image                                                   |
+| **Compute**        | CPU for YAKE and the legacy method; a GPU is used by KeyBERT when there is one; the service's controlled kind calls a language-model service and carries no weights; the research run loads a model's weights onto GPUs                                                                                                    |
+| **Network**        | the Hugging Face Hub for the KeyBERT model, on first use (the service fetches it at startup); for the controlled kind, the language-model service (OpenRouter, or a local Ollama). Only the vocabulary build reaches the AMČR and TEATER sources                                                                           |
+| **Code licence**   | MIT                                                                                                                                                                                                                                                                                                                        |
+| **Output licence** | declared per run from the components used: KeyBERT and the legacy method add no restriction on their own; YAKE is AGPL-3.0; the AMČR and TEATER vocabularies are CC0                                                                                                                                                       |
+| **Record**         | none of its own yet; the earlier llm-enrich record is to be re-pointed to it                                                                                                                                                                                                                                               |
 
 ## Steps
 
-| # | Step                 | What happens                                                                                                                                                                                                                                                                                     | In → out        | Activity                    |
-|---|----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|-----------------------------|
-| 1 | Select the text      | The lines of the record are gathered per document and per page. Lines categorised `Trash`, `Garbage`, `Inverted` (a born-digital text layer that does not decode) or `Empty` are left out. Methods that need linguistic annotation use the lemmas and part-of-speech tags that nlp-enrich wrote. | JSON → text     | —                           |
-| 2 | Statistical keywords | KeyBERT (the default) ranks candidate phrases by their similarity to the document's embedding; YAKE ranks them without a model; the legacy method counts nouns, proper nouns and adjectives by lemma. Scores differ in meaning per method.                                                       | text → keywords | Keyword extraction          |
-| 3 | Build the vocabulary | The AMČR keyword lists and the TEATER thesaurus are harvested into one nested term list, each term pointing back to its source concept. The built vocabulary is published as a versioned, CC0 release asset.                                                                                     | → JSON, SKOS    | Collecting                  |
-| 4 | Controlled keywords  | A language model maps each passage onto the vocabulary: keywords in Czech and English, a thematic category and a confidence. Its output is constrained by a schema whose allowed values are the vocabulary's terms.                                                                              | text → JSON     | Enriching, Content Analysis |
-| 5 | Record the result    | Keywords of both kinds are written with their method, score and rank; entities are linked to AMČR and AAT identifiers; a paradata log records the methods, the model and the vocabulary version.                                                                                                 | → JSON          | —                           |
+| # | Step                 | What happens                                                                                                                                                                                                                                                                                                                        | In → out          | Activity                    |
+|---|----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------|-----------------------------|
+| 1 | Select the text      | The lines of the record are gathered per document and per page. Lines categorised `Trash`, `Garbage`, `Inverted` (a born-digital text layer that does not decode) or `Empty` are left out. Methods that need linguistic annotation use the lemmas and part-of-speech tags that nlp-enrich wrote.                                    | JSON → text       | —                           |
+| 2 | Statistical keywords | KeyBERT (the default) ranks candidate phrases by their similarity to the document's embedding; YAKE ranks them without a model; the legacy method counts nouns, proper nouns and adjectives by lemma. Scores differ in meaning per method.                                                                                          | text → keywords   | Keyword extraction          |
+| 3 | Build the vocabulary | The AMČR keyword lists and the TEATER thesaurus are harvested and nested into one term list, each term pointing back to the records it came from. This is done once, not per run: each release carries the built vocabulary as a CC0 asset, `atrium-vocabulary-<version>.zip`, with its `.sha256`.                                  | → JSON, CSV, SKOS | Collecting                  |
+| 4 | Controlled keywords  | A language model reads each line among its neighbours on the page and answers with the term that describes it (with the AMČR and TEATER records behind it), the Czech keywords found in it with their English translations, and a confidence. Its answer must fit a schema whose allowed categories are the vocabulary's terms.     | text → JSON       | Enriching, Content Analysis |
+| 5 | Record the result    | Statistical keywords go into the record's `keywords` block, each with its method, score and rank; controlled keywords into its `enrichment` block, one item per line with its page. Entities that are vocabulary terms are linked to AMČR and AAT identifiers. The paradata names the method, the model and the vocabulary sources. | → JSON            | —                           |
 
-Steps 3 and 4 are the controlled kind and step 2 the statistical one; the request chooses
-which run (`kind=statistical`, `controlled` or `both`), and each kind can fail or be skipped on
-its own and says so.
+Step 2 is the statistical kind and step 4 the controlled one; step 3 is done when the vocabulary
+is built, and a run reads its result. The request chooses which kind runs (`kind=statistical`,
+`controlled` or `both`, the default), and each kind can fail or be skipped on its own and says
+so. The service and the batch clients reach the model through OpenRouter or a local Ollama; the
+research run `llm_run.py` loads it onto its own GPUs.
+
+Two limits follow from how the controlled kind works (the service README's
+[Known limits](https://github.com/ufal/atrium-keyword-extract/blob/master/service/README.md#known-limits)).
+The schema keeps a category inside the vocabulary, not on topic: a model can be forced onto an
+unrelated term that shares the start of the word it began. And `confidence_score` is not
+calibrated: most lines get one of two values, so do not rank or filter on it.
 
 ## Provenance and licence
 
-Every run writes a paradata log, and the licence of the output is computed from the components
+Every run records its paradata, and the licence of the output is computed from the components
 that ran, as declared in the tool's `para_config.txt`; the most restrictive one wins. The
-statistical methods differ: the legacy method uses only the standard library, KeyBERT is MIT and
-loads a sentence-transformers model (Apache-2.0), and YAKE is AGPL-3.0, so a run that selects YAKE
-is declared accordingly. The vocabularies are CC0. The terms of a language model or of its provider
-apply to the controlled kind on top.
+service returns the paradata in its response, as a Process Run Crate `CreateAction`; the
+command-line and batch runs write it as a log (JSON), and the controlled ones name the
+vocabulary build they used. The statistical methods differ: the legacy method uses only the
+standard library, KeyBERT is MIT and loads a sentence-transformers model (Apache-2.0), and YAKE
+is AGPL-3.0, so a run that selects YAKE is declared accordingly. The vocabularies are CC0. The
+language model has no component there: the terms of the model or of its provider apply to the
+controlled kind on top, and every controlled run records the model's id.
 
 In the [document record](../ecosystem/document-contract.md) the tool is the successor of
-llm-enrich as a writer: it writes the `enrichment` and `forms` blocks and `entities[].pid`, and,
-since v1.2.0-beta, the `keywords` block (atrium-project#73): the statistical keywords of the
-document and of each page, every one with its method, score and rank. The two kinds stay in their
-own blocks and never share a list. Records already written keep the program id `llm-enrich`; the
-contract accepts both names for the one writer.
+llm-enrich as a writer: the contract lets it write the `enrichment` and `forms` blocks and
+`entities[].pid`, and, since v1.2.0-beta, the `keywords` block (atrium-project#73). It writes
+`keywords` when the statistical kind ran — the keywords of the document and of each page, every
+one with its method, score and rank — and `enrichment` with `entities[].pid` when the controlled
+kind contributed; it writes no `forms`. The two kinds stay in their own blocks and never share a
+list, and a re-run replaces each block whole. Records already written keep the program id
+`llm-enrich`; the contract accepts both names for the one writer.
 
 ## Where it sits
 
@@ -86,6 +103,10 @@ contract accepts both names for the one writer.
 * **Before the optional TEITOK projection.** nlp-enrich's `/project_record` reads the keywords
   and writes them into the TEITOK header, so the chain is nlp-enrich → keyword-extract →
   nlp-enrich's projection.
+* **The source of the translator's vocabulary** —
+  [Pipelines → W7](../pipelines.md#w7--vocabulary-harvesting--review-the-translators-half).
+  The vocabulary asset of each release can be read by the translator instead of a harvest of
+  its own.
 * **Vocabulary keywords** step of the AMČR text workflow
   [`0xSpVP`](https://marketplace.sshopencloud.eu/workflow/0xSpVP).
 
@@ -99,17 +120,25 @@ to be re-pointed to it.
 DARIAH's Galaxy tools already chain PDF text extraction with vocabulary-driven information
 extraction (task 4.2.1). The container is the service image
 `ghcr.io/ufal/atrium-keyword-extract-api:<version>` (`POST /extract_keywords`); for Galaxy the statistical
-kind is the capability to wrap, and the controlled kind stays a research target.
+kind is the capability to wrap. The controlled kind needs a language-model service, and its
+output is still research output.
 
 ## Sources
 
-Built from `ufal/atrium-nlp-enrich` at release **`v0.23.0`** (the statistical methods, `keywords.py`)
-and `ufal/atrium-llm-enrich` at release **`v0.9.0`** (the controlled kind and the vocabulary
-build, not yet moved). This table records **provenance**, not a build instruction.
+Read from `ufal/atrium-keyword-extract` at release **`v1.4.0-beta`** (2026-10-19). The
+statistical methods of `atrium-nlp-enrich` and the controlled kind and vocabulary build of
+`atrium-llm-enrich` have moved into it. This table records **provenance**, not a build
+instruction.
 
-| Source                                                                      | What was taken from it                                   |
-|-----------------------------------------------------------------------------|----------------------------------------------------------|
-| nlp-enrich `README.md` § Extract Keywords, `keywords.py`, `para_config.txt` | the three statistical methods, their scores and licences |
-| llm-enrich `README.md`, `llm_client_shared.py`, `vocab_build.py`            | the controlled kind, the vocabulary                      |
-| the keyword-extract plan (`agent_dev_logs/plans/40.plan.md`)                | the one service, the kinds, the record's blocks          |
-| `DARIAH-ERIC/atrium-galaxy-tools`                                           | the Galaxy analogue                                      |
+| Source                                                                                             | What was taken from it                                                                               |
+|----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
+| `README.md`; `CONTRIBUTING.md` § Release History                                                   | the two kinds, the paths that run them, the move from nlp-enrich and llm-enrich, the release history |
+| `service/README.md` (kinds, endpoints, the controlled kind, Known limits); `service/api.py`        | the service, the record's blocks, the paradata, the limits                                           |
+| `keywords.py`, `kw_config.txt`                                                                     | the three statistical methods, their scores, the batch CLI's inputs and outputs                      |
+| `llm_client_shared.py`, `openrouter_client.py`, `ollama_client.py`, `llm_run.py`, `llm_config.txt` | the controlled kind, its schema, its paradata, the research run                                      |
+| `vocab_build.py`, `vocab_sources.py`, `vocab_manager.py`, `.github/workflows/release.yml`          | the vocabulary build, its sources, the release asset                                                 |
+| `para_config.txt`                                                                                  | the licence components                                                                               |
+| `atrium_document.py`                                                                               | the blocks the tool may write, the program-id succession                                             |
+| `CITATION.cff`                                                                                     | the release and its date                                                                             |
+| `.github/production-image.json`, `.github/workflows/docker.yml`                                    | the images                                                                                           |
+| `DARIAH-ERIC/atrium-galaxy-tools`                                                                  | the Galaxy analogue                                                                                  |

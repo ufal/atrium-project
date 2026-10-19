@@ -171,13 +171,13 @@
     "note": "Blocks reflect CONTRIBUTED steps only; a block is absent until its tool has run."
   },
   "page_categories": {
-    "1": "Text",
-    "2": "Plate"
+    "1": "TEXT",
+    "2": "PHOTO"
   },
   "pages": [
     {
       "page": "1",
-      "category": "Text",
+      "category": "TEXT",
       "category_confidence": 0.97,
       "quality_score": 0.98,
       "quality_band": "Clear",
@@ -191,7 +191,7 @@
     },
     {
       "page": "2",
-      "category": "Plate",
+      "category": "PHOTO",
       "category_confidence": 0.91,
       "quality_score": 0.61,
       "quality_band": "Noisy",
@@ -213,7 +213,7 @@
       "page": "1",
       "line": 14,
       "text": "Výzkum odhalil základy gotického kostela ze 14. století.",
-      "categ": "Text",
+      "categ": "Clear",
       "lang": "cs",
       "quality_score": 0.98,
       "lemma": "výzkum",

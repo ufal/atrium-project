@@ -288,7 +288,7 @@ which describe the state of 21 September.
 | `atrium-digital-convert` | the born-digital converter of `atrium-llm-enrich` | Pages on and homepage field set on 7 October                              |
 
 GitHub does not redirect Pages when a repository is replaced, so the old addresses keep serving the old
-cards until the old repositories are archived, and `_generators/make_stubs.py` writes the cards of the
+cards (the old repositories are archived since 19 October), and `_generators/make_stubs.py` writes the cards of the
 new three from `_generators/repos.py`. The hub's site links the landing pages of all six tools.
 
 **2026-10-07:** the `gh-pages` branches of the new three held copies of the predecessors' cards

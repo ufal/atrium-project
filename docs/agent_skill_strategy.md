@@ -3,7 +3,7 @@
 > **Repository names (2026-10-01).** This document predates the repository moves of atrium-project#72 and
 > uses the names of its time: `alto-postprocess` is now `ocr-postprocess`; `llm-enrich` split into
 > `keyword-extract` (its keyword stage, with the keyword extraction of `nlp-enrich`) and `digital-convert`
-> (the born-digital converter). The old repositories are superseded and kept as history. Read the names below through that map;
+> (the born-digital converter). The old repositories are superseded and, since 2026-10-19, archived (read-only). Read the names below through that map;
 > the current ones are in [`docs_site/ecosystem/repository-map.md`](../docs_site/ecosystem/repository-map.md).
 
 _Issue: [ufal/atrium-project#31](https://github.com/ufal/atrium-project/issues/31) · Status: **implemented on all five `agent-skill` branches** (2026-07-18) → refinement stage (validation CI · acceptance · consistency · release); Appendices A–D promoted to [`templates/skill/`](templates/skill/) · Date: 2026-07-17_
@@ -889,16 +889,26 @@ Named **`server.sh`** (everywhere, including every doc that mentions it — defe
 3. Curl examples (primary endpoint(s) + `/info`).
 4. Response schema: JSON example + field-description table (must match `api.py` — defect (d)
    rule).
-5. Errors: the §4.4 table with its `reason` column and service-specific notes.
+5. Errors: the §4.4 table with its `reason` column, a "What to do" column on every row, and
+   service-specific notes (atrium-project#77).
 6. Configuration: the shared seven-row contract copied verbatim from
    `docs/templates/skill/serviceREADME.template.md`, plus this service's operator-facing
    variables, plus a pointer to the repo's `.env.example` (the complete ledger — layout per
    `docs/templates/env.example.template`).
-7. Run: venv/uvicorn + `docker compose --profile api up` (+ GPU variant).
+7. Start: the published image first (`docker run … ghcr.io/ufal/atrium-<tool>-api:<version>`), then
+   `docker compose --profile api up`, then a venv/uvicorn (+ GPU variant).
+7a. Models and caches: what is fetched, from where, at which revision, into which directory
+   (`HF_HOME`), and what happens without egress (atrium-project#77).
+7b. Partial results: `limits_applied`, `partial` and the tool's own statuses (atrium-project#77).
+7c. Known limits: one line per limit with a link to its detail (atrium-project#77).
 8. Frontend(s): where mounted, what they demonstrate.
 9. Tests: how to run the API tests (default branch only).
 10. OpenAPI: where the committed spec is, how to regenerate it, the release comparison and the
     fastapi/pydantic pins (§4.8).
+
+The five runbook sections (Start, Models and caches, Errors with "What to do", Partial results,
+Known limits) are checked by `tools/runbook_check.py` (atrium-project#77). "Quick start" counts as
+Start.
 
 ## Appendix E — naming tables
 

@@ -3,7 +3,7 @@
 > **Repository names (2026-10-01).** This document predates the repository moves of atrium-project#72 and
 > uses the names of its time: `alto-postprocess` is now `ocr-postprocess`; `llm-enrich` split into
 > `keyword-extract` (its keyword stage, with the keyword extraction of `nlp-enrich`) and `digital-convert`
-> (the born-digital converter). The old repositories are superseded and kept as history. Read the names below through that map;
+> (the born-digital converter). The old repositories are superseded and, since 2026-10-19, archived (read-only). Read the names below through that map;
 > the current ones are in [`docs_site/ecosystem/repository-map.md`](../docs_site/ecosystem/repository-map.md).
 
 _Issue: [ufal/atrium-project#51](https://github.com/ufal/atrium-project/issues/51) · Milestone: Q3 [WP8 / WP7] · Date: 2026-09-08_
@@ -334,6 +334,11 @@ things out of step, not the pipeline. Either way it is a contract change, not a 
 `atrium_document.schema.json`'s `page_categories` examples were `{"1": "Text", "2": "Plate"}`.
 Neither is in `CATEGORIES`.
 
+The worked example `fixtures/atrium_document.example.json` kept the same values (and a `Text` line)
+until 2026-10-19; it now has `TEXT`/`PHOTO` and `Clear`, and
+`tests/test_fixture_schema.py::test_fixture_controlled_values_are_registry_members` holds it to the
+registry (`docs/document_schema.md`, "Also recorded by this freeze").
+
 ### V-6 — keyword-extract read the converter's `Garbage`/`Inverted` lines ✅ fixed 2026-10-05
 
 atrium-keyword-extract's `service/api.py` left out lines categorised `Trash` and `Empty` only, a set
@@ -350,12 +355,12 @@ lesson again: a consumer filters on the registry's set, never on a copy of it.
 |--------|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | ~~F1~~ | ~~Take the V-1 fix~~ ✅ **done 2026-09-25**                                                  | Taken. `DROP_CATEGORIES` now filters on `UNTRUSTWORTHY_LINE_CATEGORIES`, so `Trash` is dropped on the OCR path. **This changes what the model is shown.** Pinned by `test_convert_drops_trash_lines_on_the_ocr_path`. (This row said "done 2026-09-16" before the code carried it; atrium-alto-postprocess#31 found the constant unchanged and the test missing on 2026-09-25.) |
 | ~~F2~~ | ~~Fix V-2 by filtering to directories~~ ✅ **done 2026-09-23**                               | Taken. `collect_images()` filters to directories, so the shipped `small_data_samples/` no longer raises and class indices cannot silently shift. Three tests in `TestCollectImages`.                                                                                                                                                                                            |
-| F3     | Retire the translator's duplicate harvester in favour of keyword-extract's release asset    | ⚠️ **partly taken** — see below. The switch waits on AMČR accepting the asset's list.                                                                                                                                                                                                                                                                                           |
+| ~~F3~~ | ~~Retire the translator's duplicate harvester~~ ✅ **taken 2026-10-19**                      | Taken. Translator `v1.5.0-beta`'s `load_vocab.py --from-release` keeps only the asset's curated `vocabulary.csv` (4,715 pairs from keyword-extract `v1.3.0-beta`), as agreed on #72 (13–15 October). See below.                                                                                                                                                                 |
 | F4     | Add verified CNEC 2.0 glosses as `skos:definition`                                          | Needs the CNEC reference; inventing them would be worse than omitting                                                                                                                                                                                                                                                                                                           |
 | F5     | Register the `w3id.org/atrium` redirect                                                     | Optional; blocks nothing                                                                                                                                                                                                                                                                                                                                                        |
 | ~~F6~~ | ~~Give the crate the source concepts' ids~~ ✅ **done 2026-10-13**                           | `teater_category_uri` never reached any repository, though this row said so on 2026-09-16. What exists is keyword-extract's `enrichment.items[].teater_category_ids` (`[{source, id}]`, built outside the prompt); the schema declares it and the crate uses it for the term's `@id` since 2026-10-13; see V-5.                                                                 |
 | F7     | Re-harvest so `close_match`/`broad_match`/`citation_uri` populate the committed artifacts   | Needs network; the parser is ready and tested                                                                                                                                                                                                                                                                                                                                   |
-| ~~F8~~ | ~~Delete the orphaned `fixtures/e2e/VOCAB/teater_nested_vocab.json`~~ ✅ **done 2026-10-13** | Deleted. This row said so on 2026-09-16 while the file was still committed, as `fixtures/e2e/README.md` had said since 2026-08-19.                                                                                                                                                                                                                                              |
+| ~~F8~~ | ~~Delete the orphaned `fixtures/e2e/VOCAB/teater_nested_vocab.json`~~ ✅ **done 2026-10-15** | Deleted. This row said so on 2026-09-16 while the file was still committed, as `fixtures/e2e/README.md` had said since 2026-08-19.                                                                                                                                                                                                                                              |
 
 ### F3, the half that was taken
 
@@ -364,9 +369,10 @@ lesson again: a consumer filters on the registry's set, never on a copy of it.
 > 5,087 harvested rows. What exists instead is `load_vocab.py --from-release VERSION`
 > (translator `v1.4.0-beta`), which builds the CSV from keyword-extract's release asset
 > `atrium-vocabulary-<version>.zip` after checking its `.sha256`. Built from `v1.2.0-beta` it gives
-> the same 4,952 pairs and the same differences listed below. The switch waits on AMČR accepting
-> that list (atrium-project#72); the asset's own curated `vocabulary.csv` (4,715 pairs, exclusions
-> applied) is the other candidate. The text below is the 2026-09-16 design.
+> the same 4,952 pairs and the same differences listed below. **Taken 2026-10-19:** as agreed on
+> atrium-project#72 (13–15 October), translator `v1.5.0-beta` keeps only the asset's curated
+> `vocabulary.csv` (4,715 pairs from keyword-extract `v1.3.0-beta`, exclusions applied). The text
+> below is the 2026-09-16 design.
 
 `load_vocab.py` gained **`--from-flat DIR`**: it rebuilds `data_samples/vocabulary.csv` from
 nlp-enrich's committed `amcr_flat.csv` / `teater_flat.csv` instead of harvesting. The two formats

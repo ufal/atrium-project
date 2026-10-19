@@ -106,3 +106,22 @@ def test_the_seed_example_digest_is_its_files():
     seed = json.loads(_SEED_FIXTURE.read_text(encoding="utf-8"))
     assert seed["source"]["filename"] == _SEED_SOURCE.name
     assert seed["source"]["sha512"] == hashlib.sha512(_SEED_SOURCE.read_bytes()).hexdigest()
+
+
+def test_fixture_controlled_values_are_registry_members():
+    """V-4 (docs/skos_strategy.md §6): the schema has no `enum` for these fields on purpose,
+    so only this test keeps the worked example's labels inside atrium_vocab's registry.
+    The fixture carried `Text`/`Plate` pages and a `Text` line until 2026-10-19."""
+    import atrium_vocab as vocab
+
+    record = json.loads(_FIXTURE.read_text(encoding="utf-8"))
+    checks = [
+        ("page_categories", list(record["page_categories"].values()), vocab.PAGE_CATEGORIES),
+        ("pages[].category", [p["category"] for p in record["pages"]], vocab.PAGE_CATEGORIES),
+        ("pages[].quality_band", [p["quality_band"] for p in record["pages"]], vocab.QUALITY_BANDS),
+        ("lines[].categ", [line["categ"] for line in record["lines"]], vocab.LINE_CATEGORIES),
+        ("entities[].type_teitok", [e["type_teitok"] for e in record["entities"]], vocab.ENTITY_TYPES),
+    ]
+    for field, values, registry in checks:
+        unknown = sorted(set(values) - set(registry))
+        assert not unknown, f"{field}: {unknown} not in the registry {registry}"

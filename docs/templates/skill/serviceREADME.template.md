@@ -3,18 +3,32 @@
 <One-line purpose: what goes in, what comes out.> The service version is read
 from `para_config.txt` `[tool]` (single source of truth, never hard-coded).
 
-## Quick start
+## Start
+
+The published image first: it is what a deployment runs, and it needs no checkout.
 
 ```bash
+docker run --rm -p 8000:8000 ghcr.io/ufal/atrium-<tool>-api:<version>   # the released image
+curl -s http://localhost:8000/ready                                        # 200 once warm
+# from a checkout:
+docker compose --profile api up -d
+# or in a virtual environment (development):
 pip install -r <requirements files>
 python -m service.<module>                  # honours PORT/HOST; default 0.0.0.0:8000
-# or, for development with auto-reload:
-uvicorn service.<module>:app --host 0.0.0.0 --port 8000
-# or:
-docker compose --profile api up -d
+uvicorn service.<module>:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 <frontend note: where the demo frontend is mounted>
+
+## Models and caches
+
+What the service fetches or loads before it can answer, so a deployment without internet access
+knows what to provide. "None" is an answer: say so when the image is self-contained.
+
+| What            | From where                   | Revision            | Into                           | Without egress                               |
+|-----------------|------------------------------|---------------------|--------------------------------|----------------------------------------------|
+| <model or file> | <Hugging Face repo / URL>    | <pinned revision>   | <path; `HF_HOME` if a cache>   | <baked into the image / mount a volume / …>  |
+| <remote API>    | <LINDAT / provider endpoint> | —                   | —                              | <the error a caller gets, and its `reason`>  |
 
 ## Endpoints
 
@@ -56,19 +70,20 @@ for `reason: "limit_exceeded"` (`key`, `env`, `value`, `observed`, `unit`), `acc
 one, an informational `cause` (unregistered; branch on `reason`). The registered codes and their
 statuses are listed in the spec's `x-atrium-reason-codes` (see [OpenAPI](#openapi-the-typed-contract)).
 
-| Code    | `reason`                        | Meaning                                                                                               |
-|---------|---------------------------------|-------------------------------------------------------------------------------------------------------|
-| 413     | `limit_exceeded`                | request content over a limit (see [Limits](#limits))                                                  |
-| 415     | `unsupported_media_type`        | a type this endpoint does not read; `accepted` lists what it reads                                    |
-| 422     | `invalid_record`                | the `document_json` record cannot be opened (not JSON, not an object, a newer `schema_version` major) |
-| 422     | `null` / `limit_exceeded`       | unusable/invalid input; or a parameter / per-input budget over its limit                              |
-| 429     | `busy`                          | every slot or queue place taken — retry after `Retry-After` seconds                                   |
-| 500     | `null`                          | processing failure                                                                                    |
-| 502     | `upstream_unavailable`          | a backing service did not answer after this service's retries — **clients retry 3× with backoff**     |
-| 502     | `null`                          | the run produced nothing (`detail` names the cause) — no retry: it fails the same way again           |
-| 503/504 | `null` / `limit_exceeded` (504) | not ready / warming up / an upstream time limit — **clients retry 3×**                                |
+| Code    | `reason`                        | Meaning                                                                                               | What to do                                                             |
+|---------|---------------------------------|-------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------|
+| 413     | `limit_exceeded`                | request content over a limit (see [Limits](#limits))                                                  | split the input, or raise the setting `limit.env` names                |
+| 415     | `unsupported_media_type`        | a type this endpoint does not read; `accepted` lists what it reads                                    | convert to a type in `accepted`                                        |
+| 422     | `invalid_record`                | the `document_json` record cannot be opened (not JSON, not an object, a newer `schema_version` major) | send the record the previous stage wrote; update this service if newer |
+| 422     | `null` / `limit_exceeded`       | unusable/invalid input; or a parameter / per-input budget over its limit                              | fix the field `errors` names, or raise the setting `limit.env` names   |
+| 429     | `busy`                          | every slot or queue place taken — retry after `Retry-After` seconds                                   | retry after `Retry-After`; add replicas if it persists                 |
+| 500     | `null`                          | processing failure                                                                                    | report it with `detail` and the request id                             |
+| 502     | `upstream_unavailable`          | a backing service did not answer after this service's retries — **clients retry 3× with backoff**     | retry; if it persists, check the service `detail` names                |
+| 502     | `null`                          | the run produced nothing (`detail` names the cause) — no retry: it fails the same way again           | fix the input `detail` names; do not retry unchanged                   |
+| 503/504 | `null` / `limit_exceeded` (504) | not ready / warming up / an upstream time limit — **clients retry 3×**                                | wait for `/ready`; for 504, raise the time limit `limit.env` names     |
 
-<drop rows that cannot occur for this service; add service-specific notes>
+<drop rows that cannot occur for this service; add service-specific notes. Every row keeps a
+"What to do" cell: `tools/runbook_check.py` in the hub checks it.>
 
 ## Limits
 
@@ -85,6 +100,24 @@ where a limit shapes a result, the response's `limits_applied` says so (and the 
 | `<derived>`     | — (derived from `<VARIABLE>`/<model>) | —       | <unit> | <…>                                                                         |
 
 Platform limits (not settings): <libxml2 without `huge_tree` / Starlette multipart defaults / …, or "none">.
+
+## Partial results
+
+When a response is 200 but not everything was done, it says so; a caller must read these before
+using the result.
+
+- `limits_applied`: each limit that shaped the result (`limit`, `effect`, `count`), as in the
+  paradata.
+- `partial` (where the service has stages or batches): <which part, what the caller gets for it,
+  and the field that counts it>.
+- <the tool's own statuses and what each means for the caller>.
+
+## Known limits
+
+What the service does not do well, in one line each, with a link to the detail. Users read this
+before they trust a result.
+
+- <limit> — <consequence>; see <link>.
 
 ## Configuration (environment)
 

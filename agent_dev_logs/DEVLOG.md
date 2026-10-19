@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 16 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #51, #56, #66, #67, #72, #77). `test` = `9b127da` (2026-10-14); tag `v1` = `f5578de` (2026-10-13); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-18, placed after the 2026-10-15 entry (this file is not in date order). It lists the 13 October round's pieces that never landed, redoes them, and consolidates 11 issue pairs. CI green on `9b127da` (the six fast lanes, the shared-module tests, workflow-lint, pre-commit, CodeQL, the site, RO-Crate validation)._
+> _Hub/planning repo. 16 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #51, #56, #66, #67, #72, #77). `test` = `9cd9d54` (2026-10-19); tag `v1` = `8ff5881` (2026-10-18); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-19, placed after the 2026-10-18 entries (this file is not in date order): the runbook outline and its check (#77), V-4, the SSHOMP texts at the releases of that day, and eight issue pairs or digests. The tool repositories publish immutable releases since 10-19, and the two predecessors are archived (#72)._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -723,6 +723,33 @@ later. Full detail: `digests/55.digest.md` · `plans/55.plan.md`.
 * **Cluster:** digital-convert#5's C4 (the samples job in a fresh folder) and `issue5_extras_job.sh` (nlp-enrich#42 on
   an AMČR record; the PyMuPDF label run); translator#4's T1b.
 * **Checks:** hub tests 462 passed, 5 skipped (the modules this environment can import).
+
+  Files delivered in chat.
+
+## 2026-10-19 — Round 4: the runbook outline and its check (#77), V-4, the SSHOMP texts at the day's releases
+* **Why:** AMČR colleagues run the six services themselves in S2 (#77); the SSHOMP milestone is due 31 October (#4);
+  #72's update of 10-19 (immutable releases in all six, both predecessors archived, the first tag rulesets).
+* **#77 A.1/A.2:**
+  * `docs/templates/skill/serviceREADME.template.md` and `docs/agent_skill_strategy.md` Appendix D: five runbook
+    sections (Start with the image, Models and caches, Errors with "What to do", Partial results, Known limits);
+  * `tools/runbook_check.py` (stdlib; `--repo`, `--ref`; exit 0/1/2) and `tests/test_runbook_check.py` (8 tests).
+    On `test`: 0/6. On the trees delivered on 10-19: 4/6 (nlp-enrich, keyword-extract, digital-convert,
+    page-classification); ocr-postprocess and translator need code first (a model pre-fetch; FastText baked into
+    the image).
+* **V-4 (#51):** the worked example's page categories and line category are registry members (`TEXT`/`PHOTO`,
+  `Clear`), pinned by `test_fixture_controlled_values_are_registry_members`. `skos_strategy.md` marks V-4 fixed and F3
+  taken, and dates F8 2026-10-15 (`c72b931`), as do `fixtures/e2e/README.md` and `docs/docker_gha_roadmap.md`.
+* **The predecessors:** "archived 2026-10-19" wherever the docs name them.
+* **Workflow pages:** the six re-read against the current releases; each names the release it was read from.
+* **SSHOMP (#4):** `plans/4.plan.md` bumped to the releases of 10-19, with § 0a giving what each release changed in
+  its record. Two texts change: `EMhu3X` (the ATRIUM record as input and as the TEITOK layout) and `CizIUW` (the
+  published vocabulary, a self-hosted language model, the Qwen3.8-27B licence row); the others change their version
+  only. Submission set for 22 October.
+* **Issue pairs and digests:** `{72}` (immutable releases, archives, the ruleset in 2 of 6, the label run's
+  2,509/2,514), `{77}`, `{67}` (R7's items met; release trust left), `{51}` (F3, F6, F8, V-4 closed); the digests
+  of #4, #22 (the first heading counts against Docling), #24 and #16 (new copies of documents already listed).
+* **Checks:** hub tests 425 passed, 6 skipped; ruff clean; `mkdocs build --strict` green;
+  `revendor_shared.sh --check`: 145 in parity, 0 drifted.
 
   Files delivered in chat.
 
