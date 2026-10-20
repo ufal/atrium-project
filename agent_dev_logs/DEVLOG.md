@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 16 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #51, #56, #66, #67, #72, #77). `test` = `9cd9d54` (2026-10-19); tag `v1` = `8ff5881` (2026-10-18); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-19, placed after the 2026-10-18 entries (this file is not in date order): the runbook outline and its check (#77), V-4, the SSHOMP texts at the releases of that day, and eight issue pairs or digests. The tool repositories publish immutable releases since 10-19, and the two predecessors are archived (#72)._
+> _Hub/planning repo. 19 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #51, #56, #66, #67, #72, #77, #78, #79, #81). `test` = `6d693de` (2026-10-19); tag `v1` = `6d693de` (2026-10-19); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-20, placed after the 2026-10-19 entry (this file is not in date order): the pairs of the two new hub issues, the documentation overhaul (#79) and CI governance (#81). The tool repositories publish immutable releases since 10-19, and the two predecessors are archived (#72)._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -750,6 +750,24 @@ later. Full detail: `digests/55.digest.md` · `plans/55.plan.md`.
   of #4, #22 (the first heading counts against Docling), #24 and #16 (new copies of documents already listed).
 * **Checks:** hub tests 425 passed, 6 skipped; ruff clean; `mkdocs build --strict` green;
   `revendor_shared.sh --check`: 145 in parity, 0 drifted.
+
+  Files delivered in chat.
+
+## 2026-10-20 — Two new hub issues: the documentation overhaul (#79) and CI governance (#81)
+* **Why:** motyc opened #79 (10-19; #80 closed as its duplicate) and #81 (10-20), both for K4TEL in the Q4
+  milestone. On ocr-postprocess#5 he moved the editorial work to #79, so #5 can close.
+* **#79, found:**
+  * four READMEs are over 1,100 lines (page-classification 1,927); most headings carry emoji in ocr-postprocess
+    (24 of 31), page-classification (27 of 30) and the translator (23 of 37); none of the six has a layered `docs/`;
+  * 26 in-page links are broken because GitHub keeps U+FE0F in heading ids (13 of them in ocr-postprocess);
+  * the hub's `docs_site/tools/page-classification/` and `tools/translator/` (10 pages, 2,369 lines) hold tool
+    manuals that the issue gives to the tool repositories: a decision before those two tools.
+* **#81, found:**
+  * `api-contract.reusable.yml:77-84` turns "nothing collected" into success, and `build-and-push` publishes
+    without waiting for the container probe;
+  * `docker.yml` and `release.yml` run independently on a tag, and no release records an image digest;
+  * the E2E lanes record no digests or source SHAs, and four repositories re-scan the base image instead of `-api`.
+* **Issue pairs:** `{79}` and `{81}` written; no other file changed.
 
   Files delivered in chat.
 
