@@ -2438,3 +2438,15 @@ releases; the gate's diff review covers *"only the files that go into the image 
   keyword-extract's 10-08 layout; recorded on #51 for the next shared-module round.
 
   Files delivered in chat.
+
+## 2026-10-20 — #82 opened: shared-component governance; its pair
+
+- **Why:** `@motyc` opened `#82` (*"Shared component governance: explicit owners, pinned adoption and compatibility policy"*, assigned to `@K4TEL`, milestone `Q4 [WP3]`), requesting an owner/consumer map and policy in `docs/shared_components.md`, a pinning recommendation, reproducible consumer pins, a 5–7 item PR checklist, and one end-to-end representative update.
+- **Found:**
+  - 24 hub-canonical files × 6 tools = 144 copies, plus 14 sibling copies of 12 owner files across `digital-convert` and `keyword-extract`, all currently in byte parity with their pins and owner `test` heads; plus 1 release data artifact (the vocabulary zip in `translator`, pinned only in prose at `v1.3.0-beta`).
+  - Five partial inventories (`MANIFEST.json`, `SIBLING_FILES` in `revendor_shared.sh`, `VENDORED` dicts, `production-image.json` `vendored` maps, and caller `vendored-from` inputs) with no single complete map.
+  - `vendored-parity` (`para-drift.reusable.yml:34-40, :149-150, :168-171`) compares consumer copies against the owner's moving `test` branch and logs the owner SHA only to stdout, so any owner commit to `test` touching a shared file turns an unchanged consumer red.
+  - The sole recorded owner revision (`digital-convert/tests/test_vendored_reader_parity.py:30-31`) is a comment naming `6707320` (2026-09-27), whereas the pinned bytes are from `2464756` (2026-10-05); `nlp-enrich`'s `teitok_read.py` and `flexiconv_convert.py` headers still name archived `atrium-llm-enrich`.
+  - No hub page requires AMČR's agreement for Class (c) changes that alter record meaning (`docs/document_schema.md:458-487` is purely technical; the commitment lives only in `#54` and `#67`).
+- **Recommendation:** Pin `vendored-parity` blocking checks to an explicit `ADOPTED["commit"]` (40-hex owner SHA) in each consumer's parity test (`tools/ci/vendored_pins.py`), and report owner-`test` advances as a non-blocking step-summary notice (`#81` monitoring tier); derive sibling topology from a `siblings` section in `MANIFEST.json`.
+- **Issue pairs:** `{82}` (`agent_dev_logs/digests/82.digest.md`, `agent_dev_logs/plans/82.plan.md`). Files delivered in chat.
