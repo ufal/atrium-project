@@ -771,6 +771,25 @@ later. Full detail: `digests/55.digest.md` · `plans/55.plan.md`.
 
   Files delivered in chat.
 
+## 2026-10-20 (later) — #4 corrected after motyc's review; his answers on #6 and #17; #81's release cases
+* **Why:** motyc answered three threads on 10-19 (22:22 – 23:16) and approved #4's texts with corrections; checking
+  the six repositories' releases against GHCR found two releases without images and one image without a release.
+* **#4:** the four corrections applied to every appendix of `plans/4.plan.md` (§ 0b): component licences stated with
+  their use and terms, and no output licence inferred from them; statistical vs vocabulary-controlled keywords (the
+  latter experimental, not evaluated); ALTO word coordinates vs positions estimated from born-digital lines; PDF
+  geometry vs office structure. ocr-postprocess's record names `v1.12.1-beta`. Submission stays 22 October.
+* **#6:** the 10-02 rule is not adopted. motyc asks for a schema proposal that records evidence, processing policy and
+  output rights separately (JSON Schema, RO-Crate 1.2 / Process Run Crate 0.5, REUSE), with a migration for
+  `provenance.license`; `atrium_rocrate.py` should stop exporting the calculated licence as the root dataset's. The
+  PyMuPDF label run (10-19) closes that evidence gap. The proposal is next round's.
+* **#17:** one `0xSpVP` update by motyc after #4, from his step table; #17 closes when it is public.
+* **#81:** ocr-postprocess `v1.12.0-beta` and nlp-enrich `v1.1.1-beta` were published without images (their Docker
+  test steps failed); keyword-extract's first `v1.4.0-beta` tag promoted images before its release check failed.
+  Recorded in § 3 as evidence for the release semantics.
+* **Dev logs:** `{4}`, `{6}`, `{17}` pairs and the `{81}` digest. No code changed.
+
+  Files delivered in chat.
+
 ---
 _Timeline index refreshed 2026-09-07 against live `test`/`main` HEAD, the current release/CI/issue state of all
 six repos (including direct CI-log inspection of the failing `e2e-digital-smoke.yml` run and its tracking issue
