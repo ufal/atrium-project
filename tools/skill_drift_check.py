@@ -252,7 +252,9 @@ def _absolute_name(module: str, level: int, source_path: str) -> str:
 # (a docstring citing a test, a comment naming a helper script), not a dependency. Without
 # this, `service/*.py` docstrings that mention `tests/test_service_api.py` dragged the whole
 # test suite into the closure and every repo reported dozens of "missing" files.
-_NEVER_RUNTIME = ("tests/", "tools/", "data_scripts/", "supplementary/")
+# result/ holds experiment outputs and the scripts that produced them (page-classification's
+# result/stats/unused.sh, which its README names), never what the service runs.
+_NEVER_RUNTIME = ("tests/", "tools/", "data_scripts/", "supplementary/", "result/")
 
 # Closure ROOTS beyond `service/**.py`. §6 makes `scripts/atrium_<verb>.py` the only thing
 # the agent actually executes, and §7's SKILL.md is what tells it to; a file those name is

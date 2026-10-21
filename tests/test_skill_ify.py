@@ -59,3 +59,45 @@ def test_apply_keeps_the_executable_bit(repo, tmp_path):
     assert skill_ify.cmd_apply(repo, "test", "agent-skill", into) == 0
     assert (into / "run.sh").stat().st_mode & 0o111
     assert not (into / "service" / "api.py").stat().st_mode & 0o111
+
+
+def test_data_the_image_ships_stays_on_the_skill_branch(repo, tmp_path):
+    """keyword-extract's vocabulary: `data_samples/` is excluded and the runtime files re-included."""
+    _git(repo, "checkout", "-q", "test")
+    _commit(
+        repo,
+        {
+            ".dockerignore": "# samples\ndata_samples/\n!data_samples/vocab/union_nested.json\n",
+            "data_samples/vocab/union_nested.json": "{}\n",
+            "data_samples/review/sheet.csv": "a\n",
+        },
+        "vocabulary",
+    )
+    derived = skill_ify.derive(repo, "test", "agent-skill")
+    assert "data_samples/vocab/union_nested.json" in derived
+    assert "data_samples/review/sheet.csv" not in derived
+
+
+def test_data_the_image_leaves_out_is_trimmed(repo, tmp_path):
+    """The translator's sample outputs: the image excludes them, so the skill branch does too."""
+    _git(repo, "checkout", "-q", "test")
+    _commit(
+        repo,
+        {
+            ".dockerignore": "data_samples/in-place_translated_files/\n**/*.log\n",
+            "data_samples/vocabulary.csv": "cs,en\n",
+            "data_samples/in-place_translated_files/a.xml": "<a/>\n",
+            "data_samples/run.log": "x\n",
+        },
+        "outputs",
+    )
+    derived = skill_ify.derive(repo, "test", "agent-skill")
+    assert "data_samples/vocabulary.csv" in derived
+    assert "data_samples/in-place_translated_files/a.xml" not in derived
+    assert "data_samples/run.log" not in derived
+
+
+def test_no_dockerignore_keeps_the_old_trim():
+    assert skill_ify.is_trimmed("data_samples/x.csv")
+    assert skill_ify.is_trimmed("data_samples/x.csv", skill_ify.dockerignore_rules("data_samples/\n"))
+    assert not skill_ify.is_trimmed("data_samples/x.csv", skill_ify.dockerignore_rules(""))

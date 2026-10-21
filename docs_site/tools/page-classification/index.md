@@ -173,8 +173,11 @@ Two alternatives sit beside the main line:
 
 ## How well it works
 
-Measured on the held-out evaluation split of the full dataset (4,823 pages), for the
-`v*.3` generation:
+Measured on the 5,449-page evaluation set, for the `v*.3` generation. That set was meant to hold only
+pages no fold trained on, but the script that selected it missed zero-padded page numbers and ids
+with a letter, so most of its pages were training pages
+([atrium-project#15](https://github.com/ufal/atrium-project/issues/15)). A re-run of the `v*.4`
+models on the test sets of the LINDAT dataset replaces these figures.
 
 | Base model                               | Revision | Top-1       | Top-3       | Note                     |
 |------------------------------------------|----------|-------------|-------------|--------------------------|

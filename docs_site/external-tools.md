@@ -212,7 +212,8 @@ pre-trained with Meta's SWAG weakly-supervised method and fine-tuned on ImageNet
 84 M parameters.
 
 **Where ATRIUM uses it.** The default `[SETUP] base_model`, and the base of the best-performing
-published revision — `v4.3` at 99.16 % top-1 and 100 % top-3. It is also what the E2E smoke
+published revision — `v4.3` at 99.16 % top-1 and 100 % top-3 (on a set that overlaps the training
+data; see [the classifier's page](tools/page-classification/index.md#how-well-it-works)). It is also what the E2E smoke
 test passes as `-m`. Notable because it beats every ViT variant tried while being a quarter the
 size of the largest.
 

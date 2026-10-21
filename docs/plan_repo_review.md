@@ -1,4 +1,4 @@
-# 🧭 ATRIUM Ecosystem — Repository Review & Forward Strategy
+# ATRIUM Ecosystem — Repository Review & Forward Strategy
 
 > **Repository names (2026-10-01).** This document predates the repository moves of atrium-project#72 and
 > uses the names of its time: `alto-postprocess` is now `ocr-postprocess`; `llm-enrich` split into
@@ -20,7 +20,7 @@ _Maintainer: lutsai.k@gmail.com · Last reviewed: **2026-07-22** (supersedes 202
 _Repos: atrium-project (hub) · atrium-page-classification · atrium-alto-postprocess ·
 atrium-nlp-enrich · atrium-translator · **atrium-llm-enrich** (added to scope 2026-07-22)_
 
-## 🧭 1. Scope & method
+## 1. Scope & method
 Single hub-level record of (a) the ecosystem's architecture, (b) the standing cross-repo
 workstreams, and (c) the phased roadmap. Findings are verified against the live `test`
 branches (HEADs of 2026-07-22), GitHub releases/tags, and the shared reusable workflows —
@@ -33,7 +33,7 @@ first time the hub is a review target rather than only the review's home).
 `atrium-page-classification` has effectively graduated (near-ceiling accuracy, no open code
 findings) but stays in the CI federation and the release-gate rollout.
 
-## 🏗️ 2. Ecosystem architecture (as-built)
+## 2. Ecosystem architecture (as-built)
 Six repositories, **not** a monorepo and **not** git-submodules:
 
 ```
@@ -56,14 +56,14 @@ Pipeline data flow (container images over a shared volume):
   `vocab_manager.py`, and `llm_run.py` exist in both nlp-enrich and llm-enrich and sit
   **outside** the para-drift guarantee. See §5.M.
 
-## 🔄 3. Baseline reconciliation (2026-06-24 → 2026-07-22)
+## 3. Baseline reconciliation (2026-06-24 → 2026-07-22)
 The June backlog is essentially executed; the 2026-07-15 and 2026-07-22 release waves shipped
 it. Verified green ecosystem-wide today: **`compileall` OK ×6** and **`ruff check` (shared
 config) → "All checks passed!" in all five tool repos** (llm-enrich's three June findings —
 `eval_metrics.py` B905 + W292 ×2 — fixed in `v0.2.0`). The center of gravity has shifted:
 **code quality is no longer the risk; release *plumbing* and cross-repo *governance* are.**
 
-## 📊 4. Status matrix
+## 4. Status matrix
 
 | ID  | Item                                                           | pc | alto | nlp  | translator | llm | hub |
 |-----|----------------------------------------------------------------|----|------|------|------------|-----|-----|
@@ -94,9 +94,9 @@ Legend: ✅ closed/verified · ⏳ open · ⏸️ deferred (maintainer decision)
 (decision needed) · 🔧 fix prepared, pending review/merge · n/a not applicable · — out of
 scope for that repo.
 
-## 🧩 5. Workstreams
+## 5. Workstreams
 
-### 🔌 A — API meta-contract / OpenAPI conformance (NEW — issue #32)
+### A — API meta-contract / OpenAPI conformance (NEW — issue #32)
 **Problem.** The services diverged from the normative §4 contract of
 `agent_skill_strategy.md`. Only nlp-enrich reported `service`+`limits` and had `/health`;
 `/info` never listed `endpoints`; translator keyed the id as `name`, alto as `status`;
@@ -157,37 +157,37 @@ three additions, accepted 09-27, are prepared in the working trees (normative te
   `openapi-compat` job and tolerates pytest exit 5 (07-23 defect 4); the Docker smoke compares
   the served spec with the committed one.
 
-### 🏷️ F — Release & version hygiene — **CLOSED**
+### F — Release & version hygiene — **CLOSED**
 `_read_tool_version()` reads `para_config.txt [tool] version` in every service API; `para_config`
 == `CITATION.cff` in all five repos; `date-released` fresh everywhere (2026-07-15 / 07-22).
 
-### 📦 G — Dependency isolation (fast lane) — **CLOSED**
+### G — Dependency isolation (fast lane) — **CLOSED**
 Heavy imports are lazy / test-guarded (`importorskip`); every repo has a self-contained
 `requirements-test.txt` (alto's now declares pandas/numpy/lxml/tqdm + the FastAPI test stack;
 llm-enrich ships its own). The shared-venv shortcut is retired — clean-venv per repo is now
 possible and is the required Tier-2 method.
 
-### 🔗 H — Shared-code provenance — **CLOSED & ENFORCED**
+### H — Shared-code provenance — **CLOSED & ENFORCED**
 `para_licenses.py` (dedup resolver) + `atrium_paradata.py` are byte-identical to the hub
 canonical in all five repos, with the shared `tests/test_para_licenses.py` present everywhere,
 enforced by `para-drift.reusable.yml`. Note the scope boundary: **this guarantee covers only the
 paradata trio, not the LLM engine (§5.M) and not the `agent-skill` branches** (which strip the
 trio with the tests).
 
-### 🧪 I — Test quality (in-process) — **NEARLY CLOSED**
+### I — Test quality (in-process) — **NEARLY CLOSED**
 pc `run.py` and alto `page_split.py` now expose `build_parser()`/`main(argv)` with in-process
 tests. **One straggler (C4):** nlp `api_util/summarize_nt_udp.py` already has `build_parser()`
 + `main(argv)` (done), but `tests/test_teitok_integraion.py` still shells out for its `--help`
 assertion — swap it for `from api_util.summarize_nt_udp import build_parser` +
 `build_parser().format_help()` (recipe in the appendix). Low-risk, ~10-line test edit.
 
-### 📈 COV — Coverage ratchets — **DONE (verify on next Tier-2 run)**
+### COV — Coverage ratchets — **DONE (verify on next Tier-2 run)**
 `.coveragerc` `fail_under` is set in every repo, each annotated with the measured 2026-07-16
 baseline: pc 28, nlp 30, llm 42, alto 50 (baseline 53%), translator 70. Next Tier-2 clean-venv
 run should confirm the gates still clear under the new `requirements-test.txt` files, then the
 values can be ratcheted up toward the measured baselines where headroom exists.
 
-### 🚦 R — Release-gate hardening (NEW — the P1 of this review)
+### R — Release-gate hardening (NEW — the P1 of this review)
 **Problem.** Each repo's `release.yml` fires on any `v*` tag push and runs
 `softprops/action-gh-release` **unconditionally**. The tag == `CITATION` == `para_config` check
 *does* exist — in the hub's `security.reusable.yml` `version-check` job — but that runs in a
@@ -207,7 +207,7 @@ no false positives. A DRY `release-guard.reusable.yml` remains a *future* consol
 * Locations: `{pc,alto,nlp,translator,llm}/.github/workflows/release.yml`; para_config path is
   `setup/para_config.txt` for pc & alto, `para_config.txt` for the other three.
 
-### 🧬 M — nlp↔llm LLM-engine governance (NEW — P1, decision needed)
+### M — nlp↔llm LLM-engine governance (NEW — P1, decision needed)
 `llm_utils.py`, `vocab_manager.py`, `llm_run.py` live in **both** nlp-enrich and llm-enrich.
 They are *not* under para-drift, and `llm_run.py` has already diverged (nlp's still declares
 `program="nlp-enrich"` and its pre-split pipeline shape; llm-enrich's has added DU code,
@@ -227,7 +227,7 @@ auto-applied:
 * **Status: DEFERRED (maintainer, 2026-07-22).** The engine fork stays as-is for now; revisit
   when the divergence or an OOM-parity need forces the decision.
 
-### 🧹 P1c/P2t — Code-quality pass (NEW — LANDED this review, delivered as patches)
+### P1c/P2t — Code-quality pass (NEW — LANDED this review, delivered as patches)
 A source-code improvement sweep across the tool repos (patches on `claude/session-bu7f5d`,
 fast lanes green, ruff clean):
 * **Correctness (P1c):** alto — removed the stale duplicate `categorize_line` service fallback
@@ -245,7 +245,7 @@ fast lanes green, ruff clean):
 * **Hygiene:** pc `.gitignore` now ignores `__pycache__` recursively (was root-anchored);
   translator design doc moved to `docs/translation-backends.md` (fixed dangling refs, plan #4).
 
-### 📚 DOC — Documentation reality (NEW — P2)
+### DOC — Documentation reality (NEW — P2)
 * This file was 4 weeks and two release waves stale (it still said "Last reviewed 2026-06-24",
   omitted llm-enrich, and listed every F/G/H/I item as open). This refresh closes that.
 * `10.digest.md` / `10.plan.md` refreshed on `test` (2026-07-22); `project_state_2207.md`
@@ -256,7 +256,7 @@ fast lanes green, ruff clean):
   the refreshed digest/plan, so default-branch readers can't see any of this. Maintainer action
   (not auto-done — `main` is not a session-designated branch).
 
-## 🗂️ 6. Per-repository diagnostics (2026-07-22)
+## 6. Per-repository diagnostics (2026-07-22)
 * **page-classification** — no open code findings; graduated. Carries the release-gate fix.
 * **alto-postprocess** — F/G/H/I closed; ratchet set (50). Release-gate fix (closes the class
   that produced `v1.0.0.-beta`). No open code findings beyond the ecosystem-wide items.
@@ -269,7 +269,7 @@ fast lanes green, ruff clean):
   template; (c) `e2e-pipeline-smoke.yml` exists but the §8 compose scaffold (issue #18) still
   does not — fix the present-tense §8 text below.
 
-## 🛣️ 7. Phased roadmap
+## 7. Phased roadmap
 * **Phase 0 — release integrity:** ✅ **DONE** — the §5.R release-gate landed on all five tool
   repos (2026-07-22); tags == CITATION == para_config by construction.
 * **Phase 1 — code-quality pass:** ✅ **DONE** — §P1c correctness + §P2t test gaps (this review,
@@ -285,19 +285,19 @@ fast lanes green, ruff clean):
   covers the case without the ARUB/ARUP policy sign-off and org-owned `GITLEAKS_LICENSE` that
   gitleaks-action requires. Reopen only if a concrete gap is identified.
 
-## 🔁 8. Cross-service orchestration (Issue #18) — **still to build**
+## 8. Cross-service orchestration (Issue #18) — **still to build**
 `atrium-project/compose/docker-compose.pipeline.yml` (chaining the published GHCR images
 pc → alto → translator → nlp → llm over a shared `atrium_data` volume, each stage gated on the
 previous via `depends_on: condition: service_completed_successfully`) **does not exist yet** —
 it is issue #18 scope. `e2e-pipeline-smoke.yml` is present in the hub as the CI entry point that
 will drive it once the compose file lands.
 
-## 🛡️ 9. Drift-check — **LIVE**
+## 9. Drift-check — **LIVE**
 `para-drift.reusable.yml` diffs each repo's `atrium_paradata.py` / `para_licenses.py` /
 `tests/test_para_licenses.py` against `docs/templates/shared/*` and fails on divergence; each
 repo carries a ~12-line caller. Scope boundary per §5.H / §5.M.
 
-## 📍 10. Exact change locations (this review)
+## 10. Exact change locations (this review)
 | Item               | Path                                                                                         |
 |--------------------|----------------------------------------------------------------------------------------------|
 | R release-gate     | `{pc,alto,nlp,translator,llm}/.github/workflows/release.yml` (+`needs`)                      |
@@ -308,7 +308,7 @@ repo carries a ~12-line caller. Scope boundary per §5.H / §5.M.
 
 ---
 
-# 🧪 Appendix — subprocess → in-process refactors (status)
+# Appendix — subprocess → in-process refactors (status)
 
 Executed across the ecosystem; the only remaining item is nlp C4:
 

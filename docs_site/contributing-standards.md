@@ -156,7 +156,14 @@ The site is built from `docs_site/` in the hub with MkDocs Material. A page:
   the tool's own `README.md`;
 * states lasting facts — what a tool is, how it works, how to use it — and keeps
   time-bound findings out of the page;
-* ends with a `## Sources
+* ends with a `## Sources` table: what the page was written from.
+
+How the tool READMEs and runbooks are written — plain headings, a documentation map, the
+reader's next step first — is set in the hub's
+[`documentation-style.md`](https://github.com/ufal/atrium-project/blob/main/docs/documentation-style.md),
+and `tools/docs_check.py` checks it.
+
+## Sources
 
 This table records **provenance**: what this page was written from, not a build instruction.
 

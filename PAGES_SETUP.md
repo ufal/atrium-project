@@ -15,7 +15,7 @@ All seven repositories (the hub and the six tools) publish from a **`gh-pages` b
 > `§`-reference to it points nowhere. Its 12-page design survives only as a DEVLOG summary. Treat
 > those citations as unresolved, not as a file you have not found yet.
 
-## Where each repository actually stands — ✅ all six, 2026-09-21
+## Where each repository actually stands — all six, 2026-09-21
 
 Re-measured from each repository's `pages build and deployment` runs via the Actions API.
 
@@ -30,7 +30,7 @@ Re-measured from each repository's `pages build and deployment` runs via the Act
 
 **Nothing is outstanding.** Both owner-level dropdowns this file used to list are done.
 
-### ✏️ Two claims in the previous edition of this file were wrong
+### Two claims in the previous edition of this file were wrong
 
 * **`atrium-alto-postprocess` was never "off / never built".** Its `pages-build-deployment` workflow
   dates from **2026-09-19 08:22 UTC** and has three successful runs — it was enabled at the same time
@@ -127,7 +127,7 @@ the two documents that explain the ecosystem's Docker and CI story.
 > markdown is correct; it is Jekyll that is wrong for this corpus, and escaping `{{` would have
 > corrupted how GitHub renders those files in the repository browser.
 
-## ⚠️ The folder moved on 2026-09-21, and the fence had to move with it
+## The folder moved on 2026-09-21, and the fence had to move with it
 
 [Run 35612083327](https://github.com/ufal/atrium-project/actions/runs/35612083327) reports
 `Source: /github/workspace/.` and **`Configuration file: none`**. The Pages folder was changed from

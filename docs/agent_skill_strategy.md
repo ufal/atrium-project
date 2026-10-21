@@ -1,4 +1,4 @@
-# 🧩 ATRIUM Agent-Skill Strategy — API services as LLM Agent Skills
+# ATRIUM Agent-Skill Strategy — API services as LLM Agent Skills
 
 > **Repository names (2026-10-01).** This document predates the repository moves of atrium-project#72 and
 > uses the names of its time: `alto-postprocess` is now `ocr-postprocess`; `llm-enrich` split into
@@ -27,20 +27,20 @@ Decisions fixed at planning time:
    `/enrich_llm`); hosted (LINDAT) base URLs unknown → docs use `http://localhost:8000` with
    placeholders; translator's `400`→`422` alignment is a silent additive fix.
 
-## 🎯 1. Purpose & scope
+## 1. Purpose & scope
 
 Each ATRIUM tool already ships (or will ship) a FastAPI service. This strategy wraps every
 service in an **Agent Skill**: a `SKILL.md` folder an LLM agent can install and use to drive the
 tool. The pattern is **server–client**: the heavy model server keeps running as today's
 `service/` FastAPI app, and the skill adds a **zero-dependency client script** that is the only
 thing the agent executes. The skill lives on a dedicated **`agent-skill` branch** in each repo —
-a flattened, trimmed derivative of the default branch (see [§5](#-5-agent-skill-branch-anatomy-normative)).
+a flattened, trimmed derivative of the default branch (see [§5](#5-agent-skill-branch-anatomy-normative)).
 
 **Non-goals:** no breaking changes to existing endpoints or clients; no authentication layer
 (services stay CORS-limited, as today); no hosted-deployment work (LINDAT URLs plug in later via
 the client's `--base-url`/env override).
 
-## 📐 2. Standards assessment
+## 2. Standards assessment
 
 ### 2.1 Agent Skills (the skill wrapper format)
 
@@ -59,7 +59,7 @@ about. Key properties we rely on:
   activates; the body, scripts, and referenced files load on demand. Heavy reference material
   can therefore live in separate files on the branch.
 - **Bundled scripts** — the skill may tell the agent to execute a script it ships. Our client
-  scripts ([§6](#-6-zero-dependency-client-contract)) are exactly this.
+  scripts ([§6](#6-zero-dependency-client-contract)) are exactly this.
 
 Install targets (already proven by the page-classification example branch): `~/.claude/skills/`
 (Claude Code), `~/.codex/skills/` (Codex), and an `AGENTS.md` pointer for Google Antigravity.
@@ -81,7 +81,7 @@ at `/openapi.json` (with Swagger UI at `/docs`). Policy:
   freshness test: drift is a red build, not a stale file.
 - The SKILL.md still tells agents: *for full request/response schemas, fetch
   `GET /openapi.json` from the running server* — which is now the same document as the release's.
-- **Drift control lives in tests/CI** ([§12](#-12-maintenance--drift-control)): the contract
+- **Drift control lives in tests/CI** ([§12](#12-maintenance--drift-control)): the contract
   tests assert the endpoint set, the required `/info`/`/health` fields and the committed spec
   against in-process `app.openapi()`, and a skill-validation workflow checks that skill docs only
   reference files that exist.
@@ -90,7 +90,7 @@ at `/openapi.json` (with Swagger UI at `/docs`). Policy:
   once — instead of every agent re-deriving a correct `curl` invocation from a 100 KB spec on
   every call, with token cost and error surface to match.
 
-## 🏗️ 3. The ATRIUM server–client skill pattern
+## 3. The ATRIUM server–client skill pattern
 
 ```
  LLM agent (Claude Code / Codex / Antigravity / …)
@@ -120,7 +120,7 @@ trimmed tree + `small_data_samples/`). It is the exemplar — including four def
 [§10.1](#101-atrium-page-classification--exemplar-hardening) that the standard below turns into
 explicit rules so they are fixed there and never replicated.
 
-## 📜 4. Standardized service contract (normative)
+## 4. Standardized service contract (normative)
 
 ### 4.1 Meta-endpoints — required in all six services
 
@@ -254,7 +254,7 @@ hub-local and vendored into all six tool repos) is what keeps that true.
 | `MAX_UPLOAD_MB`   | server | canonical upload limit, resolved by `atrium_service.resolve_max_upload_mb`. **The number is per-service, not shared** — translator 50, digital-convert 50, ocr-postprocess 25, keyword-extract 10, page-classification 10, nlp-enrich 5 (see `docs/k8s_deployment.md`). `MAX_UPLOAD_BYTES` remains a deprecated fallback and loses whenever both are set. |
 | service-specific  | server | keep as-is; enumerated per repo in that repo's `.env.example` §5 ("Service knobs — operator") and in `docs/k8s_deployment.md`'s Table B.                                                                                                                                                                                                                  |
 | **limits**        | server | **every limit is a setting** (atrium-project#53, below): declared once in the repo's `tool_limits.py`, tagged `[limit]` in `.env.example`, listed in the service README's `## Limits` table and in `docs/k8s_deployment.md`'s Table B, and reported in `/info` (§4.1).                                                                                    |
-| `ATRIUM_<XX>_URL` | client | per-tool base-URL override, [§6](#-6-zero-dependency-client-contract) / [Appendix E](#appendix-e--naming-tables).                                                                                                                                                                                                                                         |
+| `ATRIUM_<XX>_URL` | client | per-tool base-URL override, [§6](#6-zero-dependency-client-contract) / [Appendix E](#appendix-e--naming-tables).                                                                                                                                                                                                                                          |
 
 **What counts as a limit (atrium-project#53, factor III).** A *limit* is a value that
 (a) refuses an input; (b) cuts, samples or splits an input or a prompt; (c) caps an output; or
@@ -374,7 +374,7 @@ committed spec and that `/info` `openapi_sha256` is its digest — the check AM�
 deployed image, and the container-level proof for page-classification. Both skip in a repo that
 has not adopted the contract yet.
 
-## 🌿 5. `agent-skill` branch anatomy (normative)
+## 5. `agent-skill` branch anatomy (normative)
 
 ```
 SKILL.md                      # the skill contract — frontmatter + required sections (§7)
@@ -395,7 +395,10 @@ CITATION.cff · LICENSE · .gitignore · .dockerignore
 Removed relative to the default branch: `tests/` (including stray `test_*.py` outside it),
 lint/CI configs (`ruff.toml`, `pytest.ini`, `.pre-commit-config.yaml`, coverage),
 `supplementary/`/analysis material, dev-only frontends, and every `.github/workflows/` file
-except the `skill-validate.yml` caller — anything a *running* skill doesn't need.
+except the `skill-validate.yml` caller — anything a *running* skill doesn't need. `data_samples/` goes
+too, except the files the image ships: what the repository's `.dockerignore` lets into the build
+stays, so a server built or started from the skill branch reads the same vocabularies and defaults
+as the published image (`tools/skill_ify.py`, 2026-10-21).
 
 **Rule: the hoisted set is the service's _transitive_ import closure, not just what
 `service/*.py` names directly.** A one-level reading is what left `atrium_document.py` off all
@@ -432,7 +435,7 @@ is `tools/skill_drift_check.py`, which compares `service/api.py` byte-for-byte: 
 dropped on one branch and not the other surfaces there as content drift, and the deliberate case
 is recorded in that tool's `DOCUMENTED_DIVERGENCES` table with the reason.
 
-## 🔌 6. Zero-dependency client contract
+## 6. Zero-dependency client contract
 
 The client is the only thing the agent executes. Normative spec (reference implementation:
 `scripts/atrium_classify.py` on the page-classification `agent-skill` branch):
@@ -458,7 +461,7 @@ The client is the only thing the agent executes. Normative spec (reference imple
 
 Skeleton in [Appendix B](#appendix-b--client-script-skeleton-spec).
 
-## ✍️ 7. SKILL.md authoring template
+## 7. SKILL.md authoring template
 
 Frontmatter:
 
@@ -494,7 +497,7 @@ Required body sections, in order:
 
 Full skeleton in [Appendix A](#appendix-a--skillmd-skeleton).
 
-## 📦 8. Branch README & skill installation
+## 8. Branch README & skill installation
 
 The branch `README.md` (distinct from the default branch's) contains: what this branch is (the
 skill packaging of the tool, pointer to the default branch for development); install per host —
@@ -510,7 +513,7 @@ git clone -b agent-skill https://github.com/ufal/<repo>.git ~/.codex/skills/<ski
 — update = `git pull` in the installed clone; and the server quick-start (`bash
 scripts/server.sh`, Docker vs `--local`).
 
-## 🖥️ 9. Frontend & documentation requirements
+## 9. Frontend & documentation requirements
 
 Concrete reading of the issue's "Frontend UI should include documentation of API usage as well
 as `README.md` in the `service` directories":
@@ -527,7 +530,7 @@ as `README.md` in the `service` directories":
 
 ## 10. Per-repo work plans
 
-Each subsection is self-contained and liftable verbatim into a sub-issue ([§13](#-13-sub-issue-creation--tracking)).
+Each subsection is self-contained and liftable verbatim into a sub-issue ([§13](#13-sub-issue-creation--tracking)).
 
 > **Status (2026-07-18):** ✅ all §10 build items implemented and verified on the five
 > `agent-skill` branches (frontmatter valid · clients `--help` clean · import closures intact ·
@@ -670,7 +673,7 @@ depends on it.
 **Acceptance:** as 10.2, with an `/extract_keywords_text` round-trip on sample lines against at
 least one backend (Ollama or OpenRouter with a test key).
 
-## 🚦 11. Rollout order
+## 11. Rollout order
 
 1. **This doc** merged into atrium-project; sub-issues created from §10 (per §13).
 2. **page-classification hardening** (10.1) — small; makes the exemplar trustworthy.
@@ -681,7 +684,7 @@ least one backend (Ollama or OpenRouter with a test key).
 6. **`skill-validate.yml`** reusable workflow in the hub (§12.3) once ≥2 skill branches exist;
    callers wired into each repo's `agent-skill` branch.
 
-## 🔄 12. Maintenance & drift control
+## 12. Maintenance & drift control
 
 ### 12.1 Per-repo contract test
 
@@ -764,7 +767,7 @@ branches sharing no history there is nothing to merge, and the trim decisions ne
 Caller example: `docs/templates/workflows/skill-validate.caller.example.yml` (carries the
 per-repo parameter table).
 
-## 🪃 13. Sub-issue creation & tracking
+## 13. Sub-issue creation & tracking
 
 - One GitHub sub-issue per repo under #31, titled **`agent-skill: <repo-name>`**, body = the
   repo's §10 subsection + a pinned-commit link to this doc. Labels/milestone per project

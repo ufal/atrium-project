@@ -46,3 +46,9 @@ def test_only_the_skill_clients_are_checked():
     assert sdc.CLIENT_PATH.match("scripts/atrium_keywords.py")
     assert not sdc.CLIENT_PATH.match("scripts/server.sh")
     assert not sdc.CLIENT_PATH.match("tools/atrium_helper.py")
+
+
+def test_experiment_scripts_a_readme_names_are_not_runtime():
+    """page-classification's README names `result/stats/unused.sh`; a port must not need it."""
+    assert not sdc._is_runtime_path("result/stats/unused.sh")
+    assert sdc._is_runtime_path("scripts/server.sh")

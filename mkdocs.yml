@@ -102,10 +102,10 @@ plugins:
 
 # --strict is the point of the aggregate topology: every cross-repo link is
 # INTERNAL here, so a broken one fails the build. Under six separate sites those
-# links would be absolute URLs that --strict cannot see, and the corpus already
-# contains a broken cross-file anchor
-# (atrium-alto-postprocess/service/README.md:93 -> ../README.md#composite-quality-score,
-#  whose only real heading is docs/categorization_logic.md:214).
+# links would be absolute URLs that --strict cannot see. The corpus once held such
+# a broken cross-file anchor: ocr-postprocess's runbook linked
+# ../README.md#composite-quality-score, a heading that lives in
+# docs/reference/categorization_rules.md (fixed since).
 strict: true
 
 # `strict: true` alone does NOT make the anchor above a build failure: MkDocs

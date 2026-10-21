@@ -1,4 +1,4 @@
-# 🧩 ATRIUM Agent-Skills Catalog
+# ATRIUM Agent-Skills Catalog
 
 _Installable [Agent Skills](https://agentskills.io) wrapping each ATRIUM service's API, per issue
 [#31](https://github.com/ufal/atrium-project/issues/31). Normative standard:

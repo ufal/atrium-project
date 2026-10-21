@@ -1,4 +1,4 @@
-# 📦 RO-Crate Export
+# RO-Crate Export
 
 > **Repository names (2026-10-01).** This document predates the repository moves of atrium-project#72 and
 > uses the names of its time: `alto-postprocess` is now `ocr-postprocess`; `llm-enrich` split into
@@ -19,7 +19,7 @@ pilot baseline agreed with AMČR: [ufal/atrium-project#71](https://github.com/uf
 
 ---
 
-## 🎯 1. The one-paragraph version
+## 1. The one-paragraph version
 
 An **RO-Crate** ("Research Object Crate") is a folder of files plus a single metadata file at its
 root called `ro-crate-metadata.json`. That file says, in a machine-readable way: *what this folder
@@ -35,7 +35,7 @@ behaviour, no new dependency, no upload anywhere.
 
 ---
 
-## 📚 2. RO-Crate from zero
+## 2. RO-Crate from zero
 
 ### 2.1 The problem it solves
 
@@ -137,7 +137,7 @@ root are the required four; everything beyond them is optional enrichment.
 
 ---
 
-## 🤔 3. Why ATRIUM has one
+## 3. Why ATRIUM has one
 
 Three reasons, in descending order of how much they bind us:
 
@@ -162,7 +162,7 @@ it has already written, once per call. No stage computes anything for it.
 
 ---
 
-## 🗺️ 4. The mapping
+## 4. The mapping
 
 ### 4.1 Field by field
 
@@ -240,7 +240,7 @@ a record assembled from a hand-built baseline — still gets an action, reconstr
 
 ---
 
-## 🧾 5. One run: the `CreateAction`
+## 5. One run: the `CreateAction`
 
 ### 5.1 What every service returns
 
@@ -343,7 +343,7 @@ and a working example for the host.
 
 ---
 
-## 🔬 6. A real worked example
+## 6. A real worked example
 
 Everything below is genuine output from
 `python3 atrium_rocrate.py --document fixtures/atrium_document.example.json` — 50 entities. The
@@ -427,7 +427,7 @@ a file of the crate, so it is a reference:
 
 ---
 
-## ⚙️ 7. Using it
+## 7. Using it
 
 ### 7.1 The functions
 
@@ -509,7 +509,7 @@ changed on every export could not be committed, diffed, or checksummed.
 
 ---
 
-## 🚫 8. What a crate cannot yet say
+## 8. What a crate cannot yet say
 
 Recorded rather than papered over. None of these blocks a crate; each makes it materially better.
 
@@ -523,7 +523,7 @@ Recorded rather than papered over. None of these blocks a crate; each makes it m
 
 ---
 
-## ✅ 9. Validating a crate
+## 9. Validating a crate
 
 There are two different checks and it is important not to mistake one for the other.
 
@@ -570,7 +570,7 @@ stdlib-only (§10), and one pinned check in the hub covers the byte-identical co
 
 ---
 
-## 🧩 10. Design decisions, and what was rejected
+## 10. Design decisions, and what was rejected
 
 **Standard library only — no `rocrate` package, no `rdflib`.** The same rule
 [`atrium_vocab.py`](templates/shared/atrium_vocab.py) states for itself, for the same reason: the
@@ -609,7 +609,7 @@ caveat that used to sit on the constant is replaced by the hub's validator job.
 
 ---
 
-## 📦 11. Distribution and maintenance
+## 11. Distribution and maintenance
 
 `atrium_rocrate.py` is **hub-canonical**: it lives in `docs/templates/shared/` and is copied
 byte-identical into the five tool repos, exactly like `atrium_document.py` and `atrium_vocab.py`.
@@ -633,7 +633,7 @@ decide how to interpret the graph. Do not bump it to pick up a new property.
 
 ---
 
-## 📖 12. Further reading
+## 12. Further reading
 
 * RO-Crate 1.2 specification — [w3id.org/ro/crate/1.2](https://w3id.org/ro/crate/1.2)
 * Process Run Crate 0.5 — [w3id.org/ro/wfrun/process/0.5](https://w3id.org/ro/wfrun/process/0.5)

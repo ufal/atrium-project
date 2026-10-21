@@ -1,4 +1,4 @@
-# 🗃️ ATRIUM Paradata Schema & Migration Policy
+# ATRIUM Paradata Schema & Migration Policy
 
 This document defines the schema versioning policy for the `atrium_paradata.py` provenance JSONs, handling how ATRIUM tools interact with historical logs when architectures change.
 

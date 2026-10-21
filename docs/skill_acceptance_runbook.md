@@ -1,4 +1,4 @@
-# ✅ Agent-Skill acceptance runbook (issue #31 · W2)
+# Agent-Skill acceptance runbook (issue #31 · W2)
 
 > **Names (2026-10-01):** written for `alto-postprocess` and `llm-enrich`; the `agent-skill` branches of their
 > successors `ocr-postprocess` and `keyword-extract` are brought to the new names in a follow-up, so the client

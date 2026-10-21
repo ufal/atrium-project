@@ -1,4 +1,4 @@
-# 🧪 E2E pipeline smoke fixtures — default `CTX000000003`
+# E2E pipeline smoke fixtures — default `CTX000000003`
 
 Five fixture pairs; the default is one **single-page, synthetic Czech** document that travels the whole
 ATRIUM tool chain in CI (issue [#18](https://github.com/ufal/atrium-project/issues/18) follow-up — the
@@ -28,7 +28,7 @@ all five; push and schedule runs use `CTX000000003`. The other four are multi-pa
 > and read the two together. Coupling `ref:` to `image-tag` (a `tool-ref` input) is the real fix and
 > is filed separately — it is a behaviour change to what the gate means, not a doc correction.
 
-## 📄 Contents & provenance
+## Contents & provenance
 
 Each fixture is a pair: `ALTO/<id>.alto.xml` (the input) and `DOC_LINE_CATEG/<id>.csv` (the GPU
 bridge, below). The three synthetic ALTO files are byte-identical to
@@ -47,7 +47,7 @@ they are in an older `CSV_HEADER` (40 columns; the two real scans 37) than alto'
 There is **no committed page image** — the pc stage renders one from the ALTO at runtime
 (`tools/e2e/render_alto_page.py`, page 1), keeping the whole smoke anchored to one fixture pair.
 
-### 🌱 The AMČR seed (atrium-project#71)
+### The AMČR seed (atrium-project#71)
 
 By default the chain starts the way the AMČR pilot does: from a **seed**, the record the archive
 writes before the first stage. The `Write the AMČR seed` step makes it at run time with
@@ -68,7 +68,7 @@ After the assertions, the final record and every stage's paradata file are turne
 record's RO-Crate fragment and checked by the RO-Crate validator, against RO-Crate 1.2 and Process
 Run Crate 0.5 ([`tools/ci/rocrate_check.py`](../../tools/ci/rocrate_check.py)).
 
-### 🏷️ No vocabulary fixture (unused since 2026-08-19, deleted 2026-10-15)
+### No vocabulary fixture (unused since 2026-08-19, deleted 2026-10-15)
 
 `VOCAB/teater_nested_vocab.json` was deleted on 2026-10-15 (`c72b931`): no workflow, script or test read it
 (checked 2026-09-29 and again before the deletion). It used to be the vocabulary, on the stated
@@ -88,7 +88,7 @@ Unlike the ALTO and CSV above, nothing here needs a *pinned* copy of the vocabul
 fixed inputs whose content the assertions depend on, whereas the vocabulary is a moving upstream
 artifact the smoke test should track rather than freeze.
 
-## 🌉 Why the DOC_LINE_CATEG bridge exists
+## Why the DOC_LINE_CATEG bridge exists
 
 alto-postprocess's classify stage (`classify_TEXT.py`, which replaced `langID_classify.py`) scores
 perplexity on a GPU and **aborts** when CUDA is unavailable (`classify_TEXT.py:431-440`), because on CPU

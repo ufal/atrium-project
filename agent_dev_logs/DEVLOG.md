@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 20 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #51, #56, #66, #67, #72, #77, #78, #79, #81, #82). `test` = `73f7261` (2026-10-21); tag `v1` = `8c0f9f8` (2026-10-20); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-21, at the end of the file (this file is not in date order): one round across #77, #72, #82, #81, #79 and the adjacent issues, delivered as files. The tool repositories publish immutable releases since 10-19, and the two predecessors are archived (#72)._
+> _Hub/planning repo. 20 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #51, #56, #66, #67, #72, #77, #78, #79, #81, #82). `test` = `a38ae4d` (2026-10-21); tag `v1` = `8c0f9f8` (2026-10-20); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-21, at the end of the file (this file is not in date order): one round across #77, #72, #82, #81, #79 and the adjacent issues, delivered as files. The tool repositories publish immutable releases since 10-19, and the two predecessors are archived (#72)._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -2527,3 +2527,37 @@ Against `test` `73f7261` and the issue exports of 12:37. New replies: motyc on #
 - **Dev logs:** the ten closed-issue pairs removed now (round 1's line above was ahead of the files). The digests of
   #51, #66, #72, #77, #78, #79, #81 and #82 record the morning's posts, and the plans of #4, #6 and #77 are refreshed.
 - **Checks:** see the round's summary in chat (pytest, ruff, workflow_lint, mkdocs --strict, docs and drift checks).
+
+## 2026-10-21 (round 3) — The evaluation set's selection bug; the skill branches carry their image's data; plain headings
+Against `test` `a38ae4d` and every `agent-skill` head of 12:29–12:53 (the round-2 archives, pushed; CI green on all
+13 branches). No new replies since motyc's 10:42 on #13; the user's own UPD on #4 (12:56) answers Pavel.
+- **#15 / #13, the 5,449-page set.** Kate: the test sets are held out by design. They were: the set is
+  page-classification's `result/stats/unused_entries_da5_f12345.csv`, which `unused.sh` selected as the pages no
+  fold trained on. The script compared names as text and missed zero-padded page numbers (`-01.png`; 3,679 of fold
+  1's 4,296) and ids with a letter (`CTX193401761A`; 617). Fixed in page-classification (tests; `v1.9.6-beta`
+  prepared); matched correctly, 130 of 5,450 pages are in no fold's training partition. The README's `Best_Acc`
+  values are the stored 5,449-page tables' figures; the v4.3 table's labels look shifted. The #13 and #15 digests,
+  plans and the #15 brief say so; Decision A is the `vX.4` re-run on the LINDAT test sets. "Table 2" is now "the
+  classifier results table" outside the brief. `docs_site/tools/page-classification/index.md` (it said "4,823
+  pages") and `docs_site/external-tools.md` carry the scope.
+- **#77 C, the data their image carries.** `tools/skill_ify.py` keeps a `data_samples/` file when the repository's
+  `.dockerignore` lets it into the image (a small matcher: globs, `**/`, `!`, last match wins), and trims
+  keyword-extract's `ker_data/` (26 MB, read by nothing). The keyword-extract branch gains its vocabulary and taxonomy
+  (7 files; a local server from the skill tree has the controlled kind ready, 4,712 terms), the translator branch
+  `vocabulary.csv` and its sample inputs (19), ocr-postprocess `data_samples/` (71). Tests in
+  `tests/test_skill_ify.py`; strategy §5 states the rule. `skill_drift_check.py` treats `result/` as never runtime
+  (page-classification's README now names `result/stats/unused.sh`). keyword-extract's runbook links the two
+  vocabulary files the image leaves out to `test`. Drift check on the local trees: 6/6 aligned; skill-validate
+  steps 1–4a pass on all six.
+- **#79:** the hub's own 75 emoji headings in ten files are plain (`docs/templates/skill/SKILL.template.md` keeps
+  the skill files' convention); the six in-file links to changed anchors follow; no other repository linked them.
+  `tools/docs_check.py --repo atrium-project`: 75 errors on `origin/test`, none now. `docs_site/contributing-standards.md`
+  repairs its broken "## Sources" bullet and links the style guide.
+- **Small fixes:** `docs_site/contracts/skos.md` counts 24 shared files (#82 F.1; the other locations were already
+  right); the `mkdocs.yml` comment names the heading's real home; the status tables of the #77, #79 and #81 plans
+  follow their "Where it stands" sections.
+- **Releases, drafted in chat:** page-classification `v1.9.6-beta` (#61 and the selection fix) and nlp-enrich
+  `v1.1.3-beta` (the owner headers, for #82's end-to-end adoption, prepared as separate digital-convert and
+  keyword-extract archives to push after it).
+- **Left out:** a response field for page-classification's reduced ensemble (an API decision; asked on #77); the
+  daily LINDAT lane (#78); the schema text for `none` (dc #5, class c).

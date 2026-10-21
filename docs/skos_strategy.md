@@ -1,4 +1,4 @@
-# 🔗 ATRIUM SKOS Strategy — vocabularies as an internal alignment framework
+# ATRIUM SKOS Strategy — vocabularies as an internal alignment framework
 
 > **Repository names (2026-10-01).** This document predates the repository moves of atrium-project#72 and
 > uses the names of its time: `alto-postprocess` is now `ocr-postprocess`; `llm-enrich` split into
@@ -25,7 +25,7 @@ Decisions fixed at planning time:
 4. **Nothing is published.** This is an internal alignment framework. No external service is
    contacted, no vocabulary is republished, no registration is a prerequisite for any of it.
 
-## 🎯 1. Why this document exists
+## 1. Why this document exists
 
 Five tools exchange one JSON record, and several of its fields carry controlled terms **as bare
 strings**: `pages[].category`, `page_categories`, `lines[].categ`, `pages[].quality_band`,
@@ -33,7 +33,7 @@ strings**: `pages[].category`, `page_categories`, `lines[].categ`, `pages[].qual
 set is declared in a different repository in a different form — a Python list, a set of `return`
 statements, a JSON config, a dict literal — and until now nothing reconciled them.
 
-That is not a tidiness complaint. It has produced live defects, catalogued in [§6](#-6-defect-register).
+That is not a tidiness complaint. It has produced live defects, catalogued in [§6](#6-defect-register).
 The most instructive: `lines[].categ` has **two** authorised originators emitting **disjoint** label
 sets, and its only consumer filters on one of them — so on the OCR path the filter matches nothing
 and garbage OCR lines reach the model. Nothing failed. No validator complained. The field is typed
@@ -48,7 +48,7 @@ against each other.
 **Non-goals:** publishing anything; requesting a namespace; changing any pipeline's behaviour;
 re-describing AMCR's or TEATER's concepts; adding an RDF library to any repo.
 
-## 📐 2. What we already had (verified against the tree, not assumed)
+## 2. What we already had (verified against the tree, not assumed)
 
 | Asset                                           | Where                             | State                                      |
 |-------------------------------------------------|-----------------------------------|--------------------------------------------|
@@ -73,7 +73,7 @@ The 707 Getty URIs are the sharpest illustration. They are harvested on every ru
 The issue's own phrasing — *"already captures the AMCR `odkaz skos:exactMatch` URIs — nothing
 exports them"* — was exactly right, and it needed no namespace to fix.
 
-## 🧭 3. The URI policy (normative)
+## 3. The URI policy (normative)
 
 ### 3.1 Four layers, three of which mint nothing
 
@@ -118,7 +118,7 @@ vocabulary, and commits ARUP/ARUB to nothing.
 This is what keeps @motyc's constraint satisfied by construction. There is no ATRIUM identifier for
 an AMCR term to migrate off, because one was never created.
 
-## 🏗️ 4. The registry — `atrium_vocab.py`
+## 4. The registry — `atrium_vocab.py`
 
 Hub-canonical, in `docs/templates/shared/`, vendored to all five tool repos and byte-enforced by
 `para-drift.reusable.yml`. **Standard library only.** Contents:
@@ -151,7 +151,7 @@ raises. This matches the idiom already established in `atrium_document.py` — a
 on stderr rather than refuse a document — and it is why the registry could be wired into five repos
 without risking a single pipeline.
 
-## 📤 5. The SKOS view of the source vocabularies
+## 5. The SKOS view of the source vocabularies
 
 `vocab_build.py --skos` writes `data_samples/vocab/union.skos.ttl`: **5,594 concepts, 55,188
 triples, 5.2 MB**, deterministic, gated by the existing `--check` drift mechanism.
@@ -236,14 +236,14 @@ resolve_pid("keramika") -> {"wikidata": None, "geonames": None,
 `wikidata` and `geonames` stay `None`: nothing in these repos resolves them, and a guess in a FAIR
 cross-reference field is worse than a null. A hook that lies is not a hook.
 
-## 🐞 6. Defect register
+## 6. Defect register
 
 Found while mapping the vocabulary layer. Each is a case of an uncontrolled label crossing a repo
 boundary. **V-1 was documented, not fixed, by explicit decision** — fixing it changes what text
 reaches the model on the OCR path, a pipeline behaviour change with an owner. The owner took it on
 2026-09-25 (atrium-alto-postprocess#31, see F1).
 
-### V-1 — `DROP_CATEGORIES` never matched on the OCR path ✅ fixed 2026-09-25
+### V-1 — `DROP_CATEGORIES` never matched on the OCR path fixed 2026-09-25
 
 `atrium-llm-enrich/api_util/json_to_md.py`'s `DROP_CATEGORIES` filtered
 `frozenset({"Garbage", "Inverted"})`. Those are `digital-convert`'s labels. `alto-postprocess` emits `Clear`/`Empty`/`Noisy`/`Non-text`/`Trash`
@@ -269,7 +269,7 @@ a-line-category:Garbage` — `closeMatch`, not `exactMatch`, because one is an O
 rendered image and the other a decode-sanity judgement over an embedded text layer. Close, not
 identical, and deliberately not transitive.
 
-### V-2 — `collect_images()` broke on its own shipped sample data ✅ fixed
+### V-2 — `collect_images()` broke on its own shipped sample data fixed
 
 `atrium-page-classification/utils.py` derived categories with `sorted(os.listdir(directory))`.
 The shipped `small_data_samples/` contains a `LICENSE` **file**, which sorted into position 2. On
@@ -285,7 +285,7 @@ or missing category *directory* — an `unsorted/` holding pen, a mistyped label
 advisory check, `_advise_category_drift()`, still runs and names such an entry. Pinned by three
 tests in `TestCollectImages`, one of them on the shipped `small_data_samples/`.
 
-### V-3 — vocabulary harvesting is duplicated and divergent ⚠️ partially addressed
+### V-3 — vocabulary harvesting is duplicated and divergent partially addressed
 
 `atrium-translator/load_vocab.py` is a second harvester: AMCR over OAI-PMH (same as nlp-enrich) but
 TEATER over **GraphQL** rather than the pinned snapshot, producing 5,087 rows against nlp-enrich's
@@ -297,7 +297,7 @@ Also found and **not** fixed, since both predate this work and are out of scope:
 `_download_and_parse_export()` is a stub returning `{}`, and the `main()`/CLI that
 `atrium-translator/README.md:341-369` documents does not exist in the file.
 
-### V-5 — `teater_category` is a source label, and two consumers read it as a theme ⚠️ mitigated
+### V-5 — `teater_category` is a source label, and two consumers read it as a theme mitigated
 
 Found on 2026-09-16 while wiring F6. `CONCEPT_SCHEMES["theme"]` declares its field as
 `enrichment.items[].teater_category` **"(indirectly, via the facet)"** — the eleven themes are
@@ -329,7 +329,7 @@ own description says "Single most relevant TEATER/AMCR vocabulary category", whi
 production — so the registry's `fields` entry and `validate_labels`' scheme choice are the two
 things out of step, not the pipeline. Either way it is a contract change, not a freeze.
 
-### V-4 — schema examples contradicted the label set ✅ fixed
+### V-4 — schema examples contradicted the label set fixed
 
 `atrium_document.schema.json`'s `page_categories` examples were `{"1": "Text", "2": "Plate"}`.
 Neither is in `CATEGORIES`.
@@ -339,7 +339,7 @@ until 2026-10-19; it now has `TEXT`/`PHOTO` and `Clear`, and
 `tests/test_fixture_schema.py::test_fixture_controlled_values_are_registry_members` holds it to the
 registry (`docs/document_schema.md`, "Also recorded by this freeze").
 
-### V-6 — keyword-extract read the converter's `Garbage`/`Inverted` lines ✅ fixed 2026-10-05
+### V-6 — keyword-extract read the converter's `Garbage`/`Inverted` lines fixed 2026-10-05
 
 atrium-keyword-extract's `service/api.py` left out lines categorised `Trash` and `Empty` only, a set
 written out by hand. The lines atrium-digital-convert labels `Garbage` or `Inverted` (a born-digital
@@ -401,7 +401,7 @@ ref is the thing to move, not this path.
 > environment; the token that was committed stays in the history, so it should be revoked if that
 > has not been done.
 
-## ✅ 8. Verification
+## 8. Verification
 
 Everything below was run:
 
@@ -432,7 +432,7 @@ Everything below was run:
 > count (atrium-project#59); this row is a point-in-time record of what #51 verified, not a
 > living total.
 
-## 🔄 9. Maintenance
+## 9. Maintenance
 
 * **Editing a label set** means editing `docs/templates/shared/atrium_vocab.py` in the hub, running
   `scripts/revendor_shared.sh`, and committing all six repos in one window. `para-drift` fails

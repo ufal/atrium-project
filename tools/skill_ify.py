@@ -29,6 +29,7 @@ Usage
 """
 
 import argparse
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -70,6 +71,9 @@ TRIM_DIRS = (
     "data_scripts/",
     # digital-convert's Phase 0 exploration (its README: "Not shipped code"), 5 MB of samples.
     "digital_born/",
+    # keyword-extract's two IDF pickles (26 MB): no shipped code reads them, and its
+    # .dockerignore keeps them out of the image (removed from the branch on 2026-10-21).
+    "ker_data/",
 )
 TRIM_FILES = (
     "ruff.toml",
@@ -113,13 +117,52 @@ def tree(repo: Path, ref: str) -> dict:
     return entries
 
 
+# Runtime data inside a trimmed directory. §5 trims data_samples/ as development material, but
+# three images read files from it at run time: keyword-extract's vocabulary and taxonomy,
+# the translator's vocabulary CSV, ocr-postprocess's configured defaults. A file here stays on
+# the skill branch when the repository's .dockerignore lets it into the image, so a server
+# built or started from the skill branch has what the published image has (2026-10-21).
+IMAGE_DATA_DIRS = ("data_samples/",)
+
+
+def dockerignore_rules(text: str) -> list:
+    """`.dockerignore` as [(re-include?, compiled pattern)], in file order."""
+    rules = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        include = line.startswith("!")
+        pattern = line[1:].strip() if include else line
+        pattern = pattern.strip("/")
+        if not pattern:
+            continue
+        tokens = {"**/": "(?:.*/)?", "**": ".*", "*": "[^/]*", "?": "[^/]"}
+        regex = "".join(tokens.get(part, re.escape(part)) for part in re.split(r"(\*\*/|\*\*|\*|\?)", pattern))
+        rules.append((include, re.compile(rf"{regex}(/.*)?")))
+    return rules
+
+
+def in_image(path: str, rules: list) -> bool:
+    """Whether Docker sends `path` to the build: the last matching rule decides (excluding a
+    directory excludes what is in it); no rule, included."""
+    included = True
+    for include, pattern in rules:
+        if pattern.fullmatch(path):
+            included = include
+    return included
+
+
 def is_overlay(path: str) -> bool:
     return path in OVERLAY_FILES or path.startswith(OVERLAY_DIRS)
 
 
-def is_trimmed(path: str) -> bool:
+def is_trimmed(path: str, image_rules: list = None) -> bool:
+    """§5's trim. With the repository's `.dockerignore` rules, runtime data the image ships stays."""
     if path.startswith(".github/"):
         return path != KEEP_WORKFLOW
+    if image_rules is not None and path.startswith(IMAGE_DATA_DIRS) and in_image(path, image_rules):
+        return False
     if path.startswith(TRIM_DIRS) or path in TRIM_FILES:
         return True
     name = path.rsplit("/", 1)[-1]
@@ -136,7 +179,8 @@ def derive(repo: Path, test_ref: str, skill_ref: str) -> dict:
     the §5 trim list names.
     """
     test_tree = tree(repo, test_ref)
-    derived = {path: sha for path, sha in test_tree.items() if not is_trimmed(path) and not is_overlay(path)}
+    rules = dockerignore_rules(git(repo, "show", f"{test_ref}:.dockerignore"))
+    derived = {path: sha for path, sha in test_tree.items() if not is_trimmed(path, rules) and not is_overlay(path)}
 
     # ALLOWLIST pass (2026-09-16). Everything above is a DENYLIST: it starts from the whole
     # default-branch tree and subtracts TRIM_DIRS/TRIM_FILES, so any file nobody thought to
@@ -166,7 +210,7 @@ def derive(repo: Path, test_ref: str, skill_ref: str) -> dict:
     }
 
     for path, sha in tree(repo, skill_ref).items():
-        if is_trimmed(path):
+        if is_trimmed(path, rules):
             continue
         # Overlay wins outright; anything else SKILL-AUTHORED is carried across untouched.
         # The test is `not in test_tree` (skill-authored), not `not in derived`: the latter
