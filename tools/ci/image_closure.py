@@ -28,7 +28,7 @@ which runs `api_*.sh`) — with the walker `tools/skill_drift_check.py` already 
   * a referenced first-party file that is missing — the image would fail at import;
   * a `vendored` file that no `tests/test_vendored_*.py` pins — tool-to-tool copies are
     drift-checked by their pin tests, which para-drift's `vendored-parity` job runs against the
-    owner's `test` head;
+    owner at the commit the consumer adopted (atrium-project#82);
   * a malformed declaration (unknown key, a path listed twice, a shared file listed as core).
 
 `moving` rows are reported as notices: they are allowed, and they are the list of what a

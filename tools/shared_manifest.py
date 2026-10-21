@@ -14,7 +14,10 @@ Consumers:
   - scripts/revendor_shared.sh: `python3 tools/shared_manifest.py --tsv MANIFEST.json`
     prints one row per file (canonical, dest, selftest, precondition) for a bash
     `while read` loop — bash cannot import a Python module, so a thin CLI is the bridge.
+  - .github/workflows/para-drift.reusable.yml: the same `--tsv` CLI, for its parity loop.
   - tools/skill_drift_check.py: `from shared_manifest import load_manifest`
+  - tools/skill_ify.py: the same import, for the files an `agent-skill` branch carries.
+  - tools/ci/image_closure.py: the same import, so a hub-canonical file counts as declared.
   - tests/test_shared_manifest.py: same import, to check the manifest against the
     directory listing, ruff.toml, and para-drift.reusable.yml.
 """

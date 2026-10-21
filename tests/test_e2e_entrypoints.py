@@ -181,6 +181,39 @@ def test_no_install_inside_a_container_run(path: Path) -> None:
     )
 
 
+# `-w` / `--workdir` as a whole token, with its value: a container started in a directory of
+# the runner's workspace runs the code checked out there, not the image's own (#77 D).
+_WORKDIR_FLAG = re.compile(r"(?<![\w-])(?:-w|--workdir)(?:=|\s+)(\S+)")
+
+
+@pytest.mark.parametrize("path", _workflow_files(), ids=lambda p: p.name)
+def test_no_container_runs_a_checkout_instead_of_its_image(path: Path) -> None:
+    """`docker run` keeps the image's WORKDIR: no `-w` into the mounted workspace (#77 D).
+
+    The scanned-document lane used to start three stages with `-w` pointing at a checkout of
+    the tool's default branch, so the image's interpreter ran that checkout's code. A change
+    that never reached the published image still passed, and the lane said nothing about the
+    artefact AMČR runs. Inputs and outputs stay under /workspace through absolute paths.
+    """
+    doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+
+    offenders = [
+        (name, line.strip())
+        for name, run in _steps(doc)
+        for line in _logical_lines(run)
+        if _DOCKER_RUN.search(line)
+        and any(value.startswith(("/workspace", "$")) for value in _WORKDIR_FLAG.findall(line))
+    ]
+
+    assert not offenders, (
+        f"{path.name} starts a container in a directory of the runner's workspace, in "
+        f"{len(offenders)} step(s):\n"
+        + "\n".join(f"  - {name}: {line}" for name, line in offenders)
+        + "\n\nThe image's own code is what this lane exists to test. Drop the `-w` and give"
+        "\nthe stage absolute input and output paths under /workspace instead. (issue #77 D)"
+    )
+
+
 def test_the_e2e_lane_is_actually_covered() -> None:
     """The lane this file was written for must be among the files scanned.
 

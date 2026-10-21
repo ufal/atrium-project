@@ -1,20 +1,21 @@
-# 🤝 Contributing to «Repository Display Name» (ATRIUM)
+# Contributing to «Repository Display Name» (ATRIUM)
 
 Welcome! Thank you for your interest in contributing. This repository [^repo] provides
 «one-sentence statement of what the tool does and where it sits in the ATRIUM pipeline:
-page-classification → alto-postprocess → nlp-enrich → translator».
+page-classification → ocr-postprocess → nlp-enrich → keyword-extract → translator, or
+digital-convert for born-digital files».
 
 This document describes the project's capabilities, development workflow, code
 conventions, and rules for contributors. ATRIUM-wide conventions (branching, commit
 types, the test/lint standard) are identical across all repositories; anything
 repo-specific is called out explicitly.
 
-## 📦 Release History
+## Release History
 
-| Version     | Key Features & Fixes                                             | Release Type |
-|-------------|-----------------------------------------------------------------|--------------|
-| **vX.Y.Z**  | «headline change — one line»                                     | Pre-release  |
-| …           | …                                                               | …            |
+| Version    | Key Features & Fixes         | Release Type |
+|------------|------------------------------|--------------|
+| **vX.Y.Z** | «headline change — one line» | Pre-release  |
+| …          | …                            | …            |
 
 > **vX.Y.0 — «subsystem» (detail).** Use a block-quote immediately under the table to
 > expand on a release that introduced non-trivial logic. State *what* changed, *why*, and
@@ -29,14 +30,14 @@ Conventions → *Single source of truth for the version*). Update `date-released
 
 ---
 
-## 🏗️ Project Contributions & Capabilities
+## Project Contributions & Capabilities
 
 «Describe the 2–4 major capabilities this tool contributes, cross-referencing
 `README.md` rather than duplicating it. One subsection per capability.»
 
 ---
 
-## 🌿 Branches & Environments
+## Branches & Environments
 
 | Branch   | Environment          | Rule                                                                            |
 |----------|----------------------|---------------------------------------------------------------------------------|
@@ -49,7 +50,7 @@ test    ←  bugfix-<name>
 master  ←  (humans only, after test stabilises)
 ```
 
-### 🏷️ Branch Naming
+### Branch Naming
 
 | Type             | Pattern          | Example                   |
 |------------------|------------------|---------------------------|
@@ -59,7 +60,7 @@ master  ←  (humans only, after test stabilises)
 
 ---
 
-## 🔁 Contributor Workflow
+## Contributor Workflow
 
 1. **Create an issue** (or find an existing one) describing the problem or feature.
 2. **Branch from `test`:**
@@ -73,7 +74,7 @@ master  ←  (humans only, after test stabilises)
 
 ---
 
-## 📋 Pull Request Format
+## Pull Request Format
 
 Every PR must include:
 
@@ -89,7 +90,7 @@ Every PR must include:
 
 ---
 
-## ✏️ Commit Messages
+## Commit Messages
 
 Format: `[type] concise description of what changed`
 
@@ -108,7 +109,7 @@ Format: `[type] concise description of what changed`
 
 ---
 
-## 🧪 Code Conventions & Testing
+## Code Conventions & Testing
 
 ### Code conventions
 * **Comments:** short and informative; add one when the function name doesn't fully explain intent.
@@ -175,28 +176,36 @@ against the shared `ruff.toml` template before opening a PR.
 
 ---
 
-## 🔗 Shared ("drop-in") code
-`atrium_paradata.py` and `para_licenses.py` are **canonical** in `ufal/atrium-project/docs/templates/shared/` and
-copied verbatim into each tool repository.
+## Shared ("drop-in") code
+The 24 files of `ufal/atrium-project/docs/templates/shared/MANIFEST.json` (`atrium_paradata.py`,
+`para_licenses.py`, the record, service and limits modules, their schemas and contract tests) are
+**canonical** in the hub and copied verbatim into each tool repository. Files copied from another
+tool (the document reader, the TEITOK reader) and the bundled vocabulary are pinned the same way.
 
-* **Do not fork their logic locally:** Edit the canonical copy in the hub, then re-sync to the tools.
-* **CI Drift-Check:** The workflow (`paradata-drift.reusable.yml`) will fail the build if a repository's copy diverges from the canonical source.
-* **Configuration:** `para_config.txt` is strictly the *only* per-repo dependency (located typically at root, though `page-classification` and `alto-postprocess` secure it in `setup/para_config.txt` — their `security.yml` callers pass `para-config-path: setup/para_config.txt` and their `ParadataLogger` call sites pass `config_dir=<repo>/setup`).
-* **Migrations & Versioning:** See `docs/paradata-schema.md` for our schema versioning policies.
+* **Do not fork their logic locally:** change the owner, then adopt the change here in one pull
+  request. Owners, pins and the pull request checklist:
+  [`docs/shared_components.md`](https://github.com/ufal/atrium-project/blob/main/docs/shared_components.md).
+* **CI drift check:** `para-drift.reusable.yml` fails the build if a copy diverges from its source.
+* **Configuration:** `para_config.txt` is strictly the *only* per-repo dependency (located typically at root, though `page-classification` and `ocr-postprocess` secure it in `setup/para_config.txt` — their `security.yml` callers pass `para-config-path: setup/para_config.txt` and their `ParadataLogger` call sites pass `config_dir=<repo>/setup`).
+* **Migrations & Versioning:** see the hub's `docs/paradata_schema.md` and `docs/document_schema.md`.
 ---
 
-## 📁 Repository Documentation Management
+## Repository Documentation Management
 
 | File              | Audience        | Responsibility                                 |
 |-------------------|-----------------|------------------------------------------------|
 | `README.md`       | GitHub visitors | Project overview, workflow stages, quick start |
 | `CONTRIBUTING.md` | Developers      | Code conventions, branches, PRs, testing       |
 
-Do not duplicate rules across files — cross-reference the canonical source.
+Do not duplicate rules across files — cross-reference the canonical source. Where each kind of
+information belongs, and the checklist for a documentation pull request:
+[`docs/documentation-style.md`](https://github.com/ufal/atrium-project/blob/main/docs/documentation-style.md).
+What each CI check proves, and the checklist for a new one:
+[`docs/ci_policy.md`](https://github.com/ufal/atrium-project/blob/main/docs/ci_policy.md).
 
 ---
 
-## 📞 Contacts & Acknowledgements
+## Contacts & Acknowledgements
 Maintainer: **«email»** [^repo] · Developed by UFAL [^ufal] · Funded by ATRIUM [^atrium]
 
 **©️ 2026 UFAL & ATRIUM**

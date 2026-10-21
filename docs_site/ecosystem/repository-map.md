@@ -133,12 +133,12 @@ channel every tool repository's CI pins the hub's reusable workflows to. See
 
 This table records **provenance**: what this page was written from, not a build instruction.
 
-| Source                                                                                                 | What was taken from it                                 |
-|--------------------------------------------------------------------------------------------------------|--------------------------------------------------------|
-| `atrium-project/_generators/repos.py:14-110`                                                           | each repository's role, stage and default branch       |
-| `git ls-remote --symref` on the repositories, 2026-09-23; the three new ones, 2026-10-01               | default branches and branch heads                      |
-| `atrium-project/docs/templates/shared/atrium_document.py:108-163, 217, 275`                            | `BLOCK_OWNERS`, `ORIGIN_ORIGINATORS`, the field splits |
-| `atrium-project/docs/document_schema.md:104-143, 254-261`                                              | the ownership tables and the `digital-convert` rename  |
-| `atrium-translator/utils.py` (`process_metadata_xml`)                                                  | `translation_en` reserved but not filled               |
-| `atrium-project/docs/templates/shared/atrium_rocrate.py` (`REPO_URLS`)                                 | program → repository, including the predecessors       |
-| `atrium-alto-postprocess` @ `test` `2e2794d` — `text_formats.py` (`READERS`), `docs/text_inputs.md` §6 | the origins ocr-postprocess records per input format   |
+| Source                                                                                              | What was taken from it                                 |
+|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------|
+| `atrium-project/_generators/repos.py:14-110`                                                        | each repository's role, stage and default branch       |
+| `git ls-remote --symref` on the repositories, 2026-09-23; the three new ones, 2026-10-01            | default branches and branch heads                      |
+| `atrium-project/docs/templates/shared/atrium_document.py:108-163, 217, 275`                         | `BLOCK_OWNERS`, `ORIGIN_ORIGINATORS`, the field splits |
+| `atrium-project/docs/document_schema.md:104-143, 254-261`                                           | the ownership tables and the `digital-convert` rename  |
+| `atrium-translator/utils.py` (`process_metadata_xml`)                                               | `translation_en` reserved but not filled               |
+| `atrium-project/docs/templates/shared/atrium_rocrate.py` (`REPO_URLS`)                              | program → repository, including the predecessors       |
+| `atrium-ocr-postprocess` @ `v1.12.1-beta` — `text_formats.py` (`READERS`), `docs/text_inputs.md` §6 | the origins ocr-postprocess records per input format   |

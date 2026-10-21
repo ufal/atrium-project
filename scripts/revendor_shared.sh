@@ -46,9 +46,10 @@
 # vendored by another: not hub-canonical, so not in MANIFEST.json and not in the
 # hub-parity diff, but refreshed by the same run so a maintainer has one command.
 # Each SIBLING_FILES row reads `owner|path in owner|consumer|path in consumer`. The
-# consumer pins its copy by SHA-256 in tests/test_vendored_*_parity.py and para-drift's
-# vendored-parity job compares it with the owner's `test` head, so after a COPY here the
-# consumer's pin has to be updated in the same commit (`python3 <pin test>` prints it);
+# consumer pins its copy by SHA-256 in tests/test_vendored_*_parity.py, with the owner commit it
+# came from in ADOPTED, and para-drift's vendored-parity job compares it with the owner at that
+# commit (atrium-project#82), so after a COPY here the consumer's VENDORED and ADOPTED pins have
+# to be updated in the same commit (`python3 <pin test>` prints them);
 # this script says which. --repo filters on the CONSUMER; an owner or consumer without a
 # checkout is skipped, like a tool repo. The TEITOK set nlp-enrich lends digital-convert
 # and keyword-extract keeps its own procedure (tests/test_vendored_teitok_parity.py).

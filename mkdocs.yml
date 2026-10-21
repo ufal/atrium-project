@@ -137,7 +137,9 @@ nav:
       - SKOS & the ATRIUM vocabulary: contracts/skos.md
       - Schemas: contracts/schemas.md
   - Agent skills: agent-skills.md
-  - Operations: operations.md
+  - Operations:
+      - Overview: operations.md
+      - S2 pilot handover: pilot.md
   - Contributing standards: contributing-standards.md
   - Tools:
       - page-classification:

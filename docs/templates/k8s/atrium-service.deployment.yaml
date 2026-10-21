@@ -7,6 +7,15 @@
 # docs/k8s_deployment.md for the full rationale behind every field below; this file
 # is deliberately just the manifest, with only pointer comments.
 #
+# What an operator creates per service:
+#   1. this Deployment and the Service at the end of the file (`kubectl apply -f`);
+#   2. a Secret, only for keyword-extract's controlled kind or translator's
+#      openai_compatible backend (see "Secrets" in the env block);
+#   3. optionally a PersistentVolumeClaim for the model cache, in place of the
+#      `emptyDir` below.
+# It is an example, not an AMČR production deployment: ingress, network policy and
+# storage classes are the operator's.
+#
 # Ask ARÚP/ARÚB to run this manifest (not "the image") — see
 # docs/k8s_acceptance_runbook.md for the acceptance procedure this manifest supports.
 
@@ -18,9 +27,10 @@ metadata:
     app.kubernetes.io/name: atrium-<tool>-api
     app.kubernetes.io/part-of: atrium
 spec:
-  # SAFE TO RAISE for translator, page-classification, ocr-postprocess and keyword-extract:
-  # all four are stateless per request (each uses a tempfile.TemporaryDirectory that dies
-  # with the request), so any replica can serve any request.
+  # SAFE TO RAISE for translator, page-classification, ocr-postprocess, keyword-extract and
+  # digital-convert: all five are stateless per request (each uses a
+  # tempfile.TemporaryDirectory that dies with the request), so any replica can serve any
+  # request.
   #
   # NOT SAFE TO RAISE for atrium-nlp-enrich, which is the one stateful service in the set.
   # Its job registry is a process-local dict (service/jobs.py) and its workspaces are on
@@ -29,10 +39,10 @@ spec:
   # for a job that is running fine next door — which reads as a broken service rather than
   # as a replica-count problem, and is untraceable from the response alone.
   #
-  # This file is ONE manifest handed over for all five services, so the constraint has to
-  # travel with it: a reader who only ever sees this file would otherwise conclude all five
+  # This file is ONE manifest handed over for all six services, so the constraint has to
+  # travel with it: a reader who only ever sees this file would otherwise conclude all six
   # scale identically. Full note in docs/k8s_deployment.md §"Known limits"; the acceptance
-  # runbook repeats it at docs/k8s_acceptance_runbook.md §"Before you start" item 4.
+  # runbook repeats it at docs/k8s_acceptance_runbook.md §"Before you start" item 5.
   # (atrium-project#53 factors VI/VIII, ufal/atrium-nlp-enrich#35)
   replicas: 1
   strategy:
@@ -49,7 +59,7 @@ spec:
         app.kubernetes.io/name: atrium-<tool>-api
     spec:
       # terminationGracePeriodSeconds must exceed the WHOLE shutdown chain: the
-      # preStop sleep below, THEN the container's own `--timeout-graceful-shutdown`,
+      # preStop sleep below, THEN the container's own GRACEFUL_SHUTDOWN_S (uvicorn's drain),
       # THEN serve_lifecycle's drain_timeout (issue #55, docs/templates/shared/
       # atrium_service.py) — the kubelet SIGKILLs at this deadline regardless of what
       # the process is still doing. 60s here = 5s preStop + 20s uvicorn HTTP drain +
@@ -76,7 +86,7 @@ spec:
               name: http
           env:
             # This block and the "Environment variables" table in
-            # docs/k8s_deployment.md are the same contract in two forms. The five
+            # docs/k8s_deployment.md are the same contract in two forms. The six
             # repos' own .env.example files are the complete ledger both are drawn
             # from; docs/templates/env.example.template fixes their layout. The
             # invariant: every variable named in Table A appears here, set or
@@ -95,7 +105,7 @@ spec:
             #   value: "20"                   # Raise with terminationGracePeriodSeconds.
             # - name: LOG_LEVEL               # default "INFO" — root logger level for the
             #   value: "INFO"                 # entrypoint (DEBUG/INFO/WARNING/ERROR). All
-            #                                 # five services honour it identically
+            #                                 # six services honour it identically
             #                                 # (atrium-project#61); tests/test_logging_
             #                                 # contract.py is vendored in each repo and
             #                                 # fails if one drifts.
@@ -113,10 +123,12 @@ spec:
             #                                 # the entry; do not blank it.
             # - name: MAX_UPLOAD_MB           # NO shared default: ocr-postprocess 25,
             #   value: "10"                   # keyword-extract 10, nlp-enrich 5,
-            #                                 # page-classification 10, translator 50.
-            #                                 # Uncommenting this as-is RAISES nlp-enrich's
-            #                                 # limit and LOWERS alto's and translator's.
-            #                                 # Use your service's number (k8s_deployment.md).
+            #                                 # page-classification 10, translator 50,
+            #                                 # digital-convert 200. Uncommenting this as-is
+            #                                 # RAISES nlp-enrich's limit and LOWERS
+            #                                 # ocr-postprocess's, translator's and
+            #                                 # digital-convert's. Use your service's
+            #                                 # number (k8s_deployment.md).
             # - name: ATRIUM_RUN_AGENT        # unset by default — the IRI (e.g. ROR) of the
             #   value: "https://ror.org/..."  # organisation operating this deployment, the
             #                                 # `agent` of every run's CreateAction
@@ -235,15 +247,24 @@ spec:
           emptyDir: {}                  # swap for a PVC to persist the model cache
                                           # across pod restarts and avoid re-downloading
 
-#---
-#apiVersion: v1
-#kind: Service
-#metadata:
-#  name: atrium-<tool>-api
-#spec:
-#  selector:
-#    app.kubernetes.io/name: atrium-<tool>-api
-#  ports:
-#    - port: 8000
-#      targetPort: http      # the NAME, so it follows containerPort
-#      name: http
+---
+# The in-cluster address of the service: `atrium-<tool>-api:8000`. digital-convert's
+# `/describe` reaches page-classification and ocr-postprocess through theirs
+# (PAGE_CLASSIFICATION_URL, OCR_POSTPROCESS_URL), and the acceptance runbook
+# port-forwards it. ClusterIP only; exposing it outside the cluster is the operator's
+# ingress decision.
+apiVersion: v1
+kind: Service
+metadata:
+  name: atrium-<tool>-api
+  labels:
+    app.kubernetes.io/name: atrium-<tool>-api
+    app.kubernetes.io/part-of: atrium
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: atrium-<tool>-api
+  ports:
+    - port: 8000
+      targetPort: http      # the NAME, so it follows containerPort
+      name: http

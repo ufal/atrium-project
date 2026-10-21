@@ -144,7 +144,7 @@ asserting hierarchy, which is exactly the claim being made.
 
 **Why the CNEC codes carry no definitions.** Only the code→coarse-type mapping exists in the
 codebase; nobody wrote glosses. Inventing them would be worse than omitting them, so `prefLabel` is
-the code itself and `dct:source` points at the CNEC 2.0 documentation. See [§7](#-7-follow-ups).
+the code itself and `dct:source` points at the CNEC 2.0 documentation. See [§7](#7-follow-ups-not-done-here-deliberately).
 
 **Validation is advisory, never fatal.** `validate_labels()` reports and returns findings; it never
 raises. This matches the idiom already established in `atrium_document.py` — abstain with a `NOTE`
@@ -291,7 +291,7 @@ tests in `TestCollectImages`, one of them on the shipped `small_data_samples/`.
 TEATER over **GraphQL** rather than the pinned snapshot, producing 5,087 rows against nlp-enrich's
 4,723. It discarded every identifier it received. It now carries `source`, `source_id` and `uri`
 through to a 5-column CSV, prefix-compatible with nlp-enrich's `*_flat.csv`. **The duplication
-itself remains** — see [§7](#-7-follow-ups).
+itself remains** — see [§7](#7-follow-ups-not-done-here-deliberately).
 
 Also found and **not** fixed, since both predate this work and are out of scope:
 `_download_and_parse_export()` is a stub returning `{}`, and the `main()`/CLI that
@@ -349,7 +349,7 @@ record → ocr-postprocess → keyword-extract). Its skip set is now
 `UNTRUSTWORTHY_LINE_CATEGORIES` plus `Empty`, pinned by a test against the registry — the V-1
 lesson again: a consumer filters on the registry's set, never on a copy of it.
 
-## 🗂️ 7. Follow-ups (not done here, deliberately)
+## 7. Follow-ups (not done here, deliberately)
 
 | #      | Item                                                                                        | Why not now                                                                                                                                                                                                                                                                                                                                                                     |
 |--------|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

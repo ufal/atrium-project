@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ufal.github.io/atrium-project/schemas/proposals/atrium_rights.schema.json",
+  "title": "ATRIUM execution evidence, processing policy and output rights (DRAFT)",
+  "description": "Draft for review on atrium-project#6 (docs/proposals/rights-and-policy.md). Not used by any tool. Three separate structures: the components a run used, the policy decisions made before using them, and an optional rights assertion about an output.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "components_used": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/component" }
+    },
+    "policy": {
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/policy_record" }]
+    },
+    "rights": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/rights_assertion" }
+    }
+  },
+  "$defs": {
+    "component": {
+      "type": "object",
+      "required": ["id", "kind", "name", "licence"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]*$", "description": "Stable id within the tool's components.json." },
+        "kind": { "type": "string", "enum": ["software", "model", "dataset", "vocabulary", "service"] },
+        "name": { "type": "string" },
+        "version": { "type": ["string", "null"], "description": "Release, model revision, image digest or API version; null when the provider publishes none." },
+        "licence": { "type": ["string", "null"], "description": "An SPDX licence expression or LicenseRef-*; null when the component has terms instead of a licence, or none is known." },
+        "terms_url": { "type": "string", "format": "uri" },
+        "evidence": {
+          "type": "object",
+          "required": ["url", "read"],
+          "additionalProperties": false,
+          "properties": {
+            "url": { "type": "string", "format": "uri", "description": "Where the licence or terms were read." },
+            "read": { "type": "string", "format": "date" }
+          }
+        },
+        "role": { "type": "string" }
+      }
+    },
+    "policy_record": {
+      "type": "object",
+      "required": ["policy", "decisions"],
+      "additionalProperties": false,
+      "properties": {
+        "policy": {
+          "type": "object",
+          "required": ["id", "version"],
+          "additionalProperties": false,
+          "properties": {
+            "id": { "type": "string" },
+            "version": { "type": "string" },
+            "source": { "type": "string", "description": "Where the deployment read it (ATRIUM_POLICY_PATH)." }
+          }
+        },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["route", "decision"],
+            "additionalProperties": false,
+            "properties": {
+              "route": { "type": "string", "examples": ["lindat-translation", "llm-controlled-keywords"] },
+              "components": { "type": "array", "items": { "type": "string" } },
+              "decision": { "type": "string", "enum": ["allowed", "refused"] },
+              "rule": { "type": "string", "description": "The rule of the policy that decided." }
+            }
+          }
+        }
+      }
+    },
+    "rights_assertion": {
+      "type": "object",
+      "required": ["statement", "asserted_by", "date"],
+      "additionalProperties": false,
+      "properties": {
+        "statement": { "type": "string", "description": "An SPDX expression, a rights URI or a short text." },
+        "asserted_by": { "type": "string", "format": "uri", "description": "The agent asserting it, e.g. an institution's ROR." },
+        "basis": { "type": "string", "description": "What the assertion rests on: source rights, a policy id, an agreement." },
+        "scope": { "type": "string", "description": "What it covers: the record, a block name, or a derived file's path." },
+        "date": { "type": "string", "format": "date" }
+      }
+    }
+  }
+}

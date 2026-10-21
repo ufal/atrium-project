@@ -32,7 +32,8 @@
 # duplicate that build and run for no added coverage. This file's job is the cheap,
 # fast, in-process half of the same contract (every push, no Docker required); the
 # container-level proof is opt-in per repo via docker-tool.reusable.yml's
-# probe-targets input, exercised only on PRs (docker-build-smoke's own gate).
+# probe-targets input, run on PRs, pushes to `test` and version tags (docker-build-smoke's
+# own gate).
 
 name: ATRIUM API Meta-Contract
 
@@ -68,20 +69,39 @@ jobs:
           if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
 
       - name: Run API meta-contract test
+        # Blocking (docs/ci_policy.md): the job fails when nothing was collected (exit 5) or when
+        # every test of tests/test_api_contract.py skipped, which means the app did not import in
+        # this lane (requirements-test.txt installs what it needs). The counts go to the summary.
         run: |
           tests="tests/test_api_contract.py"
           if [ -f tests/test_openapi_contract.py ]; then tests="$tests tests/test_openapi_contract.py"; fi
-          # Exit 5 is pytest's "no tests collected": a service whose app cannot be imported in
-          # this lane skips its module (07-23 defect 4). That is reported, not failed; every
-          # other non-zero exit is a failure.
           rc=0
           # shellcheck disable=SC2086 — word splitting is intended: a list of test files
-          pytest -q -rs $tests || rc=$?
-          if [ "$rc" -eq 5 ]; then
-            echo "::notice::no tests collected in $tests (every module skipped) — exit 5 is not a failure"
-            exit 0
-          fi
-          exit "$rc"
+          pytest -q -rs --junitxml=api-contract.xml $tests || rc=$?
+          python3 - "$rc" <<'PY'
+          import os, sys, xml.etree.ElementTree as ET
+          rc = int(sys.argv[1])
+          counts = {}
+          try:
+              cases = list(ET.parse("api-contract.xml").getroot().iter("testcase"))
+          except (OSError, ET.ParseError):
+              cases = []
+          for case in cases:
+              module = "test_api_contract" if "test_api_contract" in f"{case.get('classname')} {case.get('name')}" else "test_openapi_contract"
+              state = "skipped" if case.find("skipped") is not None else "failed" if case.find("failure") is not None or case.find("error") is not None else "passed"
+              counts.setdefault(module, {"passed": 0, "failed": 0, "skipped": 0})[state] += 1
+          rows = [f"| `{m}` | {c['passed']} | {c['failed']} | {c['skipped']} |" for m, c in sorted(counts.items())]
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+              summary.write("### API meta-contract\n\n| Module | Passed | Failed | Skipped |\n|---|---|---|---|\n" + "\n".join(rows) + "\n")
+          contract = counts.get("test_api_contract", {})
+          if rc == 5 or not cases:
+              print("::error::no API contract tests were collected: the check ran nothing")
+              sys.exit(1)
+          if not contract.get("passed") and not contract.get("failed"):
+              print("::error::every test in tests/test_api_contract.py skipped: the app did not import in this lane (see the skip reason above)")
+              sys.exit(1)
+          sys.exit(rc)
+          PY
 
   openapi-compat:
     name: Compare the committed OpenAPI spec with the latest release (#32)

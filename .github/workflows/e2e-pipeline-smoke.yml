@@ -306,15 +306,6 @@ jobs:
             "${SEED_ARGS[@]}" \
             --document-json-out /workspace/work/doc_json/1_pc.json
 
-      - name: Fetch latest OCR Postprocess source
-        uses: actions/checkout@v7
-        with:
-          repository: ufal/atrium-ocr-postprocess
-          path: work/atrium-ocr-postprocess-main
-
-      - name: Set permissions for OCR Postprocess source
-        run: chmod -R a+rwX ${{ github.workspace }}/work/atrium-ocr-postprocess-main
-
       # (B9 / #50, #62) Runs the image AS BUILT: no entrypoint override, and nothing
       # fetched or installed at run time. This step used to wrap the stage in a
       # `/bin/sh -c` shim that pulled `alto-tools` from a moving
@@ -327,25 +318,15 @@ jobs:
       # stage `base` — the unsuffixed tag pulled here) now runs the stage, with the
       # arguments below appended to it, as in Stage 1.
       #
-      # `-w` still points at the checked-out source, so `run_pipeline.py` and the
-      # `alto_tools` module beside it both resolve from that checkout.
+      # The image's own WORKDIR (/app) and code run (#77 D): no source checkout, no `-w`.
+      # Every path the stage reads or writes is absolute under /workspace (the config above).
       - name: Stage 2 - OCR Postprocess
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
-          -w /workspace/work/atrium-ocr-postprocess-main
           ghcr.io/ufal/atrium-ocr-postprocess:${{ inputs.image-tag || 'latest' }}
           --config /workspace/work/config_e2e_alto.txt
           --document-json /workspace/work/doc_json/1_pc.json
           --document-json-out /workspace/work/doc_json/2_alto.json
-
-      - name: Fetch latest Translator source
-        uses: actions/checkout@v7
-        with:
-          repository: ufal/atrium-translator
-          path: work/atrium-translator-main
-
-      - name: Set permissions for Translator source
-        run: chmod -R a+rwX ${{ github.workspace }}/work/atrium-translator-main
 
       # (B9 / #62) Stages 3 and 4 (and the former stage 5) each used to replace the image's entrypoint with a
       # command BYTE-IDENTICAL IN EFFECT to the entrypoint it replaced. Three exact
@@ -369,17 +350,15 @@ jobs:
       # main.py. Stages 3 and 4 therefore drop the script name along with the override;
       # None of this is visible to YAML linting -- only to a run.
       #
-      # `-w` still points at the checked-out source, so the relative script names in
-      # those entrypoints resolve from that checkout exactly as they did before. That
-      # `-w` is a SEPARATE build/release/run gap (the lane runs the image's interpreter
-      # against the repository's source, so a change that never reached the image still
-      # passes) and has its own follow-up; it is not this issue's to close.
+      # The relative script names in those entrypoints resolve from the image's own
+      # WORKDIR (/app): the lane runs the code the image carries, not a checkout of the
+      # repository's default branch (#77 D; it used to pass `-w` into such a checkout, so a
+      # change that never reached the image still passed).
       #
       # tests/test_e2e_entrypoints.py is what stops a silent override returning.
       - name: Stage 3 - Translator
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
-          -w /workspace/work/atrium-translator-main
           ghcr.io/ufal/atrium-translator:${{ inputs.image-tag || 'latest' }}
           /workspace/work/PAGE_ALTO/${E2E_DOC}/${E2E_DOC}-1.alto.xml
           --alto --formats alto.xml --source_lang cs --target_lang en
@@ -387,21 +366,11 @@ jobs:
           --document-json /workspace/work/doc_json/2_alto.json
           --document-json-out /workspace/work/doc_json/3_translate.json
 
-      - name: Fetch latest NLP Enrich source
-        uses: actions/checkout@v7
-        with:
-          repository: ufal/atrium-nlp-enrich
-          path: work/atrium-nlp-enrich-main
-
-      - name: Set permissions for NLP Enrich source
-        run: chmod -R a+rwX ${{ github.workspace }}/work/atrium-nlp-enrich-main
-
       # Runs the image as built -- see the note above Stage 3. `run_pipeline.py` is gone
       # from the command because ENTRYPOINT ["python", "run_pipeline.py"] supplies it.
       - name: Stage 4 - NLP Enrich
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
-          -w /workspace/work/atrium-nlp-enrich-main
           ghcr.io/ufal/atrium-nlp-enrich:${{ inputs.image-tag || 'latest' }}
           --config /workspace/work/config_e2e_nlp.txt
           --stages manifest udp nt stats
@@ -459,6 +428,7 @@ jobs:
               exit 1
             fi
             echo "::warning::$IMAGE is not published yet (keyword-extract's first release or first test push); the keyword step is skipped."
+            echo "**Skipped:** $IMAGE is not published yet (keyword-extract's first release or first test push); the keyword step is skipped." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           CID=$(docker run -d -e PORT=8080 -p 8080:8080 "$IMAGE")
@@ -493,6 +463,8 @@ jobs:
                   f"keyword-extract {version} answered without the record: its `keywords` block is missing (atrium-project#73)"
               )
               print(f"::warning::keyword-extract {version} predates the record's `keywords` block (v1.2.0-beta); not checked in this run.")
+              with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+                  summary.write(f"**Skipped:** keyword-extract {version} predates the record's `keywords` block (v1.2.0-beta); not checked in this run.\n")
           else:
               assert "document_json_schema_error" not in r, r["document_json_schema_error"]
               assert record["keywords"]["document"] == kws, "the record's document keywords are not the response's"
@@ -551,6 +523,7 @@ jobs:
               exit 1
             fi
             echo "::warning::no OPENROUTER_KEY secret; keyword-extract's controlled kind is not checked in this run."
+            echo "**Skipped:** no OPENROUTER_KEY secret; keyword-extract's controlled kind is not checked in this run." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           # The record the statistical kind returned, when there is one: both kinds accrete onto it.
@@ -566,6 +539,7 @@ jobs:
           IMAGE="ghcr.io/ufal/atrium-keyword-extract-api:${{ inputs.image-tag || 'latest' }}"
           if ! docker pull "$IMAGE"; then
             echo "::warning::$IMAGE is not published; the controlled kind is not checked."
+            echo "**Skipped:** $IMAGE is not published; the controlled kind is not checked." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           # KeyBERT is not the question here, so the statistical default is the one with nothing to load.

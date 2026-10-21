@@ -861,3 +861,52 @@ def test_hub_itself_passes_its_own_linter():
     have caught the `docker.caller.example.yml` clobber on the commit that made it."""
     rc, out = run_lint(_HUB_ROOT)
     assert rc == 0, out
+
+
+# ── optional exits (#81) ─────────────────────────────────────────────────────
+
+_OPTIONAL_JOB = """\
+name: Optional
+on: push
+concurrency:
+  group: optional-${{ github.ref }}
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+%s"""
+
+
+@pytest.mark.parametrize(
+    ("step", "ok"),
+    [
+        ("      - run: pytest -q tests || true\n", False),
+        ("      - run: pytest -q tests || true  # ci-optional: smoke only, never a gate\n", True),
+        ("      - name: lint\n        continue-on-error: true\n        run: ruff check .\n", False),
+        (
+            "      - name: lint\n        # ci-optional: advisory lint\n        continue-on-error: true\n"
+            "        run: ruff check .\n",
+            True,
+        ),
+        ('      - run: |\n          pytest -m slow || rc=$?\n          if [ "$rc" -eq 5 ]; then exit 0; fi\n', False),
+        ("      - run: docker rm -f probe || true\n", True),
+        ("      - run: grep '^SKIPPED' pytest-output.txt || true\n", True),
+    ],
+    ids=[
+        "or-true-after-pytest",
+        "or-true-marked",
+        "continue-on-error",
+        "continue-on-error-marked-above",
+        "exit-5-remap",
+        "cleanup-is-not-a-check",
+        "a-file-named-pytest-is-not-a-check",
+    ],
+)
+def test_an_optional_exit_needs_a_ci_optional_reason(tmp_path, step, ok):
+    write_workflow(tmp_path, "optional.yml", _OPTIONAL_JOB % step)
+    rc, out = run_lint(tmp_path)
+    assert (rc == 0) is ok, out
+    assert ok or "# ci-optional:" in out

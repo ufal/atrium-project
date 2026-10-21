@@ -260,7 +260,8 @@ often sets; the READMEs list all of them.
 |                     | `LINDAT_GUARD_RETRIES`                                                   | `2`                        | Re-requests of an HTTP-200 reply that is not a translation (looping, empty, runaway).                                                                                                                                                                                                                                                                                                                                          |
 |                     | `OUTPUT_MODE`                                                            | `replace`                  | `/translate`'s default mode. `append` on AMCR records is not AMCR-2.2-valid; keep `replace` where records must validate.                                                                                                                                                                                                                                                                                                       |
 |                     | `AMCR_FIELDS_PATH`                                                       | `amcr-fields.txt`          | XPath targets for metadata mode; unreadable means a 422.                                                                                                                                                                                                                                                                                                                                                                       |
-|                     | `VOCABULARY_PATH`                                                        | *(none)*                   | The vocabulary CSV `/translate` applies (keyword-extract's curated list, `data_samples/vocabulary.csv`). A path that names no usable CSV stops the service at startup; `/info` reports the file, its terms and its SHA-256. Whether the image sets it waits on translator#4's bake-off.                                                                                                                                        |
+|                     | `VOCABULARY_PATH`                                                        | *(none)*                   | The vocabulary CSV `/translate` applies (keyword-extract's curated list, `data_samples/vocabulary.csv`). A path that names no usable CSV stops the service at startup; `/info` reports the file, its terms and its SHA-256. Unset by default (translator#4, 10-19): `/translate` then applies none.                                                                                                                            |
+|                     | `LANG_ID_MODEL_PATH`                                                     | *(the image's copy)*       | The FastText language-ID model file `source_lang=auto` uses. The image sets it to its own copy, `/opt/models/fasttext-lid.bin` (from the first release after `v1.5.0-beta`), so no egress is needed for it; a path that is not a file starts the service degraded (`/health?deep=true`).                                                                                                                                       |
 |                     | `DEFAULT_SOURCE_LANG`                                                    | `cs`                       | The language `source_lang=auto` falls back to when detection cannot be trusted.                                                                                                                                                                                                                                                                                                                                                |
 |                     | `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`                               | —                          | Only when `TRANSLATION_BACKEND=openai_compatible`. `LLM_API_KEY` is a **secret**.                                                                                                                                                                                                                                                                                                                                              |
 
@@ -282,19 +283,21 @@ shows the shape; creating the `Secret` is your step.
   keyword-extract's per-line LLM calls,
   nlp-enrich's own synchronous `/enrich`/`/enrich_text`/`/rescale`); a request that runs
   longer than the container's grace period is still forcibly cut when the kubelet
-  `SIGKILL`s. Raise `terminationGracePeriodSeconds` **and** the Dockerfile's
-  `--timeout-graceful-shutdown` together for a deployment expecting unusually large
-  inputs — this manifest's defaults are a reasonable baseline, not a guarantee.
+  `SIGKILL`s. Raise `terminationGracePeriodSeconds` **and** `GRACEFUL_SHUTDOWN_S` (the
+  `env:` entry; the Dockerfile flag it replaced is gone) together for a deployment expecting
+  unusually large inputs — this manifest's defaults are a reasonable baseline, not a guarantee.
 - **nlp-enrich's job queue is in-memory** (`service/jobs.py`). `serve_lifecycle`'s drain
   waits for a *tracked* job to finish before the process exits (issue #55 fixes the
   "job killed mid-flight" failure specifically), but a job's **record** does not survive a
   restart — a client polling `/jobs/{id}` after a rolling restart gets 404, not "completed
-  during the restart that just happened." Durable job storage is out of scope for #55
-  (tracked separately under #53's factors IV/VI); do not represent this manifest as making
-  the job API safe to poll across a restart.
+  during the restart that just happened." Durable job status and results are **not
+  supported**; a client re-submits. The acceptance runbook therefore tests the drain with the
+  synchronous `/enrich` and the job flow without a restart; do not represent this manifest as
+  making the job API safe to poll across a restart.
 - **`replicas: 1` is the template default**, not a recommendation to stay at one. Raising it
-  is safe for the four request/response services (translator, page-classification,
-  ocr-postprocess, keyword-extract) once ARÚP/ARÚB's own load-balancing is in place; nlp-enrich's
+  is safe for the five request/response services (translator, page-classification,
+  ocr-postprocess, keyword-extract, digital-convert) once ARÚP/ARÚB's own load-balancing is in
+  place; nlp-enrich's
   in-memory job store means a client's poll can land on a *different* replica than the one
   running its job, which reads as 404 rather than "still running" — the same limitation as
   above, just visible sooner under >1 replica.
@@ -304,26 +307,26 @@ shows the shape; creating the `Secret` is your step.
   services that benefit from a GPU. Those are ARÚP/ARÚB's own cluster's concerns and
   deliberately left out rather than guessed at.
 - **ocr-postprocess's lifespan raises on model-load failure**
-  (`service/text_api.py:63-65`), so a misconfigured alto pod crash-loops on `startupProbe`
+  (`service/text_api.py:63-65`), so a misconfigured ocr-postprocess pod crash-loops on `startupProbe`
   rather than starting and reporting unready. This is correct, intentional behaviour (a
   service that cannot load its models should not silently sit "not ready" forever) — worth
   knowing so a crash-loop on this one service specifically is read as a config problem, not
   a regression in this manifest.
-- **The reference manifest cannot deploy keyword-extract's controlled kind unmodified.** The service
-  of the former llm-enrich (`service/api.py:128-134` there) raised at startup when `OPENROUTER_API_KEY`
-  or `OPENROUTER_MODEL` was empty (and likewise for `OLLAMA_MODEL` on the ollama backend), so a pod
-  with that kind applied straight from this template crash-loops on `startupProbe` — and it will look
-  exactly like a probe defect in the acceptance runbook unless the key is supplied first. Create a
-  `Secret` out of band and uncomment the `secretKeyRef` stanza. keyword-extract's statistical kind
-  needs no key, and a statistical-only deployment is the whole procedure "substitute `<tool>` and
-  `<version>`, then apply" (see "What to change per repo" below).
+- **The reference manifest does not configure keyword-extract's controlled kind.** Without
+  `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` (or `OLLAMA_MODEL` on the ollama backend) the service
+  still starts and serves the statistical kind; `GET /info` reports `controlled.ready: false` with
+  the reason, and `kind=controlled` answers 501 (`service/api.py:445-470`, `:924-926`). Create a
+  `Secret` out of band and uncomment the `secretKeyRef` stanza to enable it. A statistical-only
+  deployment is the whole procedure "substitute `<tool>` and `<version>`, then apply" (see "What to
+  change per repo" below).
 
 ## What to change per repo
 
-Replace `<tool>` and `<version>` in the manifest with the real image
-(`ghcr.io/ufal/atrium-nlp-enrich-api:v1.2.0`, etc. — see `docker_gha.md` §3.1–3.2 for the
-naming/tag-channel conventions), and size `resources.limits.memory` against the model(s) that
+Replace `<tool>` and `<version>` in the manifest with the real image: the release tag without its
+leading `v`, best with the approved digest (`ghcr.io/ufal/atrium-nlp-enrich-api:1.1.2-beta@sha256:…`;
+see `k8s_acceptance_runbook.md` §"Image identity" and `docker_gha.md` §3.1–3.2 for the tag channels), and size `resources.limits.memory` against the model(s) that
 repo actually loads. Everything else in the manifest is identical across all six services —
 that uniformity is the point: one reference contract, applied six times, rather than six
-independently-negotiated deployment specs — **with one exception**: keyword-extract's controlled kind
-additionally needs the `Secret` described in "Known limits" above before it will start at all.
+independently-negotiated deployment specs — **with two additions**: keyword-extract's controlled kind
+needs the `Secret` described in "Known limits" above before it can run, and digital-convert's
+`/describe` needs `PAGE_CLASSIFICATION_URL` and `OCR_POSTPROCESS_URL` to run its two stages.

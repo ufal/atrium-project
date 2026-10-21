@@ -61,7 +61,8 @@ def test_release_tags_are_protected_from_update_and_deletion_but_not_creation():
     assert tool_path == "repos/ufal/atrium-translator/rulesets"
     assert tool["target"] == "tag" and tool["conditions"]["ref_name"]["include"] == ["refs/tags/v*"]
     assert {rule["type"] for rule in tool["rules"]} == {"update", "deletion"}
-    assert hub["conditions"]["ref_name"]["include"] == ["refs/tags/v1", "refs/tags/doc-schema-v*"]
+    # The hub's `v1` moves with every hub change (#72, 10-20); only the schema freezes are fixed.
+    assert hub["conditions"]["ref_name"]["include"] == ["refs/tags/doc-schema-v*"]
     assert tool["bypass_actors"] == [{"actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always"}]
 
 
@@ -69,6 +70,14 @@ def test_a_ruleset_is_updated_in_place_when_its_name_exists():
     gh = FakeGh({"repos/ufal/atrium-translator/rulesets": [{"id": 42, "name": rt.TAG_RULESET}]})
     run(["tag-rules", "--repo", "atrium-translator"], gh)
     assert [(m, p) for m, p, _ in gh.writes()] == [("PUT", "repos/ufal/atrium-translator/rulesets/42")]
+
+
+def test_a_hand_made_tag_ruleset_is_updated_in_place_under_its_own_name():
+    gh = FakeGh({"repos/ufal/atrium-nlp-enrich/rulesets": [{"id": 9, "name": "Protect v* Tags"}]})
+    run(["tag-rules", "--repo", "atrium-nlp-enrich"], gh)
+    ((method, path, body),) = gh.writes()
+    assert (method, path) == ("PUT", "repos/ufal/atrium-nlp-enrich/rulesets/9")
+    assert body["name"] == "Protect v* Tags"
 
 
 def test_branch_rules_require_pull_requests_and_the_named_checks():

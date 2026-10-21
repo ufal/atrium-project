@@ -93,11 +93,15 @@ repository's release workflow, and `security.reusable.yml` checks it again. Cutt
 
 ### Shared code
 
-The nineteen files listed in
+The 24 files listed in
 [Architecture](ecosystem/architecture.md#what-is-canonical-and-what-is-vendored) are **never
 edited in a tool repository**: CI fails on a single changed byte. A change to shared code is
 made in the hub and copied out with `scripts/revendor_shared.sh`, and the tool repositories'
-copies land together. Everything else in a tool repository is its own.
+copies land together. The same holds for the files one tool copies from another (the document
+reader, the TEITOK reader) and for the vocabulary the translator bundles: who owns each, how a
+consumer records what it adopted, and the pull request checklist are in the hub's
+[`shared_components.md`](https://github.com/ufal/atrium-project/blob/main/docs/shared_components.md).
+Everything else in a tool repository is its own.
 
 ### Which document owns what
 
@@ -137,7 +141,10 @@ Every pull request against `test` runs the repository's caller workflows — the
 and a container smoke test (`docker.yml`), the service contract (`api-contract.yml`), byte
 parity of the shared files (`para-drift.yml`), `pre-commit`, workflow lint, CodeQL and the
 version check. [Architecture → The CI federation](ecosystem/architecture.md#the-ci-federation)
-lists them. A pull request is ready for review when all of them are green.
+lists them. A pull request is ready for review when all of them are green. What each check proves,
+which are blocking, and how a skip must be reported are in the hub's
+[`ci_policy.md`](https://github.com/ufal/atrium-project/blob/main/docs/ci_policy.md); a pull
+request that adds or changes a check answers its six questions.
 
 ## Contributing to this site
 

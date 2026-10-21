@@ -125,8 +125,9 @@ The document record's freeze is a tag, one per major: `doc-schema-v1` is commit 
 never moves. An additive change after it keeps that tag as the reference, but has to be registered.
 Every tool carries the frozen copy, `atrium_document.schema.doc-schema-v1.json`, and a vendored
 `tests/test_schema_freeze.py` that checks its own schema against it: nothing declared at the freeze
-removed, and every constraint added since listed in one register (so far one,
-`lines[].style.region`). The hub also checks that every record shape the tools write validates
+removed, and every constraint added since listed in one register (eleven entries by 13 October,
+from `lines[].style.region` to `teater_category_ids`; the table is in `document_schema.md`
+§"Post-freeze register"). The hub also checks that every record shape the tools write validates
 against both the frozen schema and the current one. The rule and the procedure for a new major are
 in the hub's
 [`document_schema.md`](https://github.com/ufal/atrium-project/blob/main/docs/document_schema.md#freeze--conformance).

@@ -13,9 +13,49 @@ mechanisms give it, each with a tool in this repository.
 | Mechanism                                                | What it guarantees                                                                                                                                           | Tool                                                        |
 |----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
 | **Immutable releases** (six tool repos)                  | a published release, its tag and its assets never change                                                                                                     | `scripts/release_trust.py immutable`                        |
-| **Tag ruleset** (all seven)                              | a release tag, `v1` or `doc-schema-v*` cannot be moved or deleted, except by a repository admin, and GitHub logs that bypass                                 | `scripts/release_trust.py tag-rules`                        |
+| **Tag ruleset** (six tool repos; the hub's freezes)      | a release tag `v*`, or a hub `doc-schema-v*` freeze, cannot be moved or deleted, except by a repository admin, and GitHub logs that bypass                   | `scripts/release_trust.py tag-rules`                        |
 | **Branch ruleset** (all seven)                           | the default branch and `test` cannot be deleted or force-pushed; changes arrive by pull request, optionally with required checks; admins may bypass (logged) | `scripts/release_trust.py branch-rules`                     |
 | **Reusable workflows pinned by commit** (six tool repos) | a moving `v1` cannot change what a repository's CI runs                                                                                                      | `scripts/pin_hub_reusables.py`, `tools/ci/workflow_lint.py` |
+
+## Tag identity
+
+| Name                  | Form                                                                          | Fixed?                                 |
+|-----------------------|-------------------------------------------------------------------------------|----------------------------------------|
+| Source release (tool) | Git tag `vX.Y.Z[-suffix]`, e.g. `v1.2.0-beta`                                 | yes: tag ruleset and immutable release |
+| Image tag             | the same version without the `v`: `ghcr.io/ufal/atrium-<tool>-api:1.2.0-beta` | no: a registry tag can be pushed again |
+| Image identity        | the image digest, `…-api@sha256:<64 hex>`                                     | yes                                    |
+| Development channels  | images `test` and `latest`                                                    | no, by design                          |
+| Hub workflow pointer  | `v1`                                                                          | no: it moves with every hub change     |
+| Hub schema freezes    | `doc-schema-v*`                                                               | yes: tag ruleset                       |
+
+Protecting a Git tag does not make an image tag immutable. A release is identified by its source
+tag and commit and by the digest of each image built from it, so release evidence records all three,
+and the S2 pilot names its six images by digest (`k8s_acceptance_runbook.md` §"Image identity").
+`test` and `latest` are never a reproducible baseline.
+
+**The hub is the exception.** Its `v1` is a compatibility pointer for the tool repositories'
+workflow callers, not a source release, so no tag rule covers it. The tool repositories stop
+following it when they call the hub's reusables by commit (step 7). The hub's genuinely fixed
+references, the `doc-schema-v*` freezes, have their own rule.
+
+## State on 2026-10-20
+
+Read with the public API (no admin rights needed); `status` gives the same with ruleset details.
+
+| Repository          | Tag ruleset on `v*`                   | Latest release immutable | Hub reusables by commit |
+|---------------------|---------------------------------------|--------------------------|-------------------------|
+| page-classification | yes (`Protect v* Tags`, 10-19)        | yes (`v1.9.5-beta`)      | 0 of 7 callers          |
+| ocr-postprocess     | **no**                                | yes (`v1.12.1-beta`)     | 0 of 7                  |
+| digital-convert     | **no**                                | yes (`v1.2.1-beta`)      | 0 of 7                  |
+| nlp-enrich          | yes (`Protect v* Tags`, 10-19)        | yes (`v1.1.2-beta`)      | 0 of 7                  |
+| keyword-extract     | **no**                                | yes (`v1.4.0-beta`)      | 0 of 7                  |
+| translator          | **no**                                | yes (`v1.5.0-beta`)      | 0 of 7                  |
+| hub                 | `doc-schema-v*`: **no**               | —                        | —                       |
+
+Releases from before immutability was switched on stay mutable (page-classification up to
+`v1.9.4-beta`, nlp-enrich up to `v1.1.0-beta`, translator up to `v1.4.0-beta`); AMČR mirrors only
+the immutable ones. The two hand-made rulesets refuse update, deletion and non-fast-forward on
+`refs/tags/v*`, so `tag-rules` keeps them and updates them in place.
 
 ## What the release workflows need — nothing
 
@@ -48,13 +88,13 @@ by the next version, never by moving its tag or replacing an asset.
    python3 scripts/release_trust.py immutable
    ```
 
-4. **Tag rules** (`v*` in the tool repositories; `v1` and `doc-schema-v*` in the hub):
+4. **Tag rules** (`v*` in the tool repositories; `doc-schema-v*` in the hub):
 
    ```bash
    python3 scripts/release_trust.py tag-rules
    ```
 
-   Moving `v1` stays possible for repository admins; anyone else's push is refused.
+   The hub's `v1` is not covered and keeps moving with each hub change (§"Tag identity").
 
 5. **Branch rules.** First read the names of the checks that run on `test`, then choose which to
    require (the #40 plan names the `docker`, `para-drift`, `api-contract`, `pre-commit` and
@@ -90,8 +130,8 @@ by the next version, never by moving its tag or replacing an asset.
 8. **The pin is mandatory from the sweep on.** The sweep also writes `require-sha-pins: true`
    into each tool repository's workflow-lint caller, so that repository's lint refuses a hub
    reusable left at `@v1`. The input defaults to false and must stay so: the hub's own callers
-   (`hub-self-check.yml`) run at `@v1`, and making the flag the reusable's default would fail
-   them. From then on a hub change reaches a tool repository only through a reviewed pin move
+   (`hub-self-check.yml`) call the reusables by path, with `hub-ref: ${{ github.sha }}`, and making
+   the flag the reusable's default would fail them. From then on a hub change reaches a tool repository only through a reviewed pin move
    (the same script with a new `--sha`, or a Dependabot PR).
 9. **Post the evidence**: the `status` output on #72 and #40.
 

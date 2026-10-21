@@ -469,7 +469,7 @@ hub commit carrying all of:
 3. a `## Changelog — <date>` section in this document;
 4. the producer shapes it has to keep admitting, in `tests/test_document_required.py`.
 
-Then the usual order: `scripts/revendor_shared.sh` into the five tool repos, commit them in one
+Then the usual order: `scripts/revendor_shared.sh` into the six tool repos, commit them in one
 window, move `v1`.
 
 **Removing or renaming a declared field, or re-attributing a written block, is a MAJOR bump**
@@ -480,11 +480,18 @@ window, move `v1`.
 3. add `atrium_document.schema.doc-schema-v2.json` (the file as that tag has it) to
    `docs/templates/shared/` with its `MANIFEST.json` row, add `FREEZES[2]` to
    `test_schema_freeze.py`, and start its `POST_FREEZE_CHANGES` empty;
-4. `scripts/revendor_shared.sh`, commit the five tool repos in one window, move `v1`;
+4. `scripts/revendor_shared.sh`, commit the six tool repos in one window, move `v1`;
 5. update the tool repos' README and `CITATION.cff` references to the new tag.
 
 `doc-schema-v1` and its frozen copy stay: `1.0` records already written still exist, and
 `load_document()` migrates them on read.
+
+**A change of meaning needs AMČR's agreement**, whatever its size in the schema. The record is the
+exchange contract with AMČR, so a change to what a field, a block, the paradata or the RO-Crate
+asserts (for example, which licence or rights statement a record carries) is class (c) in
+[`shared_components.md`](shared_components.md): reviewed by every affected tool, run end to end, and
+merged only after AMČR has agreed on the change's issue. An additive field that only adds
+information is class (b) and follows the steps above.
 
 ### Checking it yourself
 
@@ -503,18 +510,19 @@ that repository's own copy.
 
 ### Post-freeze register
 
-| Pointer                                                                            | Change                                                                        | Issue                     | Changelog                                                                                 |
-|------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|---------------------------|-------------------------------------------------------------------------------------------|
-| `/properties/lines/items/properties/style/properties/region`                       | added: closed enum `page_header` / `page_footer` / `footnote`; absent = body  | ufal/atrium-llm-enrich#18 | [2026-09-25](#changelog--2026-09-25-llm-enrich18-linesstyleregion-cdla-permissive-20)     |
-| `/properties/source/properties/sha512`                                             | added: optional, `^[a-f0-9]{128}$`, the archive's digest of the original      | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)               |
-| `/properties/provenance/properties/contributors/items/properties/run_uuid`         | added: optional, `urn:uuid:` + a lower-case UUID                              | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)               |
-| `/properties/assembled/properties/blocks/additionalProperties/properties/run_uuid` | added: optional, the same pattern                                             | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)               |
-| `/properties/pages/items/properties/text_layer`                                    | added: optional, closed enum `digital` / `garbled` / `ocr` / `none` / `blank` | ufal/atrium-project#71    | [2026-10-05](#changelog--2026-10-05-w4-the-ocr-hand-off-per-page-pagestext_layer)         |
-| `/properties/keywords`                                                             | added: optional block, statistical keywords per document and per page         | ufal/atrium-project#73    | [2026-10-09](#changelog--2026-10-09-73-keywords-and-quality_summary-upstream_unavailable) |
-| `/$defs/statistical_keyword`                                                       | added: `keyword`, `method`, `score`, `rank`, all required                     | ufal/atrium-project#73    | [2026-10-09](#changelog--2026-10-09-73-keywords-and-quality_summary-upstream_unavailable) |
-| `/properties/quality_summary`                                                      | added: optional block, page-score statistics and line counts per `categ`      | ufal/atrium-project#73    | [2026-10-09](#changelog--2026-10-09-73-keywords-and-quality_summary-upstream_unavailable) |
-| `/allOf/12`                                                                        | added: a stamped `keywords` must be present                                   | ufal/atrium-project#73    | [2026-10-09](#changelog--2026-10-09-73-keywords-and-quality_summary-upstream_unavailable) |
-| `/allOf/13`                                                                        | added: a stamped `quality_summary` must be present                            | ufal/atrium-project#73    | [2026-10-09](#changelog--2026-10-09-73-keywords-and-quality_summary-upstream_unavailable) |
+| Pointer                                                                            | Change                                                                        | Issue                     | Changelog                                                                                               |
+|------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|---------------------------|---------------------------------------------------------------------------------------------------------|
+| `/properties/lines/items/properties/style/properties/region`                       | added: closed enum `page_header` / `page_footer` / `footnote`; absent = body  | ufal/atrium-llm-enrich#18 | [2026-09-25](#changelog--2026-09-25-llm-enrich18-linesstyleregion-cdla-permissive-20)                   |
+| `/properties/source/properties/sha512`                                             | added: optional, `^[a-f0-9]{128}$`, the archive's digest of the original      | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)                             |
+| `/properties/provenance/properties/contributors/items/properties/run_uuid`         | added: optional, `urn:uuid:` + a lower-case UUID                              | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)                             |
+| `/properties/assembled/properties/blocks/additionalProperties/properties/run_uuid` | added: optional, the same pattern                                             | ufal/atrium-project#71    | [2026-10-01](#changelog--2026-10-01-71-the-amčr-seed-sourcesha512-run_uuid)                             |
+| `/properties/pages/items/properties/text_layer`                                    | added: optional, closed enum `digital` / `garbled` / `ocr` / `none` / `blank` | ufal/atrium-project#71    | [2026-10-05](#changelog--2026-10-05-w4-the-ocr-hand-off-per-page-pagestext_layer)                       |
+| `/properties/keywords`                                                             | added: optional block, statistical keywords per document and per page         | ufal/atrium-project#73    | [2026-10-09](#changelog--2026-10-09-73-keywords-and-quality_summary-upstream_unavailable)               |
+| `/$defs/statistical_keyword`                                                       | added: `keyword`, `method`, `score`, `rank`, all required                     | ufal/atrium-project#73    | [2026-10-09](#changelog--2026-10-09-73-keywords-and-quality_summary-upstream_unavailable)               |
+| `/properties/quality_summary`                                                      | added: optional block, page-score statistics and line counts per `categ`      | ufal/atrium-project#73    | [2026-10-09](#changelog--2026-10-09-73-keywords-and-quality_summary-upstream_unavailable)               |
+| `/properties/enrichment/properties/items/items/properties/teater_category_ids`     | added: optional `[{source, id}]`, the AMČR and TEATER records of the label    | ufal/atrium-project#51    | [2026-10-13](#changelog--2026-10-13-51-teater_category_ids-declared-the-crate-stops-minting-theme-uris) |
+| `/allOf/12`                                                                        | added: a stamped `keywords` must be present                                   | ufal/atrium-project#73    | [2026-10-09](#changelog--2026-10-09-73-keywords-and-quality_summary-upstream_unavailable)               |
+| `/allOf/13`                                                                        | added: a stamped `quality_summary` must be present                            | ufal/atrium-project#73    | [2026-10-09](#changelog--2026-10-09-73-keywords-and-quality_summary-upstream_unavailable)               |
 
 Not registered, because it does not constrain: the `lines[].style` description correction of the
 same pass.

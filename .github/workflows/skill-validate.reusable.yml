@@ -285,6 +285,11 @@ jobs:
               # documented-vs-served diff statically. Warn loudly so a skip is never
               # mistaken for a pass.
               print(f"::warning::step 4b skipped — cannot import {module_name}.app ({exc.__class__.__name__}: {exc})")
+              with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+                  summary.write(
+                      f"**Skipped: step 4b** (the live /info, /health and OpenAPI contract): cannot import "
+                      f"`{module_name}.app` ({exc.__class__.__name__}). Step 4a's static check still ran.\n"
+                  )
               sys.exit(0)
 
           client = TestClient(app)

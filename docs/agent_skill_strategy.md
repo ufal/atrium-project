@@ -10,7 +10,7 @@ _Issue: [ufal/atrium-project#31](https://github.com/ufal/atrium-project/issues/3
 _Scope: normative for the `agent-skill` branches of the five service repos
 (atrium-page-classification · atrium-translator · atrium-alto-postprocess ·
 atrium-nlp-enrich · atrium-llm-enrich). Per-repo implementation is tracked in
-sub-issues lifted from [§10](#-10-per-repo-work-plans)._
+sub-issues lifted from [§10](#10-per-repo-work-plans)._
 _Round 2 of [#32](https://github.com/ufal/atrium-project/issues/32) (2026-09-28): the typed
 contract and the spec as a release artefact — §2.2 reversed, §4.1 `openapi_sha256`, §4.4 reason
 registry, new [§4.8](#48-typed-contract-and-the-spec-as-a-release-artefact-normative), §12.1._
@@ -525,7 +525,7 @@ as `README.md` in the `service` directories":
 - Both artifacts must match `api.py` reality (defect (d) rule) — checked by the contract test
   ([§12.1](#121-per-repo-contract-test)).
 
-## 🗂️ 10. Per-repo work plans
+## 10. Per-repo work plans
 
 Each subsection is self-contained and liftable verbatim into a sub-issue ([§13](#-13-sub-issue-creation--tracking)).
 

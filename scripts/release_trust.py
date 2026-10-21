@@ -10,7 +10,8 @@ read back as evidence:
     status        read-only: immutable releases and rulesets, per repository
     checks        read-only: the check-run names on a branch head, to choose required checks
     immutable     turn immutable releases on (the six tool repositories)
-    tag-rules     release tags: no update, no deletion (tool repos `v*`; hub `v1`, `doc-schema-v*`)
+    tag-rules     release tags: no update, no deletion (tool repos `v*`; hub `doc-schema-v*` only:
+                  the hub's `v1` is a moving workflow-compatibility pointer, not a release)
     branch-rules  default branch and `test`: no deletion, no force push, changes through a pull
                   request; `--checks` adds required status checks
 
@@ -20,7 +21,9 @@ tool repositories for `immutable`).
 Re-running is safe: a ruleset is found by its name and updated in place.
 
 Repository admins may bypass the rulesets (logged by GitHub as a bypass, so not silent), which
-keeps the maintainers' direct pushes to `test` and the planned moves of `v1` possible. An
+keeps the maintainers' direct pushes to `test` possible. The hub's `v1` is in no tag ruleset: it
+moves with every hub change until the tool repositories call the reusables by commit (#40), and
+`pin_hub_reusables.py` makes that move irrelevant to them. An
 immutable release cannot be changed by anyone; softprops/action-gh-release v3 in the six
 `release.yml` already attaches the assets while the release is a draft, which is what an
 immutable release requires (`tools/ci/workflow_lint.py` keeps it that way).
@@ -60,6 +63,10 @@ ALL = (HUB, *TOOLS)
 ADMIN_BYPASS = [{"actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always"}]
 
 TAG_RULESET = "ATRIUM release tags (atrium-project#72)"
+# Tag rulesets created by hand before this script was run (page-classification and nlp-enrich,
+# 2026-10-19). `tag-rules` updates such a ruleset in place, under its own name, rather than adding
+# a second one beside it.
+TAG_RULESET_ALIASES = ("Protect v* Tags",)
 BRANCH_RULESET = "ATRIUM integration branches (atrium-project#40)"
 
 Gh = Callable[[List[str], Optional[str]], subprocess.CompletedProcess]
@@ -70,9 +77,13 @@ def run_gh(args: List[str], body: Optional[str] = None) -> subprocess.CompletedP
 
 
 def tag_patterns(repo: str) -> List[str]:
-    """The tags a release is built from: `v*` in a tool repo; the channel and the freezes in the hub."""
+    """The tags that must never move: `v*` in a tool repo; the schema freezes in the hub.
+
+    The hub's `v1` is deliberately not here (motyc, #72, 2026-10-20): it is the moving pointer the
+    tool repositories' callers follow, not a source release.
+    """
     if repo == HUB:
-        return ["refs/tags/v1", "refs/tags/doc-schema-v*"]
+        return ["refs/tags/doc-schema-v*"]
     return ["refs/tags/v*"]
 
 
@@ -154,13 +165,15 @@ class Client:
         print(f"{method} {path}: ok", file=self.out)
 
 
-def upsert_ruleset(client: Client, repo: str, body: Dict[str, Any]) -> None:
+def upsert_ruleset(client: Client, repo: str, body: Dict[str, Any], aliases: tuple = ()) -> None:
+    """Create the ruleset, or update the one with its name (or an alias, keeping that name)."""
     rulesets = client.get(f"repos/{OWNER}/{repo}/rulesets") or []
-    existing = next((r["id"] for r in rulesets if r.get("name") == body["name"]), None)
+    names = (body["name"], *aliases)
+    existing = next((r for r in rulesets if r.get("name") in names), None)
     if existing is None:
         client.send("POST", f"repos/{OWNER}/{repo}/rulesets", body)
     else:
-        client.send("PUT", f"repos/{OWNER}/{repo}/rulesets/{existing}", body)
+        client.send("PUT", f"repos/{OWNER}/{repo}/rulesets/{existing['id']}", dict(body, name=existing["name"]))
 
 
 def status(client: Client, repos: List[str]) -> None:
@@ -210,7 +223,7 @@ def main(argv: Optional[List[str]] = None, gh: Gh = run_gh, out=sys.stdout) -> i
                 client.send("PUT", f"repos/{OWNER}/{repo}/immutable-releases")
         elif args.command == "tag-rules":
             for repo in args.repo or list(ALL):
-                upsert_ruleset(client, repo, tag_ruleset(repo))
+                upsert_ruleset(client, repo, tag_ruleset(repo), TAG_RULESET_ALIASES)
         elif args.command == "branch-rules":
             required = [name.strip() for name in args.checks.split(",") if name.strip()]
             for repo in args.repo or list(ALL):

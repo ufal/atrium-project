@@ -24,17 +24,19 @@ on:
           Space-separated ufal repositories this caller vendors files from with SHA pins, in
           tests/test_vendored_*_parity.py (atrium-project#72 B: the tool-to-tool shared layers,
           e.g. digital-convert's copy of nlp-enrich's TEITOK reader). When set, the vendored-parity
-          job clones each owner beside the caller at vendored-ref and runs the pin tests, whose
-          sibling half then compares every copy byte for byte with the owner's current file: a
-          copy that fell behind its owner turns red here, in the consumer. Empty (the default)
-          skips the job.
+          job reads each pin file's ADOPTED owner and commit (tools/ci/vendored_pins.py), checks
+          the owner out at that commit beside the caller, and runs the pin tests, whose sibling
+          half compares every copy byte for byte with the owner's file (atrium-project#82 B.2).
+          A pin file whose owner is not listed here fails. Empty (the default) skips the job.
         required: false
         type: string
         default: ""
       vendored-ref:
         description: >-
-          The owners' ref the copies are compared with. `test`, the integration branch, so a
-          change in the owner shows in the consumer before either releases.
+          The owners' ref the advisory "owner ahead" summary compares the copies with
+          (atrium-project#82 B.3). `test`, the integration branch, so a change in the owner shows
+          in the consumer's summary before either releases. It never fails the job: adopting the
+          change is the consumer's decision.
         required: false
         type: string
         default: test
@@ -67,22 +69,13 @@ jobs:
 
 
       - name: Verify canonical shared files (atrium-project#59)
-        # One loop over docs/templates/shared/MANIFEST.json instead of sixteen
-        # near-identical `diff -u` steps hand-written one per file (roadmap D5:
-        # "seven near-identical diff -u steps ... over a hardcoded file list").
-        # tools/shared_manifest.py is the manifest's one reader -- scripts/
-        # revendor_shared.sh and tools/skill_drift_check.py both use it too, via
-        # the same --tsv CLI shape this step uses, so this step, that script and
-        # that tool cannot drift relative to each other the way the sixteen
-        # hand-written steps below this comment (in every commit before this one)
-        # drifted from tools/skill_drift_check.py's SHARED_FILES tuple for weeks
-        # (atrium-project#59). Every entry the manifest names -- byte-parity
-        # always, and a `--selftest` run on the VENDORED copy for the two entries
-        # (atrium_vocab.py, atrium_rocrate.py) the manifest marks selftest: true,
-        # exactly as scripts/revendor_shared.sh runs them.
-        #
-        # Adding a canonical file is now one row in the manifest -- see that
-        # file's own header comment for what used to be four hand-edits instead.
+        # One loop over docs/templates/shared/MANIFEST.json (24 files), read
+        # through tools/shared_manifest.py --tsv, the manifest's one reader:
+        # scripts/revendor_shared.sh and tools/skill_drift_check.py read it the
+        # same way, so the three cannot disagree on the file list (#59). Every
+        # entry: byte parity. Entries marked `selftest: true` also run their
+        # `--selftest` on the VENDORED copy, as revendor_shared.sh does.
+        # Adding a canonical file is one row in the manifest.
         run: |
           set -euo pipefail
           fail=0
@@ -115,15 +108,19 @@ jobs:
 
   vendored-parity:
     # atrium-project#72 B: para-drift over the tool-to-tool layers. The hub-canonical files above
-    # are compared with the hub; a layer one tool owns and another vendors (the TEITOK reader
-    # today; the document reader and the record renderer after the repository moves) is compared
-    # with its owner, by the pin tests the consumer already has. Those tests skip their sibling
-    # comparison when the owner is not checked out beside the consumer, which is what they do
-    # in every other CI job; here it is, so a skip is a failure.
+    # are compared with the hub; a layer one tool owns and another vendors (the TEITOK reader, the
+    # document reader) is compared with its owner by the pin tests the consumer already has.
+    # atrium-project#82 B: the blocking comparison is with the owner at the commit the consumer
+    # adopted (ADOPTED["commit"] in each pin file), so a push to the owner never turns a consumer
+    # red; how far the owner has moved on since is a summary, not a failure. The pin tests skip
+    # their sibling comparison when the owner is not checked out beside the consumer, which is
+    # what they do in every other CI job; here it is, so a skip is a failure.
     name: Verify Vendored Copies Against Their Owners
     if: inputs.vendored-from != ''
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      CONSUMER: ${{ github.event.repository.name }}
     steps:
       - name: Checkout caller tool repository
         uses: actions/checkout@v7
@@ -131,32 +128,27 @@ jobs:
           # The pin tests find their owner at ../<owner>, so both sit side by side under work/.
           path: work/${{ github.event.repository.name }}
 
+      - name: Checkout the hub's pin reader
+        uses: actions/checkout@v7
+        with:
+          repository: ufal/atrium-project
+          ref: ${{ inputs.hub-ref }}
+          path: hub-repo
+          sparse-checkout: tools/ci/vendored_pins.py
+          sparse-checkout-cone-mode: false
+
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
-      - name: Clone the owners beside it
-        env:
-          OWNERS: ${{ inputs.vendored-from }}
-          REF: ${{ inputs.vendored-ref }}
-        run: |
-          set -euo pipefail
-          for owner in $OWNERS; do
-            case "$owner" in
-              *[!A-Za-z0-9._-]*) echo "::error::vendored-from: '$owner' is not a repository name"; exit 1 ;;
-            esac
-            git clone --quiet --depth 1 --branch "$REF" "https://github.com/ufal/$owner.git" "work/$owner"
-            echo "$owner @ $REF = $(git -C "work/$owner" rev-parse --short HEAD)"
-          done
-
-      - name: Run the pin tests; a skipped sibling comparison fails
+      - name: Read the pins
         working-directory: work/${{ github.event.repository.name }}
         env:
+          OWNERS: ${{ inputs.vendored-from }}
           TESTS: ${{ inputs.vendored-tests }}
         run: |
           set -euo pipefail
-          pip install --quiet pytest
           shopt -s nullglob
           # shellcheck disable=SC2206 — TESTS is a glob, expanded here on purpose
           files=( $TESTS )
@@ -164,8 +156,60 @@ jobs:
             echo "::error::no pin tests match '$TESTS'"
             exit 1
           fi
-          python -m pytest -rs -p no:cacheprovider "${files[@]}" | tee "$RUNNER_TEMP/pins.log"
-          if grep -q '^SKIPPED' "$RUNNER_TEMP/pins.log"; then
-            echo "::error::a pin test skipped its comparison with the owner: the owner checkout is not where the test looks"
-            exit 1
-          fi
+          python3 "$GITHUB_WORKSPACE/hub-repo/tools/ci/vendored_pins.py" list "${files[@]}" \
+            --owners "$OWNERS" > "$RUNNER_TEMP/pins.tsv"
+          cat "$RUNNER_TEMP/pins.tsv"
+
+      - name: Run each pin test against its owner at the adopted commit
+        working-directory: work
+        run: |
+          set -euo pipefail
+          pip install --quiet pytest
+          while IFS=$'\t' read -r -u 3 file owner commit release; do
+            rm -rf "$owner"
+            git init --quiet "$owner"
+            git -C "$owner" fetch --quiet --depth 1 "https://github.com/ufal/$owner.git" "$commit"
+            git -C "$owner" checkout --quiet FETCH_HEAD
+            echo "::group::$file against $owner at ${commit:0:7} ($release)"
+            (cd "$CONSUMER" && python -m pytest -rs -p no:cacheprovider "$file") | tee "$RUNNER_TEMP/pins.log"
+            echo "::endgroup::"
+            if grep -q '^SKIPPED' "$RUNNER_TEMP/pins.log"; then
+              echo "::error::$file skipped its comparison with $owner: the owner checkout is not where the test looks"
+              exit 1
+            fi
+          done 3< "$RUNNER_TEMP/pins.tsv"
+
+      - name: Summarise the copies the owners have changed since
+        # ci-optional: advice by design (atrium-project#82 B.3); adopting an owner's change is the consumer's decision
+        continue-on-error: true
+        working-directory: work
+        env:
+          REF: ${{ inputs.vendored-ref }}
+        run: |
+          set -uo pipefail
+          rows=""
+          while IFS=$'\t' read -r -u 3 file owner commit release; do
+            dir="ahead/$owner"
+            if [ ! -d "$dir" ] && ! git clone --quiet --depth 1 --branch "$REF" "https://github.com/ufal/$owner.git" "$dir"; then
+              echo "::warning::cannot clone $owner at $REF; no owner-ahead summary for $file"
+              continue
+            fi
+            head="$(git -C "$dir" rev-parse --short HEAD)"
+            out="$(python3 "$GITHUB_WORKSPACE/hub-repo/tools/ci/vendored_pins.py" ahead "$CONSUMER/$file" \
+              --owner-dir "$dir" --owner-ref "$REF@$head")"
+            if [ -n "$out" ]; then rows+="$out"$'\n'; fi
+          done 3< "$RUNNER_TEMP/pins.tsv"
+          {
+            echo "### Vendored copies and their owners' \`$REF\`"
+            echo
+            if [ -z "$rows" ]; then
+              echo "Every copy matches its owner's \`$REF\`."
+            else
+              echo "The owners changed these files after the commit this repository adopted. Adopting the change"
+              echo "is a pull request here (docs/shared_components.md in atrium-project); nothing is failing."
+              echo
+              echo "| Copy | Owner | Owner path | State |"
+              echo "|---|---|---|---|"
+              printf '%s' "$rows"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

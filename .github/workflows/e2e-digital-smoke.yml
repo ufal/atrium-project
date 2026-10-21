@@ -498,6 +498,7 @@ jobs:
               exit 1
             fi
             echo "::warning::$IMAGE is not published yet (no digital-convert release or test push at this tag); Case 7 is skipped."
+            echo "**Skipped:** $IMAGE is not published yet (no digital-convert release or test push at this tag); Case 7 is skipped." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           CID=$(docker run -d -e PORT=8080 -p 8080:8080 "$IMAGE")

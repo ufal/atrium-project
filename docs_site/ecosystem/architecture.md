@@ -29,7 +29,7 @@ What holds them together is the hub, `atrium-project`, and it does so in two way
 ```mermaid
 flowchart TB
   subgraph HUB["atrium-project — the hub"]
-    SHARED["docs/templates/shared/<br/>19 canonical files + MANIFEST.json"]
+    SHARED["docs/templates/shared/<br/>24 canonical files + MANIFEST.json"]
     REUSE["8 reusable workflows<br/>pinned by callers at @v1"]
     E2E["3 end-to-end workflows"]
     SITE["this site"]
@@ -86,7 +86,7 @@ flowchart LR
 
 ## What is canonical, and what is vendored
 
-The hub does not publish the shared code as a package. It **enforces it by copy**: nineteen
+The hub does not publish the shared code as a package. It **enforces it by copy**: 24
 canonical files live under `docs/templates/shared/`, each tool repository carries a copy at a
 fixed path, and CI fails the tool repository if a single byte differs.
 
@@ -104,6 +104,8 @@ its destination in a tool repository, and whether it has a `--selftest` that CI 
 | `atrium_vocab.schema.json`                  | `atrium_vocab.schema.json`                  |          | schema for the registry's JSON-LD export                                                   |
 | `atrium_rocrate.py`                         | `atrium_rocrate.py`                         | ✓        | the RO-Crate exporter                                                                      |
 | `check_version.py`                          | `check_version.py`                          |          | the release gate: tag = `CITATION.cff` = `para_config.txt`                                 |
+| `atrium_limits.py`                          | `atrium_limits.py`                          | ✓        | every service limit as a setting, and the `limits_applied` record                          |
+| `atrium_openapi.py`                         | `atrium_openapi.py`                         | ✓        | the committed `service/openapi.json`: export, check, compare with the last release         |
 | `atrium_service.py`                         | `service/atrium_service.py`                 |          | the shared HTTP service contract — `/info`, `/health`, `/ready`, drain                     |
 | `healthcheck.py`                            | `service/healthcheck.py`                    |          | the container healthcheck probe                                                            |
 | `test_para_licenses.py`                     | `tests/test_para_licenses.py`               |          |                                                                                            |
@@ -114,6 +116,9 @@ its destination in a tool repository, and whether it has a `--selftest` that CI 
 | `test_env_contract.py`                      | `tests/test_env_contract.py`                |          | `.env.example` must list every variable the service reads                                  |
 | `test_dockerfile_security_layer.py`         | `tests/test_dockerfile_security_layer.py`   |          | pins the `apt-get upgrade` layer that keeps the release gate passable                      |
 | `test_schema_freeze.py`                     | `tests/test_schema_freeze.py`               |          | this repo's schema against the frozen copy: nothing removed, every change since registered |
+| `test_atrium_limits.py`                     | `tests/test_atrium_limits.py`               |          |                                                                                            |
+| `test_limits_contract.py`                   | `tests/test_limits_contract.py`             |          | every limit is a documented setting that `/info` reports                                   |
+| `test_openapi_contract.py`                  | `tests/test_openapi_contract.py`            |          | the committed spec is current; typed responses; one error body                             |
 
 `test_env_contract.py` additionally needs a repo-local `tests/env_contract_data.py` — the
 list of variables that particular service reads — which each repository keeps and which is
@@ -135,6 +140,11 @@ repository's `tests/test_paradata.py` tests its own paradata configuration.
 3. Commit the tool-repository copies and the hub edit **in one window**, then move the hub's `v1`
    tag — never before the copies have landed, or every tool repository's CI goes red at once.
 
+Who owns each shared component (including the files one tool copies from another, and the
+vocabulary), how a consumer records the revision it adopted, which changes need AMČR's agreement,
+and the pull request checklist are in the hub's
+[`shared_components.md`](https://github.com/ufal/atrium-project/blob/main/docs/shared_components.md).
+
 The script exits 0 only when CI would pass. A sibling checkout it cannot find is reported as
 `SKIP` and still exits 1: parity is *unknown* for it, not clean.
 
@@ -148,7 +158,7 @@ moved deliberately. `test` is the hub's pre-release channel.
 |-------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `docker-tool.reusable.yml`    | fast test lane, container smoke test, image build, CVE gate, publish to GHCR                                                                                 |
 | `api-contract.reusable.yml`   | the service meta-contract: `/info` envelope, `/health`, `/ready`, OpenAPI validity                                                                           |
-| `para-drift.reusable.yml`     | byte-parity of all 19 vendored files, plus their selftests                                                                                                   |
+| `para-drift.reusable.yml`     | byte-parity of all 24 vendored files, plus their selftests                                                                                                   |
 | `security.reusable.yml`       | version consistency, and a scheduled Trivy scan of the published image                                                                                       |
 | `codeql.reusable.yml`         | CodeQL static analysis                                                                                                                                       |
 | `pre-commit.reusable.yml`     | `pre-commit run --all-files`, blocking                                                                                                                       |
@@ -223,7 +233,7 @@ This table records **provenance**: what this page was written from, not a build 
 
 | Source                                                                      | What was taken from it                                             |
 |-----------------------------------------------------------------------------|--------------------------------------------------------------------|
-| `atrium-project/docs/templates/shared/MANIFEST.json`                        | the 19 files and their destinations                                |
+| `atrium-project/docs/templates/shared/MANIFEST.json`                        | the 24 files and their destinations                                |
 | `atrium-page-classification@adee922`, `atrium-translator@71feaef`           | vendored destinations, repository-local helpers, Dockerfile stages |
 | `atrium-project/scripts/revendor_shared.sh`                                 | the re-vendoring procedure and its exit semantics                  |
 | `atrium-project/.github/workflows/*.reusable.yml` and the hub-own workflows | the federation                                                     |

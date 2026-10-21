@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 19 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #51, #56, #66, #67, #72, #77, #78, #79, #81). `test` = `6d693de` (2026-10-19); tag `v1` = `6d693de` (2026-10-19); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-20, placed after the 2026-10-19 entry (this file is not in date order): the pairs of the two new hub issues, the documentation overhaul (#79) and CI governance (#81). The tool repositories publish immutable releases since 10-19, and the two predecessors are archived (#72)._
+> _Hub/planning repo. 20 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #51, #56, #66, #67, #72, #77, #78, #79, #81, #82). `test` = `8c0f9f8` (2026-10-20); tag `v1` = `8c0f9f8` (2026-10-20); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-21, at the end of the file (this file is not in date order): one round across #77, #72, #82, #81, #79 and the adjacent issues, delivered as files. The tool repositories publish immutable releases since 10-19, and the two predecessors are archived (#72)._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -2450,3 +2450,47 @@ releases; the gate's diff review covers *"only the files that go into the image 
   - No hub page requires AMČR's agreement for Class (c) changes that alter record meaning (`docs/document_schema.md:458-487` is purely technical; the commitment lives only in `#54` and `#67`).
 - **Recommendation:** Pin `vendored-parity` blocking checks to an explicit `ADOPTED["commit"]` (40-hex owner SHA) in each consumer's parity test (`tools/ci/vendored_pins.py`), and report owner-`test` advances as a non-blocking step-summary notice (`#81` monitoring tier); derive sibling topology from a `siblings` section in `MANIFEST.json`.
 - **Issue pairs:** `{82}` (`agent_dev_logs/digests/82.digest.md`, `agent_dev_logs/plans/82.plan.md`). Files delivered in chat.
+
+## 2026-10-21 — One round across #77, #72, #82, #81 and #79, aligned with motyc's asks of 10-19/20
+
+- **Why:** motyc opened #79, #81 and #82 and commented on #77, #72, #6, #13 and #15. Every adjacent open issue gets
+  an answer this round, steered into those trackers. Nothing pushed or posted: files and comment drafts delivered
+  in chat.
+- **#77 + #72, the handover:**
+  - `docs/k8s_acceptance_runbook.md` rewritten: handover rules, the image identity (source `vX` → GHCR `X` →
+    digest), one shared procedure that asserts the HTTP code and a body field, a drain test that proves the request
+    was in flight (`kill -0`), all six services, nlp-enrich jobs marked not durable across a restart, a results table
+    with digests;
+  - `docs/templates/k8s/atrium-service.deployment.yaml`: the Service is real; `GRACEFUL_SHUTDOWN_S`;
+  - `docs/k8s_deployment.md`, `docs_site/operations.md`: the tag form, `MAX_PDF_PAGES` configurable,
+    `LANG_ID_MODEL_PATH`; new `tests/test_k8s_handover.py`;
+  - `docs_site/pilot.md` (Operations nav); `e2e-pipeline-smoke.yml` runs each image's own code, guarded by
+    `tests/test_e2e_entrypoints.py`;
+  - `scripts/release_trust.py`: the hub's tag rule covers `doc-schema-v*` only (`v1` moves); the ruleset is updated
+    under its existing name. `docs/release_trust.md`: Tag identity, the hub exception, the status of 10-20
+    (rulesets 2 of 6, immutable latest releases 6 of 6, 0 of 42 pinned).
+- **#82:** `docs/shared_components.md` (rules, map, impact classes, checklist); count fixes across the hub;
+  **prepared for motyc's OK:** `tools/ci/vendored_pins.py` (stdlib `ast`, 15 tests) and `vendored-parity` checking
+  each owner out at `ADOPTED["commit"]` (blocking), with the owner's newer changes as a job summary (advisory).
+  Every pinned file matches its owner at the adopted commit.
+- **#81:** `docs/ci_policy.md`; `api-contract.reusable.yml` fails on an empty or fully skipped contract run;
+  skip reasons go to job summaries; `workflow_lint.py` requires `# ci-optional:` on optional exits (4 marked).
+  A.3 (release ↔ image) waits on motyc's answer.
+- **#79:** `docs/documentation-style.md`, `docs/templates/README.template.md`, `tools/docs_check.py` with tests; the
+  hub README rewritten; the ocr-postprocess pilot (map: `plans/79.ocr_relocation_map.md`).
+- **#6:** `docs/proposals/rights-and-policy.md` and `docs/proposals/atrium_rights.schema.json`, for review.
+- **#13, #15:** revision briefs, no LaTeX edited (`plans/13.revision_brief.md`, `plans/15.revision_brief.md`).
+  Found in page-classification's stored splits: 4,296 of the 5,449 "held-out" pages are in fold 1's training
+  partition; the 99.16 % figure is in no stored table.
+- **#66:** a page-classification wrapper drafted for `DARIAH-ERIC/atrium-galaxy-tools` (`planemo lint` passes; tests
+  need Docker and huggingface.co). Two page-classification bugs found on the way (see its DEVLOG).
+- **#4, #51, translator#46, nlp-enrich#42:** the SSHOMP record corrections; #51's done-criteria; four stale paradata
+  files removed; #42's plan names `v1.1.2-beta`.
+- **Dev logs:** the #78 pair is new; dated sections in the plans of #4, #6, #13, #15, #40, #51, #66, #72, #77, #79,
+  #81 and #82. The pairs of ten closed issues are removed (#21, #26, #27, #54, #58, #68, #69, #70, #71, #73, each
+  confirmed closed). Six are kept, because pages or shared code cite them as records: #18, #31, #32, #53, #55 and
+  #57 with its findings register.
+- **Not done:** `siblings` in `MANIFEST.json` (#82 C, after B); #81 A.3 (needs GitHub runs); version bumps and
+  releases; the hub's own emoji headings (75 left).
+
+  Files delivered in chat.

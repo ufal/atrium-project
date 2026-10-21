@@ -13,7 +13,9 @@ what the container proves before it is published, and how to run it on Kubernete
 
 !!! info "Scope"
     The build and deployment machinery is shared by all six tools. The image, probe and
-    environment details below are those of page-classification and the translator.
+    environment details below are those of page-classification and the translator. The six
+    services of the S2 pilot, their runbooks and the acceptance results are on
+    [S2 pilot handover](pilot.md).
 
 ## The deployment model
 
@@ -190,8 +192,9 @@ classifier, or a large ALTO file through the translator's per-chunk LINDAT calls
       one, or every new pod downloads the weights again.
     * **Egress.** `huggingface.co` only — the `ufal/vit-historical-page` revisions and the base
       model configurations. No LINDAT call.
-    * **Limits.** `MAX_UPLOAD_MB` defaults to **10**; a PDF is further capped at **50 pages**, which is
-      hard-coded rather than configurable.
+    * **Limits.** `MAX_UPLOAD_MB` defaults to **10**; a PDF is further capped by `MAX_PDF_PAGES`, default
+      **50** (`tool_limits.py`; over it, 413 `limit_exceeded`). Behind digital-convert's `/describe`, set it
+      to at least the longest report: `/describe` sends the whole PDF.
 
 === "translator"
 
@@ -254,10 +257,10 @@ come up should treat a refused connection the same as `503 starting`, and keep p
 
 Two hub runbooks define "it works", and both apply to these services unchanged:
 
-**On Kubernetes** (`docs/k8s_acceptance_runbook.md`): apply the manifest with the tool name and
-version substituted; wait for the rollout; confirm `healthcheck.py` passes inside the pod; then,
-with a slow request in flight, restart the deployment and confirm **the request completes** — no
-in-flight request may be dropped. The slowest request shape for each: a multi-page PDF to
+**On Kubernetes** (`docs/k8s_acceptance_runbook.md`): apply the manifest (Deployment and Service) with
+the tool name and the approved image substituted; wait for the rollout; confirm `healthcheck.py` passes
+inside the pod; then, with a slow request **checked to be still running**, restart the deployment and
+confirm the request answers 200 with its expected body — no in-flight request may be dropped. The slowest request shape for each: a multi-page PDF to
 `POST /predict_document`, and a large ALTO file to `POST /translate`. Then prove the configuration
 reaches the process: `PORT=9000`, `LOG_LEVEL=DEBUG`, an `ALLOWED_ORIGINS` value that is honoured and
 one that is refused, and `MAX_UPLOAD_MB=1` answering a 2 MB upload with 413.

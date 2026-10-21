@@ -1,4 +1,4 @@
-# <Tool> API service <emoji>
+# <Tool> API service
 
 <One-line purpose: what goes in, what comes out.> The service version is read
 from `para_config.txt` `[tool]` (single source of truth, never hard-coded).
@@ -124,7 +124,7 @@ before they trust a result.
 | Variable              | Default   | Meaning                                                                 |
 |-----------------------|-----------|-------------------------------------------------------------------------|
 | `PORT`                | `8000`    | port the service **binds**, and the one `service/healthcheck.py` probes |
-| `HOST`                | `0.0.0.0` | bind address. ⚠️ see the warning below                                  |
+| `HOST`                | `0.0.0.0` | bind address; see the note below                                        |
 | `GRACEFUL_SHUTDOWN_S` | `20`      | seconds uvicorn waits for in-flight requests (issue #55)                |
 | `RELOAD`              | `false`   | filesystem auto-reload — development only, never in a deployment        |
 | `LOG_LEVEL`           | `INFO`    | root logger level for the `python -m service.<module>` start path       |
@@ -133,11 +133,11 @@ before they trust a result.
 | <service vars>        | <…>       | operator-facing only — the complete ledger is `.env.example`            |
 
 The first five rows are the ecosystem-wide contract (atrium-project#58, #55, #61) and are
-identical in all five services — copy them verbatim rather than rewording per repo. They
+identical in all six services — copy them verbatim rather than rewording per repo. They
 are read by `service/<module>.py`'s `__main__` block, which is what the `api` image's
 `ENTRYPOINT` runs.
 
-> ⚠️ `HOST=127.0.0.1` yields a container that reports **healthy** and serves nobody:
+> **Note:** `HOST=127.0.0.1` yields a container that reports **healthy** and serves nobody:
 > `service/healthcheck.py` always probes loopback by design and never reads `HOST`, so a
 > loopback bind passes every probe while being unreachable from outside the container.
 

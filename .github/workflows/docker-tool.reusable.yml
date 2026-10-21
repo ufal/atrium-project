@@ -269,6 +269,7 @@ jobs:
 
       - name: Coverage to Step Summary
         if: always()
+        # ci-optional: an informational summary; the test step above decides the job
         continue-on-error: true
         run: |
           echo "### Coverage Report" >> $GITHUB_STEP_SUMMARY
@@ -362,6 +363,7 @@ jobs:
         # gha cache exporter used below requires the container driver; trading
         # the build cache away for a rarely-hit network dependency is the wrong
         # side of that deal.
+        # ci-optional: the next step retries once, without continue-on-error
         continue-on-error: true
 
       - name: Set up Docker Buildx (retry after a transient registry failure)
@@ -586,6 +588,7 @@ jobs:
           PY
           else
             echo "no committed service/openapi*.json or no atrium_openapi.py: skipping the spec comparison"
+            echo "**Skipped (${{ matrix.target }}):** the served-vs-committed OpenAPI comparison — no committed \`service/openapi*.json\` or no \`atrium_openapi.py\`." >> "$GITHUB_STEP_SUMMARY"
           fi
 
           echo "Sending SIGTERM (docker stop) and asserting a clean, timely exit..."
@@ -915,6 +918,7 @@ jobs:
         # gha cache exporter used below requires the container driver; trading
         # the build cache away for a rarely-hit network dependency is the wrong
         # side of that deal.
+        # ci-optional: the next step retries once, without continue-on-error
         continue-on-error: true
 
       - name: Set up Docker Buildx (retry after a transient registry failure)

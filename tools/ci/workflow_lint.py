@@ -2,8 +2,8 @@
 """Policy checks for the ATRIUM hub's own workflows and caller templates (issue #18).
 
 The hub is the single source of truth for every reusable workflow in the
-ecosystem -- 38 caller jobs across six repos resolve to files in this repository
-(35 in the five tool repos at `@v1`, 3 hub-local by path; counted 2026-09-30) --
+ecosystem -- 45 caller jobs resolve to files in this repository (42 in the six
+tool repos at `@v1`, 3 hub-local by path; counted 2026-10-20) --
 yet until now nothing in CI looked at those files. Every defect
 found in them during #18 was found by hand:
 
@@ -514,6 +514,49 @@ def check_release_assets(path: Path, doc: dict, findings: Findings) -> int:
                     f"release refuses it. Attach every asset in the step that creates the release.",
                 )
     return checked
+
+
+# A check runner whose failure `|| true` would hide (docs/ci_policy.md, "What a green result means").
+# Cleanup and listing commands (`docker rm -f ... || true`, `grep ... || true`) are not checks.
+_CHECK_RUNNER = r"(?:pytest|pip-audit|ruff|mypy|shellcheck|actionlint|trivy|pre-commit)"
+_OPTIONAL_PATTERNS = (
+    (re.compile(r"^\s*continue-on-error:\s*true\b"), "`continue-on-error: true`"),
+    (
+        re.compile(r"(?:^|[\s;(&|])" + _CHECK_RUNNER + r"(?=\s|$)[^|#]*\|\|\s*(?:true|:)(?:\s|;|$)"),
+        "`|| true` after a check",
+    ),
+    (re.compile(r"""["']?\$\{?\w+\}?["']?\s+-eq\s+5\s*\]"""), "an exit-code remap of pytest's exit 5"),
+)
+_OPTIONAL_MARKER = "# ci-optional:"
+
+
+def check_optional_markers(path: Path, text: str, findings: Findings) -> int:
+    """Check -- a step that can turn a failure into success says why (atrium-project#81).
+
+    `continue-on-error: true`, `|| true` after a check runner, and a remap of pytest's exit 5
+    ("no tests collected") each make a red result green. Each is allowed, but only with a
+    `# ci-optional: <reason>` comment on its line or on the line directly above it, so that a
+    reader of the workflow sees an optional result as optional.
+    """
+    lines = text.splitlines()
+    marked = 0
+    for number, line in enumerate(lines, start=1):
+        if line.lstrip().startswith("#"):
+            continue
+        for pattern, what in _OPTIONAL_PATTERNS:
+            if not pattern.search(line):
+                continue
+            above = lines[number - 2] if number >= 2 else ""
+            if _OPTIONAL_MARKER in line or _OPTIONAL_MARKER in above:
+                marked += 1
+            else:
+                findings.error(
+                    path,
+                    f"line {number}: {what} without a `{_OPTIONAL_MARKER} <reason>` comment on the line "
+                    f"or the line above (docs/ci_policy.md)",
+                )
+            break
+    return marked
 
 
 def check_job_hygiene(path: Path, doc: dict, findings: Findings) -> int:
@@ -1061,7 +1104,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     pins = perms = inputs = 0
-    shapes = refs = hygiene = required = floors = releases = 0
+    shapes = refs = hygiene = required = floors = releases = optional = 0
     docs: dict[Path, dict] = {}
     for path in paths:
         doc = load(path, findings)
@@ -1082,6 +1125,8 @@ def main(argv: list[str] | None = None) -> int:
         required += check_required_inputs(rel, doc, root, hub_root, findings)
         # #69 round 5.
         floors += check_action_floor(rel, doc, findings)
+        # #81.
+        optional += check_optional_markers(rel, text, findings)
     check_duplicate_names(docs, findings)
     compose = check_compose(root, hub_root, args.repo_name, findings)
 
@@ -1100,6 +1145,7 @@ def main(argv: list[str] | None = None) -> int:
             f"{hygiene} runner jobs carry timeout-minutes; "
             f"{shapes} caller templates contain a `uses:`; "
             f"{floors} floor-listed actions at or above the floor; "
+            f"{optional} optional exits marked `# ci-optional:`; "
             f"{compose['files']} compose files: {compose['published']} GHCR images published by docker.yml, "
             f"{compose['local']} local-only images pinned to `pull_policy: build`, "
             f"{compose['data']} services writing ./data as a set user; "

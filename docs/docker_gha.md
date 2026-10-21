@@ -13,10 +13,13 @@
 > 📍 **The forward plan lives in [`docker_gha_roadmap.md`](docker_gha_roadmap.md)** — findings register,
 > cross-cutting decisions, and the W1–W6 wave sequence. Keep planning material there; keep this file
 > describing what is true today.
+>
+> **The rules** — CI tiers, what a green or skipped result must mean, release semantics, and the checklist
+> for a new check — are in [`ci_policy.md`](ci_policy.md) (#81), with a map of what each check proves.
 
 ## 1. Current Deployment Status: Developed Workflows
 
-The baseline CI/CD infrastructure has been distributed and localized across the five tool
+The baseline CI/CD infrastructure has been distributed and localized across the six tool
 repositories. Standardized configuration files (`ruff.toml`, `.coveragerc`, `dependabot.yml`,
 `.pre-commit-config.yaml`) are present in every repository, ensuring localized control over quality
 thresholds.
@@ -46,7 +49,8 @@ that the copies are *identical*, not that they are *correct* — the largest can
 
 ### Reusable Templates (`atrium-project`)
 
-Seven reusable workflows are live, consumed by **38 caller jobs** (35 cross-repo + 3 hub-local):
+Seven reusable workflows are live in the tool repositories, consumed by **45 caller jobs** (42 in the six
+tool repositories + 3 hub-local; `skill-validate` runs on the `agent-skill` branches as well):
 
 * **Docker Tool** (`docker-tool.reusable.yml`) — environment setup, linting, testing with coverage,
 multi-target Docker builds, GHCR publish, and the post-publish container scan. Every `probe-targets` image
@@ -56,10 +60,11 @@ is also checked for forbidden packages before it is published (#72): `forbidden-
 published image.
 * **Paradata Drift** (`para-drift.reusable.yml`) — canonical shared-file parity diff. Reads the canonical
 files via a `hub-ref` input (default `v1`) rather than a hardcoded branch. Its `vendored-parity` job (#72)
-does the same for a layer one tool owns and another vendors: with `vendored-from: <owner repo>` it clones
-the owner at `vendored-ref` (default `test`) beside the caller and runs the caller's
-`tests/test_vendored_*_parity.py`, failing on any skip — digital-convert runs it against nlp-enrich's TEITOK
-reader.
+does the same for a layer one tool owns and another vendors: with `vendored-from: <owner repos>` it checks
+each owner out beside the caller at the commit the caller's `tests/test_vendored_*_parity.py` adopted
+(`ADOPTED["commit"]`, read by `tools/ci/vendored_pins.py`) and runs those tests, failing on any skip; the
+files the owner has changed since, at `vendored-ref` (default `test`), go to the job summary as advice (#82).
+digital-convert runs it against nlp-enrich's TEITOK reader and ocr-postprocess's document reader.
 * **API Meta-Contract** (`api-contract.reusable.yml`) — the §4.1 service contract test.
 * **CodeQL** (`codeql.reusable.yml`) — Python, `build-mode: none`. The caller supplies the schedule (`on:`
 can only be declared by the caller) and **must** grant `security-events: write`.
@@ -102,7 +107,8 @@ default-branch callers.
 > **Moving `v1`:** land the hub change on `main`, validate it via a caller temporarily pinned `@test`,
 > then `git tag -f v1 <sha> && git push -f origin v1`. Callers need no edit.
 >
-> ⚠️ **The trade-off, stated plainly:** `v1` is a **force-pushable tag**, and `workflow_lint.py`'s
+> ⚠️ **The trade-off, stated plainly** (superseded by the commit pins below once the sweep lands):
+> `v1` is a **force-pushable tag**, and `workflow_lint.py`'s
 > `WRITE_SCOPED` allowlist deliberately exempts reusable-workflow refs from the SHA-pin rule. So the
 > ecosystem's single largest dependency is also its least-pinned one. This is accepted — pinning callers to
 > SHAs would destroy the property the architecture exists for — but it carries two obligations: **`v1` moves
