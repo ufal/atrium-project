@@ -30,6 +30,9 @@ Checks
     version   `para_config.txt` `[tool] version` parity — §4.6 surfaces this through `/info`,
               so a lag here means every skill branch misreports its version
     shared    byte-parity of the para-drift-guarded shared files
+    client    the client's 502 rule: a `scripts/atrium_*.py` that retries HTTP 502 must keep
+              `RETRY_502_REASONS` and `is_retryable()` from the skeleton, so a final 502
+              (`reason: null`) is reported at once instead of retried (atrium-project#77 C)
 
 Exit codes: 0 clean · 1 drift found · 2 usage error. stdlib-only, like the e2e tools.
 
@@ -87,18 +90,30 @@ CONTAINER_CONTRACT_FILES = ("Dockerfile", "docker-compose.yml", "docker-compose.
 # Anything else — including anything that would change what the service DOES — belongs in a
 # port, not in this table.
 DOCUMENTED_DIVERGENCES = {
-    ("atrium-page-classification", "service/README.md"): (
-        "the default-branch text cites setup/requirements-test.txt and "
-        "tests/test_service_runtime_deps.py, both of which §5 trims from a skill branch; "
-        "skill-validate step 2 fails on the first of them (2026-09-09)"
-    ),
     ("atrium-translator", "service/api.py"): (
         "adds the `.exists()`-guarded /frontend StaticFiles mount, so the branch README's "
         "long-standing 'mounted at /frontend' claim is true. A no-op on any branch without "
         "service/frontend/, so it is forward-mergeable rather than a fork (2026-09-09)"
     ),
-    ("atrium-digital-convert", "service/api.py"): ("same guarded /frontend mount as atrium-translator (2026-09-09)"),
 }
+
+# The runbook every service's `service/README.md` became in 2026-10 (atrium-project#77 A) cites the
+# tests, the stand-in stages and the LINDAT frontend that §5 trims, and names hub documents as
+# repository paths. Each skill branch carries that runbook with those lines pointed at the `test`
+# branch or at hub links instead, so its copy is right and the default branch has nothing to fix.
+_RUNBOOK_DIVERGENCE = (
+    "the default-branch runbook, with what §5 trims (tests, stand-ins, the LINDAT frontend) pointed at the "
+    "test branch and hub paths written as links, so skill-validate step 2 passes (2026-10-21)"
+)
+for _repo in (
+    "atrium-digital-convert",
+    "atrium-keyword-extract",
+    "atrium-nlp-enrich",
+    "atrium-ocr-postprocess",
+    "atrium-page-classification",
+    "atrium-translator",
+):
+    DOCUMENTED_DIVERGENCES[(_repo, "service/README.md")] = _RUNBOOK_DIVERGENCE
 
 # Guarded byte-identical by the hub's para-drift.reusable.yml. Read from the single
 # manifest (atrium-project#59) rather than a hand-maintained tuple -- the tuple this
@@ -523,6 +538,30 @@ def version_of(repo: Path, ref: str, files: set) -> str:
     return "?"
 
 
+#: The skill clients: `scripts/atrium_<verb>.py` on every branch (strategy §6).
+CLIENT_PATH = re.compile(r"^scripts/atrium_[a-z0-9_]+\.py$")
+_RETRY_STATUS = re.compile(r"^RETRY_STATUS\s*=\s*\{([^}]*)\}", re.MULTILINE)
+
+
+def client_retry_rule(path: str, text: str):
+    """The finding for a client that retries every HTTP 502, or None.
+
+    The skeleton (`docs/templates/skill/atrium_client.skeleton.py`) retries a 502 only when the
+    service's error body names a reason in `RETRY_502_REASONS`, or when the body is not the
+    service's (a proxy). A 502 with `reason: null` is final: retrying it three times only delays
+    the error. A client that lists 502 in `RETRY_STATUS` without the rule is a finding.
+    """
+    match = _RETRY_STATUS.search(text)
+    if not match or "502" not in match.group(1):
+        return None
+    if "RETRY_502_REASONS" in text and "def is_retryable(" in text:
+        return None
+    return (
+        f"{path} retries every HTTP 502: port RETRY_502_REASONS and is_retryable() from "
+        "docs/templates/skill/atrium_client.skeleton.py"
+    )
+
+
 def check_repo(repo: Path, test_ref: str, skill_ref: str, quiet: bool) -> list:
     """Return (findings, notes) for one repo — empty findings == clean.
 
@@ -553,6 +592,12 @@ def check_repo(repo: Path, test_ref: str, skill_ref: str, quiet: bool) -> list:
     if mode_only:
         findings.append("file-mode drift: " + ", ".join(mode_only))
 
+    # --- the client's 502 rule -----------------------------------------------------------
+    for path in sorted(p for p in skill_files if CLIENT_PATH.match(p)):
+        finding = client_retry_rule(path, blob(repo, skill_ref, path))
+        if finding:
+            findings.append(finding)
+
     # --- service/ files present on the default branch and absent here ---------------------
     # The content pass above compares only files COMMON to both refs, which is right for the
     # §5 trim (tests/, lint configs and the rest are meant to be gone) but blind in one place:
@@ -560,10 +605,16 @@ def check_repo(repo: Path, test_ref: str, skill_ref: str, quiet: bool) -> list:
     # rather than a trim. That blind spot is not hypothetical — nlp-enrich reached CI missing
     # `service/healthcheck.py` while its own `service/README.md` cited the file, and this tool
     # reported the repo as clean. Directories the trim legitimately removes are excluded.
+    # skill_ify imports this module at load time, so its trim rule is imported here, at call time.
+    from skill_ify import is_trimmed  # noqa: PLC0415
+
     missing_service = sorted(
         path
         for path in test_files - skill_files
-        if path.startswith("service/") and not path.startswith("service/test") and Path(path).name != "__init__.py"
+        if path.startswith("service/")
+        and not path.startswith("service/test")
+        and Path(path).name != "__init__.py"
+        and not is_trimmed(path)
     )
     if missing_service:
         findings.append(

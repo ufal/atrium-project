@@ -68,6 +68,8 @@ TRIM_DIRS = (
     "annotation/",
     "paradata/",
     "data_scripts/",
+    # digital-convert's Phase 0 exploration (its README: "Not shipped code"), 5 MB of samples.
+    "digital_born/",
 )
 TRIM_FILES = (
     "ruff.toml",
@@ -210,16 +212,27 @@ def cmd_apply(repo: Path, test_ref: str, skill_ref: str, into: Path) -> int:
         print(f"[skill-ify][FAIL] {into} exists and is not empty", file=sys.stderr)
         return 2
 
-    skill_paths = set(tree(repo, skill_ref))
-    for path, _ in sorted(derived.items()):
-        source_ref = skill_ref if is_overlay(path) and path in skill_paths else test_ref
-        blob = subprocess.run(["git", "-C", str(repo), "show", f"{source_ref}:{path}"], capture_output=True)
+    # Read each file by the blob id `derive` chose, not by path from one ref: a file only the skill
+    # branch carries (not in `test_ref`) is kept by `derive`, and reading it as
+    # `<test_ref>:<path>` failed, so `apply` used to drop it with a warning.
+    # The file mode travels with the blob: a script executable on its branch stays executable.
+    executable = {
+        sha
+        for ref in (test_ref, skill_ref)
+        for line in git(repo, "ls-tree", "-r", ref).splitlines()
+        if line.startswith("100755 ")
+        for sha in [line.split()[2]]
+    }
+    for path, sha in sorted(derived.items()):
+        blob = subprocess.run(["git", "-C", str(repo), "cat-file", "blob", sha], capture_output=True)
         if blob.returncode != 0:
-            print(f"[skill-ify][WARN] could not read {source_ref}:{path}", file=sys.stderr)
+            print(f"[skill-ify][WARN] could not read {path} ({sha})", file=sys.stderr)
             continue
         target = into / path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(blob.stdout)
+        if sha in executable:
+            target.chmod(0o755)
 
     print(f"[skill-ify] wrote {len(derived)} files to {into}")
     print(f"[skill-ify] diff against the branch with:\n  diff -r {into} <a checkout of {skill_ref}>")

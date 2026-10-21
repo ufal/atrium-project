@@ -25,16 +25,16 @@ language of the page does not matter.
 
 ## At a glance
 
-|                    |                                                                                                                                                                                                                                                  |
-|--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **In**             | page images (PNG or JPEG), one file per page, named `<document>-<page>` or `<document>_<page>`; a scanned PDF is split into page images first, or sent whole to the HTTP service                                                                 |
-| **Out**            | a table of the top-ranked categories and their scores per page (CSV); optionally a table of all eleven scores; a paradata log (JSON); optionally the ATRIUM document record (JSON). The HTTP service answers in JSON, with the call's provenance |
-| **Runs as**        | a command-line tool (`run.py`); a container image; an HTTP service image, which also accepts a PDF; an [Agent Skill](../agent-skills.md)                                                                                                         |
-| **Compute**        | CPU is enough; a GPU makes large batches faster                                                                                                                                                                                                  |
-| **Network**        | fetches the fine-tuned models from the Hugging Face Hub on first use, then works from its cache                                                                                                                                                  |
-| **Code licence**   | MIT                                                                                                                                                                                                                                              |
-| **Output licence** | computed per run: classifying and evaluating resolve to MIT, a PDF classified by the service included; training on the published dataset to CC BY-NC 4.0                                                                                         |
-| **Record**         | SSH Open Marketplace tool [`RER7Fw`](https://marketplace.sshopencloud.eu/tool-or-service/RER7Fw)                                                                                                                                                 |
+|                        |                                                                                                                                                                                                                                                                                                                           |
+|------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **In**                 | page images (PNG or JPEG), one file per page, named `<document>-<page>` or `<document>_<page>`; a scanned PDF is split into page images first, or sent whole to the HTTP service                                                                                                                                          |
+| **Out**                | a table of the top-ranked categories and their scores per page (CSV); optionally a table of all eleven scores; a paradata log (JSON); optionally the ATRIUM document record (JSON). The HTTP service answers in JSON, with the call's provenance                                                                          |
+| **Runs as**            | a command-line tool (`run.py`); a container image; an HTTP service image, which also accepts a PDF; an [Agent Skill](../agent-skills.md)                                                                                                                                                                                  |
+| **Compute**            | CPU is enough; a GPU makes large batches faster                                                                                                                                                                                                                                                                           |
+| **Network**            | fetches the fine-tuned models from the Hugging Face Hub on first use, then works from its cache                                                                                                                                                                                                                           |
+| **Code licence**       | MIT                                                                                                                                                                                                                                                                                                                       |
+| **Component licences** | the code and the fine-tuned models are MIT; the LINDAT training dataset (CC BY-NC 4.0) is used only for training; the optional YOLO backend is AGPL-3.0; the service renders PDFs with pypdfium2 (Apache-2.0). These do not by themselves set the rights in the output: [Licences and paradata](../ecosystem/licences.md) |
+| **Record**             | SSH Open Marketplace tool [`RER7Fw`](https://marketplace.sshopencloud.eu/tool-or-service/RER7Fw)                                                                                                                                                                                                                          |
 
 ## Steps
 
@@ -110,10 +110,10 @@ Every column is described in
 
 Each command-line run writes `<stamp>_page-classification.json`, the paradata log. The HTTP
 service writes no file: each answer carries the same record in `paradata`, the call's RO-Crate
-`CreateAction`. The licence of the run is computed from the components it actually used, as
-declared in the tool's `setup/para_config.txt`; the most restrictive one wins:
+`CreateAction`. The paradata lists the components the run actually used, each with its licence,
+as declared in the tool's `setup/para_config.txt`:
 
-| Component                   | Licence      | Counts when                         |
+| Component                   | Licence      | Used when                           |
 |-----------------------------|--------------|-------------------------------------|
 | code and fine-tuned models  | MIT          | always                              |
 | the LINDAT training dataset | CC BY-NC 4.0 | training (`--train`)                |
@@ -121,8 +121,9 @@ declared in the tool's `setup/para_config.txt`; the most restrictive one wins:
 | pypdfium2 (PDFium)          | Apache-2.0   | the service renders an uploaded PDF |
 
 The HTTP service renders PDF pages with pypdfium2 (Apache-2.0 or BSD-3-Clause) since
-`v1.9.1-beta`. Apache-2.0 ranks with MIT, so a classified PDF still resolves to MIT. Before
-that the service used PyMuPDF, which is AGPL-3.0 and was not declared.
+`v1.9.1-beta`; before that it used PyMuPDF (AGPL-3.0), which was not declared. The paradata also
+carries a computed label, the most restrictive of the licences listed (MIT for a classification
+run). It is not the licence of the output: [Licences and paradata](../ecosystem/licences.md).
 
 In the [document record](../ecosystem/document-contract.md) the tool owns the
 `page_categories` block and each page's `category` and `category_confidence`.

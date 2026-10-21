@@ -28,7 +28,10 @@ empty, and `latest` or `test` are never the baseline.
 | English metadata                   | `ghcr.io/ufal/atrium-translator-api`          | `1.5.0-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-translator/blob/v1.5.0-beta/service/README.md)          | [tracker](https://github.com/ufal/atrium-translator/issues)          |
 
 The image tag is the release without its leading `v`. A digest is read with
-`docker buildx imagetools inspect <image>:<tag>`.
+`docker buildx imagetools inspect <image>:<tag>`. Every E2E run also records the digest and the source
+ref of each image it ran (`e2e-manifest.json`, an artifact of the run): a green run at these release
+tags shows which releases passed together. The lanes run the batch images for most stages, so the
+approved digests are still those of the `-api` images of the same releases.
 
 ## Before you rely on a result
 

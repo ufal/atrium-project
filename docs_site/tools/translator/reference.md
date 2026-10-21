@@ -404,7 +404,8 @@ record of a batch.
 | `opus_mt`               | CC BY 4.0            | CT2 model (tc-big line; older Apache-2.0) |
 | `nllb200`               | CC BY-NC 4.0         | CT2 model — **non-commercial**            |
 
-**A default run resolves to CC BY-NC-SA 4.0.** `llm_api` deliberately carries an
+**A default run's computed label is CC BY-NC-SA 4.0.** It is not the licence of the translation
+([Licences and paradata](../../ecosystem/licences.md)). `llm_api` deliberately carries an
 unrecognised licence string, so `para_licenses` treats it as maximally restrictive —
 ranked highest, with both the non-commercial and share-alike flags set — and warns: the
 safe default for a prototype backend whose provider terms are not a CC or OSS licence.

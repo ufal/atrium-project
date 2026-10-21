@@ -1,23 +1,54 @@
 # Proposal: execution evidence, processing policy and output rights
 
-> **Status:** draft for review on [#6](https://github.com/ufal/atrium-project/issues/6), 2026-10-20. Nothing here
-> is implemented. It changes what records and crates assert, so it is a class (c) change under
-> [`shared_components.md`](../shared_components.md): it needs AMČR's agreement before any shared module changes.
-> Draft schema: [`atrium_rights.schema.json`](atrium_rights.schema.json).
+> **Status:** draft for review on [#6](https://github.com/ufal/atrium-project/issues/6), 2026-10-20; opened with
+> a summary in plain words on 2026-10-21. Nothing here is implemented. It changes what records and crates assert,
+> so it is a class (c) change under [`shared_components.md`](../shared_components.md): it needs AMČR's agreement
+> before any shared module changes. Draft schema: [`atrium_rights.schema.json`](atrium_rights.schema.json).
 
-## What changes, in one paragraph
+## In plain words
 
-Today a run computes one licence for its outputs, the most restrictive of the component licences it used
-(`para_licenses.merge_effective_licenses()`), writes it to the paradata and to the record's
-`provenance.license` / `license_detail`, and the RO-Crate export states it as the root dataset's licence
-(`atrium_rocrate._license_entity()`). That is an inference presented as a rights statement. The proposal records
-three things separately: **what a run used** (with each component's own licence or terms, and where that is
-documented), **which processing policy allowed it**, and, only when someone with the standing to do so asserts it,
-**the rights in an output**. An output with no assertion has unknown rights, and says nothing.
+**Today.** Every run lists the components it used (models, datasets, vocabularies, web services), each with its
+licence. From that list it also computes one label, the most restrictive of those licences
+(`para_licenses.merge_effective_licenses()`). The label is written into the run's paradata, into the record as
+`provenance.license`, and into an RO-Crate export as the crate's licence (`atrium_rocrate._license_entity()`).
 
-## The three records
+**The problem.** That label reads as the licence of the output, and it is not one. A tool's or a model's licence
+does not become the licence of what it produces. Web services such as LINDAT's offer terms of use, not a licence
+for their output. "The strictest wins" does not settle whether licences can be combined. And the rights in an
+output depend first on the rights in the source document, which no tool knows. (motyc and Pavel on
+[#4](https://github.com/ufal/atrium-project/issues/4) and [#6](https://github.com/ufal/atrium-project/issues/6),
+October 2026.)
 
-### 1. Execution evidence: the components a run used
+**The proposal.** Three separate records instead of one label:
+1. **What a run used:** each component with its own licence or terms of use, and where that was read.
+2. **Which policy allowed it:** a policy file written by the deployment's operator (AMČR for the pilot), checked
+   before a run sends anything to an external service or uses a model with restrictive terms.
+3. **The rights in an output, only when asserted:** written only when someone entitled to do so states them.
+   Without that, the rights are unknown and the record says nothing.
+
+**What changes for a user.** Records and crates stop stating a licence that nobody granted. They still say
+exactly what was used and under which terms. A deployment can refuse a route its policy forbids, instead of
+finding out afterwards. Old records keep their values, marked as calculated.
+
+A short explanation for readers outside the project is on the documentation site:
+[Licences and paradata](https://ufal.github.io/atrium-project/ecosystem/licences/).
+
+## The three questions for AMČR
+
+1. **Who asserts output rights** in records AMČR publishes: AMČR only (recommended), or may a deployment set a
+   default assertion?
+2. **The crate root without an assertion:** leave `license` out (recommended), or state a rights URI for "not
+   evaluated"?
+3. **The policy file:** written by AMČR per deployment, with ÚFAL shipping an example and the evaluation code?
+
+## For implementers
+
+The rest of this page is the detailed design: the fields of each record, the RO-Crate mapping, the migration and
+the order of work.
+
+### The three records
+
+#### 1. Execution evidence: the components a run used
 
 One entry per component actually exercised, in the run's paradata (`components_used`), referenced from the
 record by the run's `run_uuid`:
@@ -37,7 +68,7 @@ The source is a per-repository inventory, `components.json`, replacing the `[com
 the REUSE way, in a `REUSE.toml` and SPDX headers; `components.json` covers what is outside it: dependencies,
 models, data and services.
 
-### 2. Processing policy: what a deployment allows
+#### 2. Processing policy: what a deployment allows
 
 A deployment names a policy file (`ATRIUM_POLICY_PATH`, JSON, owned by the operator, i.e. AMČR for the pilot). Before
 a route that the policy covers (an external service, a model with restrictive terms), the tool evaluates it and
@@ -52,7 +83,7 @@ records the outcome in the paradata:
 A refused route fails the request with a registered reason (`policy_refused`) rather than falling back silently.
 Without a policy file, behaviour is today's, and the paradata records `"policy": null`.
 
-### 3. Output rights: an assertion, not a calculation
+#### 3. Output rights: an assertion, not a calculation
 
 An optional `rights` block on a record (and on an exported collection), written only through an explicit call
 (`atrium_document.assert_rights()`), never by a processing stage:
@@ -67,7 +98,7 @@ An optional `rights` block on a record (and on an exported collection), written 
 
 No tool fills it from component licences. An unknown status stays unknown.
 
-## RO-Crate 1.2 and Process Run Crate 0.5
+### RO-Crate 1.2 and Process Run Crate 0.5
 
 - Each component becomes a contextual entity (`SoftwareApplication`, `Dataset`, `DefinedTermSet` or `WebAPI`) with
   **its own** `license` and `version`, listed as the `CreateAction`'s `instrument`, as Process Run Crate expects.
@@ -79,7 +110,7 @@ No tool fills it from component licences. An unknown status stays unknown.
 - For a collection of derived files, `atrium_rocrate` can also write a `REUSE.toml`, generated from the rights
   assertions of those files, never from component licences.
 
-## Migration
+### Migration
 
 | Today                                | During the transition (schema 1.x, additive)                                                           | At schema 2.0                                                   |
 |--------------------------------------|--------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------|
@@ -91,7 +122,7 @@ No tool fills it from component licences. An unknown status stays unknown.
 
 Historical paradata and records stay as written; reading them, a consumer sees a calculated value labelled as such.
 
-## Order of work, once agreed
+### Order of work, once agreed
 
 1. Agree the schema (this page and the draft), including the questions below.
 2. Inventories: `components.json` and `REUSE.toml` in the six repositories, with evidence for each licence.
@@ -100,11 +131,3 @@ Historical paradata and records stay as written; reading them, a consumer sees a
 4. A small `atrium_policy.py`: load, evaluate, record; called before the external routes (translator and nlp-enrich
    to LINDAT, keyword-extract to its LLM backend).
 5. Tests in every repository, the E2E lanes, and AMČR's sign-off on the change's issue.
-
-## Questions
-
-1. **Who asserts output rights** in records AMČR publishes: AMČR only (recommended), or may a deployment set a
-   default assertion?
-2. **The crate root without an assertion:** leave `license` out (recommended), or state a rights URI for "not
-   evaluated"?
-3. **The policy file:** written by AMČR per deployment, with ÚFAL shipping an example and the evaluation code?

@@ -839,8 +839,8 @@ Idempotent: exits immediately if `GET /info` already answers; waits for first-ru
 2. Prefer `--format json` when the result feeds further processing.
 3. For full request/response schemas, fetch `GET /openapi.json` from the running server.
 4. Exit code `2` (unreachable): start the server (`bash scripts/server.sh`) and retry once.
-   Exit code `3` (server error): the client already retried 502/503/504 3×; inspect server
-   logs, do not loop.
+   Exit code `3` (server error): the client already retried a 503 or 504, and a 502 that is
+   not final, 3×; inspect server logs, do not loop.
 5. <size-limit handling>
 6. Do not bypass the API by importing the model code directly<; server-side runs are
    paradata-logged — only if true on this branch (§4.7)>.
@@ -858,7 +858,8 @@ handle>.
 atrium_<verb>.py
   ├─ build_multipart(fields, file_field, path) -> (bytes, content_type)   # uuid4 boundary
   ├─ http_json(url, data=None, content_type=None, timeout=300) -> dict
-  │     GET when data is None, else POST; 3× retry on 502/503/504 (10 s backoff);
+  │     GET when data is None, else POST; 3× retry on 503/504, and on a 502 only when
+  │     is_retryable() says so (RETRY_502_REASONS, or a proxy's page) (10 s backoff);
   │     URLError/Timeout -> exit 2; HTTPError after retries -> exit 3
   ├─ <verb>_file(base_url, path, **params)      # route by suffix if multi-endpoint;
   │                                             # client-side size pre-check (413 mirror)

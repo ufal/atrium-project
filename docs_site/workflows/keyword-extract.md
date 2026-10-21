@@ -40,16 +40,16 @@ apart in the output, and every statistical keyword says which method produced it
 
 ## At a glance
 
-|                    |                                                                                                                                                                                                                                                                                                                            |
-|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **In**             | the ATRIUM document record, after nlp-enrich; or plain text. The batch tools read files instead: nlp-enrich's CoNLL-U or TEITOK for the statistical kind; line tables (CSV), TEITOK or records for the controlled kind                                                                                                     |
-| **Out**            | statistical keywords with their method, score and rank, per document and per page; controlled keywords per line (JSON); the run's paradata (JSON). With a record sent: the record with its `keywords` block (statistical kind) and its `enrichment` block (controlled kind), side by side. The batch CLI writes CSV tables |
-| **Runs as**        | an HTTP service image (`POST /extract_keywords`, `/extract_keywords_text`), the production image; a command-line tool for the statistical kind (`keywords.py`) and its image; batch clients for the controlled kind; a research run on GPUs (`llm_run.py`) and its image                                                   |
-| **Compute**        | CPU for YAKE and the legacy method; a GPU is used by KeyBERT when there is one; the service's controlled kind calls a language-model service and carries no weights; the research run loads a model's weights onto GPUs                                                                                                    |
-| **Network**        | the Hugging Face Hub for the KeyBERT model, on first use (the service fetches it at startup); for the controlled kind, the language-model service (OpenRouter, or a local Ollama). Only the vocabulary build reaches the AMČR and TEATER sources                                                                           |
-| **Code licence**   | MIT                                                                                                                                                                                                                                                                                                                        |
-| **Output licence** | declared per run from the components used: KeyBERT and the legacy method add no restriction on their own; YAKE is AGPL-3.0; the AMČR and TEATER vocabularies are CC0                                                                                                                                                       |
-| **Record**         | none of its own yet; the earlier llm-enrich record is to be re-pointed to it                                                                                                                                                                                                                                               |
+|                        |                                                                                                                                                                                                                                                                                                                                               |
+|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **In**                 | the ATRIUM document record, after nlp-enrich; or plain text. The batch tools read files instead: nlp-enrich's CoNLL-U or TEITOK for the statistical kind; line tables (CSV), TEITOK or records for the controlled kind                                                                                                                        |
+| **Out**                | statistical keywords with their method, score and rank, per document and per page; controlled keywords per line (JSON); the run's paradata (JSON). With a record sent: the record with its `keywords` block (statistical kind) and its `enrichment` block (controlled kind), side by side. The batch CLI writes CSV tables                    |
+| **Runs as**            | an HTTP service image (`POST /extract_keywords`, `/extract_keywords_text`), the production image; a command-line tool for the statistical kind (`keywords.py`) and its image; batch clients for the controlled kind; a research run on GPUs (`llm_run.py`) and its image                                                                      |
+| **Compute**            | CPU for YAKE and the legacy method; a GPU is used by KeyBERT when there is one; the service's controlled kind calls a language-model service and carries no weights; the research run loads a model's weights onto GPUs                                                                                                                       |
+| **Network**            | the Hugging Face Hub for the KeyBERT model, on first use (the service fetches it at startup); for the controlled kind, the language-model service (OpenRouter, or a local Ollama). Only the vocabulary build reaches the AMČR and TEATER sources                                                                                              |
+| **Code licence**       | MIT                                                                                                                                                                                                                                                                                                                                           |
+| **Component licences** | KeyBERT (MIT) with its sentence-transformers model (Apache-2.0), YAKE (AGPL-3.0) when chosen, the AMČR and TEATER vocabularies (CC0), and for the controlled kind the language model's own terms; each run lists the ones it used. These do not by themselves set the rights in the output: [Licences and paradata](../ecosystem/licences.md) |
+| **Record**             | none of its own yet; the earlier llm-enrich record is to be re-pointed to it                                                                                                                                                                                                                                                                  |
 
 ## Steps
 
@@ -75,15 +75,16 @@ calibrated: most lines get one of two values, so do not rank or filter on it.
 
 ## Provenance and licence
 
-Every run records its paradata, and the licence of the output is computed from the components
-that ran, as declared in the tool's `para_config.txt`; the most restrictive one wins. The
+Every run records its paradata, which lists the components that ran, each with its licence, as
+declared in the tool's `para_config.txt`. The
 service returns the paradata in its response, as a Process Run Crate `CreateAction`; the
 command-line and batch runs write it as a log (JSON), and the controlled ones name the
 vocabulary build they used. The statistical methods differ: the legacy method uses only the
 standard library, KeyBERT is MIT and loads a sentence-transformers model (Apache-2.0), and YAKE
-is AGPL-3.0, so a run that selects YAKE is declared accordingly. The vocabularies are CC0. The
-language model has no component there: the terms of the model or of its provider apply to the
-controlled kind on top, and every controlled run records the model's id.
+is AGPL-3.0; a run that selects YAKE lists it. The vocabularies are CC0. The language model is not
+in that list: its own licence or its provider's terms apply to the controlled kind, and every
+controlled run records the model's id. The paradata's computed label, the most restrictive of the
+licences listed, is not the licence of the output: [Licences and paradata](../ecosystem/licences.md).
 
 In the [document record](../ecosystem/document-contract.md) the tool is the successor of
 llm-enrich as a writer: the contract lets it write the `enrichment` and `forms` blocks and

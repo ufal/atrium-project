@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 20 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #51, #56, #66, #67, #72, #77, #78, #79, #81, #82). `test` = `8c0f9f8` (2026-10-20); tag `v1` = `8c0f9f8` (2026-10-20); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-21, at the end of the file (this file is not in date order): one round across #77, #72, #82, #81, #79 and the adjacent issues, delivered as files. The tool repositories publish immutable releases since 10-19, and the two predecessors are archived (#72)._
+> _Hub/planning repo. 20 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #51, #56, #66, #67, #72, #77, #78, #79, #81, #82). `test` = `73f7261` (2026-10-21); tag `v1` = `8c0f9f8` (2026-10-20); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-21, at the end of the file (this file is not in date order): one round across #77, #72, #82, #81, #79 and the adjacent issues, delivered as files. The tool repositories publish immutable releases since 10-19, and the two predecessors are archived (#72)._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -2494,3 +2494,36 @@ releases; the gate's diff review covers *"only the files that go into the image 
   releases; the hub's own emoji headings (75 left).
 
   Files delivered in chat.
+
+## 2026-10-21 (round 2) — Today's replies folded in; the CAA letters; licences in plain words; the six skill branches
+Against `test` `73f7261` and the issue exports of 12:37. New replies: motyc on #13 (10:42), Pavel on #4, #6 and
+#15, David Spáčil on #13 (10-20 15:48). Nothing new on #72, #77, #78, #79, #81 or #82.
+- **#13 (CAA, due 10-31):** digest and plan rewritten. The four questions are answered, the Zenodo correction is
+  approved, and the paper cites the concept DOI `10.5281/zenodo.19224825`. The chairs are written to when the
+  submission is ready. David Spáčil is asked to be corresponding author and is available from 10-23. One open
+  evidence decision: Table 2 takes the `vX.4` re-run, not 99.16 %. New `plans/13.letters.md` with the exact Zenodo
+  values and three drafts: to the Session 38 chairs (Pagé-Perron, Callieri, Richards, to confirm against the
+  programme), to the six contributors, and the PCI cover letter. The brief has the concept DOI, the chairs and
+  Decision A. No manuscript edited.
+- **#15:** Pavel's venue figures (IJDAR, ACM JOCCH indexed; no data paper); the re-run needs page-classification#61;
+  the brief's split check is now `data_scripts/eval_by_document_overlap.py` there.
+- **Licences, in plain words (Pavel on #4/#6; motyc's 10-20 ask):** new `docs_site/ecosystem/licences.md` (in the
+  nav); `docs/proposals/rights-and-policy.md` opens with a summary in plain words, the design under "For
+  implementers"; the document-contract page's licence and paradata sections rewritten (the old anchor kept, since
+  it was linked on #4). The six workflow pages list "Component licences", never an output licence; the same
+  correction on the pipelines, external-tools, RO-Crate, and two tool reference pages. Docs only: `para_licenses`
+  is unchanged until AMČR agrees (#6).
+- **#4:** the 22–24 October order; the three LINDAT rows of the record texts name LINDAT's Terms of Use.
+- **#77 C (skill branches, archives only):** re-derived from `test`; the 502 rule in all six clients (and exit 1
+  on a usage error, in the skeleton too); every `server.sh` waits for `/ready`. digital-convert and keyword-extract
+  have skills of their own (tried on samples against a local server); ocr-postprocess's skill is renamed; nlp-enrich's
+  no longer offers keywords; each `service/README.md` is its repo's runbook. `tools/skill_drift_check.py` fails a
+  client that retries every 502, skips paths `skill_ify` trims, and declares the runbooks (tests:
+  `tests/test_skill_drift_check.py`). `tools/skill_ify.py apply` keeps skill-only files and file modes
+  (`tests/test_skill_ify.py`), and trims digital-convert's `digital_born/` exploration (5 MB). Drift check: 6/6 aligned. `docs/skills_catalog.md`, `docs_site/agent-skills.md`,
+  the SKILL template and strategy Appendix B say the same.
+- **#81 B.3 / #77:** `tools/e2e/e2e_manifest.py` records each E2E image by digest (`e2e-manifest.json`, job
+  summary); both lanes run it `if: always()`; `docs/ci_policy.md`, `docs_site/pilot.md` and the runbook point at it.
+- **Dev logs:** the ten closed-issue pairs removed now (round 1's line above was ahead of the files). The digests of
+  #51, #66, #72, #77, #78, #79, #81 and #82 record the morning's posts, and the plans of #4, #6 and #77 are refreshed.
+- **Checks:** see the round's summary in chat (pytest, ruff, workflow_lint, mkdocs --strict, docs and drift checks).

@@ -55,7 +55,8 @@ These hold for this runbook and for every operator page linked from the S2 pilot
 approved for the pilot. Read a digest with
 `docker buildx imagetools inspect ghcr.io/ufal/atrium-<tool>-api:<version>` (the `Digest:` line). With
 `DIGEST` set below, Kubernetes pulls by digest, and the tag only labels it. Tag protection and immutable
-releases are in [`release_trust.md`](release_trust.md).
+releases are in [`release_trust.md`](release_trust.md). Which releases passed the hub's E2E lanes together
+is in each run's `e2e-manifest` artifact ([`ci_policy.md`](ci_policy.md)).
 
 ## Before you start
 

@@ -28,7 +28,7 @@ every tool writes the record the same way; what differs is which calls each tool
 |--------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
 | `schema_version`, `record_type`, `doc_id`                                                                                                  | identity — `record_type` is `atrium-document`, or `atrium-document-merged` for a merge of parallel branches     |
 | `source`                                                                                                                                   | the original input: its identifier, checksum and how it was acquired (`source.origin`)                          |
-| `provenance`                                                                                                                               | the resolved licence of the whole record, and `contributors[]` — every run that wrote to it                     |
+| `provenance`                                                                                                                               | `contributors[]` — every run that wrote to it — and a computed licence label (see below), not a licence         |
 | `assembled`                                                                                                                                | one **stamp** per block: who wrote it last, in which run                                                        |
 | `page_categories`, `pages`, `content`, `lines`, `tables`, `quality_summary`, `entities`, `translations`, `enrichment`, `keywords`, `forms` | the tool blocks — one authorised writer each, see [Repository map](repository-map.md#who-may-write-which-block) |
 | `derived_from`                                                                                                                             | references to **persistent** outputs a stage produced                                                           |
@@ -69,7 +69,8 @@ writer of a block, so for a block several programs write fields of — `pages[]`
    `merge_block()` updates chosen fields inside a keyed list such as `pages[]`. Everything
    else in the baseline is carried through untouched.
 3. **Stamp.** Each written block gets its `assembled.blocks` stamp, the run is added to
-   `provenance.contributors[]`, and the run's licence block is added to the record's.
+   `provenance.contributors[]`, and the run's list of components with their licences is added to
+   the record's.
 4. **Validate.** The finished record is checked against `atrium_document.schema.json`; a
    stage never emits a record that fails its own schema.
 5. **Write out.** The file is written atomically — to a temporary name, then renamed — so a
@@ -90,22 +91,26 @@ The rules are the hub's; the right-hand columns show how each tool applies them.
 | **5 · Licences accrete**            | contributes its paradata licence block; see below                                                                                                                                                               | contributes its paradata licence block; see below                                                                                                                           |
 | **6 · Unknown blocks preserved**    | ✓ through the shared module                                                                                                                                                                                     | ✓ through the shared module                                                                                                                                                 |
 
-### How the record's licence is computed
+<a id="how-the-records-licence-is-computed"></a>
 
-`provenance.license` is not declared by anyone. Each run contributes the licence block its
-paradata has resolved, at the moment the record is written, from the components logged so
-far, and the record's licence is recomputed
-from the previous `license_detail` plus every block contributed since, by the shared
-`para_licenses` rule: **the most restrictive licence wins**, and `license_detail` keeps the
-full derivation — which components, with which licence, decided it.
+### What the record says about licences
 
-A page-classification inference run contributes **MIT** (`vit_models` is its only
-always-on component; the training dataset counts only for `--train`, which writes no
-record). A translator run with the default backend and vocabulary logs the CUBBITT, UDPipe,
-AMCR and TEATER components, which resolve in its paradata to **CC BY-NC-SA 4.0**.
+Each run adds to the record the list of components it used (models, data, vocabularies, services),
+each with its own licence or terms of use, as its paradata recorded them. From all the lists so far,
+the shared `para_licenses` module computes one label, the most restrictive licence among them, and
+writes it as `provenance.license`. `provenance.license_detail` keeps the lists the label came from.
 
-When no licence block with any component has ever been contributed, the module falls back
-conservatively to **CC BY-NC 4.0** and says so in `provenance.license_note`.
+**The label is not the licence of the record or of anything in it.** A component's licence does not
+become the licence of what the component produced, and the rights in a record depend first on the
+source document. [Licences and paradata](licences.md) explains this in plain words, and what is
+proposed instead ([#6](https://github.com/ufal/atrium-project/issues/6)). Until that changes, read
+`provenance.license` as "the most restrictive licence among the components used".
+
+For the two tools of this page: a page-classification inference run lists `vit_models` (MIT) as its
+only always-used component (the training dataset counts only for `--train`, which writes no record).
+A translator run with the default backend and vocabulary lists CUBBITT, UDPipe, AMČR and TEATER; with
+the UDPipe models under CC BY-NC-SA 4.0, the label reads CC BY-NC-SA 4.0. A record with no component
+list at all gets the fallback label CC BY-NC 4.0, and `provenance.license_note` says so.
 
 ### What the references point at
 
@@ -190,22 +195,27 @@ Then the **translator** takes that record as `--document-json` and writes:
 ```
 
 `page_categories` and `pages` pass through untouched (rule 2); the translator adds its
-blocks, its stamps and itself to `contributors[]`, and its licence block joins
-page-classification's in the computation of `provenance.license` (rule 5). The values in
+blocks, its stamps and itself to `contributors[]`, and its component list joins
+page-classification's in the label `provenance.license` (rule 5). The values in
 `page_categories` are the [eleven labels](../tools/page-classification/index.md#the-11-categories).
 
 ## How paradata accumulates
 
-Every run also writes its own **paradata** file — the per-run log the `paradata_ref` fields point
-at: tool version, run id, the resolved licence with its full derivation, timings, configuration,
-and statistics. It is written by the shared `atrium_paradata.py`, schema version **`2.0`**.
+Every run writes its own **paradata** file: a log of that run. It says which program and version ran,
+when, with which settings, which components it used and with which licences, how long it took, and
+counts of what it processed.
+The record does not copy it; it points to it. Each run that writes to the record adds itself to
+`provenance.contributors[]` with a `paradata_ref`, and each block it wrote is stamped with the same
+reference. So a record's paradata accumulates as a list of pointers, one per run, and following them
+gives the whole history of the record.
 
-The file is a flat JSON object — `tool_version`, `run_id`, `start_time`, `license_detail`,
-configuration and statistics at the top level; `docs/paradata_schema.md` describes its fields.
+The file is written by the shared `atrium_paradata.py`, format version **`2.0`**: a flat JSON object
+with `tool_version`, `run_id`, `start_time`, `license_detail`, the configuration and statistics at the
+top level. Every field is in `docs/paradata_schema.md`.
 
-The versioning rule is the same for both: an **additive** change does not bump the version; a
-**breaking** one bumps the major and ships a `_migrate_X_to_Y()` function. A record or paradata
-file with a *newer* major version than the reader knows is **refused**; an older one is migrated.
+Both formats follow the same rule for changes: an **additive** change keeps the version; a
+**breaking** one raises the major version and ships a `_migrate_X_to_Y()` function. A reader refuses
+a file with a *newer* major version than it knows, and migrates an older one.
 
 ## Sources
 

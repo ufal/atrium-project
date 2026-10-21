@@ -39,16 +39,16 @@ refused, because it belongs to the OCR route and [ocr-postprocess](ocr-postproce
 
 ## At a glance
 
-|                    |                                                                                                                                                                                                                                                                    |
-|--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **In**             | PDF, DOCX, ODT, ODS, XLSX and RTF files, and DOC/XLS through LibreOffice, recognised by their content, not their extension; optionally the AMČR seed record, whose `source.sha512` must match the file                                                             |
-| **Out**            | the ATRIUM document record (JSON); on request the same record as annotated Markdown; from `/describe`, a per-page assessment (JSON); the run's paradata (JSON)                                                                                                     |
-| **Runs as**        | an HTTP service, `api-digital` (image `-api`: `POST /reformat`, and `POST /describe` for a per-page assessment), and a command-line tool (`api_util/digital_to_json.py`, image `-digital`), under these names since v1.1.0-beta                                    |
-| **Compute**        | CPU, no GPU; memory follows the text a document holds, not its file size; the optional layout-model engine for complex PDFs is a local, opt-in build                                                                                                               |
-| **Network**        | none for `/reformat` and the command line; `/describe` calls page-classification and ocr-postprocess when their URLs are set; the optional layout-model engine fetches its models at build time                                                                    |
-| **Code licence**   | MIT                                                                                                                                                                                                                                                                |
-| **Output licence** | MIT with the default engine, which uses permissively licensed libraries; the optional layout-model engine adds model weights under Apache-2.0 and CDLA-Permissive-2.0, which leave it at MIT; LibreOffice, which converts DOC and XLS, is declared but not counted |
-| **Record**         | none of its own yet                                                                                                                                                                                                                                                |
+|                        |                                                                                                                                                                                                                                                                                                                |
+|------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **In**                 | PDF, DOCX, ODT, ODS, XLSX and RTF files, and DOC/XLS through LibreOffice, recognised by their content, not their extension; optionally the AMČR seed record, whose `source.sha512` must match the file                                                                                                         |
+| **Out**                | the ATRIUM document record (JSON); on request the same record as annotated Markdown; from `/describe`, a per-page assessment (JSON); the run's paradata (JSON)                                                                                                                                                 |
+| **Runs as**            | an HTTP service, `api-digital` (image `-api`: `POST /reformat`, and `POST /describe` for a per-page assessment), and a command-line tool (`api_util/digital_to_json.py`, image `-digital`), under these names since v1.1.0-beta                                                                                |
+| **Compute**            | CPU, no GPU; memory follows the text a document holds, not its file size; the optional layout-model engine for complex PDFs is a local, opt-in build                                                                                                                                                           |
+| **Network**            | none for `/reformat` and the command line; `/describe` calls page-classification and ocr-postprocess when their URLs are set; the optional layout-model engine fetches its models at build time                                                                                                                |
+| **Code licence**       | MIT                                                                                                                                                                                                                                                                                                            |
+| **Component licences** | the default engine uses permissively licensed libraries; the optional layout-model engine adds model weights under Apache-2.0 and CDLA-Permissive-2.0; LibreOffice, which converts DOC and XLS, is listed. The rights in the text are the source document's: [Licences and paradata](../ecosystem/licences.md) |
+| **Record**             | none of its own yet                                                                                                                                                                                                                                                                                            |
 
 ## Steps
 
@@ -65,11 +65,12 @@ refused, because it belongs to the OCR route and [ocr-postprocess](ocr-postproce
 Every `/reformat` and `/describe` call returns the run's paradata: an RO-Crate `CreateAction` that
 names the file it read, with its digest, the seed when one was sent, and the record blocks it
 wrote; `/describe` adds each stage's own paradata. On the command line, `--paradata-dir` writes a
-paradata log (JSON). The record's licence is computed from the components that ran, as declared
-in the tool's `para_config.txt`, and the most restrictive one wins; with the default engine that
-is MIT, and the layout-model engine leaves it at MIT. LibreOffice is declared but never counted:
-it changes the container of a text it does not author, and the conversion is reported beside the
-record instead. The source document's own licence applies to its text.
+paradata log (JSON). The paradata lists the components that ran, each with its licence, as
+declared in the tool's `para_config.txt`: with the default engine, permissively licensed libraries
+only, so the computed label is MIT, and the layout-model engine keeps it there. LibreOffice is
+declared but left out of the label: it changes the container of a text it does not author, and the
+conversion is reported beside the record instead. The label is not the licence of the output: the
+source document's own rights apply to its text ([Licences and paradata](../ecosystem/licences.md)).
 
 In the [document record](../ecosystem/document-contract.md) the tool is one of the two
 originators of the positional layer — `pages`, `content`, `lines` and `tables` — for a

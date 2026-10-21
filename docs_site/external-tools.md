@@ -138,11 +138,11 @@ choice of rasteriser and resolution decides what the model sees.
 **Where ATRIUM uses it.** page-classification rasterises PDFs in three different places, with three
 different tools:
 
-| Where                                                                                                  | Tool                                  | Resolution                                                      |
-|--------------------------------------------------------------------------------------------------------|---------------------------------------|-----------------------------------------------------------------|
-| the service's `POST /predict_document`                                                                 | pypdfium2 (PDFium)                    | 300 dpi (`PDF_RENDER_DPI`); at most 50 pages (`MAX_PDF_PAGES`)  |
-| dataset preparation on Unix ([W12](pipelines.md#w12--annotation-round-trip-page-classifications-half)) | poppler's `pdftoppm`                  | 300 dpi by default                                              |
-| dataset preparation on Windows                                                                         | ImageMagick with Ghostscript          | 300 dpi by default                                              |
+| Where                                                                                                  | Tool                         | Resolution                                                     |
+|--------------------------------------------------------------------------------------------------------|------------------------------|----------------------------------------------------------------|
+| the service's `POST /predict_document`                                                                 | pypdfium2 (PDFium)           | 300 dpi (`PDF_RENDER_DPI`); at most 50 pages (`MAX_PDF_PAGES`) |
+| dataset preparation on Unix ([W12](pipelines.md#w12--annotation-round-trip-page-classifications-half)) | poppler's `pdftoppm`         | 300 dpi by default                                             |
+| dataset preparation on Windows                                                                         | ImageMagick with Ghostscript | 300 dpi by default                                             |
 
 **Worth knowing.** The service renders PDF pages at 300 dpi, the resolution the training pages
 were made at, rather than a renderer's 72 dpi default. `poppler-utils` is needed only on the
@@ -249,9 +249,11 @@ served publicly by LINDAT as a REST API.
 fetched live from the API and composed as `<src>-<tgt>`; the endpoint is attachable through
 `TRANSLATION_URL`, so a self-hosted instance or a local stub substitutes with no code change.
 
-**Licence consequence.** CUBBITT's models are **CC BY-NC-SA 4.0**, which is why a default
-translator run resolves to CC BY-NC-SA 4.0 — see
-[translator → Licence](tools/translator/reference.md#licence-is-computed-not-declared).
+**Licence.** CUBBITT's models are **CC BY-NC-SA 4.0**, and the service is offered under
+[LINDAT's terms of use](https://lindat.mff.cuni.cz/en/terms-of-use). A default translator run lists
+CUBBITT, so its computed licence label is CC BY-NC-SA 4.0 — see
+[translator → Licence](tools/translator/reference.md#licence-is-computed-not-declared). The label is
+not the licence of the translation ([Licences and paradata](ecosystem/licences.md)).
 
 **Onward:** <https://lindat.mff.cuni.cz/services/translation/>
 
@@ -304,8 +306,8 @@ computes the evaluation reports.
 
 **Worth knowing.** Ultralytics distributes its package and base weights under AGPL-3.0.
 `para_config.txt` declares it as the conditional component `ultralytics`, and `run.py` logs it on
-every `--yolo` run, so a `--yolo` inference run resolves to AGPL-3.0; with `--train`, the resolver
-ranks the dataset's CC BY-NC 4.0 above it. The `transformers<5` pin lives in
+every `--yolo` run, so a `--yolo` inference run's computed licence label is AGPL-3.0; with
+`--train`, the computation ranks the dataset's CC BY-NC 4.0 above it. The `transformers<5` pin lives in
 `setup/requirements.txt` only — `service/requirements.txt` deliberately leaves the model stack out,
 and the image installs both files.
 
@@ -328,8 +330,8 @@ different model.
 
 **Worth knowing.** CT2's default compute type is `int8`, which runs on every device; a compute
 type the device cannot run is refused before the model loads, with the list of valid ones. The model
-licence follows `CT2_MODEL_FAMILY`, so an NLLB run is non-commercial. An LLM run's licence
-resolves to the unrecognised provider-terms string; see [SPDX and Creative
+licence listed follows `CT2_MODEL_FAMILY`; NLLB's is non-commercial. An LLM run lists the
+provider's terms, which the label computation does not recognise; see [SPDX and Creative
 Commons](#spdx-and-creative-commons).
 
 **Onward:** <https://opennmt.net/CTranslate2/> · <https://huggingface.co/utter-project> ·
@@ -587,8 +589,10 @@ passed. Both tools list `jsonschema` among their requirements.
 `Apache-2.0`, `CC-BY-NC-4.0`. Creative Commons licences govern most of the data and models used
 here; their building blocks are BY (attribution), NC (non-commercial) and SA (share-alike).
 
-**Where ATRIUM uses it.** `para_licenses.py`, vendored into both tools, ranks every licence a run
-touched and reports the most restrictive one as the run's licence:
+**Where ATRIUM uses it.** The paradata lists every component a run used with its licence, as an
+SPDX identifier or a display name. From that list, `para_licenses.py`, vendored into every tool,
+computes one label, the most restrictive licence on this scale. The label is a warning, not the
+licence of the output ([Licences and paradata](ecosystem/licences.md)):
 
 | Rank | Licences                                 |
 |------|------------------------------------------|
@@ -605,10 +609,10 @@ touched and reports the most restrictive one as the run's licence:
 * The keys mix SPDX identifiers with display names. **SPDX spellings** resolve through the alias
   table (`CC0-1.0`, `CC-BY-SA-4.0`, the `-only` / `-or-later` GPL forms), and every catalogued key
   also resolves in any casing (`bsd-3-clause`, `lgpl-3.0`).
-* An unrecognised licence is treated as the most restrictive, and so **becomes the run's effective
-  licence**: its raw string, an empty URL, **both** the non-commercial and share-alike flags set,
+* An unrecognised licence is treated as the most restrictive, and so **becomes the run's computed
+  label**: its raw string, an empty URL, **both** the non-commercial and share-alike flags set,
   and a warning in the notes. The translator's `llm_api = LLM provider ToS` is unrecognised on
-  purpose, so a run on the LLM back-end resolves to that string; a component missing from
+  purpose, so a run on the LLM back-end gets that string as its label; a component missing from
   `para_config.txt` is logged as `UNKNOWN` and resolves the same way.
 * A run that logs no component at all falls back conservatively to CC BY-NC 4.0.
 

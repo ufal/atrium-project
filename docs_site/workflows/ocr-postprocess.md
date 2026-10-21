@@ -37,16 +37,16 @@ enrichment, and the record feeds keyword extraction.
 
 ## At a glance
 
-|                    |                                                                                                                                                                                                                                                                                                                                                                     |
-|--------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **In**             | ALTO XML (v2–v4) from OCR; the other OCR formats — PAGE XML, hOCR, ABBYY FineReader XML, DjVuXML, Tesseract TSV, OCR JSON; PDF, office, e-mail and plain-text files, as listed in the tool's [input-format reference](https://github.com/ufal/atrium-ocr-postprocess/blob/master/docs/text_inputs.md); for scoring alone, an existing ATRIUM document record (JSON) |
-| **Out**            | per-page ALTO or JSON, and plain text; page statistics (CSV); per-document tables of text lines with their language, quality score and category (CSV); per-page category counts (CSV); for the other formats, a report of what was read (CSV); a paradata log (JSON); optionally the ATRIUM document record (JSON)                                                  |
-| **Runs as**        | a command-line pipeline (`run_pipeline.py`, or one script per step); a container image; an HTTP service image (`POST /process`, which also merges an OCR'd page into a born-digital record, and `POST /score_record` to score the lines of an existing record); an [Agent Skill](../agent-skills.md)                                                                |
-| **Compute**        | the line classification step and the default, layout-aware text extraction are built for a GPU; the service also runs on a CPU and uses a GPU when it finds one; the published images are CPU builds, and a GPU image is built locally from the same Dockerfile                                                                                                     |
-| **Network**        | the Hugging Face Hub for its models on first use; the images already hold the language-identification model                                                                                                                                                                                                                                                         |
-| **Code licence**   | MIT; the vendored alto-tools are Apache-2.0                                                                                                                                                                                                                                                                                                                         |
-| **Output licence** | CC BY-NC 4.0 at minimum, because the language-identification model counts toward every run; CC BY-NC-SA 4.0 when the layout-aware reading-order model orders ALTO lines, as it does by default (see below)                                                                                                                                                          |
-| **Record**         | SSH Open Marketplace tool [`YParYU`](https://marketplace.sshopencloud.eu/tool-or-service/YParYU)                                                                                                                                                                                                                                                                    |
+|                        |                                                                                                                                                                                                                                                                                                                                                                     |
+|------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **In**                 | ALTO XML (v2–v4) from OCR; the other OCR formats — PAGE XML, hOCR, ABBYY FineReader XML, DjVuXML, Tesseract TSV, OCR JSON; PDF, office, e-mail and plain-text files, as listed in the tool's [input-format reference](https://github.com/ufal/atrium-ocr-postprocess/blob/master/docs/text_inputs.md); for scoring alone, an existing ATRIUM document record (JSON) |
+| **Out**                | per-page ALTO or JSON, and plain text; page statistics (CSV); per-document tables of text lines with their language, quality score and category (CSV); per-page category counts (CSV); for the other formats, a report of what was read (CSV); a paradata log (JSON); optionally the ATRIUM document record (JSON)                                                  |
+| **Runs as**            | a command-line pipeline (`run_pipeline.py`, or one script per step); a container image; an HTTP service image (`POST /process`, which also merges an OCR'd page into a born-digital record, and `POST /score_record` to score the lines of an existing record); an [Agent Skill](../agent-skills.md)                                                                |
+| **Compute**            | the line classification step and the default, layout-aware text extraction are built for a GPU; the service also runs on a CPU and uses a GPU when it finds one; the published images are CPU builds, and a GPU image is built locally from the same Dockerfile                                                                                                     |
+| **Network**            | the Hugging Face Hub for its models on first use; the images already hold the language-identification model                                                                                                                                                                                                                                                         |
+| **Code licence**       | MIT; the vendored alto-tools are Apache-2.0                                                                                                                                                                                                                                                                                                                         |
+| **Component licences** | the language-identification model (CC BY-NC 4.0) on every run; the layout-aware reading-order model (CC BY-NC-SA 4.0) when it orders ALTO lines, as it does by default (see below). These do not by themselves set the rights in the output: [Licences and paradata](../ecosystem/licences.md)                                                                      |
+| **Record**             | SSH Open Marketplace tool [`YParYU`](https://marketplace.sshopencloud.eu/tool-or-service/YParYU)                                                                                                                                                                                                                                                                    |
 
 ## Steps
 
@@ -88,15 +88,15 @@ label suggests.
 
 ## Provenance and licence
 
-The steps write paradata logs, and a whole-pipeline run merges them into one run summary
-that records the licence of the output. The service writes no paradata file: every response
-carries its provenance as `paradata`, one Process Run Crate action. The licence is computed
-from the components the run used, as declared in the tool's `setup/para_config.txt`; the most
-restrictive one wins. The language-identification model is CC BY-NC 4.0 and counts toward
-every run, so no output is less restricted than that. The layout-aware reading-order model
-(LayoutLMv3-based) raises a run that uses it to CC BY-NC-SA 4.0; it is the batch pipeline's
-default method for ALTO, and the service orders ALTO uploads with it. The GLM method adds the
-GLM-4 model licence, also non-commercial; the other models and readers are permissive.
+The steps write paradata logs, and a whole-pipeline run merges them into one run summary. The
+service writes no paradata file: every response carries its provenance as `paradata`, one Process
+Run Crate action. The paradata lists the components the run used, each with its licence, as
+declared in the tool's `setup/para_config.txt`. The language-identification model (CC BY-NC 4.0)
+is used on every run. The layout-aware reading-order model (LayoutLMv3-based, CC BY-NC-SA 4.0) is
+the batch pipeline's default method for ALTO, and the service orders ALTO uploads with it. The
+GLM method uses the GLM-4 model, whose licence is also non-commercial; the other models and
+readers are permissive. The computed label in the paradata, the most restrictive of these
+licences, is not the licence of the output: [Licences and paradata](../ecosystem/licences.md).
 
 In the [document record](../ecosystem/document-contract.md) the tool originates the positional
 text layer of a scanned document: the `pages`, `content`, `lines` and `tables` blocks. Its

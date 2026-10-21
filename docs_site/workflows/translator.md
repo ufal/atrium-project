@@ -25,16 +25,16 @@ rendered the same way in every document.
 
 ## At a glance
 
-|                    |                                                                                                                                                                                                                                                                                                    |
-|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **In**             | ALTO XML pages, or any well-formed XML with a list of the fields to translate (XPaths); files, folders or lists of URLs; optionally a vocabulary (CSV)                                                                                                                                             |
-| **Out**            | the translated document (same format); a translation log pairing source and target text (CSV); a paradata log (JSON); the ATRIUM document record (JSON)                                                                                                                                            |
-| **Runs as**        | a command-line tool (`main.py`); a container image; an HTTP service image (`POST /translate`); an [Agent Skill](../agent-skills.md)                                                                                                                                                                |
-| **Compute**        | CPU; a GPU only for a self-hosted translation model (Qwen3.8-27B was measured on one 96 GB GPU)                                                                                                                                                                                                    |
-| **Network**        | the LINDAT translation service (the default backend) and the LINDAT UDPipe service (vocabulary matching), or the server of a language-model backend; the Hugging Face Hub for the language-identification model on first use; GitHub when the vocabulary is fetched from keyword-extract's release |
-| **Code licence**   | MIT                                                                                                                                                                                                                                                                                                |
-| **Output licence** | computed per run: a default run is CC BY-NC-SA 4.0; a permissive run can be assembled (see below)                                                                                                                                                                                                  |
-| **Records**        | SSH Open Marketplace tool [`CizIUW`](https://marketplace.sshopencloud.eu/tool-or-service/CizIUW) and workflow [`13eHAZ`](https://marketplace.sshopencloud.eu/workflow/13eHAZ)                                                                                                                      |
+|                        |                                                                                                                                                                                                                                                                                                                                                                 |
+|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **In**                 | ALTO XML pages, or any well-formed XML with a list of the fields to translate (XPaths); files, folders or lists of URLs; optionally a vocabulary (CSV)                                                                                                                                                                                                          |
+| **Out**                | the translated document (same format); a translation log pairing source and target text (CSV); a paradata log (JSON); the ATRIUM document record (JSON)                                                                                                                                                                                                         |
+| **Runs as**            | a command-line tool (`main.py`); a container image; an HTTP service image (`POST /translate`); an [Agent Skill](../agent-skills.md)                                                                                                                                                                                                                             |
+| **Compute**            | CPU; a GPU only for a self-hosted translation model (Qwen3.8-27B was measured on one 96 GB GPU)                                                                                                                                                                                                                                                                 |
+| **Network**            | the LINDAT translation service (the default backend) and the LINDAT UDPipe service (vocabulary matching), or the server of a language-model backend; the Hugging Face Hub for the language-identification model on first use; GitHub when the vocabulary is fetched from keyword-extract's release                                                              |
+| **Code licence**       | MIT                                                                                                                                                                                                                                                                                                                                                             |
+| **Component licences** | a default run uses CUBBITT through the LINDAT service (a CC BY-NC-SA 4.0 model, under LINDAT's terms of use) and, when the source language is detected, FastText (CC BY-NC 4.0); a run with only permissive components can be assembled (see below). These do not by themselves set the rights in the output: [Licences and paradata](../ecosystem/licences.md) |
+| **Records**            | SSH Open Marketplace tool [`CizIUW`](https://marketplace.sshopencloud.eu/tool-or-service/CizIUW) and workflow [`13eHAZ`](https://marketplace.sshopencloud.eu/workflow/13eHAZ)                                                                                                                                                                                   |
 
 ## Steps
 
@@ -99,11 +99,10 @@ refers to it.
 ## Provenance and licence
 
 Each run writes `<stamp>_translator.json`, the paradata log; the service returns the same
-provenance in its response instead of writing a file. The licence of the run is computed from
-the components it actually used, as declared in the tool's `para_config.txt`; the most
-restrictive one wins:
+provenance in its response instead of writing a file. The paradata lists the components the run
+actually used, each with its licence or terms, as declared in the tool's `para_config.txt`:
 
-| Component                                                         | Licence                   | Counts when                                                 |
+| Component                                                         | Licence                   | Used when                                                   |
 |-------------------------------------------------------------------|---------------------------|-------------------------------------------------------------|
 | language-identification model, FastText (`fasttext`)              | CC BY-NC 4.0              | the source language is detected, not given                  |
 | LINDAT translation, CUBBITT (`lindat_cubbitt`)                    | CC BY-NC-SA 4.0           | the default backend, `lindat`, is used                      |
@@ -116,13 +115,15 @@ restrictive one wins:
 | NLLB-200 (`nllb200`)                                              | CC BY-NC 4.0              | a `ct2` NLLB-200 model                                      |
 | Opus-MT (`opus_mt`)                                               | CC BY 4.0                 | a `ct2` Opus-MT model                                       |
 
-"LLM provider ToS" is not a licence the resolver knows, so it counts as the most restrictive.
+A hosted language-model API is recorded with its provider's terms of service (`LLM provider ToS`).
+The paradata's computed label, the most restrictive of the licences listed, treats terms it does not
+know as the most restrictive. The label is not the licence of the output: [Licences and paradata](../ecosystem/licences.md).
 
-**A permissive run** needs both: a self-hosted model under a permissive licence and the source
+**A run with only permissive components** needs both: a self-hosted model under a permissive licence and the source
 language named explicitly. The recommended model is Qwen3.8-27B through `openai_compatible`,
 recorded with `LLM_LICENSE_COMPONENT=qwen3_8`; a `ct2` model of the EuroLLM, MADLAD-400 or
 Opus-MT family also qualifies. The AMČR and TEATER vocabularies are CC0 and do not stand in its
-way. How the licence is resolved is on
+way. How the label is computed is on
 [Reference → Licence](../tools/translator/reference.md#licence-is-computed-not-declared).
 
 In the [document record](../ecosystem/document-contract.md) the tool owns the `translations`

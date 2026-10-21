@@ -132,6 +132,7 @@ nav:
       - Architecture: ecosystem/architecture.md
       - Repository map: ecosystem/repository-map.md
       - The document contract: ecosystem/document-contract.md
+      - Licences and paradata: ecosystem/licences.md
   - Contracts:
       - RO-Crate export: contracts/rocrate.md
       - SKOS & the ATRIUM vocabulary: contracts/skos.md

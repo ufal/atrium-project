@@ -149,11 +149,13 @@ this axis.
 
 ## Licence — computed per run, not declared
 
-Every component carries a licence and a condition, and the paradata records what the run
-resolved to — as does every document record the run writes. A **default run resolves to
-CC BY-NC-SA 4.0**, because CUBBITT's models are CC BY-NC-SA and FastText's weights are
-CC BY-NC. A permissive run is possible but has to be assembled deliberately — see
-[Reference](reference.md#licence-is-computed-not-declared).
+Every component carries a licence and a condition. The paradata lists the components a run used
+and computes one label from them, the most restrictive licence, and every document record the run
+writes carries that label. A **default run's label is CC BY-NC-SA 4.0**, because CUBBITT's models
+are CC BY-NC-SA and FastText's weights are CC BY-NC. A run with only permissive components is
+possible but has to be assembled deliberately — see
+[Reference](reference.md#licence-is-computed-not-declared). The label is not the licence of the
+translation: [Licences and paradata](../../ecosystem/licences.md).
 
 ## Where to go next
 

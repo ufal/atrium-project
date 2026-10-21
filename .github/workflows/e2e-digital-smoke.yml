@@ -576,6 +576,25 @@ jobs:
             expect 422 ocr_text_layer work/api/ocr_layer.json "$code"
           fi
 
+      # atrium-project#81 (policy rule 8) and #77: which build of each image ran, by digest.
+      - name: Record the images of this run
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          python3 tools/e2e/e2e_manifest.py --lane digital --tag "$IMAGE_TAG" --status "$JOB_STATUS" \
+            --image "${DIGITAL_IMAGE}:${IMAGE_TAG}" \
+            --image "${API_IMAGE}:${IMAGE_TAG}" \
+            --out work/e2e-manifest.json --summary "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the image manifest
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-manifest-digital
+          path: work/e2e-manifest.json
+          if-no-files-found: warn
+
       - name: Upload records on failure
         if: failure()
         uses: actions/upload-artifact@v7

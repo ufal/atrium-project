@@ -262,11 +262,12 @@ actually resolved to.
 | `lindat_dataset` | CC BY-NC 4.0 | conditional — only when training |
 | `ultralytics`    | AGPL-3.0     | conditional — only with `--yolo` |
 
-So an inference or evaluation run is **MIT**; `--train` pulls in the LINDAT dataset and
-the run resolves to **CC BY-NC 4.0** — non-commercial, not share-alike. A `--yolo` run adds
-Ultralytics: an inference run with it resolves to **AGPL-3.0**, and with `--train` the
-resolver ranks CC BY-NC 4.0 above it. The rule — the most restrictive component wins — is
-the shared `para_licenses.py`, the same in every ATRIUM tool.
+So an inference or evaluation run's computed label is **MIT**; `--train` uses the LINDAT dataset,
+and the label is **CC BY-NC 4.0** — non-commercial, not share-alike. A `--yolo` run adds
+Ultralytics: an inference run with it gets **AGPL-3.0**, and with `--train` the computation ranks
+CC BY-NC 4.0 above it. The rule — the most restrictive component sets the label — is the shared
+`para_licenses.py`, the same in every ATRIUM tool. The label is not the licence of the output:
+[Licences and paradata](../../ecosystem/licences.md).
 
 ## Sources
 

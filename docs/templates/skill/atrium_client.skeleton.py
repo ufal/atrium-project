@@ -192,8 +192,17 @@ def print_table(rows: list[tuple], as_csv: bool) -> None:
     raise NotImplementedError("<render rows>")
 
 
+class UsageParser(argparse.ArgumentParser):
+    """argparse exits 2 on a usage error; the client contract keeps 2 for "server unreachable"."""
+
+    def error(self, message):
+        self.print_usage(sys.stderr)
+        print(f"{self.prog}: error: {message}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = UsageParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("files", nargs="*", help="<input files description>")
     parser.add_argument(
         "--base-url", default=DEFAULT_BASE_URL, help=f"API base URL (default: {DEFAULT_BASE_URL}, env: ATRIUM_<XX>_URL)"

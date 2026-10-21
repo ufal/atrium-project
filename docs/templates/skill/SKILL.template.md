@@ -69,8 +69,9 @@ ZIP workspaces) land; what goes to stderr>
 4. For full request/response schemas, fetch `GET /openapi.json` from the running server
    (Swagger UI at `/docs`).
 5. Exit code `2` (unreachable): start the server (`bash scripts/server.sh`) and retry once.
-   Exit code `3` (server error): the client already retried 502/503/504 3× — check
-   `GET /health?deep=true` and server logs, do not loop.
+   Exit code `3` (server error): the client already retried a 503 or 504, and a 502 that is
+   not final (`upstream_unavailable` or a proxy's page), 3× — check `GET /health?deep=true`
+   and server logs, do not loop.
 6. <busy handling — HTTP 429 → async jobs / retry later, if the service has a concurrency
    guard>
 7. <size-limit handling — what to split/downscale, and tell the user you did so>

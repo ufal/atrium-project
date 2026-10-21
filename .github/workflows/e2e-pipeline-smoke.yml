@@ -625,6 +625,31 @@ jobs:
           echo "Paradata files: ${#PARADATA[@]}"
           python tools/ci/rocrate_check.py --record "$FINAL" --paradata "${PARADATA[@]}" --out work/crate
 
+      # atrium-project#81 (policy rule 8) and #77: which build of each image ran, by digest. The
+      # manifest of a green run at a version tag is the set proposed to AMČR for the pilot.
+      - name: Record the images of this run
+        if: always()
+        env:
+          IMAGE_TAG: ${{ inputs.image-tag || 'latest' }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          python3 tools/e2e/e2e_manifest.py --lane pipeline --tag "$IMAGE_TAG" --status "$JOB_STATUS" \
+            --image "ghcr.io/ufal/atrium-page-classification:$IMAGE_TAG" \
+            --image "ghcr.io/ufal/atrium-ocr-postprocess:$IMAGE_TAG" \
+            --image "ghcr.io/ufal/atrium-translator:$IMAGE_TAG" \
+            --image "ghcr.io/ufal/atrium-nlp-enrich:$IMAGE_TAG" \
+            --image "ghcr.io/ufal/atrium-keyword-extract-api:$IMAGE_TAG" \
+            --info "ghcr.io/ufal/atrium-keyword-extract-api:$IMAGE_TAG=work/keywords_stat_info.json" \
+            --out work/e2e-manifest.json --summary "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the image manifest
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-manifest-pipeline
+          path: work/e2e-manifest.json
+          if-no-files-found: warn
+
       - name: Upload Pipeline Artifacts
         if: failure()
         uses: actions/upload-artifact@v7

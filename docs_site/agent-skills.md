@@ -25,7 +25,7 @@ HTTP service:
 |----------------------------|----------------------------------------------------------------------------------------------------------------------------|
 | `SKILL.md`                 | the instructions the agent reads: when to use the skill, how to start the server, how to call it, what to do on each error |
 | `scripts/atrium_<verb>.py` | a **zero-dependency client** — Python standard library only — that uploads files to the service and prints the result      |
-| `scripts/server.sh`        | starts the service (Docker Compose, or a local `uvicorn`) and waits until it answers                                       |
+| `scripts/server.sh`        | starts the service (Docker Compose, or a local `uvicorn`) and waits until `GET /ready` answers                             |
 
 The agent never imports the tool's code. It starts the service, then talks to it over HTTP —
 which is what lets the same client point at a hosted instance by changing one environment
@@ -127,14 +127,15 @@ branch adds a small demonstration web page at `/frontend`.
     check that the returned XML parses and report its path rather than pasting it; split anything
     over 50 MB. There is no GPU mode — the model runs at LINDAT, not here.
 
-Both clients share one contract: **exit `0`** success · **`1`** a file not found or nothing
-produced · **`2`** server unreachable · **`3`** HTTP error after retries. On `503` or `504`
+Both clients share one contract: **exit `0`** success · **`1`** a usage error, a file not found
+or nothing produced · **`2`** server unreachable · **`3`** HTTP error after retries. On `503` or `504`
 they try **three times in total, ten seconds apart**, and on a `502` that is not final: one with
 `reason: upstream_unavailable` (a backing service such as LINDAT did not answer), or a proxy's page.
 A `502` with `reason: null` (an input that produced nothing) fails the same way again, so it is
 reported at once. The [client skeleton](https://github.com/ufal/atrium-project/blob/test/docs/templates/skill/atrium_client.skeleton.py)
-carries the rule as `RETRY_502_REASONS`; the two published clients (September 2026) predate it and
-retry every `502`. Every call uses one timeout — 300 s for the classifier, 900 s for the translator.
+carries the rule as `RETRY_502_REASONS`, and the clients of all six branches follow it (October 2026);
+the clients published in September predate it and retry every `502`. Every call uses one timeout —
+300 s for the classifier, 900 s for the translator.
 
 ## Installing
 

@@ -96,13 +96,13 @@ flowchart LR
 
 Who may write what is declared once, in the hub-canonical `BLOCK_OWNERS`:
 
-| Block                                 | Owner                                                                   |
-|---------------------------------------|-------------------------------------------------------------------------|
-| `pages`, `content`, `lines`, `tables` | `ocr-postprocess` **or** `digital-convert`, decided by `source.origin`  |
-| `page_categories`                     | `page-classification`                                                   |
-| `translations`                        | `translator`                                                            |
-| `entities`                            | `nlp-enrich`                                                            |
-| `enrichment`, `forms`                 | `keyword-extract` (`llm-enrich` in older records)                       |
+| Block                                 | Owner                                                                  |
+|---------------------------------------|------------------------------------------------------------------------|
+| `pages`, `content`, `lines`, `tables` | `ocr-postprocess` **or** `digital-convert`, decided by `source.origin` |
+| `page_categories`                     | `page-classification`                                                  |
+| `translations`                        | `translator`                                                           |
+| `entities`                            | `nlp-enrich`                                                           |
+| `enrichment`, `forms`                 | `keyword-extract` (`llm-enrich` in older records)                      |
 
 That table authorises **writes**. The read-time answer to "who wrote this block in *this*
 record" is `assembled.blocks[<block>].program`, and for a field-split block
@@ -176,14 +176,14 @@ Dockerfile as its batch image, and every one exposes the same meta-contract:
 One image per repository is the **production service** of its stage — the one a deployment
 runs; the repository's other images are the batch form of the same stage or research tools:
 
-| Stage                                     | Production image                              |
-|-------------------------------------------|-----------------------------------------------|
-| page categories                           | `ghcr.io/ufal/atrium-page-classification-api` |
-| OCR output and text files → scored lines  | `ghcr.io/ufal/atrium-ocr-postprocess-api`     |
-| morphology, named entities, TEITOK        | `ghcr.io/ufal/atrium-nlp-enrich-api`          |
-| keywords, statistical and controlled      | `ghcr.io/ufal/atrium-keyword-extract-api`     |
-| English metadata                          | `ghcr.io/ufal/atrium-translator-api`          |
-| born-digital files → the record           | `ghcr.io/ufal/atrium-digital-convert-api`     |
+| Stage                                    | Production image                              |
+|------------------------------------------|-----------------------------------------------|
+| page categories                          | `ghcr.io/ufal/atrium-page-classification-api` |
+| OCR output and text files → scored lines | `ghcr.io/ufal/atrium-ocr-postprocess-api`     |
+| morphology, named entities, TEITOK       | `ghcr.io/ufal/atrium-nlp-enrich-api`          |
+| keywords, statistical and controlled     | `ghcr.io/ufal/atrium-keyword-extract-api`     |
+| English metadata                         | `ghcr.io/ufal/atrium-translator-api`          |
+| born-digital files → the record          | `ghcr.io/ufal/atrium-digital-convert-api`     |
 
 The born-digital converter, digital-convert, also runs as a command-line image (`-digital`). Its
 service, `api-digital` (since v1.1.0-beta), has `POST /reformat` for the AMČR route, which calls no
@@ -311,7 +311,7 @@ given `--vocabulary`.
 | 3 | Merge and write | TEATER first, then AMCR over it, so **AMCR wins** a collision. Keys are lower-cased and rows sorted, so a re-harvest gives a stable diff. Five columns: `source_lemma, target_translation, source, source_id, uri`. Nothing harvested → exit `2`, and the existing file is left alone; `--skip-amcr` together with `--skip-teater` is refused as a usage error                                                                                                                                                                                            |
 | 4 | Load            | `processors/vocab.py` reads the 2-column form or the 5-column one, with or without a header row. A later duplicate key wins. An unreadable file prints a warning and loads **nothing** — the run carries on without a vocabulary                                                                                                                                                                                                                                                                                                                          |
 | 5 | Tag and protect | Before each translation call: multi-word phrases, longest first, case-insensitive, whole words only — **every occurrence** gets its own sentinel; then single words by UDPipe lemma (only for languages with a UDPipe model), **skipping plural tokens** so the model can inflect the English. Each match becomes an `Xtermzzz<N>z` sentinel; after translation it is restored — exact, then case-insensitive, then fuzzy — as the agreed term                                                                                                            |
-| 6 | Account         | Paradata records `vocabulary_protected_terms` per document plus a total, and the run's licence gains `udpipe2_engine`, `udpipe2_models`, `amcr_vocab` and `teater_data`                                                                                                                                                                                                                                                                                                                                                                                   |
+| 6 | Account         | Paradata records `vocabulary_protected_terms` per document plus a total, and the run's component list gains `udpipe2_engine`, `udpipe2_models`, `amcr_vocab` and `teater_data`                                                                                                                                                                                                                                                                                                                                                                            |
 
 **Outputs.** `data_samples/vocabulary.csv` (the default `--out`), and translated documents in
 which every protected term carries its agreed rendering.
@@ -319,10 +319,10 @@ which every protected term carries its agreed rendering.
 **What the user actually gets.** Consistent terminology across every translated document, with
 a count of protected terms per document in the paradata, and a glossary whose every row points
 back at the thesaurus concept it came from. Both vocabularies are **CC0** (the AMČR rights holder's
-statement of 28 September 2026, atrium-project#6), so they never make a run more restrictive: a
-LINDAT run resolves to **CC BY-NC-SA 4.0**, determined by CUBBITT and the UDPipe models, and a run
-on a permissively licensed self-hosted model with a named source language resolves to that model's
-licence.
+statement of 28 September 2026, atrium-project#6), so they never raise the run's computed licence
+label: a LINDAT run's label is **CC BY-NC-SA 4.0**, set by CUBBITT and the UDPipe models, and a run
+on a permissively licensed self-hosted model with a named source language gets that model's licence
+as its label. The label is not the licence of the translation ([Licences and paradata](ecosystem/licences.md)).
 
 **Worth knowing.** The same Czech label can recur across AMCR's keyword lists, so the number
 of pairs is smaller than the number of AMCR records. The glossary is written in the five-column

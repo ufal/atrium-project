@@ -219,12 +219,14 @@ processing](https://arxiv.org/abs/2507.21114)** (arXiv 2507.21114).
 
 ## Licence, and how it is computed
 
-Repository code is **MIT**. The licence of a *run*, though, is resolved from the
-components that run actually touched, and recorded in the paradata:
+Repository code is **MIT**. The paradata of each run lists the components it actually used, with
+their licences, and computes one label from them, the most restrictive:
 
-* an inference or evaluation run resolves to **MIT**;
-* `--train` pulls in the LINDAT dataset and resolves to **CC BY-NC 4.0**;
-* `--yolo` adds Ultralytics, and an inference run with it resolves to **AGPL-3.0**.
+* an inference or evaluation run's label is **MIT**;
+* `--train` uses the LINDAT dataset, and its label is **CC BY-NC 4.0**;
+* `--yolo` adds Ultralytics, and an inference run with it gets **AGPL-3.0**.
+
+The label is not the licence of the output: [Licences and paradata](../../ecosystem/licences.md).
 
 See [Reference → Licence resolution](reference.md#licence-resolution).
 
