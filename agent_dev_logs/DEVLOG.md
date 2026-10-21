@@ -2561,3 +2561,10 @@ Against `test` `a38ae4d` and every `agent-skill` head of 12:29–12:53 (the roun
   keyword-extract archives to push after it).
 - **Left out:** a response field for page-classification's reduced ensemble (an API decision; asked on #77); the
   daily LINDAT lane (#78); the schema text for `none` (dc #5, class c).
+
+## 2026-10-21 (evening) — #13: Session 11, not 38; page-classification's v1.9.6-beta images held by the CVE gate
+- **#13:** the talk ("Digitized Yet Hidden: FAIRifying Archaeological Archives through Vision and Language Models",
+  slides `10.5281/zenodo.19500212`) was in **Session 11**, "Reframing Cultural Properties Rather than as ‘Relics of
+  the Past’", organised by Fujita Haruhiro and Kawano Kazutaka (Kate; the presentation file is titled "(S11)").
+  Round 2's Session 38 and its chairs came from the ARIADNE/ATRIUM calls and were wrong. Letters 1 and 3, the
+  digest, the plan and the brief now name Session 11 and its organisers, and the talk title is filled in.
