@@ -173,28 +173,27 @@ Two alternatives sit beside the main line:
 
 ## How well it works
 
-Measured on the 5,449-page evaluation set, for the `v*.3` generation. That set was meant to hold only
-pages no fold trained on, but the script that selected it missed zero-padded page numbers and ids
-with a letter, so most of its pages were training pages
-([atrium-project#15](https://github.com/ufal/atrium-project/issues/15)). A re-run of the `v*.4`
-models on the test sets of the LINDAT dataset replaces these figures.
+Each of the five `v*.4` models — what `--best` and `version=all` use — scored on the test partition of the fold it
+was trained on, as published in the LINDAT record: pages it never saw in training (2026-10-22,
+[atrium-project#15](https://github.com/ufal/atrium-project/issues/15)).
 
-| Base model                               | Revision | Top-1       | Top-3       | Note                     |
-|------------------------------------------|----------|-------------|-------------|--------------------------|
-| `timm/regnety_160.swag_ft_in1k`          | `v4.3`   | **99.16 %** | **100.0 %** | best, and small          |
-| `google/vit-large-patch16-384`           | `v5.3`   | 99.12 %     | 99.94 %     | best of the large models |
-| `google/vit-base-patch16-384`            | `v3.3`   | 98.92 %     | 99.98 %     |                          |
-| `timm/tf_efficientnetv2_m.in21k_ft_in1k` | `v1.3`   | 98.83 %     | 99.78 %     |                          |
-| `google/vit-base-patch16-224`            | `v2.3`   | 98.79 %     | 99.96 %     | smallest of the five     |
+| Base model                               | Revision | Fold | Top-1       | Top-3   | Top-1, unseen documents |
+|------------------------------------------|----------|------|-------------|---------|-------------------------|
+| `timm/tf_efficientnetv2_m.in21k_ft_in1k` | `v1.4`   | 1    | **95.87 %** | 99.90 % | 95.60 %                 |
+| `timm/regnety_160.swag_ft_in1k`          | `v4.4`   | 1    | **95.81 %** | 99.79 % | 95.19 %                 |
+| `google/vit-large-patch16-384`           | `v5.4`   | 2    | 95.58 %     | 99.75 % | 95.29 %                 |
+| `google/vit-base-patch16-384`            | `v3.4`   | 2    | 95.49 %     | 99.77 % | 94.96 %                 |
+| `google/vit-base-patch16-224`            | `v2.4`   | 5    | 94.64 %     | 99.81 % | 93.87 %                 |
 
-These five were chosen from a sweep of twelve base models — including the DiT family,
-RegNetY-120 and -640, and EfficientNetV2-S and -L — all trained and tested on the same data.
+About 4,800 test pages per fold; the 95 % intervals are about ±0.6 points, and the models on the same fold do not
+differ significantly. The split is by page, so a quarter of the test pages come from documents with other pages in
+training; the last column leaves those out. The provenance and the figures by group are in the repository's
+[`result/README.md`](https://github.com/ufal/atrium-page-classification/blob/test/result/README.md).
 
-!!! note "The `v*.4` generation"
-    The figures above describe `v*.3`. The `v*.4` models — what `--best` and
-    `version=all` use — are the same five base models trained the same way on the
-    CC BY-NC 4.0 subset described above; [History](history.md#2026-06--08--retraining-on-the-licensed-dataset-15)
-    records how the two generations compare.
+These five were chosen from a sweep of twelve base models in 2025 — including the DiT family, RegNetY-120 and -640,
+and EfficientNetV2-S and -L. The sweep's figures (98–99 %, e.g. 99.16 % for `v4.3`) were measured on a 5,449-page
+set whose selection script missed zero-padded page numbers and ids with a letter, so most of its pages were training
+pages. They also chose each base model's fold, and they are not held-out accuracy.
 
 Where the models do go wrong, it is mostly between neighbouring categories — `TEXT`
 against `TEXT_T` above all, whose pages often look alike. Averaging fold models or

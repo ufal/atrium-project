@@ -211,11 +211,10 @@ service warms revisions `v1.4`–`v5.4`, the five-model canonical ensemble. Revi
 pre-trained with Meta's SWAG weakly-supervised method and fine-tuned on ImageNet-1k. About
 84 M parameters.
 
-**Where ATRIUM uses it.** The default `[SETUP] base_model`, and the base of the best-performing
-published revision — `v4.3` at 99.16 % top-1 and 100 % top-3 (on a set that overlaps the training
-data; see [the classifier's page](tools/page-classification/index.md#how-well-it-works)). It is also what the E2E smoke
-test passes as `-m`. Notable because it beats every ViT variant tried while being a quarter the
-size of the largest.
+**Where ATRIUM uses it.** The default `[SETUP] base_model`, and the base of the published revisions
+`v4.3` and `v4.4` — `v4.4` at 95.81 % top-1 and 99.79 % top-3 on its held-out fold (see
+[the classifier's page](tools/page-classification/index.md#how-well-it-works)). It is also what the E2E smoke
+test passes as `-m`. Notable because it matches the ViT variants while being a quarter the size of the largest.
 
 **Onward:** <https://huggingface.co/timm/regnety_160.swag_ft_in1k>
 

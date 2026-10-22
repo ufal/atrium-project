@@ -2568,3 +2568,20 @@ Against `test` `a38ae4d` and every `agent-skill` head of 12:29–12:53 (the roun
   the Past’", organised by Fujita Haruhiro and Kawano Kazutaka (Kate; the presentation file is titled "(S11)").
   Round 2's Session 38 and its chairs came from the ARIADNE/ATRIUM calls and were wrong. Letters 1 and 3, the
   digest, the plan and the brief now name Session 11 and its organisers, and the talk title is filled in.
+
+## 2026-10-22 — #15, #13: the vX.4 results; the old figures' problems; page-classification v1.9.9-beta
+- **The run** (page-classification job 7271549, `v1.9.8-beta`): each `vX.4` model on its fold's test pages of the
+  LINDAT record. Top-1 94.64–95.87 % (95 % intervals about ±0.6), unseen documents 93.87–95.60 %, top-3
+  99.75–99.90 %, no page in training; models on the same fold do not differ (McNemar p = 0.86 and 0.76).
+- **The old figures**, checked against the files preserved at page-classification `789ff04`:
+  - every `vX.3` figure is the 2025 sweep's on the 5,449-page set, which also chose each base model's fold;
+  - README text and plots disagreed (`v4.3` 99.16 % against 98.92 %, `v1.3` 98.83 % against 96.81 %);
+  - the brief's "shifted labels" was wrong, and is corrected in `plans/15.revision_brief.md` §1.
+- **Docs:**
+  - `docs_site/tools/page-classification/index.md` "How well it works" now has the held-out table;
+  - `docs_site/external-tools.md` RegNetY-160 has `v4.4`'s figure;
+  - the #15 and #13 digests and plans carry the figures, pending the co-authors' review (motyc, 10-22).
+
+  `mkdocs build --strict` passes. Comments for #15 and #13 and a refined Hugging Face model card are drafted in chat.
+- **page-classification v1.9.9-beta** (prepared): the documentation in `result/README.md`, and evaluation paradata
+  that counts pages and declares the dataset.
