@@ -2585,3 +2585,29 @@ Against `test` `a38ae4d` and every `agent-skill` head of 12:29–12:53 (the roun
   `mkdocs build --strict` passes. Comments for #15 and #13 and a refined Hugging Face model card are drafted in chat.
 - **page-classification v1.9.9-beta** (prepared): the documentation in `result/README.md`, and evaluation paradata
   that counts pages and declares the dataset.
+
+## 2026-10-22 (round 4) — motyc's decisions of 21–22 October built: #81, #6, #51, #77, #78, #79, #82
+- **#81:** `docker-tool.reusable.yml` gains `release-gate` (a failed or missing probe stops push and promotion),
+  `simulate-probe-failure` (the demonstration), the probe on `workflow_dispatch`, and an `images` job whose
+  `images-json` output names each promoted image by digest; digital-convert's `release.yml` uses them first.
+  `.github/actions/lane-failure-issue` (11 tests) keeps one issue per failing scheduled lane; the E2E lanes,
+  `all-repos-smoke`, the smoke template and the six tools' scheduled lanes use it. `ci_policy.md`,
+  `release_trust.md`, the roadmap, `docker_gha.md`.
+- **#6:** the proposal is approved: `scope` and `basis` mandatory, AMČR's per-document permission
+  (aiscr-webamcr#2590), the record and paradata migrations apart; the draft schema follows. The output-licence
+  correction is held (RO-Crate 1.2 requires the root `license`), asked on #6.
+- **#51:** option 1; `atrium_vocab.py` reads no theme from a record field, two shared tests, V-5 closed, the SKOS
+  page and a schema changelog line; re-vendored into the six tools.
+- **#77, translator#46:** the pilot page (11 November for the images, acceptance in the second half of November
+  with @rharasim, 250 MB, nlp-enrich's `/jobs`); the acceptance runbook's translator metadata run; the K8s pages at
+  250 MB. page-classification `v1.9.9-beta` carries `models_used`.
+- **#78:** translator's `lindat-daily.yml` (24 identical requests, numbers and target language checked), in
+  `ci_policy.md` and the architecture page.
+- **#79:** digital-convert and keyword-extract on the README skeleton, with relocation maps; the workflow pages
+  point to their documentation maps; the landing-card titles; the README template names LINDAT/CLARIAH-CZ and AIS
+  CR; the next round (nlp-enrich, the hub's two tool sections) planned in `79.plan.md`.
+- **#82:** the rollback check's three files prepared for a temporary digital-convert branch.
+- **Pushing:** the tools' archives were pushed before this one, so their para-drift and digital-convert's lint stay
+  red until `v1` moves here; page-classification's README, CONTRIBUTING and DEVLOG of `c91665b` were overwritten
+  by this round's whole files and are merged back in a corrective archive.
+- Digests 6, 51, 77, 78, 79, 81, 82 and plans 6, 51, 77, 78, 79, 81, 82 updated.

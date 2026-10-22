@@ -21,7 +21,8 @@ its own name, and the keyword extraction that llm-enrich also did moved to
     it reads and writes, and the licence floor of its output. The converter's engines and
     options, the rules that route a page, and the service's limits and settings with their
     defaults are documented with the code — in the tool's
-    [README](https://github.com/ufal/atrium-digital-convert#readme) and its
+    [README](https://github.com/ufal/atrium-digital-convert#readme), whose documentation map leads to its usage, configuration
+    and how-it-works pages, and its
     [service README](https://github.com/ufal/atrium-digital-convert/blob/main/service/README.md#limits) —
     because they change as the rules are calibrated on AMČR documents.
 
@@ -90,8 +91,9 @@ when its own part of the record comes back unchanged. The program id in the reco
   other service: in the AMČR deployment Temporal chains the stages.
 * **The OCR hand-off** — [Pipelines → W3](../pipelines.md#other-workflows). Pages flagged
   `needs_ocr` go to the ATR service. `/describe` refines that list in `summary.reacquire_pages`:
-  it leaves out drawings and photographs, sends handwriting to HTR, and adds decoding pages that
-  lose letters or whose prose the quality model rejects. ocr-postprocess then merges the ATR ALTO
+  it leaves out drawings and photographs, sends handwriting to HTR, and adds decoding pages whose
+  prose the quality model rejects. A page that loses letters to unmapped glyphs is flagged in the
+  record itself since v1.2.2-beta (`garbled`), and goes to OCR whatever its page type. ocr-postprocess then merges the ATR ALTO
   of each flagged page back into the same record, page by page; the born-digital pages stay as
   the converter wrote them.
 * **What follows it.** The record goes on to [nlp-enrich](nlp-enrich.md) and

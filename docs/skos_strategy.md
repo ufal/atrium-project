@@ -29,7 +29,8 @@ Decisions fixed at planning time:
 
 Five tools exchange one JSON record, and several of its fields carry controlled terms **as bare
 strings**: `pages[].category`, `page_categories`, `lines[].categ`, `pages[].quality_band`,
-`entities[].type_teitok`, `entities[].type_cnec`, `enrichment.items[].teater_category`. Each label
+`entities[].type_teitok`, `entities[].type_cnec`, and `enrichment.items[].teater_category`, which
+holds an AMČR/TEATER source label rather than an ATRIUM term ([V-5](#v-5--teater_category-is-a-source-label-closed)). Each label
 set is declared in a different repository in a different form — a Python list, a set of `return`
 statements, a JSON config, a dict literal — and until now nothing reconciled them.
 
@@ -297,37 +298,43 @@ Also found and **not** fixed, since both predate this work and are out of scope:
 `_download_and_parse_export()` is a stub returning `{}`, and the `main()`/CLI that
 `atrium-translator/README.md:341-369` documents does not exist in the file.
 
-### V-5 — `teater_category` is a source label, and two consumers read it as a theme mitigated
+### V-5 — `teater_category` is a source label closed
 
-Found on 2026-09-16 while wiring F6. `CONCEPT_SCHEMES["theme"]` declares its field as
-`enrichment.items[].teater_category` **"(indirectly, via the facet)"** — the eleven themes are
-ATRIUM's own editorial grouping, and the parenthesis is doing load-bearing work. Production drops
-it: `llm_client_shared.py:269` writes the model's raw **source** label (`kostel`), never a theme.
+Found on 2026-09-16 while wiring F6. `CONCEPT_SCHEMES["theme"]` declared its field as
+`enrichment.items[].teater_category` "(indirectly, via the facet)", while production writes the model's
+raw **source** label (`kostel`), never one of the eleven themes. Two consumers read the field as a theme:
+`atrium_vocab.validate_labels("theme", …)` would report every real value as unknown, and
+`atrium_rocrate.CONTROLLED_TERMS` mapped it to the theme scheme, so the crate minted
+`https://w3id.org/atrium/theme/kostel` for an AMČR concept. The crate was corrected on 2026-10-13: each
+concept in `enrichment.items[].teater_category_ids` keeps its source URI (`kostel` is
+`https://api.aiscr.cz/id/HES-000021` and `https://teater.aiscr.cz/id/1333`), an item without ids contributes
+no term, and the label is never minted.
 
-Two consumers then read the field as if it held a theme directly:
+**Decided on 2026-10-22** (motyc, [#51](https://github.com/ufal/atrium-project/issues/51)): option 1, for a
+semantic reason, not only compatibility. The AMČR/TEATER terms and the ATRIUM themes are different levels of
+information and are not substituted for each other.
 
-* `atrium_vocab.validate_labels("theme", …)` reports every real value as unknown — an advisory
-  that cries wolf on correct data, which is how it came to be ignored;
-* `atrium_rocrate.CONTROLLED_TERMS` mapped it to the `theme` scheme, so the crate minted
-  `https://w3id.org/atrium/theme/kostel`: an ATRIUM-authored identifier for an **AMCR** concept,
-  against §3's rule that ATRIUM mints nothing for a harvested concept, and one that resolves to
-  nothing beside the real URI.
+1. `teater_category` keeps the selected AMČR/TEATER label, or the meta-text sentinel. The name is historical;
+   changing the field's meaning would be worse than keeping it.
+2. `teater_category_ids` keeps the source identities; nothing ATRIUM-minted replaces them, and the crate keeps
+   naming them by their source URIs.
+3. The registry no longer implies a theme there: the theme scheme's `fields` is empty, and its description
+   says a theme is a derived classification. A selected term is validated against the versioned vocabulary
+   offered to the model, with its sentinel (keyword-extract's `TermEnum` and `_assert_vocabulary_reached_the_model`),
+   never against the themes.
+4. A theme is placed from the vocabulary's curated taxonomy (`HESLAR_TO_THEME`, `TEATER_BRANCH_TO_THEME`)
+   when it is needed, never from a bare label: several concepts share a label, and one label can mean
+   different things. Persisting a theme in the record would be a new, optional, explicitly derived field
+   with a versioned taxonomy reference; it is not added now.
+5. No change to keyword-extract's output, to the field's definition or to the schema version.
 
-**Mitigated, not closed — on 2026-10-13, not 2026-09-16.** This section said on 2026-09-16 that
-the crate preferred the source URI; the code never did, and kept minting
-`https://w3id.org/atrium/theme/<label>` until the shared round of 2026-10-13. Since then
-`document_crate()` names each concept in `enrichment.items[].teater_category_ids` (written by
-keyword-extract, declared in the schema the same day) by its source URI, so `kostel` is
-`https://api.aiscr.cz/id/HES-000021` and `https://teater.aiscr.cz/id/1333`, filed under the asset's
-`scheme/amcr-harvest` / `scheme/teater-harvest`. An item without ids contributes no term, and the
-label itself is never minted. That removes the false claim and the dangling URI.
+The acceptance examples are tests of the shared crate module: `kostel` stays a source label with its two
+source identifiers; no `/theme/` URI is generated; missing ids or the sentinel invent no concept URI; and two
+concepts sharing a label stay two terms, with no equivalence asserted (`test_atrium_rocrate.py`,
+`TestSourceConcepts`; `test_atrium_vocab.py::test_no_record_field_is_read_as_a_theme`).
 
-What is NOT decided, and needs an owner: whether `teater_category` should carry the source label
-(and the theme be derived through `HESLAR_TO_THEME` / `TEATER_BRANCH_TO_THEME` when wanted), or
-whether the field should hold the theme and the source label move to a sibling. Today the schema's
-own description says "Single most relevant TEATER/AMCR vocabulary category", which agrees with
-production — so the registry's `fields` entry and `validate_labels`' scheme choice are the two
-things out of step, not the pipeline. Either way it is a contract change, not a freeze.
+ATRIUM's internal SKOS alignment stays apart from the formal SKOSification and publication of the
+authoritative AMČR/TEATER vocabularies, which is handled outside ATRIUM.
 
 ### V-4 — schema examples contradicted the label set fixed
 

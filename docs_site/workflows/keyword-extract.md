@@ -20,7 +20,8 @@ keywords of [nlp-enrich](nlp-enrich.md) and the vocabulary-controlled keywords o
     This page gives the **stable core** of the workflow: its purpose, its steps, the formats
     it reads and writes, and the licence floor of its output. The methods' options, the
     models and the prompts are documented with the code — in the tool's
-    [README](https://github.com/ufal/atrium-keyword-extract#readme) and its
+    [README](https://github.com/ufal/atrium-keyword-extract#readme), whose documentation map leads to its usage, how-it-works
+    and reference pages, and its
     [service README](https://github.com/ufal/atrium-keyword-extract/blob/master/service/README.md) —
     because they change as methods are compared and chosen. Both kinds now live in the tool:
     the statistical kind since its first release, the controlled kind since v1.1.0-beta. No

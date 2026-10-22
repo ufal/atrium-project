@@ -55,7 +55,9 @@ tool repositories + 3 hub-local; `skill-validate` runs on the `agent-skill` bran
 * **Docker Tool** (`docker-tool.reusable.yml`) — environment setup, linting, testing with coverage,
 multi-target Docker builds, GHCR publish, and the post-publish container scan. Every `probe-targets` image
 is also checked for forbidden packages before it is published (#72): `forbidden-distributions` (default
-`["pymupdf"]`, AGPL) and `forbidden-modules` (default `[]`).
+`["pymupdf"]`, AGPL) and `forbidden-modules` (default `[]`). Publishing waits for the container probe; with `release-gate: true` a
+failed probe publishes nothing, and on a tag the `images` job hands the caller the promoted digests as
+`images-json` (#81; [`ci_policy.md`](ci_policy.md), Releases).
 * **Security** (`security.reusable.yml`) — version consistency check plus the periodic Trivy re-scan of the
 published image.
 * **Paradata Drift** (`para-drift.reusable.yml`) — canonical shared-file parity diff. Reads the canonical

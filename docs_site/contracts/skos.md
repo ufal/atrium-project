@@ -82,7 +82,7 @@ a-page-category:TEXT_HW rdf:type skos:Concept ;
 | `quality-band`      | 3        | ocr-postprocess                                        | `pages[].quality_band`                              |
 | `entity-type`       | 4        | nlp-enrich                                             | `entities[].type_teitok`                            |
 | `cnec`              | 28       | nlp-enrich (CNEC 2.0)                                  | `entities[].type_cnec`                              |
-| `theme`             | 11       | keyword-extract's taxonomy                             | `enrichment.items[].teater_category`, via the facet |
+| `theme`             | 11       | keyword-extract's taxonomy                             | none: a derived classification (#51)                |
 
 **The translator appears in none of them** — see [below](#the-translator-and-its-glossary).
 

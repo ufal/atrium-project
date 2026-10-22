@@ -606,68 +606,28 @@ jobs:
             work/digital_in/MANIFEST.json
           if-no-files-found: warn
 
-      # De-duplicated as of 2026-08-18. On a `*/3` cron an unconditional
-      # `issues.create` files a fresh issue every third day for as long as the
-      # breakage lasts, and the breakage here is a publication gap that no amount
-      # of re-reporting closes — #45 (2026-08-16) is one of that series. One open
-      # issue per ongoing breakage, commented on each recurrence, is the
-      # reportable unit; a run is not.
-      - name: Open an issue on scheduled failure
+      # De-duplicated as of 2026-08-18, and since atrium-project#81 through the shared action
+      # every scheduled lane uses: one open issue per ongoing breakage, commented on each
+      # recurrence. The legacy marker keeps an issue this step opened before the move.
+      - name: Open or update the lane's issue on scheduled failure
         if: failure() && github.event_name == 'schedule'
-        uses: actions/github-script@v9
+        uses: ./.github/actions/lane-failure-issue
         with:
-          script: |
-            // Marker in the body rather than a title match: the title carries the
-            // run date, so it differs every time and can never match itself.
-            const MARKER = '<!-- atrium:e2e-digital-smoke-failure -->';
-            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const imageTag = process.env.IMAGE_TAG || 'latest';
-            const body = [
-              MARKER,
-              'The born-digital branch smoke failed:',
-              runUrl,
-              '',
-              `Image tag exercised: \`${imageTag}\``,
-              '',
-              'Where to look first:',
-              '- `MISSING` in the preflight step means the image was never published, not',
-              '  that credentials are wrong. `-digital` reaches `:latest` only via a',
-              '  digital-convert release tag, and reaches `:test` only once the hub `v1` tag',
-              '  carries the `build-and-push` gate that admits `refs/heads/test` pushes.',
-              '- A sha256 mismatch in the fixture step means `make_fixtures.py` changed its',
-              '  output; the generator is the contract, so re-pin the manifest deliberately.',
-              '- A failure on the `--expect-needs-ocr` case means decode-sanity stopped',
-              '  flagging the garbled fixture. That gate going quiet is worse than it going',
-              '  red: it is the §1a arbitration becoming untested.',
-              '- A schema failure names the owning repo per block; `:latest` only moves on a',
-              '  version tag, so a fix on `test` cannot green a `latest` run.',
-            ].join('\n');
+          lane: e2e-digital-smoke
+          title: E2E digital-born smoke failed
+          labels: ci,pipeline
+          legacy-marker: "<!-- atrium:e2e-digital-smoke-failure -->"
+          body: |
+            Image tag exercised: `${{ env.IMAGE_TAG || 'latest' }}`
 
-            const existing = await github.paginate(github.rest.issues.listForRepo, {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: 'ci,pipeline',
-              per_page: 100,
-            });
-            const open = existing.find((i) => !i.pull_request && (i.body || '').includes(MARKER));
-
-            if (open) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: open.number,
-                body: `Still failing as of ${new Date().toISOString().slice(0, 10)} (tag \`${imageTag}\`): ${runUrl}`,
-              });
-              core.notice(`Commented on existing failure issue #${open.number} instead of opening a duplicate.`);
-              return;
-            }
-
-            const created = await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `E2E digital-born smoke failed (${new Date().toISOString().slice(0, 10)})`,
-              body,
-              labels: ['ci', 'pipeline'],
-            });
-            core.notice(`Opened failure issue #${created.data.number}.`);
+            Where to look first:
+            - `MISSING` in the preflight step means the image was never published, not
+              that credentials are wrong. `-digital` reaches `:latest` only via a
+              digital-convert release tag, and `:test` only from a `test` push.
+            - A sha256 mismatch in the fixture step means `make_fixtures.py` changed its
+              output; the generator is the contract, so re-pin the manifest deliberately.
+            - A failure on the `--expect-needs-ocr` case means decode-sanity stopped
+              flagging the garbled fixture. That gate going quiet is worse than it going
+              red: it is the §1a arbitration becoming untested.
+            - A schema failure names the owning repo per block; `:latest` only moves on a
+              version tag, so a fix on `test` cannot green a `latest` run.

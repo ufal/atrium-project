@@ -124,7 +124,7 @@ spec:
             # - name: MAX_UPLOAD_MB           # NO shared default: ocr-postprocess 25,
             #   value: "10"                   # keyword-extract 10, nlp-enrich 5,
             #                                 # page-classification 10, translator 50,
-            #                                 # digital-convert 200. Uncommenting this as-is
+            #                                 # digital-convert 250. Uncommenting this as-is
             #                                 # RAISES nlp-enrich's limit and LOWERS
             #                                 # ocr-postprocess's, translator's and
             #                                 # digital-convert's. Use your service's

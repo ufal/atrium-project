@@ -182,6 +182,11 @@ def test_an_annotated_tag_object_is_refused_and_its_commit_accepted(tmp_path):
     assert rc == 1 and "3 hub-reusable callers" in out and "not a commit" not in out, out  # accepted, then checked
 
 
+#: Hub-reusable callers per tool repo: seven each, and digital-convert's `release.yml` calls the Docker reusable
+#: for the image it certifies (#81). A tool that adopts the release gate moves here.
+_CALLERS = {"atrium-digital-convert": 8}
+
+
 @pytest.mark.parametrize("tool", pin.REPOS)
 def test_the_real_callers_of_a_sibling_tool_repo(tmp_path, tool):
     """Where the tool repos sit beside the hub, sweep a COPY of their callers and lint it strictly."""
@@ -194,6 +199,6 @@ def test_the_real_callers_of_a_sibling_tool_repo(tmp_path, tool):
         if (source.parent / extra).is_file():
             shutil.copy(source.parent / extra, target / extra)
     rc, out = _run("--sha", SHA, "--root", str(tmp_path), "--repo", tool)
-    assert rc == 0 and "7 hub-reusable callers" in out, out
+    assert rc == 0 and f"{_CALLERS.get(tool, 7)} hub-reusable callers" in out, out
     rc, out = _lint(tmp_path / tool, "--require-sha-pins")
     assert rc == 0, out

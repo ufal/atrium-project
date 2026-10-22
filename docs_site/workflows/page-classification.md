@@ -103,8 +103,9 @@ Every column is described in
 * **Truncated images.** The command-line tool classifies a truncated scan, its missing part
   filled grey; the HTTP service refuses it (422).
 * **The ensemble can answer with fewer models.** If one of the five models fails, the service
-  averages the others. The answer does not say so; the service log does, once per failing
-  model. Before `v1.9.4-beta`, on a GPU node, every model fetched from the Hub failed this way.
+  averages the others. Since `v1.9.9-beta` the answer's `models_used` lists the revisions that
+  answered (per page for a PDF); the service log names the failing model, once. Before
+  `v1.9.4-beta`, on a GPU node, every model fetched from the Hub failed this way.
 
 ## Provenance and licence
 

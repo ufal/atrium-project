@@ -191,6 +191,7 @@ on their `agent-skill` branches), and each keeps a few workflows of its own:
     | `release.yml`                                                               | local           | tags `v*.*.*` — version gate, then the release                                |
     | `integration.yml`                                                           | local           | a stub-backend lane on every push; a live-LINDAT lane on manual dispatch only |
     | `scheduled-smoke.yml`                                                       | local           | daily — the full suite in a fresh environment, to catch dependency drift      |
+    | `lindat-daily.yml`                                                          | local           | daily — 24 identical requests to live LINDAT, failing on a bad reply (#78)    |
 
 The hub runs its own workflows without `@v1` — they use `./…` so they test the commit under
 review — and three end-to-end workflows that exercise the published images together:

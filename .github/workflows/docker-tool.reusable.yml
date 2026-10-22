@@ -99,6 +99,34 @@ on:
         required: false
         type: number
         default: -1
+      release-gate:
+        description: >-
+          Publish only images whose container probe passed (atrium-project#81). With true,
+          build-and-push waits for docker-build-smoke and runs only when every leg of it
+          succeeded, so a failed probe pushes and promotes nothing, for any target: a release
+          never ships part of its images. With false (the default), build-and-push still waits
+          for the probe but runs whatever it found, which is the behaviour before #81. A
+          repository turns it on in the release workflow that certifies its image
+          (docs/ci_policy.md, Releases).
+        required: false
+        type: boolean
+        default: false
+      simulate-probe-failure:
+        description: >-
+          Make the container probe fail on purpose, with a line in the summary saying so. For
+          demonstrating release-gate (atrium-project#81) from a dispatched dry run; never set it
+          on a tag.
+        required: false
+        type: boolean
+        default: false
+    outputs:
+      images-json:
+        description: >-
+          On a version tag, after every target was promoted: a JSON object naming the source
+          (repository, tag, commit) and, per target, the image, the tag and the digest that tag
+          resolves to in GHCR (atrium-project#81). Empty on any other event. A release workflow
+          writes it to images.json and attaches it.
+        value: ${{ jobs.images.outputs.images-json }}
     secrets:
       # Declared explicitly so callers can drop `secrets: inherit`, which handed
       # this workflow EVERY secret in the calling repo — HF_TOKEN, OPENROUTER_KEY,
@@ -311,13 +339,15 @@ jobs:
     # minus the release leg (a released image is built from a tag that already
     # passed here on its way through `test`).
     #
-    # Deliberately NOT added to build-and-push's `needs:` in the same change.
-    # While this job skipped on push, adding it would have skipped
-    # `build-and-push` with it and silently stopped publishing `:test` — the
-    # exact failure W2 above was written to fix. Sequence it: let this gate run
-    # on a few pushes first, then make it blocking as its own change.
+    # `build-and-push` needs this job (atrium-project#81). It was kept apart while this job
+    # skipped on push, because a `needs:` on a skipped job would have stopped `:test` from
+    # publishing; the job has run on every `test` push since. With `release-gate: true` a
+    # failed probe now stops publishing; without it, publishing waits for the probe and then
+    # goes ahead as before. A dispatched run probes too, so a release workflow's dry run
+    # exercises the gate before a tag does.
     if: >-
       github.event_name == 'pull_request'
+      || github.event_name == 'workflow_dispatch'
       || (github.event_name == 'push' && github.ref == 'refs/heads/test')
       || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
@@ -626,6 +656,18 @@ jobs:
           fi
           echo "clean SIGTERM shutdown confirmed"
 
+      - name: Simulated probe failure (simulate-probe-failure, atrium-project#81)
+        # The demonstration of release-gate: a dispatched dry run with this input set must end
+        # with nothing pushed and no release. Runs after the real probe, so the run also shows
+        # that the image itself was healthy.
+        if: inputs.simulate-probe-failure && contains(fromJSON(inputs.probe-targets), matrix.target)
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          echo "::error::simulate-probe-failure is set: the probe of ${TARGET} fails on purpose (atrium-project#81)"
+          echo "**Simulated failure (${TARGET}):** \`simulate-probe-failure\` is set, so this probe fails on purpose; with \`release-gate\` nothing is published." >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
       - name: Run container on a NON-DEFAULT port (issue #58)
         # The step above proves the DEFAULT path: it must stay exactly as it is, because
         # it is what guarantees the reference manifest and every probe in it keep working
@@ -791,7 +833,12 @@ jobs:
           echo "confirmed: no INFO record reaches stdout with LOG_LEVEL=WARNING"
 
   build-and-push:
-    needs: test
+    needs: [test, docker-build-smoke]
+    # atrium-project#81: on a version tag a release certifies its image, so with
+    # `release-gate: true` nothing is pushed unless every probe leg passed. `!cancelled()`
+    # lets this job run after a failed probe when the gate is off, as it did before it
+    # needed the probe; a cancelled run still publishes nothing.
+    #
     # W2 (2026-08-06): `push` to `refs/heads/test` added. Issue #10 introduced the
     # `type=raw,value=test` tag rule below, but this gate still admitted only tag
     # pushes and release events — and `github.ref` is never `refs/heads/test` on a
@@ -810,9 +857,12 @@ jobs:
     # already sets to `cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}`
     # — superseded `test` builds cancel; only tag builds are protected from cancellation.
     if: >-
-      startsWith(github.ref, 'refs/tags/v')
-      || github.event_name == 'release'
-      || (github.event_name == 'push' && github.ref == 'refs/heads/test')
+      !cancelled()
+      && needs.test.result == 'success'
+      && (needs.docker-build-smoke.result == 'success' || !inputs.release-gate)
+      && (startsWith(github.ref, 'refs/tags/v')
+          || github.event_name == 'release'
+          || (github.event_name == 'push' && github.ref == 'refs/heads/test'))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -1069,3 +1119,66 @@ jobs:
               [ -n "$tag" ] && echo "- \`$tag\`"
             done <<< "$RELEASE_TAGS"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  images:
+    # atrium-project#81: what a release certifies. After every target was promoted on a
+    # version tag, read the digest each release tag resolves to in GHCR, the identity a
+    # deployment pins (docs/release_trust.md, Tag identity), and hand it to the caller as the
+    # `images-json` output. A job of its own because a matrix job's outputs collide: each leg
+    # of build-and-push would overwrite the others'. Reading the registry, not the build's
+    # digest, certifies what a pull of the tag actually gets.
+    needs: build-and-push
+    if: >-
+      !cancelled()
+      && needs.build-and-push.result == 'success'
+      && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      images-json: ${{ steps.inspect.outputs.images-json }}
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read the digest of each promoted tag
+        id: inspect
+        env:
+          IMAGE_NAME: ${{ inputs.image-name }}
+          TARGETS: ${{ inputs.build-targets }}
+          TAG_REF: ${{ github.ref_name }}
+          COMMIT: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, subprocess
+
+          version = os.environ["TAG_REF"].removeprefix("v")  # the image tag has no leading `v`
+          images = []
+          for target in json.loads(os.environ["TARGETS"]):
+              image = f"ghcr.io/{os.environ['IMAGE_NAME']}" + ("" if target == "base" else f"-{target}")
+              manifest = subprocess.run(
+                  ["docker", "buildx", "imagetools", "inspect", f"{image}:{version}", "--format", "{{json .Manifest}}"],
+                  check=True, capture_output=True, text=True,
+              ).stdout
+              digest = json.loads(manifest)["digest"]
+              images.append({"target": target, "image": image, "tag": version, "digest": digest})
+          record = {
+              "source": {"repository": os.environ["REPOSITORY"], "tag": os.environ["TAG_REF"], "commit": os.environ["COMMIT"]},
+              "images": images,
+          }
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"images-json={json.dumps(record, separators=(',', ':'))}\n")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+              summary.write("### Images this release certifies\n\n| Target | Image | Digest |\n|---|---|---|\n")
+              for entry in images:
+                  summary.write(f"| {entry['target']} | `{entry['image']}:{entry['tag']}` | `{entry['digest']}` |\n")
+          print(json.dumps(record, indent=2))
+          PY

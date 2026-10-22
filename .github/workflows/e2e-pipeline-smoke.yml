@@ -664,17 +664,15 @@ jobs:
             work/nlp_out/TEITOK/*.teitok.xml
             work/crate/
 
-      - name: Open issue on scheduled failure
+      # One open issue per ongoing breakage, commented on each recurrence (atrium-project#81):
+      # the step used to open a new issue on every failing run, every third day.
+      - name: Open or update the lane's issue on scheduled failure
         if: failure() && github.event_name == 'schedule'
-        uses: actions/github-script@v9
+        uses: ./.github/actions/lane-failure-issue
         with:
-          script: |
-            const title = `E2E pipeline smoke failed (${new Date().toISOString().slice(0,10)})`;
-            const body = `The cross-repo e2e pipeline smoke test failed: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\nLikely a cross-repo interface change on \`main\`, a LINDAT/HuggingFace/OpenRouter upstream change, a stale \`:latest\` tag, or a stale e2e fixture.`;
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title,
-              body,
-              labels: ["ci", "pipeline"],
-            });
+          lane: e2e-pipeline-smoke
+          title: E2E pipeline smoke failed
+          labels: ci,pipeline
+          body: |
+            Likely a cross-repo interface change on `main`, a LINDAT/HuggingFace/OpenRouter
+            upstream change, a stale `:latest` tag, or a stale e2e fixture.

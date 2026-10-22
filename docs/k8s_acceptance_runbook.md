@@ -60,7 +60,7 @@ is in each run's `e2e-manifest` artifact ([`ci_policy.md`](ci_policy.md)).
 
 ## Before you start
 
-1. **Upload limits differ per service.** `MAX_UPLOAD_MB` defaults: digital-convert 200, translator 50,
+1. **Upload limits differ per service.** `MAX_UPLOAD_MB` defaults: digital-convert 250, translator 50,
    ocr-postprocess 25, keyword-extract 10, page-classification 10, **nlp-enrich 5**. A smoke file over the
    limit returns 413 at once, the request is no longer in flight when the restart lands, and the restart
    check proves nothing. Keep each input under its limit.
@@ -238,16 +238,44 @@ a restart, `GET /jobs/<id>` for a job of the old pod answers 404, even if it com
 Durable job status and results are **not supported**; a client re-submits. Record this row as "not
 supported", not as a failure.
 
+### translator: the metadata run on real AMČR records
+
+The smoke request above translates ALTO, which the pilot does not use. What the pilot uses is the English
+metadata file, `metadata-en` ([translator#46](https://github.com/ufal/atrium-translator/issues/46)), so it
+is accepted on its own, with real AMČR records:
+
+- the free-text fields of `amcr-fields.txt`, in `replace` mode, with `--source_lang cs`; vocabulary fields
+  are not sent, since AMČR fills them from its own English labels;
+- validated against the AMČR 2.2 schema with `--xsd … --xsd-strict` (a record that fails makes the run exit
+  `3`). `--xsd` is an option of the **batch** image, not of `/translate`, so this run uses
+  `ghcr.io/ufal/atrium-translator:<version>` at the same release as the `-api` image:
+
+```bash
+docker run --rm --user "$(id -u):0" -v "$PWD/data:/data" ghcr.io/ufal/atrium-translator:<version> \
+  /data/input --xpaths amcr-fields.txt --formats xml --source_lang cs --target_lang en \
+  --output-mode replace --xsd https://api.aiscr.cz/schema/amcr/2.2/amcr.xsd --xsd-strict -o /data/output
+```
+
+Record in the second table below: the image and its digest; the number of records and how many validated
+(the run's last `XSD: N/M record(s) valid` line); the `_log.csv` `status` counts (`ok`, `rerun`,
+`approx_alignment`, `untranslated`); `lindat_degenerate_replies` from the paradata; and a reviewer's verdict on
+a sample of the translations (say ten records), with any field that stayed in Czech. LINDAT's reliability
+over time is watched separately ([#78](https://github.com/ufal/atrium-project/issues/78)).
+
 ## Results (fill in)
 
-| Service             | Image digest | Deploys | Probes | Smoke | Restart in flight | `PORT` | Env contract | Observed / notes                         |
-|---------------------|--------------|---------|--------|-------|-------------------|--------|--------------|------------------------------------------|
-| page-classification |              | ☐       | ☐      | ☐     | ☐                 | ☐      | ☐            |                                          |
-| ocr-postprocess     |              | ☐       | ☐      | ☐     | ☐                 | ☐      | ☐            |                                          |
-| translator          |              | ☐       | ☐      | ☐     | ☐                 | ☐      | ☐            |                                          |
-| nlp-enrich          |              | ☐       | ☐      | ☐     | ☐                 | ☐      | ☐            | jobs across a restart: not supported     |
-| keyword-extract     |              | ☐       | ☐      | ☐     | ☐                 | ☐      | ☐            | kind used:                               |
-| digital-convert     |              | ☐       | ☐      | ☐     | ☐                 | ☐      | ☐            | `/describe` stages:                      |
+| Service             | Image digest | Deploys | Probes | Smoke | Restart in flight | `PORT` | Env contract | Observed / notes                     |
+|---------------------|--------------|---------|--------|-------|-------------------|--------|--------------|--------------------------------------|
+| page-classification |              | ☐       | ☐      | ☐     | ☐                 | ☐      | ☐            |                                      |
+| ocr-postprocess     |              | ☐       | ☐      | ☐     | ☐                 | ☐      | ☐            |                                      |
+| translator          |              | ☐       | ☐      | ☐     | ☐                 | ☐      | ☐            |                                      |
+| nlp-enrich          |              | ☐       | ☐      | ☐     | ☐                 | ☐      | ☐            | jobs across a restart: not supported |
+| keyword-extract     |              | ☐       | ☐      | ☐     | ☐                 | ☐      | ☐            | kind used:                           |
+| digital-convert     |              | ☐       | ☐      | ☐     | ☐                 | ☐      | ☐            | `/describe` stages:                  |
+
+| translator metadata run  | Image digest | Records | Valid (AMČR 2.2) | `ok` | `rerun` | `untranslated` | Degenerate replies | Sample review |
+|--------------------------|--------------|---------|------------------|------|---------|----------------|--------------------|---------------|
+| `metadata-en`, `replace` |              |         |                  |      |         |                |                    |               |
 
 In "Observed / notes", write what the step printed (`PASS`, `FAIL` with the HTTP code, `INVALID`), the
 values set for criterion 4, and anything you had to change. Send the table to the contacts in

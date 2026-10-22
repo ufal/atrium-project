@@ -3,7 +3,8 @@
 Every value here was read out of the repository tree, not invented: titles from each
 README's `#` line, taglines from the GitHub repo description, chips from each README's
 own badge block, default branches from the repo metadata (first read 2026-09-18;
-re-read 2026-10-07 for the repositories of the 1 October split). The
+re-read 2026-10-07 for the repositories of the 1 October split; the digital-convert and
+keyword-extract titles 2026-10-22, after their READMEs moved to the #79 skeleton). The
 Python chip follows the version the images and CI use; a README badge that lags it is a
 finding for that repository, not a reason to publish the old value.
 
@@ -104,7 +105,7 @@ REPOS = [
         "docs_path": "workflows/keyword-extract/",
         "stage": 5,
         "default_branch": "master",
-        "title": "Keyword extraction — statistical and vocabulary-controlled",
+        "title": "Keywords of archival documents, statistical and vocabulary-controlled",
         "subtitle": "KeyBERT · YAKE · KER · AMČR and TEATER",
         "tagline": "Extraction of statistical and vocabulary-controlled keywords from text-containing "
         "documents, with the method and score of every keyword.",
@@ -123,7 +124,7 @@ REPOS = [
         "docs_path": "workflows/digital-convert/",
         "stage": 6,
         "default_branch": "main",
-        "title": "Born-digital document conversion",
+        "title": "Born-digital documents into ATRIUM document records",
         "subtitle": "PDF · DOCX · ODT · ODS · XLSX · RTF · DOC · XLS → the document record",
         "tagline": "Digital-born documents transformed into JSON records, and page content information "
         "for the pages that still need OCR.",

@@ -55,6 +55,9 @@ jobs:
     name: ${{ matrix.repo }} fast lane
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      issues: write   # one issue per failing leg on a scheduled run (atrium-project#81)
     strategy:
       # Never fail-fast: the point is a full picture of all six repos in one run.
       fail-fast: false
@@ -101,3 +104,16 @@ jobs:
         # network" (every repo's pytest.ini declares the marker). No --maxfail: a
         # cross-repo matrix should report every repo's real state in one pass.
         run: pytest -m "not slow" --disable-warnings
+
+      # A failing leg on the cron reported nothing before atrium-project#81. Each leg is its
+      # own lane, so one repo's breakage keeps its own issue. The action comes from `v1`
+      # because this job checks out the tool repository, not the hub.
+      - name: Open or update the leg's issue on scheduled failure
+        if: failure() && github.event_name == 'schedule'
+        uses: ufal/atrium-project/.github/actions/lane-failure-issue@v1
+        with:
+          lane: all-repos-smoke/${{ matrix.repo }}
+          title: "Cross-repo fast lane failed: ${{ matrix.repo }}"
+          body: |
+            The fast lane (`pytest -m "not slow"`) of ufal/atrium-${{ matrix.repo }} failed at its
+            `main` head, run from the hub. The same suite runs in that repository's own CI.

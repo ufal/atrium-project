@@ -52,7 +52,7 @@ CI step sees a run that translated nothing as a failure.
 | `load_vocab.py`          | Harvest the vocabulary from AMCR (OAI-PMH) and TEATER (GraphQL)          | `--out`, `--delay`, `--skip-amcr`, `--skip-teater`      |
 | `eval/bakeoff.py`        | Backend comparison: reference-based and reference-free metrics           | `--samples`, `--backends`, `--refs`, `--limit`, `--out` |
 | `eval/langid_report.py`  | Per-block report: FastText's guesses beside the resolved language        | `--xpaths`, `--languages`                               |
-| `eval/lindat_probe.py`   | Sends one text N times to the live endpoint, prints the good/bad pattern | `--n`, `--text`, `--model`, `--pause`                   |
+| `eval/lindat_probe.py`   | Sends one text N times to the live endpoint, prints the good/bad pattern | `--n`, `--text`, `--model`, `--pause`, `--max-bad`      |
 | `check_version.py`       | Release gate: tag == `CITATION.cff` == `para_config.txt`                 |                                                         |
 | `atrium_rocrate.py`      | RO-Crate 1.2 export and the service's CreateAction, its own CLI          | `--out-dir`                                             |
 | `service/healthcheck.py` | Docker healthcheck; stdlib only, always probes loopback                  |                                                         |

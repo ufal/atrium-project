@@ -57,6 +57,10 @@
             "source": { "type": "string", "description": "Where the deployment read it (ATRIUM_POLICY_PATH)." }
           }
         },
+        "document_permission": {
+          "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/processing_permission" }],
+          "description": "The document's own permission the decisions were made with (aiscr-webamcr#2590); null when none was given."
+        },
         "decisions": {
           "type": "array",
           "items": {
@@ -67,21 +71,35 @@
               "route": { "type": "string", "examples": ["lindat-translation", "llm-controlled-keywords"] },
               "components": { "type": "array", "items": { "type": "string" } },
               "decision": { "type": "string", "enum": ["allowed", "refused"] },
-              "rule": { "type": "string", "description": "The rule of the policy that decided." }
+              "rule": { "type": "string", "description": "The rule of the policy that decided." },
+              "cause": { "type": "string", "enum": ["route_not_permitted", "no_document_authorisation", "document_refused"], "description": "Why a route was refused." }
             }
           }
         }
       }
     },
+    "processing_permission": {
+      "type": "object",
+      "description": "AMČR's per-document permission for external processing (atrium-project#6, 2026-10-22). Missing, it refuses every external route.",
+      "required": ["doc_id", "external_processing", "basis", "decided_by", "date"],
+      "additionalProperties": false,
+      "properties": {
+        "doc_id": { "type": "string" },
+        "external_processing": { "type": "string", "enum": ["allowed", "refused"] },
+        "basis": { "type": "string", "minLength": 1, "description": "What the permission rests on: the source's rights, a contract, AMČR's decision id." },
+        "decided_by": { "type": "string", "format": "uri" },
+        "date": { "type": "string", "format": "date" }
+      }
+    },
     "rights_assertion": {
       "type": "object",
-      "required": ["statement", "asserted_by", "date"],
+      "required": ["statement", "asserted_by", "basis", "scope", "date"],
       "additionalProperties": false,
       "properties": {
         "statement": { "type": "string", "description": "An SPDX expression, a rights URI or a short text." },
         "asserted_by": { "type": "string", "format": "uri", "description": "The agent asserting it, e.g. an institution's ROR." },
-        "basis": { "type": "string", "description": "What the assertion rests on: source rights, a policy id, an agreement." },
-        "scope": { "type": "string", "description": "What it covers: the record, a block name, or a derived file's path." },
+        "basis": { "type": "string", "minLength": 1, "description": "What the assertion rests on: source rights, a policy id, an agreement. Required (atrium-project#6, 2026-10-22)." },
+        "scope": { "type": "string", "minLength": 1, "description": "What it covers: the record, a block name, or a derived file's path. Required (atrium-project#6, 2026-10-22)." },
         "date": { "type": "string", "format": "date" }
       }
     }

@@ -1350,3 +1350,10 @@ new (registered above); every record written before it validates.
   one register entry.
 * **Re-vendored** into the six tool repositories with `scripts/revendor_shared.sh`; every service's
   spec regenerated.
+
+## Changelog — 2026-10-22 (#51: `teater_category` stays a source label, decided)
+
+No schema change. motyc decided V-5 (`skos_strategy.md`): `enrichment.items[].teater_category` keeps the
+AMČR/TEATER label (or the meta-text sentinel) and `teater_category_ids` its source identities, as the schema
+already describes them. The registry's theme scheme names no record field any more (`atrium_vocab.py`); a theme
+is a derived classification, and persisting one would be a new optional field, not added now.

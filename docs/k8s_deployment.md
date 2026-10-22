@@ -191,10 +191,10 @@ is what you get in Kubernetes. Some of them are not what you get under `docker c
 each difference runs the same direction — compose supplies the safer value, and Kubernetes
 silently gets the raw one:
 
-| Variable                                                | Code default — Kubernetes gets this                                         | Compose default                                                                                                                                                                           | Consequence                                                                                                                                                                                                            |
-|---------------------------------------------------------|-----------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ALLOWED_ORIGINS`                                       | `*` — every origin                                                          | ocr-postprocess `http://localhost:8080,http://localhost:5500`; page-classification `http://localhost:8080,http://127.0.0.1:8080`; keyword-extract / nlp-enrich / translator: not narrowed | A Kubernetes deployment that omits this serves CORS to anything. Set it explicitly. (`localhost` and `127.0.0.1` are *different* origins to a browser, which is why the two compose defaults are not interchangeable.) |
-| `MAX_CONCURRENT_JOBS`, `DEFAULT_KW_METHOD` (nlp-enrich) | `2` / `keybert`                                                             | the same values, passed through `.env`                                                                                                                                                    | Under Kubernetes these behave normally and can be changed via the `env:` block; under `docker compose` prior to atrium-project#60 they could not be changed from `.env` at all.                                        |
+| Variable                                                | Code default — Kubernetes gets this | Compose default                                                                                                                                                                           | Consequence                                                                                                                                                                                                            |
+|---------------------------------------------------------|-------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ALLOWED_ORIGINS`                                       | `*` — every origin                  | ocr-postprocess `http://localhost:8080,http://localhost:5500`; page-classification `http://localhost:8080,http://127.0.0.1:8080`; keyword-extract / nlp-enrich / translator: not narrowed | A Kubernetes deployment that omits this serves CORS to anything. Set it explicitly. (`localhost` and `127.0.0.1` are *different* origins to a browser, which is why the two compose defaults are not interchangeable.) |
+| `MAX_CONCURRENT_JOBS`, `DEFAULT_KW_METHOD` (nlp-enrich) | `2` / `keybert`                     | the same values, passed through `.env`                                                                                                                                                    | Under Kubernetes these behave normally and can be changed via the `env:` block; under `docker compose` prior to atrium-project#60 they could not be changed from `.env` at all.                                        |
 
 > ⚠️ **`value: ""` is not the same as omitting the entry.** In an `env:` block,
 > `- name: ALLOWED_ORIGINS` / `value: ""` parses to an *empty* origin list and blocks every
@@ -205,18 +205,18 @@ silently gets the raw one:
 **`MAX_UPLOAD_MB` — what the six services share is the variable name and the resolver, not the
 number.** The limit is a property of what each service ingests:
 
-| Repo                | `MAX_UPLOAD_MB` | Set at           | Why this number                                                                                          |
-|---------------------|-----------------|------------------|----------------------------------------------------------------------------------------------------------|
-| digital-convert     | `200`           | `tool_limits.py` | highest — a born-digital PDF with its images; AMČR originals reach about 1.5 GB: raise it per deployment |
-| translator          | `50`            | `tool_limits.py` | ALTO XML in, ALTO XML out                                                                                |
-| ocr-postprocess     | `25`            | `tool_limits.py` | ALTO XML for a whole scanned volume, or a PDF or office document                                         |
-| keyword-extract     | `10`            | `tool_limits.py` | a record, per uploaded part, or a document's text                                                        |
-| page-classification | `10`            | `tool_limits.py` | a multi-page PDF                                                                                         |
-| nlp-enrich          | `5`             | `tool_limits.py` | lowest — a 5 MB CSV is already at the `MAX_WORDS` ceiling                                                |
+| Repo                | `MAX_UPLOAD_MB` | Set at           | Why this number                                                                                                                                                                 |
+|---------------------|-----------------|------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| digital-convert     | `250`           | `tool_limits.py` | highest — a born-digital PDF with its images, as AMČR runs it; originals reach about 1.5 GB: a deployment may raise it, untested above 250 for memory, concurrency and timeouts |
+| translator          | `50`            | `tool_limits.py` | ALTO XML in, ALTO XML out                                                                                                                                                       |
+| ocr-postprocess     | `25`            | `tool_limits.py` | ALTO XML for a whole scanned volume, or a PDF or office document                                                                                                                |
+| keyword-extract     | `10`            | `tool_limits.py` | a record, per uploaded part, or a document's text                                                                                                                               |
+| page-classification | `10`            | `tool_limits.py` | a multi-page PDF                                                                                                                                                                |
+| nlp-enrich          | `5`             | `tool_limits.py` | lowest — a 5 MB CSV is already at the `MAX_WORDS` ceiling                                                                                                                       |
 
 The manifest's commented `MAX_UPLOAD_MB: "10"` is page-classification's number. Uncommenting it
 as-is silently *raises* nlp-enrich's limit 2× and *lowers* ocr-postprocess's 2.5×, the
-translator's 5× and digital-convert's 20×.
+translator's 5× and digital-convert's 25×.
 
 **Table B — per-repo operator deltas.** Operator-facing only; each repo's `.env.example` is the
 complete ledger, and what is here is what a deployment legitimately sets.

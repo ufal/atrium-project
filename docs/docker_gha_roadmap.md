@@ -208,6 +208,10 @@ The existing split is right and should be stated as policy rather than rediscove
   vendored — a copy in six places would need its own parity step, and adding that step for a file the
   repos do not yet have fails `para-drift` in all five on their next push).
 
+> **Exception (atrium-project#81, 10-22):** a release now certifies its image, so `release.yml` calls
+> `docker-tool.reusable.yml` as its image job. The version guard and the OpenAPI gate stay vendored
+> ([`release_trust.md`](release_trust.md), The image a release certifies).
+
 ### 3.4 The `@v1` pin: an accepted trade-off, recorded
 
 All 35 cross-repo references resolve to `@v1`, a **force-pushable tag**, and `workflow_lint.py`'s

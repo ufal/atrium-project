@@ -67,5 +67,6 @@ The documentation follows the ATRIUM
 ## Licence, citation and acknowledgements
 
 «The code licence; the licences of models and data it uses, linked to their inventory (`para_config.txt`);
-how to cite (`CITATION.cff`). Funding: ATRIUM (GA 101132163) and, where it applies, the AIS CR
-infrastructure (LM2023031).»
+how to cite (`CITATION.cff`). Acknowledgements name ATRIUM (GA 101132163), the LINDAT/CLARIAH-CZ research
+infrastructure and the AIS CR infrastructure (LM2023031); keep both infrastructures named (#79). The exact
+wording of the LINDAT/CLARIAH-CZ acknowledgement is agreed with its coordinator.»

@@ -145,6 +145,7 @@ Both prediction endpoints take the same multipart form; `pages` is `/predict_doc
 ```json
 { "type": "image",
   "predictions": [{"label": "TEXT_P", "score": 0.981}],
+  "models_used": ["v1.4", "v2.4", "v3.4", "v4.4", "v5.4"],
   "document_json": null,
   "document_json_schema_error": null }
 ```
@@ -152,11 +153,13 @@ Both prediction endpoints take the same multipart form; `pages` is `/predict_doc
 `POST /predict_document` — one entry per classified page (every page, or the `pages`
 selection), `page` being its 1-based position in the PDF. When the baseline's page rows carry
 `page_index` (a born-digital record, named by PDF page labels), each entry's `page_label` names the
-row its category was written under. `document_json` is added only when a record was asked for:
+row its category was written under. `models_used` names the model revisions that answered, per page in
+`/predict_document` (since v1.9.9-beta; fewer than five with `version=all` means a reduced ensemble).
+`document_json` is added only when a record was asked for:
 
 ```json
 { "type": "document",
-  "pages": [{"page": 1, "predictions": [{"label": "DRAW", "score": 0.94}]}] }
+  "pages": [{"page": 1, "predictions": [{"label": "DRAW", "score": 0.94}], "models_used": ["v1.4", "v2.4", "v3.4", "v4.4", "v5.4"]}] }
 ```
 
 From the command line:

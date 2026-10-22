@@ -1,9 +1,10 @@
 # Proposal: execution evidence, processing policy and output rights
 
-> **Status:** draft for review on [#6](https://github.com/ufal/atrium-project/issues/6), 2026-10-20; opened with
-> a summary in plain words on 2026-10-21. Nothing here is implemented. It changes what records and crates assert,
-> so it is a class (c) change under [`shared_components.md`](../shared_components.md): it needs AMČR's agreement
-> before any shared module changes. Draft schema: [`atrium_rights.schema.json`](atrium_rights.schema.json).
+> **Status:** draft on [#6](https://github.com/ufal/atrium-project/issues/6), 2026-10-20; the approach approved by
+> AMČR (motyc) on 2026-10-22, with three adjustments made here: `scope` and `basis` are mandatory, the per-document
+> policy is described, and the document schema's migration is kept apart from paradata versioning. Nothing here is
+> implemented yet. It is a class (c) change under [`shared_components.md`](../shared_components.md). Draft schema:
+> [`atrium_rights.schema.json`](atrium_rights.schema.json).
 
 ## In plain words
 
@@ -21,8 +22,9 @@ October 2026.)
 
 **The proposal.** Three separate records instead of one label:
 1. **What a run used:** each component with its own licence or terms of use, and where that was read.
-2. **Which policy allowed it:** a policy file written by the deployment's operator (AMČR for the pilot), checked
-   before a run sends anything to an external service or uses a model with restrictive terms.
+2. **Which policy allowed it:** a policy written by the deployment's operator (AMČR for the pilot), together with
+   each document's own permission, checked before a run sends anything to an external service or uses a model
+   with restrictive terms. A document without that permission is not sent out.
 3. **The rights in an output, only when asserted:** written only when someone entitled to do so states them.
    Without that, the rights are unknown and the record says nothing.
 
@@ -33,13 +35,19 @@ finding out afterwards. Old records keep their values, marked as calculated.
 A short explanation for readers outside the project is on the documentation site:
 [Licences and paradata](https://ufal.github.io/atrium-project/ecosystem/licences/).
 
-## The three questions for AMČR
+## What AMČR decided (2026-10-22)
 
-1. **Who asserts output rights** in records AMČR publishes: AMČR only (recommended), or may a deployment set a
-   default assertion?
-2. **The crate root without an assertion:** leave `license` out (recommended), or state a rights URI for "not
-   evaluated"?
-3. **The policy file:** written by AMČR per deployment, with ÚFAL shipping an example and the evaluation code?
+1. **Who asserts output rights:** AMČR, for the outputs it publishes, on the basis of the source's rights and
+   permissions. No processing tool makes an automatic or default licence assertion.
+2. **The crate root without an assertion:** leave `license` out. Still open: RO-Crate 1.2 makes the root's
+   `license` a MUST (and allows a text there), so a standalone crate without it fails the validator; asked on
+   #6. A fragment, which AMČR embeds under its own root, is not affected.
+3. **The policy:** AMČR defines it; ÚFAL provides the schema, the reference implementation and examples. External
+   processing is also allowed or refused **per document** (aiscr-webamcr#2590), and a missing authorisation
+   refuses it.
+
+The correction of the misleading output-licence assertions comes first, and historical evidence is kept. The
+inventories (`components.json`, REUSE) follow and do not hold it up.
 
 ## For implementers
 
@@ -81,20 +89,37 @@ records the outcome in the paradata:
 ```
 
 A refused route fails the request with a registered reason (`policy_refused`) rather than falling back silently.
-Without a policy file, behaviour is today's, and the paradata records `"policy": null`.
+
+**Per document.** The deployment's policy says which routes may be used at all; each document's permission says
+whether this document may leave AMČR for them (aiscr-webamcr#2590). AMČR's pipeline passes the permission with
+the request, as a `processing_permission` object, the same in the services and in the batch tools (a
+`<doc_id>.permission.json` next to the input):
+
+```json
+{"doc_id": "C-202000543A", "external_processing": "allowed", "basis": "amcr:permission/2026-117",
+ "decided_by": "https://ror.org/<AMČR's ROR>", "date": "2026-11-20"}
+```
+
+A route is used only when both allow it. An external route for a document whose permission is missing, or says
+`refused`, fails with `policy_refused` (cause `no_document_authorisation` or `document_refused`); processing
+inside the image is not external and goes on. The decision is recorded per document, with the permission's
+`basis`. A deployment that sets `ATRIUM_POLICY_PATH` enforces both; without a policy file (development, research
+runs) the tools behave as today and the paradata records `"policy": null`, so such a record is never mistaken for
+one from AMČR's deployment.
 
 #### 3. Output rights: an assertion, not a calculation
 
-An optional `rights` block on a record (and on an exported collection), written only through an explicit call
-(`atrium_document.assert_rights()`), never by a processing stage:
+An optional `rights` list on a record (and on an exported collection), written only through an explicit call
+(`atrium_document.assert_rights()`), never by a processing stage. Every field is mandatory: an assertion without
+its `scope` or its `basis` is refused.
 
-| Field         | Meaning                                                                                       |
-|---------------|-----------------------------------------------------------------------------------------------|
-| `statement`   | an SPDX expression, a rights URI (e.g. a RightsStatements.org URI) or a short text            |
-| `asserted_by` | the agent making the assertion (an IRI, e.g. the institution's ROR)                           |
-| `basis`       | what it rests on: the source's rights, the policy id, an agreement                            |
-| `scope`       | which outputs it covers: the record, a block, a derived file                                  |
-| `date`        | when it was asserted                                                                          |
+| Field         | Meaning                                                                            |
+|---------------|------------------------------------------------------------------------------------|
+| `statement`   | an SPDX expression, a rights URI (e.g. a RightsStatements.org URI) or a short text |
+| `asserted_by` | the agent making the assertion (an IRI, e.g. the institution's ROR)                |
+| `basis`       | what it rests on: the source's rights, the policy id, an agreement                 |
+| `scope`       | which outputs it covers: the record, a block, a derived file                       |
+| `date`        | when it was asserted                                                               |
 
 No tool fills it from component licences. An unknown status stays unknown.
 
@@ -104,30 +129,50 @@ No tool fills it from component licences. An unknown status stays unknown.
   **its own** `license` and `version`, listed as the `CreateAction`'s `instrument`, as Process Run Crate expects.
 - The policy and its decisions are a `CreativeWork` linked from the action, with each decision as a
   `PropertyValue`.
-- **The root dataset's `license` is written only from a rights assertion.** Without one it is left out, and the
-  crate's description says that rights are not established. RO-Crate recommends a root licence; leaving it out is
-  accurate, writing the calculated one is not.
+- **The root dataset's `license` is written only from a rights assertion** whose `scope` is the record (or the
+  run, for a run crate). Without one it is left out, and the crate's description says that rights are not
+  established. RO-Crate 1.2 requires a root licence, so a standalone crate without it fails the validator; how to
+  meet both is the open point on #6 (a fragment is not affected).
 - For a collection of derived files, `atrium_rocrate` can also write a `REUSE.toml`, generated from the rights
   assertions of those files, never from component licences.
 
 ### Migration
 
-| Today                                | During the transition (schema 1.x, additive)                                                           | At schema 2.0                                                   |
-|--------------------------------------|--------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------|
-| `provenance.license`, `license_url`  | still written, with `provenance.license_basis: "calculated"`; described in the schema as a calculation | moved by `_migrate_1_to_2()` to `provenance.calculated_license` |
-| `provenance.license_detail`          | as above                                                                                               | moved with it                                                   |
-| paradata `license`, `license_detail` | kept, marked calculated; `components_used` and `policy` added                                          | `license*` dropped from new paradata                            |
-| crate root `license`                 | **stops** (a separate, early change, since it is the one false assertion in an export)                 | from `rights` only                                              |
-| `para_config.txt [components]`       | `components.json` beside it, generated once from it and then edited                                    | `[components]` removed                                          |
+The document record and the paradata are versioned apart, and each keeps its own rules: the record's schema is
+1.0 (`atrium_document.SCHEMA_VERSION`, `migrate_document()`), the paradata's 2.0 (`atrium_paradata.SCHEMA_VERSION`,
+`docs/paradata_schema.md`).
 
-Historical paradata and records stay as written; reading them, a consumer sees a calculated value labelled as such.
+**The document record, schema 1.x → 2.0.**
+
+| Today                               | During the transition (1.x, additive)                                                                  | At 2.0                                                              |
+|-------------------------------------|--------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| `provenance.license`, `license_url` | still written, with `provenance.license_basis: "calculated"`; described in the schema as a calculation | moved by `_migrate_1_0_to_2_0()` to `provenance.calculated_license` |
+| `provenance.license_detail`         | as above                                                                                               | moved with it                                                       |
+| no `rights`                         | `rights`, optional, written only by `assert_rights()`                                                  | unchanged                                                           |
+| crate root `license`                | **stops** (a separate, early change, since it is the one false assertion in an export)                 | from `rights` only                                                  |
+
+**The paradata, 2.x → 3.0.** Adding `components_used` and `policy` is an optional addition within 2.x. Dropping
+`license*` changes what a field means, so by `docs/paradata_schema.md` it is 3.0:
+
+| Today                       | During the transition (2.x, additive)                               | At 3.0                       |
+|-----------------------------|---------------------------------------------------------------------|------------------------------|
+| `license`, `license_detail` | kept, described as calculated; `components_used` and `policy` added | `license*` no longer written |
+
+**The inventory.** `para_config.txt [components]` gets `components.json` beside it, generated once from it and
+then edited; `[components]` is removed when every tool reads `components.json`.
+
+Historical paradata and records stay as written: nothing rewrites a file on disk. Reading them, a consumer sees a
+calculated value labelled as such (`migrate_document()` in memory for a record; the version for paradata).
 
 ### Order of work, once agreed
 
-1. Agree the schema (this page and the draft), including the questions below.
-2. Inventories: `components.json` and `REUSE.toml` in the six repositories, with evidence for each licence.
-3. Shared modules: `atrium_paradata` records `components_used` and `policy`; `atrium_rocrate` emits component
-   entities and drops the calculated root licence; `atrium_document` gains `rights` and `assert_rights()`.
-4. A small `atrium_policy.py`: load, evaluate, record; called before the external routes (translator and nlp-enrich
-   to LINDAT, keyword-extract to its LLM backend).
+1. **The correction first:** the schema and the docs describe `provenance.license` and the paradata `license` as
+   calculated from the components, not as the output's licence; the crate root stops carrying it (once the
+   RO-Crate point above is settled); historical files untouched.
+2. Shared modules: `atrium_document` gains `rights` and `assert_rights()` (with `scope` and `basis` required);
+   `atrium_rocrate` writes the root licence from `rights` only and emits component entities.
+3. A small `atrium_policy.py`: load the deployment policy and the document's permission, evaluate, record; called
+   before the external routes (translator and nlp-enrich to LINDAT, keyword-extract to its LLM backend).
+4. Inventories: `components.json` and `REUSE.toml` in the six repositories, with evidence for each licence. They do
+   not block 1-3.
 5. Tests in every repository, the E2E lanes, and AMČR's sign-off on the change's issue.

@@ -67,6 +67,15 @@ work unchanged once immutability is on. `tools/ci/workflow_lint.py` keeps it tha
 a `prerelease: true` release that is not also a draft (the action publishes those first) and
 any `gh release upload` or upload-release-asset step after the release exists.
 
+**The image a release certifies (#81, decided 10-22).** A repository that has moved its image job into
+`release.yml` (digital-convert first; [`ci_policy.md`](ci_policy.md), Releases) attaches `images.json` in
+that same step: the reusable's `images` job reads the digest each promoted tag resolves to, and the
+release job writes it out before the release exists. The image job is a cross-repo `uses:`, the one
+exception to "a release gate must not depend on a cross-repo `uses:` resolving at tag-push time"
+(`docker_gha_roadmap.md` §3.3): only the hub's reusable builds, probes and scans the image a release must
+now certify. It is adopted at `v1`, then by commit with the other callers (step 7 below). The version
+guard and the OpenAPI checks stay vendored.
+
 What changes for people: a published release cannot be edited. A mistake in a release is fixed
 by the next version, never by moving its tag or replacing an asset.
 

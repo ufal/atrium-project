@@ -9,7 +9,7 @@ issue: 6
 # Licences and paradata
 
 This page explains, without code, what the ATRIUM tools record about the software, models and data they use,
-what the one licence they compute means and does not mean, and what is proposed instead.
+what the one licence they compute means and does not mean, and what replaces it.
 
 ## What a run records
 
@@ -44,7 +44,7 @@ carries the label as `provenance.license`, and an RO-Crate export states it as t
 The tools' pages now list each component with its licence or terms. They do not say that a result "is" under any
 licence.
 
-## What is proposed
+## What changes
 
 The [proposal on #6](https://github.com/ufal/atrium-project/blob/test/docs/proposals/rights-and-policy.md) keeps
 what is useful and drops the label:
@@ -52,13 +52,15 @@ what is useful and drops the label:
 1. **Keep the list of components,** each with its own licence or terms and where that was read, and make it
    more precise.
 2. **Record which processing policy allowed the run.** The deployment's operator (AMČR, for the pilot) writes
-   the policy: for example, whether texts may be sent to an external service.
+   the policy: for example, whether texts may be sent to an external service. Each document also carries its own
+   permission, and a document without one is not sent to an external service.
 3. **State the rights in an output only when someone entitled to do so asserts them.** Without that, the rights
    are unknown, and the record says nothing.
 
-This changes what records and crates say, so it waits for AMČR's agreement before any shared module changes
-([`shared_components.md`](https://github.com/ufal/atrium-project/blob/test/docs/shared_components.md), class c).
-Until then, read `provenance.license` as "the most restrictive licence among the components used", nothing more.
+AMČR agreed to this on 22 October 2026: AMČR states the rights of the outputs it publishes, and no tool makes
+an automatic or default licence assertion. The shared modules change next, first where records and crates still
+state the computed label. Until then, read `provenance.license` as "the most restrictive licence among the
+components used", nothing more.
 
 ## Where the details are
 
