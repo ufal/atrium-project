@@ -1,0 +1,48 @@
+name: Report a failing scheduled lane
+description: >-
+  One open issue per failing scheduled lane (atrium-project#81, docs/ci_policy.md, Noise): the
+  first failure opens it, later failures comment on it while it is open. Use it in a step with
+  `if: failure() && github.event_name == 'schedule'`; the job needs `issues: write`. A run that
+  is not scheduled reports nothing, and a permitted skip never reaches the step.
+
+inputs:
+  lane:
+    description: >-
+      The lane's name inside the repository. Default `<workflow file>/<job>`. A matrix job adds
+      its leg (`all-repos-smoke/<repo>`) so each leg has its own issue.
+    required: false
+    default: ""
+  title:
+    description: "Issue title, without the date. Default: `Scheduled lane failed: <lane>`."
+    required: false
+    default: ""
+  body:
+    description: What to look at first (markdown), written under the run link.
+    required: false
+    default: ""
+  labels:
+    description: Comma-separated labels; the first one is what open issues are searched by.
+    required: false
+    default: "ci"
+  legacy-marker:
+    description: The body marker an earlier step of this lane used, so its open issue is reused.
+    required: false
+    default: ""
+  token:
+    description: "A token with `issues: write`."
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: composite
+  steps:
+    - name: Open or update the lane's issue
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+        LANE: ${{ inputs.lane }}
+        TITLE: ${{ inputs.title }}
+        BODY: ${{ inputs.body }}
+        LABELS: ${{ inputs.labels }}
+        LEGACY_MARKER: ${{ inputs.legacy-marker }}
+      run: python3 "$GITHUB_ACTION_PATH/lane_failure_issue.py"
