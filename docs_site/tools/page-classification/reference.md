@@ -38,7 +38,7 @@ in the config file, which a bare `store_true` could not do.
 | Flag                 | Default                                                | What it does                                                                      |
 |----------------------|--------------------------------------------------------|-----------------------------------------------------------------------------------|
 | `-m`, `--model`      | `./model/model_<revision-without-dots>`                | Folder holding the model sub-folders                                              |
-| `-b`, `--base`       | `timm/regnety_160.swag_ft_in1k` (`[SETUP] base_model`) | Base-model repository                                                             |
+| `-b`, `--base`       | `timm/regnety_160.swag_ft_in1k` (`[SETUP] base_model`) | Base model of a revision `model_registry.py` does not list                        |
 | `-rev`, `--revision` | —                                                      | Hugging Face revision: `main`, `vN.0` or `vN.M`                                   |
 | `--hf / --no-hf`     | `False` (`[HF] use_hf`)                                | Take model and processor from the Hugging Face hub                                |
 | `--yolo / --no-yolo` | `False` (`[YOLO] use_yolo`)                            | Use a YOLO-cls model instead of ViT/CNN — **overrides `--base` and `--revision`** |
@@ -62,6 +62,7 @@ in the config file, which a bare `store_true` could not do.
 | `--folds`                  | `0` (`[TRAIN] cross_runs`)   | Number of cross-validation folds, 80/10/10 split                                                                                                              |
 | `--folds_csv`              | `[TRAIN] folds_csv`          | Explicit folds CSV (`PNG` column + `foldN` columns holding `train`/`dev`/`test`). **Takes precedence over `--folds`**; pages absent from the CSV are excluded |
 | `--fold_column`            | auto                         | Which fold column to read. Resolved per revision from `REVISION_BEST_FOLDS` when omitted                                                                      |
+| `--eval_dir`               | `[EVAL] FOLDER_PAGES`        | Folder with one sub-folder per category to evaluate on; with `--folds_csv`, only the fold's `test` pages in it count                                          |
 | `--average`                | off                          | Average existing fold weights                                                                                                                                 |
 | `-ap`, `--average_pattern` | —                            | Which weights to average, e.g. `model_v4`                                                                                                                     |
 
