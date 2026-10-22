@@ -154,7 +154,7 @@ Both prediction endpoints take the same multipart form; `pages` is `/predict_doc
 selection), `page` being its 1-based position in the PDF. When the baseline's page rows carry
 `page_index` (a born-digital record, named by PDF page labels), each entry's `page_label` names the
 row its category was written under. `models_used` names the model revisions that answered, per page in
-`/predict_document` (since v1.9.9-beta; fewer than five with `version=all` means a reduced ensemble).
+`/predict_document` (since v1.9.10-beta; fewer than five with `version=all` means a reduced ensemble).
 `document_json` is added only when a record was asked for:
 
 ```json

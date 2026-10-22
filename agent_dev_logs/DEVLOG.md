@@ -2600,7 +2600,7 @@ Against `test` `a38ae4d` and every `agent-skill` head of 12:29–12:53 (the roun
   page and a schema changelog line; re-vendored into the six tools.
 - **#77, translator#46:** the pilot page (11 November for the images, acceptance in the second half of November
   with @rharasim, 250 MB, nlp-enrich's `/jobs`); the acceptance runbook's translator metadata run; the K8s pages at
-  250 MB. page-classification `v1.9.9-beta` carries `models_used`.
+  250 MB. page-classification `v1.9.10-beta` carries `models_used` (`v1.9.9-beta` was tagged before it).
 - **#78:** translator's `lindat-daily.yml` (24 identical requests, numbers and target language checked), in
   `ci_policy.md` and the architecture page.
 - **#79:** digital-convert and keyword-extract on the README skeleton, with relocation maps; the workflow pages
