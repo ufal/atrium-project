@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `test` = `18f0668` (2026-10-25) = `v1`; freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-25 (night), at the end of the file (this file is not in date order): the six tools pinned by commit, the CAA paper checked against the repositories._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `test` = `e0c19f3` (2026-10-25) = `v1` (the tools pinned to `18f0668`); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-26, at the end of the file (this file is not in date order): the paper's typography, #81's evidence by the first gated tags, the SWAG licence question._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -2678,3 +2678,15 @@ Against `test` `a38ae4d` and every `agent-skill` head of 12:29–12:53 (the roun
 - Plans 13, 67, 72 and 81 and digests 13 and 72 updated.
 - **Checks:** `pin_hub_reusables.py --check` 0 to change; `workflow_lint --require-sha-pins` 6/6; `mkdocs build
   --strict`.
+
+## 2026-10-26 — The paper's typography; #81 closes on real tags; the SWAG base licence
+- **Why:** the maintainer's Overleaf build of the 10-25 revision (v15) and four decisions: keep page-classification's
+  `README.html` and the #82 pair, take the first gated tags as #81's release evidence (no dispatched dry runs), name
+  `vit` as page-classification's default branch, and state the SWAG base licence in the docs while asking #6.
+- **#13:** the four render defects of v15 fixed (Table 1's names, the repository citations, letter-spaced URLs,
+  hyphenated figure boxes); content unchanged. The plan records v15.
+- **#81, #40:** the plans record what is ticked, what is tickable and what waits for the tags; #40's stale "0 of 42
+  pinned" is replaced by the pins at `18f0668`.
+- **page-classification:** CONTRIBUTING's branch table; `licences.md`/`models.md` state that the RegNetY base
+  (`regnety_160.swag_ft_in1k`, SWAG) is CC BY-NC 4.0; `para_config.txt` is unchanged until #6 answers.
+- Plans 13, 40 and 81 and digest 40 updated.
