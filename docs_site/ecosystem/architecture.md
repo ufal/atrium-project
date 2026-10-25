@@ -30,7 +30,7 @@ What holds them together is the hub, `atrium-project`, and it does so in two way
 flowchart TB
   subgraph HUB["atrium-project — the hub"]
     SHARED["docs/templates/shared/<br/>24 canonical files + MANIFEST.json"]
-    REUSE["8 reusable workflows<br/>pinned by callers at @v1"]
+    REUSE["8 reusable workflows<br/>pinned by callers to a commit"]
     E2E["3 end-to-end workflows"]
     SITE["this site"]
   end
@@ -41,7 +41,7 @@ flowchart TB
   end
   GHCR[("GHCR<br/>atrium-&lt;tool&gt; · atrium-&lt;tool&gt;-api")]
   SHARED -- "revendor_shared.sh copies" --> VEND
-  CALL -- "uses: …@v1" --> REUSE
+  CALL -- "uses: …@sha  # v1" --> REUSE
   REUSE -- "para-drift diffs every byte" --> VEND
   REUSE -- "builds, gates, publishes" --> GHCR
   GHCR -- "pulled by image tag" --> E2E
@@ -151,9 +151,9 @@ The script exits 0 only when CI would pass. A sibling checkout it cannot find is
 ## The CI federation
 
 Each tool repository keeps a set of **thin caller workflows**; the real logic lives in eight
-reusable workflows in the hub. The callers reach them at **`@v1`**, a tag in the hub that is moved
-deliberately, or, once the #72 sweep has run, at a commit of it named `# v1`, which only a reviewed
-pin change moves. `test` is the hub's pre-release channel.
+reusable workflows in the hub. Since the #72 sweep (2026-10-25) the callers reach them at a commit of
+the hub's **`v1`** tag, written `@<sha>  # v1`, which only a reviewed pin change moves; `v1` itself is
+moved deliberately, and `test` is the hub's pre-release channel.
 
 | Hub reusable                  | What it does for a tool repository                                                                                                                           |
 |-------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|

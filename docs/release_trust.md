@@ -42,16 +42,17 @@ references, the `doc-schema-v*` freezes, have their own rule.
 
 Releases and callers read with the public API and the `test` trees (no admin rights needed); the
 ruleset column is as `status` read it on 10-20, nothing has been reported since. `status` gives
-the rulesets in detail.
+the rulesets in detail. The callers' column is the pin sweep of 10-25 (night): every caller and action step at
+the hub commit `18f0668` (`v1` then), with `require-sha-pins` on.
 
-| Repository          | Tag ruleset on `v*` (10-20)           | Latest release immutable | Hub references by commit                   |
+| Repository          | Tag ruleset on `v*` (10-20)           | Latest release immutable | Hub references by commit (`18f0668`)       |
 |---------------------|---------------------------------------|--------------------------|--------------------------------------------|
-| page-classification | yes (`Protect v* Tags`, 10-19)        | yes (`v1.9.10-beta`)     | 0 of 8 callers, 0 of 1 action steps        |
-| ocr-postprocess     | **no**                                | yes (`v1.12.1-beta`)     | 0 of 8, 0 of 1                             |
-| digital-convert     | **no**                                | yes (`v1.2.2-beta`)      | 0 of 8, 0 of 1                             |
-| nlp-enrich          | yes (`Protect v* Tags`, 10-19)        | yes (`v1.1.3-beta`)      | 0 of 8, 0 of 2                             |
-| keyword-extract     | **no**                                | yes (`v1.4.0-beta`)      | 0 of 8, 0 of 3                             |
-| translator          | **no**                                | yes (`v1.5.0-beta`)      | 0 of 8, 0 of 2                             |
+| page-classification | yes (`Protect v* Tags`, 10-19)        | yes (`v1.9.10-beta`)     | 8 of 8 callers, 1 of 1 action steps        |
+| ocr-postprocess     | **no**                                | yes (`v1.12.1-beta`)     | 8 of 8, 1 of 1                             |
+| digital-convert     | **no**                                | yes (`v1.2.2-beta`)      | 8 of 8, 1 of 1                             |
+| nlp-enrich          | yes (`Protect v* Tags`, 10-19)        | yes (`v1.1.3-beta`)      | 8 of 8, 2 of 2                             |
+| keyword-extract     | **no**                                | yes (`v1.4.0-beta`)      | 8 of 8, 3 of 3                             |
+| translator          | **no**                                | yes (`v1.5.0-beta`)      | 8 of 8, 2 of 2                             |
 | hub                 | `doc-schema-v*`: **no**               | —                        | —                                          |
 
 An action step is a step that runs one of the hub's composite actions

@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `test` = `5bded94` (2026-10-25) = `v1`; freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-25 (evening), at the end of the file (this file is not in date order): the documentation check in CI, the CONTRIBUTING checklists, the evidence runs and the pins' target._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `test` = `18f0668` (2026-10-25) = `v1`; freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-25 (night), at the end of the file (this file is not in date order): the six tools pinned by commit, the CAA paper checked against the repositories._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -2659,3 +2659,22 @@ Against `test` `a38ae4d` and every `agent-skill` head of 12:29–12:53 (the roun
 - **Housekeeping:** the #82 pair removed (the issue closed on 10-23; nothing cites it).
 - Digests 6, 17, 72, 79, 81 and plans 13 (letters), 67, 72, 77, 78, 79, 81 updated.
 - **Checks:** hub 845 passed, 9 skipped; `workflow_lint` on the hub; `docs_check` 7/7, also as CI lays it out.
+
+## 2026-10-25 (night) — The tools pinned by commit (#72); the CAA paper checked against the repositories (#13)
+- **Why:** the maintainer pushed batch 1 (`d8b94ba`) and the issue-log refresh (`18f0668`), moved `v1` to it, and
+  asked for the paper to be checked against the `test` heads and the issues, the issue exports refreshed, and the
+  pins built.
+- **#72 E.4 step B:** the six tools call the hub at `18f0668` (48 callers, 10 action steps, `hub-ref` the same,
+  `require-sha-pins` on); `workflow_lint` with the pins required is OK in all six. `release_trust.md`,
+  `ci_policy.md` and the architecture page record it. Left: the four tag rulesets (@stranak).
+- **#13:** the manuscript checked claim by claim against the six tools and the hub. The corrections: the table and
+  form categories exist; LayoutReader orders ALTO only; Docling refines the light engine; the translator protects
+  terms and writes back into the source structure; the stamps and the paradata as the schema docs describe them;
+  the born-digital smoke's own fixtures; one Galaxy wrapper; the training-set counts; `0xSpVP`'s title; the
+  Process Run Crate 0.5 citation. 4,975 words; it compiles to 16 pages. The plan and digest are refreshed (they
+  stood at 10-21).
+- **Issue exports:** the maintainer's refresh (`18f0668`, gh2md) matches the agent's regeneration line for line,
+  footer aside. The agent's copy is dropped.
+- Plans 13, 67, 72 and 81 and digests 13 and 72 updated.
+- **Checks:** `pin_hub_reusables.py --check` 0 to change; `workflow_lint --require-sha-pins` 6/6; `mkdocs build
+  --strict`.
