@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `test` = `d760851` (2026-10-23) = `v1`; freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-25, at the end of the file (this file is not in date order): pilot readiness across the six tools (citations, the release gate everywhere, the docs overhaul, the pins' gap), delivered as per-repository archives._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `test` = `5bded94` (2026-10-25) = `v1`; freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-25 (evening), at the end of the file (this file is not in date order): the documentation check in CI, the CONTRIBUTING checklists, the evidence runs and the pins' target._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -2638,3 +2638,24 @@ Against `test` `a38ae4d` and every `agent-skill` head of 12:29–12:53 (the roun
 - **#4, #17:** `jGxgQI` and the re-pointed `j9fqxo` on the workflow pages; the `0xSpVP` step table names all six.
 - **Dev logs:** pairs refreshed for #4, #6, #17, #67, #72, #77; translator#46 and keyword-extract#2 in their repositories.
 - **Checks:** hub 845 passed, 9 skipped; `mkdocs build --strict`; `workflow_lint` over the six; docs_check 7/7.
+
+## 2026-10-25 (evening) — The documentation check in CI; the evidence the gates and the LINDAT probe still need
+- **Why:** this round takes only what is decided and needs nobody else: #79's step 6 (motyc: a lightweight
+  documentation check on pull requests and releases), #81's last acceptance point (the CI change checklist as the
+  norm), and #72's step B, announced on 10-25. All seven heads and every scheduled lane were green at the start.
+- **#79 E:** `workflow-lint.reusable.yml` runs `tools/docs_check.py` over the caller's tree, advisory until the
+  newcomer review (D) and blocking after it; the hub's self-check runs it on the hub through the same reusable.
+  `ci_policy.md` has its row and `documentation-style.md` says where it runs. The six quick starts were checked
+  statically against the releases they name: nothing to fix.
+- **#81:** `ci_policy.md` cites digital-convert's two dry runs and no longer says the five lack the gate; each
+  tool's CONTRIBUTING links the "Changing CI" checklist. The other five each get one clean dry run (dispatched by
+  the maintainer) before their first gated tag.
+- **#72:** step B's target is this commit (the maintainer's call), so the tools adopt the documentation check with
+  their pins.
+- **#78:** nlp-enrich's daily probe gets one dispatched run before its first scheduled one, because its fixtures
+  were written without access to LINDAT.
+- **#13:** David Spáčil's answers (10-25) recorded in `plans/13.letters.md`; the `CITATION.cff` files wait for the
+  other co-authors.
+- **Housekeeping:** the #82 pair removed (the issue closed on 10-23; nothing cites it).
+- Digests 6, 17, 72, 79, 81 and plans 13 (letters), 67, 72, 77, 78, 79, 81 updated.
+- **Checks:** hub 845 passed, 9 skipped; `workflow_lint` on the hub; `docs_check` 7/7, also as CI lays it out.

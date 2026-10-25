@@ -118,3 +118,25 @@ jobs:
       # with a notice. It checks the committed tree, so no build is needed.
       - name: Check the production image's first-party closure
         run: python hub-repo/tools/ci/image_closure.py --repo-root tool-repo --hub-root hub-repo
+
+      # atrium-project#79 E: the documentation check. The hub's tools/docs_check.py reads the
+      # caller's tracked Markdown and fails on what a reader would hit: an emoji in a heading, a
+      # relative link to a missing file or to an anchor no heading produces under GitHub's rules,
+      # a README without its documentation map or the link to the style guide. It does not judge
+      # the prose or the examples; the newcomer review (#79 D) does. Advisory until that review is
+      # in, then blocking: delete continue-on-error. The report is in the run's summary either way.
+      - name: Check the documentation (advisory)
+        # ci-optional: advisory until the #79 D review; docs/ci_policy.md
+        continue-on-error: true
+        shell: bash
+        run: |
+          python hub-repo/tools/docs_check.py --repos-root . --repo tool-repo | tee docs-check.txt
+          rc=${PIPESTATUS[0]}
+          {
+            echo '### Documentation check (advisory, atrium-project#79)'
+            echo
+            echo '```'
+            cat docs-check.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$rc"

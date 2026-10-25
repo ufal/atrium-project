@@ -84,5 +84,7 @@ reports:
 - a README without a documentation map or without a link to this guide (errors);
 - a README longer than 250 lines (a warning).
 
-It is advisory until the six READMEs pass, and then becomes part of the documentation checklist of
-every release ([`ci_policy.md`](ci_policy.md)).
+All six tools and the hub pass it since 2026-10-25. It runs in every repository's Workflow Policy
+Lint (`workflow-lint.reusable.yml`), on pull requests and pushes, with its report in the run's summary.
+It is advisory until the newcomer review (#79 D) is in, and blocking after it
+([`ci_policy.md`](ci_policy.md)).
