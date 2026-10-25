@@ -38,19 +38,24 @@ workflow callers, not a source release, so no tag rule covers it. The tool repos
 following it when they call the hub's reusables by commit (step 7). The hub's genuinely fixed
 references, the `doc-schema-v*` freezes, have their own rule.
 
-## State on 2026-10-20
+## State on 2026-10-25
 
-Read with the public API (no admin rights needed); `status` gives the same with ruleset details.
+Releases and callers read with the public API and the `test` trees (no admin rights needed); the
+ruleset column is as `status` read it on 10-20, nothing has been reported since. `status` gives
+the rulesets in detail.
 
-| Repository          | Tag ruleset on `v*`                   | Latest release immutable | Hub reusables by commit |
-|---------------------|---------------------------------------|--------------------------|-------------------------|
-| page-classification | yes (`Protect v* Tags`, 10-19)        | yes (`v1.9.5-beta`)      | 0 of 7 callers          |
-| ocr-postprocess     | **no**                                | yes (`v1.12.1-beta`)     | 0 of 7                  |
-| digital-convert     | **no**                                | yes (`v1.2.1-beta`)      | 0 of 7                  |
-| nlp-enrich          | yes (`Protect v* Tags`, 10-19)        | yes (`v1.1.2-beta`)      | 0 of 7                  |
-| keyword-extract     | **no**                                | yes (`v1.4.0-beta`)      | 0 of 7                  |
-| translator          | **no**                                | yes (`v1.5.0-beta`)      | 0 of 7                  |
-| hub                 | `doc-schema-v*`: **no**               | —                        | —                       |
+| Repository          | Tag ruleset on `v*` (10-20)           | Latest release immutable | Hub references by commit                   |
+|---------------------|---------------------------------------|--------------------------|--------------------------------------------|
+| page-classification | yes (`Protect v* Tags`, 10-19)        | yes (`v1.9.10-beta`)     | 0 of 8 callers, 0 of 1 action steps        |
+| ocr-postprocess     | **no**                                | yes (`v1.12.1-beta`)     | 0 of 8, 0 of 1                             |
+| digital-convert     | **no**                                | yes (`v1.2.2-beta`)      | 0 of 8, 0 of 1                             |
+| nlp-enrich          | yes (`Protect v* Tags`, 10-19)        | yes (`v1.1.3-beta`)      | 0 of 8, 0 of 2                             |
+| keyword-extract     | **no**                                | yes (`v1.4.0-beta`)      | 0 of 8, 0 of 3                             |
+| translator          | **no**                                | yes (`v1.5.0-beta`)      | 0 of 8, 0 of 2                             |
+| hub                 | `doc-schema-v*`: **no**               | —                        | —                                          |
+
+An action step is a step that runs one of the hub's composite actions
+(`ufal/atrium-project/.github/actions/lane-failure-issue`, #81); step 7 pins it with the callers.
 
 Releases from before immutability was switched on stay mutable (page-classification up to
 `v1.9.4-beta`, nlp-enrich up to `v1.1.0-beta`, translator up to `v1.4.0-beta`); AMČR mirrors only
@@ -70,7 +75,9 @@ any `gh release upload` or upload-release-asset step after the release exists.
 **The image a release certifies (#81, decided 10-22).** A repository that has moved its image job into
 `release.yml` (digital-convert first; [`ci_policy.md`](ci_policy.md), Releases) attaches `images.json` in
 that same step: the reusable's `images` job reads the digest each promoted tag resolves to, and the
-release job writes it out before the release exists. The image job is a cross-repo `uses:`, the one
+release job writes it out before the release exists. digital-convert released this way first
+(`v1.2.2-beta`); the other five carry the same `image` job on `test` since 2026-10-25 and certify
+their images from their next tags. The image job is a cross-repo `uses:`, the one
 exception to "a release gate must not depend on a cross-repo `uses:` resolving at tag-push time"
 (`docker_gha_roadmap.md` §3.3): only the hub's reusable builds, probes and scans the image a release must
 now certify. It is adopted at `v1`, then by commit with the other callers (step 7 below). The version
@@ -134,7 +141,9 @@ by the next version, never by moving its tag or replacing an asset.
 
    Every `uses: ufal/atrium-project/.github/workflows/<name>.reusable.yml@v1` becomes
    `@<sha>  # v1`, and the two reusables that read hub files (`para-drift`, `workflow-lint`) get
-   `hub-ref: <sha>` too. The linter already accepts both forms and fails a caller whose pin and
+   `hub-ref: <sha>` too. Every step that runs a hub composite action
+   (`ufal/atrium-project/.github/actions/<name>@v1`) gets the same `@<sha>  # v1`, so no step keeps
+   following the moving tag; `--require-sha-pins` refuses an action left at `@v1` as well. The linter already accepts both forms and fails a caller whose pin and
    `hub-ref` differ, so a Dependabot bump that moves only one of them turns red.
 8. **The pin is mandatory from the sweep on.** The sweep also writes `require-sha-pins: true`
    into each tool repository's workflow-lint caller, so that repository's lint refuses a hub

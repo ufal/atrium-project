@@ -59,8 +59,10 @@ block changes), and needs no shared volume or orchestrator.
    tool's `program`, its paradata `run_id`, and a `paradata_ref`. Granularity comes from here.
    For a field-split block the stamp names the **most recent** writer, so the full picture lives
    in `provenance.contributors[]`, where each run lists the blocks it wrote.
-5. **Licenses accrete** through `para_licenses.merge_effective_licenses` — the same
-   most-restrictive union as paradata — so the JSON stays self-describing for catalogue export.
+5. **Component licences accrete** through `para_licenses.merge_effective_licenses` — the same
+   most-restrictive union as paradata. `provenance.license` is that calculation, not the licence
+   of the record or of any output: the rights in an output depend on the source document and are
+   stated only by whoever holds them (#6, agreed 2026-10-22; the schema's descriptions say so).
 6. **Unknown or newer blocks are preserved** verbatim; a newer MAJOR `schema_version` is refused
    with the same guard as `load_paradata()`.
 
@@ -952,16 +954,16 @@ the hub-canonical set (`SHARED_FILES`, a `diff -u` step and a `--selftest` step 
 It **maps, it does not invent**. Every property comes from a field the record or its paradata
 already carries, and a field that does not exist is omitted rather than guessed:
 
-| RO-Crate                 | ATRIUM source                                                                                  |
-|--------------------------|------------------------------------------------------------------------------------------------|
-| root `license`           | `provenance.license_url` / `license` — already the most-restrictive union from `para_licenses` |
-| root `author`            | the four ORCID `Person`s identical in every `CITATION.cff`                                     |
-| root `hasPart`           | `derived_from` values, and **only** those                                                      |
-| root `isBasedOn`         | `source`, as a contextual entity: no path, because originals are archive-managed               |
-| root `about`             | every controlled term, as a `DefinedTerm` under `atrium_vocab.concept_uri()`                   |
-| `CreateAction`           | one per `provenance.contributors[]` entry                                                      |
-| `CreativeWork` per block | one per `assembled.blocks[…]` stamp — the accretion granularity, preserved                     |
-| `SoftwareApplication`    | paradata `tool_version` / `repository` / `docker_image` / `runner_ref`                         |
+| RO-Crate                 | ATRIUM source                                                                                                                              |
+|--------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| root `license`           | `provenance.license_url` / `license` — the calculated most-restrictive union, not a rights assertion; held until #6 settles the crate root |
+| tool `creator`           | the ORCID `Person`s of every `CITATION.cff` (`atrium_rocrate.AUTHORS`; root `author` until #71)                                            |
+| root `hasPart`           | `derived_from` values, and **only** those                                                                                                  |
+| root `isBasedOn`         | `source`, as a contextual entity: no path, because originals are archive-managed                                                           |
+| root `about`             | every controlled term, as a `DefinedTerm` under `atrium_vocab.concept_uri()`                                                               |
+| `CreateAction`           | one per `provenance.contributors[]` entry                                                                                                  |
+| `CreativeWork` per block | one per `assembled.blocks[…]` stamp — the accretion granularity, preserved                                                                 |
+| `SoftwareApplication`    | paradata `tool_version` / `repository` / `docker_image` / `runner_ref`                                                                     |
 
 **The reference-discipline rule, restated in RO-Crate terms.** `regenerable` entries are recipes
 for files that do not exist, so they are contextual entities and never appear in `hasPart`. A

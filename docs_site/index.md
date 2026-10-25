@@ -28,14 +28,14 @@ together — seven repositories in all.
 
 <div class="grid cards" markdown>
 
--   **[page-classification](tools/page-classification/index.md)**
+-   **page-classification**
 
     ---
 
     Sorts a scanned page into one of **eleven structural categories** — so a person or a script
     can decide whether it needs OCR, handwriting recognition, table extraction or image handling.
 
-    [Overview](tools/page-classification/index.md) · [Guide](tools/page-classification/guide.md) · [Reference](tools/page-classification/reference.md) · [Workflow](workflows/page-classification.md)
+    [Workflow](workflows/page-classification.md) · [Documentation](https://github.com/ufal/atrium-page-classification/blob/test/README.md#documentation) · [Landing page](https://ufal.github.io/atrium-page-classification/) · [Source](https://github.com/ufal/atrium-page-classification)
 
 -   **ocr-postprocess**
 
@@ -47,14 +47,14 @@ together — seven repositories in all.
 
     [Workflow](workflows/ocr-postprocess.md) · [Landing page](https://ufal.github.io/atrium-ocr-postprocess/) · [Source](https://github.com/ufal/atrium-ocr-postprocess)
 
--   **[translator](tools/translator/index.md)**
+-   **translator**
 
     ---
 
     Translates ALTO pages and AMCR metadata records **in place** — every tag, namespace and
     coordinate preserved; only the text changes.
 
-    [Overview](tools/translator/index.md) · [Guide](tools/translator/guide.md) · [Reference](tools/translator/reference.md) · [Workflow](workflows/translator.md)
+    [Workflow](workflows/translator.md) · [Documentation](https://github.com/ufal/atrium-translator/blob/test/README.md#documentation) · [Landing page](https://ufal.github.io/atrium-translator/) · [Source](https://github.com/ufal/atrium-translator)
 
 -   **nlp-enrich**
 
@@ -96,10 +96,8 @@ together — seven repositories in all.
 
 ## Start here
 
-- **[page-classification](tools/page-classification/index.md)** — sort a scanned page into
-  one of 11 structural categories, so you know what to do with it next
-- **[translator](tools/translator/index.md)** — translate ALTO and AMCR XML in place, every
-  tag and coordinate preserved
+- **[Workflows](workflows/index.md)** — what each of the six tools does and where it sits in the
+  chain; each workflow page links the tool's own documentation
 - **[Pipelines](pipelines.md)** — what the tools do, end to end: what each stage reads and
   writes, drawn as the file flow and the record flow
 - **[Workflows](workflows/index.md)** — each tool's own workflow, step by step, with the formats

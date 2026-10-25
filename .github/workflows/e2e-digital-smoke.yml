@@ -1,71 +1,26 @@
-# atrium-project — E2E smoke for the BORN-DIGITAL branch (W10, issue #10 tail).
+# atrium-project — E2E smoke for the BORN-DIGITAL branch (W10, issue #10 tail): digital-convert's
+# published images, the `-digital` CLI (Cases 1-6) and the `-api` service (Case 7).
+# Reasons and incident history: docs/decisions/e2e-lanes.md.
 #
-#     digital-convert
+# A SIBLING of e2e-pipeline-smoke.yml, not a stage of it: no scanned stage can run on a
+# born-digital record. pc needs a page image, and a born-digital PDF has none. ocr-postprocess
+# MUST NOT run: atrium_document's `_assert_origin_consistent()` refuses its positional
+# `pages`/`lines` writes on a `digital-born-*` record (only the scoring-only merge,
+# `POST /score_record`, gets through). translator and nlp-enrich need ocr-postprocess's output.
+# digital-convert is this branch's ORIGINATOR: it takes no `--document-json` baseline.
+# keyword-extract's controlled kind is to join as a second stage (atrium-keyword-extract#1).
 #
-# One stage. This is a SIBLING of e2e-pipeline-smoke.yml, not a stage bolted onto it, and the
-# data flow is what forces that — every scanned stage is structurally unreachable from a
-# born-digital record:
+# What only this covers: the §1a arbitration. On a born-digital record the one thing that
+# re-authorises ocr-postprocess is the converter setting `needs_ocr: true` (Case 2; Case 7
+# through the service). Cases 4-6 smoke digital-convert#18's layout and refusal contract.
 #
-#   pc          needs a page image; a born-digital PDF has none, and no raster step
-#               exists to make one.
-#   ocr         MUST NOT run. atrium_document's `_assert_origin_consistent()`
-#               refuses every positional `pages`/`lines` write against a record whose
-#               `source.origin` is `digital-born-*`, pinned by
-#               `test_without_needs_ocr_alto_is_still_refused`. Chaining ocr-postprocess
-#               here would assert that the ownership rule is broken. (The one write it
-#               lets through is a scoring-only merge of `SCORING_FIELDS`, ocr-postprocess's
-#               `POST /score_record` — atrium-digital-convert#4 W3 — which adds no rows.)
-#   translator  needs `PAGE_ALTO/`, which is ocr-postprocess's split output.
-#   nlp         needs the DOC_LINE_CATEG classify CSV *and* `INPUT_ALTO_DIR`.
+# Fixtures are GENERATED, never committed, by digital-convert's deterministic, sha256-pinned
+# tests/fixtures/digital/make_fixtures.py, with `--manifest` in the work dir: the generator
+# rewrites its manifest, which would dirty the checkout (`assert-clean-tree`).
 #
-# The semantic stage that used to follow the converter here (llm-enrich's `/extract_keywords`
-# over the record) moved with all keyword extraction to keyword-extract on 2026-10-01
-# (atrium-keyword-extract#1). Its controlled kind joins this branch as a second stage when it
-# ships there, reading the converter's record exactly as the old step did.
-#
-# `digital-convert` is this branch's ORIGINATOR — like page-classification on the
-# scanned branch, it takes no `--document-json` baseline, it creates the record.
-#
-# ── What this covers that nothing else does ─────────────────────────────────────
-# The §1a arbitration. A born-digital record normally locks ocr-postprocess (named
-# alto-postprocess until 2026-10-01) out of `pages`/`lines` entirely; the ONE thing that
-# re-authorises it is the converter setting `needs_ocr: true` — "there is a text layer here
-# and I do not trust it". That handoff is the whole reason two originators can coexist, and
-# until this workflow it was covered only by unit tests inside a single repo. Case 2 below
-# asserts it against a real published image.
-#
-# ── And what digital-convert#18 added (Cases 4-6) ───────────────────────────────
-# The converter stopped flattening: DOCX pages, headings, running headers/footers and
-# footnotes in `lines[].style`, tables joined to their lines, two-column PDFs in
-# reading order, and a PDF whose text layer is a prior OCR run refused (exit 3) rather
-# than recorded as born-digital. Cases 4-6 smoke those through the published image.
-# They run only when BOTH halves carry #18 — the generator that makes the fixtures and
-# the image that converts them — because the two come from different places (below).
-#
-# ── And the service (Case 7, atrium-digital-convert#2 H.1) ──────────────────────
-# Cases 1-6 run the `-digital` CLI image. The AMČR route calls the `-api` image's
-# `POST /reformat`, so Case 7 asserts the contract once more through the service: the
-# seed's identity, the run's CreateAction (atrium-project#71 R2), the `needs_ocr` /
-# `text_layer` verdict, and the two refusals the route acts on (422
-# `source_digest_mismatch`, 422 `ocr_text_layer`).
-#
-# ── Fixtures are GENERATED, never committed ─────────────────────────────────────
-# `atrium-digital-convert/tests/fixtures/digital/make_fixtures.py` is a deterministic,
-# pure-stdlib PDF/DOCX generator with sha256-pinned outputs — same design as this
-# repo's own `tools/e2e/render_alto_page.py`, and it needs no Pillow, reportlab or
-# pypdf. `--manifest` is pointed at the work dir on purpose: the generator REWRITES
-# its manifest by default, and writing into a checkout mid-run is exactly the
-# tree-mutation the docker reusable's `assert-clean-tree` now fails on.
-#
-# ── Sequencing ──────────────────────────────────────────────────────────────────
-# The repository was created on 2026-10-01 (atrium-project#72), and its images are published
-# under its own name: `ghcr.io/ufal/atrium-digital-convert-digital`. Until its first `test`
-# push or release there is no image at any tag, and the preflight says `MISSING` rather than
-# dying on a `denied` from the daemon. The predecessor's `atrium-llm-enrich-digital` images
-# stay where they are for consumers pinned to them, and are no longer tested here.
-#
-# The `:test` channel moves on a push to the `test` branch (the `build-and-push` gate at `v1`
-# of docker-tool.reusable.yml); `:latest` moves only on a release tag.
+# Status: the images are ghcr.io/ufal/atrium-digital-convert-digital and -api. `:test` moves
+# on a push to digital-convert's `test` branch, `:latest` only on its release tag; until then
+# there is no image at that tag, and the preflight says MISSING.
 
 name: E2E Digital-Born Smoke Test
 
@@ -88,9 +43,8 @@ on:
       - "tools/e2e/e2e_assert.py"
       - "tools/e2e/requirements.txt"
   schedule:
-    # 06:00, clear of e2e-pipeline-smoke.yml (02:00) and all-repos-smoke.yml (04:00).
-    # Three heavy jobs on one cron contend for runners and interleave three unrelated
-    # failure reports into one digest window.
+    # 06:00, clear of e2e-pipeline-smoke.yml (02:00) and all-repos-smoke.yml (04:00), so heavy
+    # jobs do not contend for runners or interleave their failure reports.
     - cron: '0 6 */3 * *'
 
 concurrency:
@@ -101,21 +55,10 @@ permissions:
   contents: read
 
 env:
-  # Channel by EVENT, not one flat default (2026-08-18).
-  #
-  # `inputs.image-tag` is empty on every non-dispatch event, so `|| 'latest'`
-  # meant a PUSH smoked the RELEASED image. For `-digital` that is a guaranteed
-  # red — `:latest` exists only once a release tag carrying the digital build
-  # target is cut — and this workflow's own file is on the `paths` filter above.
-  # So every edit to this file re-ran it against an artifact the edit could not
-  # possibly have produced. Run 32130934621 is precisely that: a push of the
-  # workflow's own repair, failing on a missing release image.
-  #
-  #   push      -> `test`. A code push asks "does what we are about to release
-  #                still hold?", which is the pre-release channel's whole job.
-  #   schedule  -> `latest`. The nightly's job is the opposite question: does the
-  #                artifact consumers actually pull still work?
-  #   dispatch  -> whatever was chosen.
+  # Channel by EVENT: a push runs `:test` ("does what we are about to release still hold?"),
+  # the schedule `:latest` ("does the artifact consumers pull still work?"), a dispatch what was
+  # chosen. A push must never run `:latest`: an edit to this file (on the `paths` filter) cannot
+  # have produced that image. History: docs/decisions/e2e-lanes.md#image-channel-by-event
   IMAGE_TAG: ${{ inputs.image-tag || (github.event_name == 'push' && 'test' || 'latest') }}
   DIGITAL_IMAGE: ghcr.io/ufal/atrium-digital-convert-digital
   API_IMAGE: ghcr.io/ufal/atrium-digital-convert-api
@@ -130,23 +73,10 @@ jobs:
       issues: write    # open an issue when the SCHEDULED run fails
 
     steps:
-      # NOT `repository: ufal/atrium-project` + `ref: v1`, which is what this
-      # step did until 2026-08-18. This workflow LIVES in the hub, so the default
-      # checkout already gives the hub — pinning it to `v1` meant the workflow file
-      # came from the ref being run while `tools/e2e/e2e_assert.py` came from a tag
-      # cut 2026-08-06, and the two had already diverged:
-      #
-      #   `git show v1:tools/e2e/e2e_assert.py | grep -c expect-needs-ocr`  ->  0
-      #
-      # `--expect-needs-ocr` does not exist at v1, so the "Assert the needs_ocr
-      # handoff" step below would have died on `unrecognized arguments` the moment
-      # the image problem in front of it was cleared. v1 does not contain this
-      # workflow file at all, which is the tell: a self-referencing checkout pinned
-      # to a tag that predates the thing doing the checking.
-      #
-      # Same reasoning codeql.yml and pre-commit.yml already record for using
-      # `uses: ./…` over `@v1` — a ref being tested must be validated by the tooling
-      # that ships with it.
+      # The default checkout, on purpose: this workflow lives in the hub, so tools/e2e/ comes from
+      # the commit under test. Never pin it to another ref such as `v1`: the lane would then assert
+      # with tooling that does not ship with it. History:
+      # docs/decisions/e2e-lanes.md#hub-checkout-born-digital-lane
       - name: Checkout hub (fixtures, assert script)
         uses: actions/checkout@v7
 
@@ -160,15 +90,10 @@ jobs:
       - name: Install e2e tooling dependencies
         run: pip install -r tools/e2e/requirements.txt
 
-      # digital-convert is checked out ONLY for its fixture generator. The converter
-      # itself runs from the published image, which is the thing under test.
-      #
-      # The ref follows the image CHANNEL: `:test` is built from digital-convert's `test`
-      # branch, so the generator comes from there too. Every other channel takes the default
-      # branch, which is NOT the same thing as `:latest` — `:latest` moves only on a release
-      # tag, and the default branch can run ahead of it. That gap is why Cases 4-6 below also
-      # probe the image instead of trusting the fixture list; an empty ref is the checkout
-      # action's default branch.
+      # digital-convert is checked out ONLY for its fixture generator; the converter under test is
+      # the published image. The ref follows the image channel: `test` for `:test`, else the
+      # default branch (an empty ref), which can run ahead of `:latest`, so Cases 4-6 also probe
+      # the image instead of trusting the fixture list.
       - name: Checkout atrium-digital-convert (fixture generator only)
         uses: actions/checkout@v7
         with:
@@ -176,12 +101,8 @@ jobs:
           ref: ${{ env.IMAGE_TAG == 'test' && 'test' || '' }}
           path: work/digital-convert-src
 
-      # `packages: read` has been granted by this job since it was written, and
-      # nothing ever used it — every step went straight to `docker run`, which for
-      # an unauthenticated daemon can only reach PUBLIC packages. The other four
-      # ATRIUM images are public, so the sibling smokes get away with it; a GHCR
-      # package is PRIVATE on creation, so the first pull of a newly published
-      # image fails with `denied` no matter who is asking.
+      # Pulls are authenticated: a GHCR package is PRIVATE on creation, so an anonymous pull of a
+      # newly published image fails with `denied`.
       - name: Log in to GHCR
         uses: docker/login-action@v4
         with:
@@ -190,29 +111,10 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # ── Preflight: is there anything to test? ────────────────────────────────
-      # Run 31930694882 failed as:
-      #
-      #   docker: Error response from daemon: Head
-      #   "https://ghcr.io/v2/ufal/atrium-llm-enrich-digital/manifests/latest": denied
-      #   (the predecessor's package; the same applies to atrium-digital-convert-digital)
-      #
-      # which reads as a permissions problem and is not one. At the time `-digital`
-      # had never been published at ANY tag, for two independent reasons (both
-      # resolved since, and kept here because they are what a MISSING below means):
-      #
-      #   * `:latest` moves only on `refs/tags/v*` (docker-tool.reusable.yml,
-      #     `type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}`).
-      #     The `digital` build target was added to llm-enrich's docker.yml in
-      #     57d8073 (2026-08-06), after the then-newest tag v0.5.2. Every llm-enrich
-      #     release from v0.6.0 (2026-08-19) on carries it, so `-digital:latest` exists.
-      #   * The `:test` channel needed the `build-and-push` gate that admits `push` to
-      #     `refs/heads/test` to be at the `v1` tag the tool repos call. It is at `v1`
-      #     now; before that move a `test` push published nothing at all.
-      #
-      # So a MISSING here means: no release (for `latest`) or no `test` push since the
-      # gate reached `v1` (for `test`), or a package visibility problem (below).
-      # Failing here, by name, beats failing four steps later on a daemon error that
-      # names the wrong cause.
+      # A missing image would otherwise fail later as a daemon `denied`, which reads as a
+      # permissions problem and is not one. MISSING means: no release (for `latest`), no `test`
+      # push (for `test`), or a package visibility problem; the summary says how to fix each.
+      # History: docs/decisions/e2e-lanes.md#preflight
       - name: Preflight - confirm the images exist at the requested tag
         run: |
           set -uo pipefail
@@ -340,23 +242,11 @@ jobs:
             --expect-needs-ocr
 
       # ── Case 3: a record the semantic stage can actually read ───────────────
-      # enrichable.pdf — one page of diacritic-free Czech archaeological prose.
-      #
-      # This case exists because of run 34090340995 (issue #49). The semantic stage that used to
-      # follow the converter (now keyword-extract's controlled kind) was fed
-      # `minimal.document.json`, and minimal.pdf reads "Excavation report, block one,
-      # line one." — placeholder text chosen to make BLOCK BOUNDARIES reviewable, carrying
-      # no site, find, method, period or material. the LLM stage's own document-level prompt
-      # tells the model "If the document has no archaeologically relevant passages, return
-      # an empty items list", so `records enriched: 0` was the model obeying it. The smoke
-      # was asserting a semantic outcome against a fixture built to pin bboxes, and the
-      # failure it reported ("'enrichment' block missing") named neither cause.
-      #
-      # minimal.pdf keeps its two jobs from Case 1 and is deliberately NOT rewritten: its
-      # bytes are a geometry golden, and one fixture serving both a geometry and a semantic
-      # contract is how the two got confused. Asserting the born-digital contract on this
-      # record before D2 also proves the new fixture is a clean born-digital input rather
-      # than something D2's result could be blamed on later.
+      # enrichable.pdf — one page of diacritic-free Czech archaeological prose, for the semantic
+      # stage that follows the converter (keyword-extract's controlled kind): minimal.pdf's
+      # placeholder text has nothing to enrich (issue #49). minimal.pdf is deliberately NOT
+      # rewritten: its bytes are a geometry golden. Asserting the born-digital contract here proves
+      # the fixture is a clean input. History: docs/decisions/e2e-lanes.md#case-3-enrichable-content
       - name: Stage D1c - digital-convert (enrichable content)
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
@@ -371,17 +261,13 @@ jobs:
 
       # ── Cases 4-6: the digital-convert#18 layout and refusal contract ─────────────
       # Two things must both be true, and they come from different places:
-      #
       #   * the IMAGE converts them — probed from its own `--help`, because `--engine`
       #     arrived with #18 and a tag name says nothing about what is inside it;
       #   * the GENERATOR made the fixtures — rich.docx, two_column.pdf and ocr_layer.pdf
       #     exist only from digital-convert c3575f5 on.
-      #
-      # Either one missing SKIPS the case with a notice rather than failing: the nightly
-      # on `:latest` = v0.7.0 has the new generator (default branch) and the old image,
-      # and asserting #18 against a release that predates it would be red for a reason no
-      # commit could fix. Once a release carries #18, the probe turns the cases on by
-      # itself — nothing here needs editing.
+      # Either one missing SKIPS the case with a notice rather than failing: an image that predates
+      # #18 would be red for a reason no commit could fix. Once a release carries #18, the probe
+      # turns the cases on by itself — nothing here needs editing.
       - name: Probe the converter for the digital-convert#18 contract
         id: caps
         run: |
@@ -606,9 +492,8 @@ jobs:
             work/digital_in/MANIFEST.json
           if-no-files-found: warn
 
-      # De-duplicated as of 2026-08-18, and since atrium-project#81 through the shared action
-      # every scheduled lane uses: one open issue per ongoing breakage, commented on each
-      # recurrence. The legacy marker keeps an issue this step opened before the move.
+      # One open issue per ongoing breakage, through the shared action every scheduled lane uses
+      # (atrium-project#81); the legacy marker still finds an issue this step opened before.
       - name: Open or update the lane's issue on scheduled failure
         if: failure() && github.event_name == 'schedule'
         uses: ./.github/actions/lane-failure-issue

@@ -1,4 +1,8 @@
 # Reusable: atrium-project — end-to-end pipeline integration smoke test
+# The scanned-document chain on the published images at `image-tag`: page-classification ->
+# ocr-postprocess -> translator -> nlp-enrich -> keyword-extract, with the record contract
+# asserted after the stages and the RO-Crate validated. Runs on hub pushes to main, every third
+# day, by dispatch and as a reusable workflow. Reasons and history: docs/decisions/e2e-lanes.md.
 name: Reusable E2E Pipeline Smoke Test
 
 on:
@@ -72,45 +76,19 @@ on:
   schedule:
     - cron: '0 2 */3 * *' # Runs at 02:00 on every 3rd day-of-month
 
-# ⚠️ WHAT THIS RUN IS ACTUALLY TESTING (issue #10)
-#
-# The stages below are PUBLISHED CONTAINER IMAGES, and `docker-tool.reusable.yml` moves
-# `:latest` only on a version-tag push:
-#     type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
-# A branch push publishes `sha-*` and `:test`, but never `:latest`.
-#
-# NOTE (corrected 2026-08-06): issue #10 added the `:test` TAG RULE, but until the
-# `build-and-push` job gate was widened in the same round, that rule could never fire —
-# the job ran only on `refs/tags/v*` or a `release` event, and `type=raw,value=test` is
-# enabled only when `github.ref == 'refs/heads/test'`. The two conditions are mutually
-# exclusive, so a branch push published NOTHING AT ALL, not even `sha-*` (that tag rule
-# lives in the same job). Six green `test` pushes in llm-enrich on 2026-08-06 produced no
-# image. The gate now includes `push` to `refs/heads/test`, which is what makes both this
-# line and the `sha-<short>` claim below true.
-#
-# So with `image-tag: latest` this workflow validates THE LAST RELEASE of each tool, while
-# being triggered by hub pushes and a cron. A defect it finds cannot be cleared by fixing
-# the source: the owning repo has to cut a release before this can go green. That is not a
-# flaw in the gate — it is the gate correctly reporting what is deployed — but it must be
-# read that way, or a red run looks like "the pipeline is broken" when it means "the
-# released images are older than the fix".
-#
-# Demonstrated 2026-08-06 (run 31075185518): the schema gate rejected
-# `entities[].type_cnec: null` from nlp-enrich. The fix was already on `test`; `:latest`
-# still pointed at the pre-fix v0.18.2, so no source change could have greened the run.
-#
-# Pass `image-tag: test` (workflow_dispatch) to validate what is about to be released
-# instead. Flipping the DEFAULT to `test` is deliberately not done here: `:test` starts
-# being published only once each repo has pushed a branch commit under the issue #10
-# docker-tool change, so the tag does not exist for every repo yet. Flip it once
+# What a run tests (issue #10): the stages are PUBLISHED images, and `:latest` moves only on a
+# version tag, so with `image-tag: latest` (the default) a run validates THE LAST RELEASE of
+# each tool. A red run can mean the released images are older than the fix, which only a
+# release clears. `image-tag: test` (published on every push to a repo's `test` branch)
+# validates what is about to be released. The default stays `latest` until
 # `docker pull ghcr.io/ufal/atrium-<tool>:test` succeeds for every tool.
+# History: docs/decisions/e2e-lanes.md#what-a-pipeline-run-tests
 
 concurrency:
   group: e2e-pipeline-smoke-${{ github.ref }}
   cancel-in-progress: false
 
-# W3's parameterised E2E (roadmap S6, atrium-project#69): five fixture pairs exist and
-# one was ever used. Push and schedule runs have no inputs, so they keep CTX000000003.
+# Push and schedule runs have no inputs, so they keep CTX000000003 (roadmap S6, #69).
 env:
   E2E_DOC: ${{ inputs.e2e-doc || 'CTX000000003' }}
   # Push and schedule runs have no inputs and run seeded. Compared as a string on purpose: in an
@@ -127,22 +105,10 @@ jobs:
       issues: write
 
     steps:
-      # NOT `repository: ufal/atrium-project` + `ref: v1`, which is what this step did
-      # until 2026-09-11 — the same defect e2e-digital-smoke.yml removed on 2026-08-18
-      # and recorded at length above its own checkout. This workflow LIVES in the hub,
-      # so the default checkout already gives the hub AT THE COMMIT BEING TESTED.
-      # Pinning it meant the workflow file came from the ref being run while
-      # `fixtures/e2e/` and `tools/e2e/e2e_assert.py` came from wherever `v1` pointed:
-      # a self-referencing checkout validated by tooling other than the tooling that
-      # ships with it, which is exactly what a smoke test must not do.
-      #
-      # It failed loudly once the `v1` tag was deleted (run 34591132140 — the fetch of
-      # `+refs/tags/v1*` matched nothing and checkout exited 1). That is the good
-      # outcome: a latent version skew surfaced as a hard error instead of quietly
-      # asserting today's pipeline against a tag's fixtures.
-      #
-      # Same reasoning codeql.yml and pre-commit.yml already record for preferring
-      # `uses: ./…` over `@v1`.
+      # The default checkout, on purpose: this workflow lives in the hub, so fixtures/e2e/ and
+      # tools/e2e/ come from the commit under test. Never pin it to another ref such as `v1`: the
+      # lane would then assert with fixtures and tooling that do not ship with it.
+      # History: docs/decisions/e2e-lanes.md#hub-checkout
       - name: Checkout ATRIUM Hub Repository
         uses: actions/checkout@v7
 
@@ -217,11 +183,8 @@ jobs:
           OUTPUT_TXT = /workspace/work/PAGE_TXT
           EOF
 
-      # SAVE_TEITOK=true (2026-09-23): the fixtures README advertises "... -> TEITOK", and
-      # the record's pages[].teitok_surface / entities[].teitok_ref are ids INSIDE that file,
-      # so with it off the lane checked references to a file nobody wrote. nlp-enrich's
-      # stats stage validates its own XSD before it finishes; the assert step below checks
-      # that the file and the record agree (--teitok-dir).
+      # SAVE_TEITOK=true: the record's pages[].teitok_surface and entities[].teitok_ref are ids in
+      # that file; the assert step checks that the file and the record agree (--teitok-dir).
       - name: Write nlp-enrich e2e config
         run: |
           W="${{ github.workspace }}/work"
@@ -252,28 +215,13 @@ jobs:
           FAIL_ON_EMPTY=true
           EOF
 
-      # ── HuggingFace model cache (2026-08-06) ────────────────────────────────
-      # Stage 1 pulled `timm/regnety_160.swag_ft_in1k` from the Hub on EVERY run,
-      # anonymously and with no cache, and started failing on it:
-      #
-      #   429 Client Error: Too Many Requests for
-      #   https://huggingface.co/timm/regnety_160.swag_ft_in1k/resolve/main/config.json
-      #   -> OSError: We couldn't connect to 'https://huggingface.co' ... and couldn't
-      #      find them in the cached files.
-      #
-      # (run 31116677390). Anonymous Hub requests share a low rate limit, and this
-      # workflow runs on push plus a 3-daily cron in a repo that also runs other
-      # model-pulling jobs — so the limit is reachable through ordinary use, not
-      # abuse. It surfaces as an OSError deep inside transformers, which reads like a
-      # broken image rather than a throttle; that misdirection is half the cost.
-      #
-      # Two independent mitigations, because either alone can still fail:
-      #   * the cache means a WARM run makes no Hub request at all;
-      #   * HF_TOKEN (optional) raises the limit when the cache misses — a new model,
-      #     or the 7-day eviction of an unused GitHub cache entry.
-      #
-      # The pc image declares HF_HOME=/cache/huggingface and runs as uid 10001, so the
-      # host directory is mounted there and made writable before the container starts.
+      # ── Hugging Face model cache (Stage 1) ──────────────────────────────────
+      # Stage 1 downloads `timm/regnety_160.swag_ft_in1k` from the Hub. Anonymous Hub requests share
+      # a low rate limit, and a 429 surfaces deep in transformers as an OSError that reads like a
+      # broken image. Two mitigations, as either alone can fail: the cache (a warm run makes no Hub
+      # request) and the optional HF_TOKEN (a higher limit on a miss). The pc image reads
+      # HF_HOME=/cache/huggingface as uid 10001: the host directory is mounted there, writable.
+      # History: docs/decisions/e2e-lanes.md#hugging-face-model-cache
       - name: Cache HuggingFace models (Stage 1)
         uses: actions/cache@v6
         with:
@@ -288,8 +236,7 @@ jobs:
 
       - name: Stage 1 - Page Classification
         env:
-          # Optional. Absent -> anonymous, which is what hit the 429; present -> a much
-          # higher limit. Add an HF_TOKEN repository secret to harden this further.
+          # Optional: absent means anonymous Hub requests; an HF_TOKEN secret raises the limit.
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         # Seeded (the default), Stage 1 accretes onto the seed instead of originating the record.
         run: |
@@ -306,20 +253,10 @@ jobs:
             "${SEED_ARGS[@]}" \
             --document-json-out /workspace/work/doc_json/1_pc.json
 
-      # (B9 / #50, #62) Runs the image AS BUILT: no entrypoint override, and nothing
-      # fetched or installed at run time. This step used to wrap the stage in a
-      # `/bin/sh -c` shim that pulled `alto-tools` from a moving
-      # `refs/heads/master.zip` INSIDE the already-published image — overriding that
-      # image's own commit pin at the moment of testing it, so whatever the lane
-      # proved, it was not a property of the artefact we ship.
-      # ocr-postprocess (named alto-postprocess until 2026-10-01) vendored the two alto-tools code paths it used (its
-      # `alto_tools.py`, Apache-2.0), so there is nothing left to fetch and no `PATH`
-      # to re-export. `ENTRYPOINT ["python", "run_pipeline.py"]` (its Dockerfile,
-      # stage `base` — the unsuffixed tag pulled here) now runs the stage, with the
-      # arguments below appended to it, as in Stage 1.
-      #
-      # The image's own WORKDIR (/app) and code run (#77 D): no source checkout, no `-w`.
-      # Every path the stage reads or writes is absolute under /workspace (the config above).
+      # Runs the image AS BUILT (B9, #50, #62): no entrypoint override and nothing fetched or
+      # installed at run time; the image's ENTRYPOINT runs the stage with these arguments. The
+      # image's own WORKDIR (/app) and code run, with no source checkout (#77 D); every path is
+      # absolute under /workspace. History: docs/decisions/e2e-lanes.md#stage-2-ocr-postprocess
       - name: Stage 2 - OCR Postprocess
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
@@ -328,34 +265,14 @@ jobs:
           --document-json /workspace/work/doc_json/1_pc.json
           --document-json-out /workspace/work/doc_json/2_alto.json
 
-      # (B9 / #62) Stages 3 and 4 (and the former stage 5) each used to replace the image's entrypoint with a
-      # command BYTE-IDENTICAL IN EFFECT to the entrypoint it replaced. Three exact
-      # no-ops: they cost nothing at runtime and everything in assurance, because the
-      # lane then reported that it never exercised a real entrypoint -- while silently
-      # doing so in all three cases. Deleting them changes no behaviour and makes the
-      # lane honest about what it tests. Stage 1 has always had this shape.
-      #
+      # Stages 3 and 4 run their images as built too (B9, #62):
       #   stage 3  translator  ENTRYPOINT ["python", "main.py"]          (base)
       #   stage 4  nlp-enrich  ENTRYPOINT ["python", "run_pipeline.py"]  (base)
-            #
-      # SAFE AGAINST `:latest`, NOT JUST `test`. This lane defaults to the RELEASED
-      # image set (see the header note), so the deletions are only sound if the
-      # PUBLISHED images carry those entrypoints. Checked at each repo's newest release
-      # tag before landing: translator v0.10.5 and nlp-enrich v0.20.1 -- both declare exactly the
-      # lines above. (The former stage 5 is gone: see "Keyword Extract" below.)
-      #
-      # THE TRAP, and the one way to get this wrong: with the interpreter forced as the
-      # entrypoint, `main.py` was argv[1] TO PYTHON. Without it, ENTRYPOINT already
-      # supplies the script, so leaving `main.py` here would pass it as an argument TO
-      # main.py. Stages 3 and 4 therefore drop the script name along with the override;
-      # None of this is visible to YAML linting -- only to a run.
-      #
-      # The relative script names in those entrypoints resolve from the image's own
-      # WORKDIR (/app): the lane runs the code the image carries, not a checkout of the
-      # repository's default branch (#77 D; it used to pass `-w` into such a checkout, so a
-      # change that never reached the image still passed).
-      #
-      # tests/test_e2e_entrypoints.py is what stops a silent override returning.
+      # The ENTRYPOINT supplies the script, so the command is only its arguments: naming `main.py`
+      # here would pass it to main.py as an argument (YAML linting cannot see this). The scripts
+      # resolve from the image's WORKDIR (/app), not a checkout (#77 D).
+      # tests/test_e2e_entrypoints.py stops an entrypoint override from returning silently.
+      # History: docs/decisions/e2e-lanes.md#stages-3-and-4-entrypoints
       - name: Stage 3 - Translator
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
@@ -402,22 +319,12 @@ jobs:
             "${SEED_ARGS[@]}"
 
       # ── Keyword Extract (atrium-keyword-extract#1) ───────────────────────────────────────
-      # Both keyword kinds moved out of nlp-enrich and llm-enrich into keyword-extract, whose one
-      # service is `POST /extract_keywords`. nlp-enrich's Stage 4 above no longer extracts
-      # keywords (`--stages manifest udp nt stats`), so this step is where the statistical kind
-      # is exercised: the production image, run as built (no entrypoint override), is handed the
-      # record Stage 4 wrote and must answer with keywords carrying a method and a score.
-      #
-      # Since keyword-extract v1.2.0-beta the statistical kind writes the record's `keywords`
-      # block (atrium-project#73), so the record it returns is `5_kw_stat.json`, the controlled
-      # step's input. An older image answers without the record: a warning, decided by the
-      # image's own /info version, so a newer image that drops the record fails. YAKE is
-      # requested here because KeyBERT would pull a sentence-transformers model from the Hub on
-      # every run (the 429 documented above): an explicit test choice, not the service default.
-      #
-      # The image is published from keyword-extract's first release (`latest`) or its first
-      # `test` push. Until then a missing image is a warning, and an error on the scheduled run,
-      # which is what is there to notice a stage that never got an image.
+      # The statistical kind, through the production `-api` image run as built, on the record
+      # Stage 4 wrote: it must answer with keywords carrying a method and a score. Since
+      # v1.2.0-beta it also returns the record with its `keywords` block (atrium-project#73), saved
+      # as 5_kw_stat.json; an older image (by its /info version) only warns. YAKE, not KeyBERT, so
+      # no model is downloaded from the Hub: a test choice, not the service default. A missing
+      # image is a warning, and an error on the scheduled run.
       - name: Keyword Extract (statistical kind)
         id: kw_statistical
         run: |
@@ -495,20 +402,16 @@ jobs:
             "${SEED_ARGS[@]}"
 
       # ── Keyword Extract, the controlled kind (atrium-keyword-extract#1, #2) ─────────────────
-      # The same production image, started with an LLM backend: the record after the statistical
-      # kind (`5_kw_stat.json`, or Stage 4's when the image predates it) goes in, and the record
-      # with keyword-extract's `enrichment` block (and `entities[].pid`) beside `keywords` comes out
-      # as `5_kw.json`. This is the one step of the lane that calls a paid, third-party model, so:
-      #   * it needs the OPENROUTER_KEY secret; without it the step is skipped with a warning, and
-      #     with an error on the scheduled run, which is there to notice a check that stopped;
-      #   * it makes one call per line the service sends, so it runs only on records of at most
-      #     E2E_CONTROLLED_MAX_LINES such lines (the two multi-page fixtures have hundreds);
-      #   * the model is `openrouter-model` (default openai/gpt-4o-mini). What it answers is
-      #     reported, not asserted: provider drift must not flap the gate. What is asserted is the
-      #     contract: the backend started, the call succeeded, the block is stamped by
-      #     keyword-extract, and the response's CreateAction is the stamp's run (atrium-project#71).
-      # keyword-extract's own live lane (controlled-live.yml) runs the same kind against a fixed
-      # record; this one is what proves it on the record the rest of the chain produced.
+      # The same image with an LLM backend: the record after the statistical kind (`5_kw_stat.json`,
+      # or Stage 4's when the image predates it) goes in; the record with keyword-extract's
+      # `enrichment` block (and `entities[].pid`) comes out as `5_kw.json`. The lane's one call to a
+      # paid third-party model, so:
+      #   * without the OPENROUTER_KEY secret it is skipped with a warning (an error on schedule);
+      #   * it runs only on records of at most E2E_CONTROLLED_MAX_LINES lines (one call per line);
+      #   * the model's answer is reported, not asserted, so provider drift cannot flap the gate.
+      #     Asserted: the backend started, the call succeeded, keyword-extract stamped the block,
+      #     and the response's CreateAction is the stamp's run (atrium-project#71).
+      # keyword-extract's controlled-live.yml covers a fixed record; this covers the chain's record.
       - name: Keyword Extract (controlled kind, OpenRouter)
         id: kw_controlled
         env:
@@ -664,8 +567,7 @@ jobs:
             work/nlp_out/TEITOK/*.teitok.xml
             work/crate/
 
-      # One open issue per ongoing breakage, commented on each recurrence (atrium-project#81):
-      # the step used to open a new issue on every failing run, every third day.
+      # One open issue per ongoing breakage, commented on each recurrence (atrium-project#81).
       - name: Open or update the lane's issue on scheduled failure
         if: failure() && github.event_name == 'schedule'
         uses: ./.github/actions/lane-failure-issue

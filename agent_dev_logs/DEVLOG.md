@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 20 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #51, #56, #66, #67, #72, #77, #78, #79, #81, #82). `test` = `a38ae4d` (2026-10-21); tag `v1` = `8c0f9f8` (2026-10-20); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-21, at the end of the file (this file is not in date order): one round across #77, #72, #82, #81, #79 and the adjacent issues, delivered as files. The tool repositories publish immutable releases since 10-19, and the two predecessors are archived (#72)._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `test` = `d760851` (2026-10-23) = `v1`; freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-25, at the end of the file (this file is not in date order): pilot readiness across the six tools (citations, the release gate everywhere, the docs overhaul, the pins' gap), delivered as per-repository archives._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -2611,3 +2611,30 @@ Against `test` `a38ae4d` and every `agent-skill` head of 12:29–12:53 (the roun
   red until `v1` moves here; page-classification's README, CONTRIBUTING and DEVLOG of `c91665b` were overwritten
   by this round's whole files and are merged back in a corrective archive.
 - Digests 6, 51, 77, 78, 79, 81, 82 and plans 6, 51, 77, 78, 79, 81, 82 updated.
+
+## 2026-10-25 — Pilot readiness across the six tools: citations, the release gate everywhere, the docs overhaul, the pins' gap
+- **Why:** motyc's review of 10-24 on #13 (the ORCID and `CITATION.cff` audit), and the open items of #79, #81, #72
+  and #6; K4TEL's SSHOMP records of 10-24 (#4). Nothing pushed or posted: per-repository archives and comment drafts.
+- **#13:** the wrong ORCID (`0009-0005-8722-0245`) is gone from the seven `CITATION.cff` files and from the shared
+  `atrium_rocrate.py` (every crate's tool creators); affiliations in their ROR names; `plans/13.letters.md` § 0b
+  is the Zenodo check (Zenodo is unreachable from the sandbox).
+- **#6:** the record schema's descriptions, `document_schema.md`, `paradata_schema.md` and `rocrate_export.md` call
+  `provenance.license` a calculation from the components; the crate root is unchanged until motyc answers the
+  RO-Crate 1.2 point (two options in the proposal). One re-vendor carried both, and each tool's `openapi.json`.
+- **#81:** the gate in the other five `release.yml`; `docs/decisions/` holds the history moved out of
+  `docker-tool.reusable.yml` (comments 428 → 155) and the two E2E lanes (non-comment lines unchanged, checked);
+  keyword-extract's live lane reports failures; `ci_policy.md` and `release_trust.md` follow. The 10-22 comment
+  cited a simulated-failure run that was never made: digital-convert's two dispatches come before the push of the
+  five gates.
+- **#72:** the pin sweep and `workflow_lint.py` now cover the hub's composite actions (9 steps ran
+  `lane-failure-issue@v1` unseen); tests. The sweep itself follows the hub push (step B).
+- **#79:** nlp-enrich, page-classification and translator on the README skeleton (maps in `plans/79.*`); the hub's
+  `tools/page-classification/` and `tools/translator/` pages are short "moved" pages outside the nav, every link
+  repointed (anchors checked); `docs_check` OK in all seven; the landing cards regenerated (titles, an SSH OMP chip,
+  Documentation → the workflow page).
+- **#77:** the pilot page names the newest releases; translator's and ocr-postprocess's runbooks at commits until
+  their next releases (both are needed before 11 November).
+- **#78:** nlp-enrich's daily UDPipe/NameTag check, after translator's.
+- **#4, #17:** `jGxgQI` and the re-pointed `j9fqxo` on the workflow pages; the `0xSpVP` step table names all six.
+- **Dev logs:** pairs refreshed for #4, #6, #17, #67, #72, #77; translator#46 and keyword-extract#2 in their repositories.
+- **Checks:** hub 845 passed, 9 skipped; `mkdocs build --strict`; `workflow_lint` over the six; docs_check 7/7.

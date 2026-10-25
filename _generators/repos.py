@@ -4,13 +4,15 @@ Every value here was read out of the repository tree, not invented: titles from 
 README's `#` line, taglines from the GitHub repo description, chips from each README's
 own badge block, default branches from the repo metadata (first read 2026-09-18;
 re-read 2026-10-07 for the repositories of the 1 October split; the digital-convert and
-keyword-extract titles 2026-10-22, after their READMEs moved to the #79 skeleton). The
+keyword-extract titles 2026-10-22, the nlp-enrich, page-classification and translator titles
+2026-10-25, after their READMEs moved to the #79 skeleton). The
 Python chip follows the version the images and CI use; a README badge that lags it is a
 finding for that repository, not a reason to publish the old value.
 
 `docs_path` is where the card's "Documentation" button lands, relative to HUB_SITE: the
-tool's section when the hub has one, its workflow page until then. It is the one value
-to change when a tool section is written.
+tool's workflow page, which links the tool's own documentation. Since atrium-project#79
+(2026-10-25) a tool's guides and references live in its repository, so the hub keeps no
+tool sections. The "SSH OMP" chip links the tool's SSH Open Marketplace record (#4).
 """
 
 HUB = "atrium-project"
@@ -23,10 +25,10 @@ REPOS = [
     {
         "slug": "atrium-page-classification",
         "short": "page-classification",
-        "docs_path": "tools/page-classification/",
+        "docs_path": "workflows/page-classification/",
         "stage": 1,
         "default_branch": "vit",
-        "title": "Image classification using fine-tuned ViT, RegNetY or EffNetV2",
+        "title": "Scanned archive pages sorted into eleven page types",
         "subtitle": "for historical document routing",
         "tagline": "Classification of historical page images using ViT and CNN — decides which "
         "downstream pipeline each page is worth sending to.",
@@ -35,6 +37,7 @@ REPOS = [
             ("python", "3.11", "https://www.python.org/downloads/", "py"),
             ("🤗 HF", "vit-historical-page", "https://huggingface.co/ufal/vit-historical-page", "hf"),
             ("dataset", "LINDAT", "http://hdl.handle.net/20.500.12800/1-6184", "data"),
+            ("SSH OMP", "RER7Fw", "https://marketplace.sshopencloud.eu/tool-or-service/RER7Fw", "sshomp"),
             ("license", "MIT", "https://opensource.org/license/mit/", "lic"),
             ("funded by", "ATRIUM", "https://atrium-research.eu/", "atr"),
         ],
@@ -56,6 +59,7 @@ REPOS = [
             ("🤗 HF", "fasttext-langID", "https://huggingface.co/facebook/fasttext-language-identification", "hf"),
             ("🤗 HF", "Qwen2.5-0.5B", "https://huggingface.co/Qwen/Qwen2.5-0.5B", "hf"),
             ("vendored", "alto-tools", "https://github.com/cneud/alto-tools", "dep"),
+            ("SSH OMP", "YParYU", "https://marketplace.sshopencloud.eu/tool-or-service/YParYU", "sshomp"),
             ("license", "MIT", "https://opensource.org/license/mit/", "lic"),
             ("funded by", "ATRIUM", "https://atrium-research.eu/", "atr"),
         ],
@@ -63,10 +67,10 @@ REPOS = [
     {
         "slug": "atrium-translator",
         "short": "translator",
-        "docs_path": "tools/translator/",
+        "docs_path": "workflows/translator/",
         "stage": 3,
         "default_branch": "master",
-        "title": "ATRIUM — LINDAT Translation Wrapper",
+        "title": "XML documents translated in place, ALTO pages and AMČR metadata",
         "subtitle": "in-place translation of ALTO / AMCR XML",
         "tagline": "In-place translation of XML (ALTO/AMCR) files into English, preserving every "
         "tag, namespace and coordinate.",
@@ -76,6 +80,7 @@ REPOS = [
             ("API", "LINDAT Translation", "https://lindat.mff.cuni.cz/services/translation/", "api"),
             ("API", "UDPipe 2", "https://lindat.mff.cuni.cz/services/udpipe/", "api"),
             ("🤗 HF", "fasttext-langID", "https://huggingface.co/facebook/fasttext-language-identification", "hf"),
+            ("SSH OMP", "CizIUW", "https://marketplace.sshopencloud.eu/tool-or-service/CizIUW", "sshomp"),
             ("license", "MIT", "https://opensource.org/license/mit/", "lic"),
             ("funded by", "ATRIUM", "https://atrium-research.eu/", "atr"),
         ],
@@ -86,7 +91,7 @@ REPOS = [
         "docs_path": "workflows/nlp-enrich/",
         "stage": 4,
         "default_branch": "master",
-        "title": "NLP Enrichment of text",
+        "title": "Lemmas, syntax and named entities of text lines, as TEITOK",
         "subtitle": "UDPipe · NameTag · TEITOK",
         "tagline": "NLP enrichment of text lines from ALTO XML — morphology, named entities and "
         "TEITOK XML with bounding boxes preserved.",
@@ -95,6 +100,7 @@ REPOS = [
             ("python", "3.11", "https://www.python.org/downloads/", "py"),
             ("API", "UDPipe 2", "https://lindat.mff.cuni.cz/services/udpipe/api-reference.php", "api"),
             ("API", "NameTag 3", "https://lindat.mff.cuni.cz/services/nametag/api-reference.php", "api"),
+            ("SSH OMP", "EMhu3X", "https://marketplace.sshopencloud.eu/tool-or-service/EMhu3X", "sshomp"),
             ("license", "MIT", "https://opensource.org/license/mit/", "lic"),
             ("funded by", "ATRIUM", "https://atrium-research.eu/", "atr"),
         ],
@@ -114,6 +120,7 @@ REPOS = [
             ("python", "3.11", "https://www.python.org/downloads/", "py"),
             ("keywords", "KeyBERT · YAKE", "https://github.com/MaartenGr/KeyBERT", "dep"),
             ("vocabulary", "AMČR · TEATER (CC0)", "https://teater.aiscr.cz/", "data"),
+            ("SSH OMP", "j9fqxo", "https://marketplace.sshopencloud.eu/tool-or-service/j9fqxo", "sshomp"),
             ("license", "MIT", "https://opensource.org/license/mit/", "lic"),
             ("funded by", "ATRIUM", "https://atrium-research.eu/", "atr"),
         ],
@@ -137,6 +144,7 @@ REPOS = [
                 "https://github.com/ufal/atrium-project/blob/main/docs/document_schema.md",
                 "data",
             ),
+            ("SSH OMP", "jGxgQI", "https://marketplace.sshopencloud.eu/tool-or-service/jGxgQI", "sshomp"),
             ("license", "MIT", "https://opensource.org/license/mit/", "lic"),
             ("funded by", "ATRIUM", "https://atrium-research.eu/", "atr"),
         ],

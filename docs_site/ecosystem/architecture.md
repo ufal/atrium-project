@@ -151,8 +151,9 @@ The script exits 0 only when CI would pass. A sibling checkout it cannot find is
 ## The CI federation
 
 Each tool repository keeps a set of **thin caller workflows**; the real logic lives in eight
-reusable workflows in the hub, and every caller pins them at **`@v1`** — a tag in the hub that is
-moved deliberately. `test` is the hub's pre-release channel.
+reusable workflows in the hub. The callers reach them at **`@v1`**, a tag in the hub that is moved
+deliberately, or, once the #72 sweep has run, at a commit of it named `# v1`, which only a reviewed
+pin change moves. `test` is the hub's pre-release channel.
 
 | Hub reusable                  | What it does for a tool repository                                                                                                                           |
 |-------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -172,11 +173,11 @@ on their `agent-skill` branches), and each keeps a few workflows of its own:
 
     | Workflow                                                                    | Kind            | Triggers                                                                    |
     |-----------------------------------------------------------------------------|-----------------|-----------------------------------------------------------------------------|
-    | `docker.yml`                                                                | → `docker-tool` | push to `vit`, `test`, `clip`, `master`; tags `v*`; PRs; published releases |
+    | `docker.yml`                                                                | → `docker-tool` | push to `vit`, `test`, `clip`, `master`; PRs                                |
     | `api-contract.yml`, `para-drift.yml`, `pre-commit.yml`, `workflow-lint.yml` | → hub           | push and PR on the same four branches                                       |
     | `codeql.yml`                                                                | → hub           | push, PR, weekly                                                            |
     | `security.yml`                                                              | → hub           | push, PR, tags, weekly                                                      |
-    | `release.yml`                                                               | local           | tags `v*` — version gate, then a self-contained release zip                 |
+    | `release.yml`                                                               | → `docker-tool` | tags `v*` — version gate; the images, built, probed, scanned and promoted (`release-gate`, #81); then the release with its zip and `images.json` |
     | `scheduled-smoke.yml`                                                       | local           | daily — checks a published model revision is reachable, runs the slow tests |
     | `gpu-inference.yml`                                                         | local           | manual only — runs on a self-hosted GPU runner                              |
 
@@ -184,11 +185,11 @@ on their `agent-skill` branches), and each keeps a few workflows of its own:
 
     | Workflow                                                                    | Kind            | Triggers                                                                      |
     |-----------------------------------------------------------------------------|-----------------|-------------------------------------------------------------------------------|
-    | `docker.yml`                                                                | → `docker-tool` | push to `test`, `master`; tags `v*.*.*`; PRs                                  |
+    | `docker.yml`                                                                | → `docker-tool` | push to `test`, `master`; PRs                                                 |
     | `api-contract.yml`, `para-drift.yml`, `pre-commit.yml`, `workflow-lint.yml` | → hub           | push and PR on `test`, `master`                                               |
     | `codeql.yml`                                                                | → hub           | push, PR, weekly                                                              |
     | `security.yml`                                                              | → hub           | push, PR, weekly                                                              |
-    | `release.yml`                                                               | local           | tags `v*.*.*` — version gate, then the release                                |
+    | `release.yml`                                                               | → `docker-tool` | tags `v*.*.*` — version gate; the images (`release-gate`, #81); then the release with its bundle and `images.json` |
     | `integration.yml`                                                           | local           | a stub-backend lane on every push; a live-LINDAT lane on manual dispatch only |
     | `scheduled-smoke.yml`                                                       | local           | daily — the full suite in a fresh environment, to catch dependency drift      |
     | `lindat-daily.yml`                                                          | local           | daily — 24 identical requests to live LINDAT, failing on a bad reply (#78)    |

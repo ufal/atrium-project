@@ -22,7 +22,7 @@ from repos import HUB_SITE, ORG, REPOS  # noqa: E402
 OUT = pathlib.Path(__file__).parent.parent / "stubs"
 CSS = (pathlib.Path(__file__).parent / "style.css").read_text()
 
-GENERATED = "2026-10-07"
+GENERATED = "2026-10-25"
 
 
 def esc(s: str) -> str:

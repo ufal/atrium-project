@@ -104,7 +104,8 @@ when its own part of the record comes back unchanged. The program id in the reco
 
 ## On other platforms
 
-**SSH Open Marketplace.** No record of its own yet.
+**SSH Open Marketplace.** Tool record [`jGxgQI`](https://marketplace.sshopencloud.eu/tool-or-service/jGxgQI), "Born-digital document converter: PDF and
+office files into structured text without OCR" (created 24 October 2026).
 
 **Galaxy.** PDF and DOCX inputs map to `pdf` and `docx`; the record to `json`. Galaxy's own
 `grobid` and `markitdown` tools convert born-digital documents but do not write the ATRIUM

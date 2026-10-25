@@ -197,7 +197,7 @@ Then the **translator** takes that record as `--document-json` and writes:
 `page_categories` and `pages` pass through untouched (rule 2); the translator adds its
 blocks, its stamps and itself to `contributors[]`, and its component list joins
 page-classification's in the label `provenance.license` (rule 5). The values in
-`page_categories` are the [eleven labels](../tools/page-classification/index.md#the-11-categories).
+`page_categories` are the [eleven labels](https://github.com/ufal/atrium-page-classification/blob/test/docs/reference/categories.md#definitions).
 
 ## How paradata accumulates
 

@@ -12,6 +12,9 @@ This script rewrites the callers in the sibling checkouts in one sweep:
 
 * every `uses: ufal/atrium-project/.github/workflows/<file>@<ref>` becomes
   `uses: ufal/atrium-project/.github/workflows/<file>@<sha>  # v1`;
+* every step that uses one of the hub's composite actions
+  (`ufal/atrium-project/.github/actions/<name>@<ref>`, e.g. `lane-failure-issue`, #81) gets the same
+  commit, so an action cannot keep following the moving tag after its callers are pinned;
 * where that reusable declares a `hub-ref` input, the job gets `hub-ref: <sha>` in its `with:`
   block (created when the job has none, updated when it has one);
 * where it declares `require-sha-pins` (workflow-lint), the job also gets `require-sha-pins: true`,
@@ -55,7 +58,8 @@ REPOS = (
 CHANNEL = "v1"
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 USES_RE = re.compile(
-    r"^(?P<indent>\s*)(?P<dash>-\s+)?uses:\s*ufal/atrium-project/(?P<callee>\.github/workflows/[^@\s]+)@(?P<ref>\S+)"
+    r"^(?P<indent>\s*)(?P<dash>-\s+)?uses:\s*ufal/atrium-project/(?P<callee>\.github/(?:workflows|actions)/[^@\s]+)"
+    r"@(?P<ref>\S+)"
     r"(?P<rest>.*)$"
 )
 
@@ -105,17 +109,31 @@ def _set_with(lines: list[str], uses_at: int, key_indent: int, key: str, value: 
     lines[uses_at + 1 : uses_at + 1] = [f"{pad}with:", f"{pad}  {key}: {value}"]
 
 
-def pin_text(text: str, sha: str, hub_root: Path) -> tuple[str, int]:
-    """``(new text, callers pinned)`` for one workflow file."""
+def is_action(callee: str) -> bool:
+    """A hub composite action (a step's `uses:`), as opposed to a reusable workflow (a job's)."""
+    return callee.startswith(".github/actions/")
+
+
+def pin_text(text: str, sha: str, hub_root: Path) -> tuple[str, int, int]:
+    """``(new text, reusable callers pinned, action steps pinned)`` for one workflow file."""
     lines = text.split("\n")
-    count = 0
+    count = actions = 0
     at = 0
     while at < len(lines):
         match = USES_RE.match(lines[at])
-        if not match or match["dash"]:  # a step's `- uses:` is an action, never a reusable workflow
+        if not match:
             at += 1
             continue
         indent, callee = match["indent"], match["callee"]
+        if is_action(callee):
+            # A step: no `with:` inputs to add, and `- uses:` keeps its dash.
+            lines[at] = f"{indent}{match['dash'] or ''}uses: ufal/atrium-project/{callee}@{sha}  # {CHANNEL}"
+            actions += 1
+            at += 1
+            continue
+        if match["dash"]:  # a step's `- uses:` is an action, never a reusable workflow
+            at += 1
+            continue
         lines[at] = f"{indent}uses: ufal/atrium-project/{callee}@{sha}  # {CHANNEL}"
         count += 1
         for key, value in (("hub-ref", sha), ("require-sha-pins", "true")):
@@ -124,7 +142,7 @@ def pin_text(text: str, sha: str, hub_root: Path) -> tuple[str, int]:
                 _set_with(lines, at, len(indent), key, value)
                 at += len(lines) - before
         at += 1
-    return "\n".join(lines), count
+    return "\n".join(lines), count, actions
 
 
 def workflow_files(repo: Path) -> list[Path]:
@@ -163,7 +181,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
 
-    changed = pinned = 0
+    changed = pinned = pinned_actions = 0
     for name in args.repo or REPOS:
         repo = args.root / name
         if not repo.is_dir():
@@ -171,8 +189,9 @@ def main(argv: list[str] | None = None) -> int:
             continue
         for path in workflow_files(repo):
             text = path.read_text(encoding="utf-8")
-            new, count = pin_text(text, args.sha, args.hub_root)
+            new, count, actions = pin_text(text, args.sha, args.hub_root)
             pinned += count
+            pinned_actions += actions
             if new == text:
                 continue
             changed += 1
@@ -184,7 +203,10 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"pinned: {rel}")
 
     verb = "to change" if args.check else "changed"
-    print(f"{pinned} hub-reusable callers at {args.sha[:12]} ({CHANNEL}); {changed} file(s) {verb}.")
+    print(
+        f"{pinned} hub-reusable callers and {pinned_actions} hub-action steps at {args.sha[:12]} ({CHANNEL}); "
+        f"{changed} file(s) {verb}."
+    )
     if args.check and changed:
         return 1
     return 0

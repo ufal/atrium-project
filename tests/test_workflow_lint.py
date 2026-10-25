@@ -250,6 +250,53 @@ def test_require_sha_pins_refuses_v1(tmp_path):
     assert rc == 1 and "pin it to a commit of v1" in out
 
 
+# ── hub composite actions follow the same rule (#72 E.4, #81's lane-failure-issue) ─────
+
+_ACTION_CALLER = """\
+name: Lane
+on:
+  schedule:
+    - cron: '0 4 * * 1'
+concurrency:
+  group: lane-${{ github.ref }}
+permissions:
+  contents: read
+  issues: write
+jobs:
+  lane:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: exit 0
+      - name: Open or update the lane's issue on scheduled failure
+        if: failure() && github.event_name == 'schedule'
+        uses: ufal/atrium-project/.github/actions/lane-failure-issue@REF
+        with:
+          lane: lane
+"""
+
+
+def test_a_hub_action_at_v1_passes_and_is_refused_once_pins_are_required(tmp_path):
+    write_workflow(tmp_path, "x.yml", _ACTION_CALLER.replace("@REF", "@v1"))
+    rc, out = run_lint(tmp_path)
+    assert rc == 0, out
+    rc, out = run_lint(tmp_path, "--require-sha-pins")
+    assert rc == 1 and "uses a hub action at '@v1'" in out
+
+
+def test_a_hub_action_pinned_to_a_commit_of_v1_passes_the_strict_lint(tmp_path):
+    write_workflow(tmp_path, "x.yml", _ACTION_CALLER.replace("@REF", f"@{_SHA}  # v1"))
+    rc, out = run_lint(tmp_path, "--require-sha-pins")
+    assert rc == 0, out
+
+
+@pytest.mark.parametrize("ref", [f"{_SHA}", f"{_SHA}  # main", "test"])
+def test_a_hub_action_needs_v1_or_a_commit_named_v1(tmp_path, ref):
+    write_workflow(tmp_path, "x.yml", _ACTION_CALLER.replace("@REF", f"@{ref}"))
+    rc, out = run_lint(tmp_path)
+    assert rc == 1 and "hub action" in out, out
+
+
 # ── release assets and immutable releases (atrium-project#40 E, #72) ─────────
 
 _RELEASE = """\

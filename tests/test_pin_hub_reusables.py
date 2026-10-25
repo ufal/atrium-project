@@ -74,6 +74,32 @@ jobs:
     with:
       image-ref: ghcr.io/ufal/atrium-example:latest
 """,
+    "scheduled-smoke.yml": """\
+name: Scheduled smoke
+on:
+  schedule:
+    - cron: '0 4 * * 1'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+permissions:
+  contents: read
+  issues: write
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: exit 0
+      - name: Open or update the lane's issue on scheduled failure
+        if: failure() && github.event_name == 'schedule'
+        uses: ufal/atrium-project/.github/actions/lane-failure-issue@v1
+        with:
+          lane: scheduled-smoke
+      - uses: ufal/atrium-project/.github/actions/lane-failure-issue@v1  # a bare step keeps its dash
+        if: failure()
+        with:
+          lane: scheduled-smoke-2
+""",
 }
 
 
@@ -103,15 +129,28 @@ def _lint(repo: Path, *extra: str) -> tuple[int, str]:
 def test_every_caller_is_pinned_with_its_channel_and_hub_ref(tmp_path):
     repo = _repo(tmp_path)
     rc, out = _run("--sha", SHA, "--root", str(tmp_path), "--repo", repo.name)
-    assert rc == 0 and "3 hub-reusable callers" in out
+    assert rc == 0 and "3 hub-reusable callers and 2 hub-action steps" in out
     for path in (repo / ".github" / "workflows").iterdir():
         text = path.read_text(encoding="utf-8")
-        assert f"@{SHA}  # v1" in text and "@v1\n" not in text
+        assert f"@{SHA}  # v1" in text and "@v1\n" not in text and "@v1  #" not in text
         job = next(iter(yaml.safe_load(text)["jobs"].values()))
+        if "uses" not in job:
+            continue  # a job of steps: its actions are pinned above, and take no `with:` inputs
         takes = pin.takes_hub_ref(job["uses"].split("ufal/atrium-project/")[1].split("@")[0], _HUB_ROOT)
         assert (job.get("with") or {}).get("hub-ref") == (SHA if takes else None), path.name
     assert "# keep this comment" in (repo / ".github" / "workflows" / "workflow-lint.yml").read_text()
     assert "# No `secrets:` block (#18)." in (repo / ".github" / "workflows" / "security.yml").read_text()
+
+
+def test_an_action_step_keeps_its_dash_indent_and_inputs(tmp_path):
+    repo = _repo(tmp_path)
+    _run("--sha", SHA, "--root", str(tmp_path), "--repo", repo.name)
+    text = (repo / ".github" / "workflows" / "scheduled-smoke.yml").read_text(encoding="utf-8")
+    assert f"        uses: ufal/atrium-project/.github/actions/lane-failure-issue@{SHA}  # v1\n" in text
+    assert f"      - uses: ufal/atrium-project/.github/actions/lane-failure-issue@{SHA}  # v1\n" in text
+    steps = yaml.safe_load(text)["jobs"]["smoke"]["steps"]
+    assert [s.get("with") for s in steps[1:]] == [{"lane": "scheduled-smoke"}, {"lane": "scheduled-smoke-2"}]
+    assert "hub-ref" not in text and "require-sha-pins" not in text
 
 
 def test_the_swept_callers_pass_the_linter_even_when_it_requires_pins(tmp_path):
@@ -134,7 +173,8 @@ def test_the_sweep_makes_the_pinned_repos_own_lint_require_pins(tmp_path):
     for path in (repo / ".github" / "workflows").iterdir():
         job = next(iter(yaml.safe_load(path.read_text(encoding="utf-8"))["jobs"].values()))
         expected = True if path.name == "workflow-lint.yml" else None
-        assert (job.get("with") or {}).get("require-sha-pins") is expected, path.name
+        if "uses" in job:
+            assert (job.get("with") or {}).get("require-sha-pins") is expected, path.name
     assert "# keep this comment" in (repo / ".github" / "workflows" / "workflow-lint.yml").read_text()
     assert _run("--sha", SHA, "--root", str(tmp_path), "--repo", repo.name, "--check")[0] == 0
     assert _lint(repo, "--require-sha-pins")[0] == 0
@@ -182,9 +222,9 @@ def test_an_annotated_tag_object_is_refused_and_its_commit_accepted(tmp_path):
     assert rc == 1 and "3 hub-reusable callers" in out and "not a commit" not in out, out  # accepted, then checked
 
 
-#: Hub-reusable callers per tool repo: seven each, and digital-convert's `release.yml` calls the Docker reusable
-#: for the image it certifies (#81). A tool that adopts the release gate moves here.
-_CALLERS = {"atrium-digital-convert": 8}
+#: Hub-reusable callers per tool repo: seven each, plus the `image` job by which each `release.yml` calls the
+#: Docker reusable for the images it certifies (#81, digital-convert first, the other five since 2026-10-25).
+_CALLERS = dict.fromkeys(pin.REPOS, 8)
 
 
 @pytest.mark.parametrize("tool", pin.REPOS)

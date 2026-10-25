@@ -11,7 +11,7 @@ authored: true
 
 # Sorting archive pages for content-specific processing
 
-*The page-classification workflow.* Tool section: [page-classification](../tools/page-classification/index.md).
+*The page-classification workflow.* Tool section: [page-classification](https://github.com/ufal/atrium-page-classification/blob/test/README.md).
 
 ## Purpose
 
@@ -60,7 +60,7 @@ language of the page does not matter.
 | `DRAW_L`, `PHOTO_L` | image extraction plus table extraction for the surrounding layout or legend |
 
 The labels themselves, and how the models were trained, are on the tool's
-[Overview](../tools/page-classification/index.md#the-11-categories).
+[Overview](https://github.com/ufal/atrium-page-classification/blob/test/docs/reference/categories.md#definitions).
 
 **Two side workflows** use the same tool: training and evaluating a model on one's own
 labelled pages ([Pipelines → W8](../pipelines.md#w8--training-and-evaluation-page-classification)),
@@ -79,7 +79,7 @@ and turning PDFs into a labelled training set and corrections back into it
   page carries its category and confidence, ready for the next stage to build on.
 
 Every column is described in
-[Reference → Outputs](../tools/page-classification/reference.md#outputs-and-their-columns).
+[Reference → Outputs](https://github.com/ufal/atrium-page-classification/blob/test/docs/reference/outputs.md#the-files-a-run-writes).
 
 ## Limits
 
@@ -183,5 +183,5 @@ page-classification section. This table records **provenance**, not a build inst
 | `small_data_samples/`                                                                                                                                             | test data and its licence                                                               |
 | `CITATION.cff`                                                                                                                                                    | credit; the release date                                                                |
 | `CONTRIBUTING.md` § Release History (`v1.8.0-beta`–`v1.9.4-beta`), § Branches; `agent_dev_logs/DEVLOG.md` (header); `.github/workflows/release.yml`, `docker.yml` | what changed since the last reading; the release branch                                 |
-| `atrium-project/docs_site/tools/page-classification/index.md`, `reference.md`                                                                                     | the category table, the outputs, the licence rule                                       |
+| the tool's `README.md`, `docs/reference/categories.md`, `docs/reference/outputs.md` (until 2026-10-25 the hub's `tools/page-classification/` pages)               | the category table, the outputs, the licence rule                                       |
 | `DARIAH-ERIC/atrium-galaxy-tools`; `usegalaxy-eu/usegalaxy-eu-tools`; `goeckslab/gleam`; `bgruening/galaxytools`                                                  | the Galaxy analogues and conventions (read at `v1.8.0-beta`, not re-read)               |

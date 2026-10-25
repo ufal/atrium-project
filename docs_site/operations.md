@@ -126,7 +126,7 @@ scan results — but with no version tag and no `latest`. Nothing that pulls by 
 what happened to the translator's `v1.0.0-beta` in September 2026: the floating `python:3.11-slim`
 base carried three fixable CRITICAL CVEs in `perl-base`, and the gate held the release back until a
 rebuilt image passed. The story is told in full on
-[translator → History](tools/translator/history.md#the-base-image-that-blocked-a-release).
+[translator → History](https://github.com/ufal/atrium-translator/blob/test/docs/decisions/history.md#the-base-image-that-blocked-a-release).
 
 The same incident produced the rule every Dockerfile follows and a vendored test enforces: the
 `apt-get upgrade` layer must sit **below** the `ENV` line that embeds `ATRIUM_RUNNER_REF` (unique
@@ -217,20 +217,20 @@ Beyond the variables every service shares — `PORT`, `HOST`, `GRACEFUL_SHUTDOWN
 `ALLOWED_ORIGINS`, `MAX_UPLOAD_MB`, `LOG_LEVEL` — **page-classification reads none**: its service
 layer is configured entirely by those. The translator reads:
 
-| Variable                                                                 | Default              | Effect                                                                                     |
-|--------------------------------------------------------------------------|----------------------|--------------------------------------------------------------------------------------------|
-| `TRANSLATION_BACKEND`                                                    | `lindat`             | `lindat` (CUBBITT), `openai_compatible` or `ct2`                                           |
-| `TRANSLATION_URL`                                                        | LINDAT's public host | attach a self-hosted translation service; `LINDAT_BASE_URL` is accepted as an alias        |
-| `UDPIPE_URL`                                                             | LINDAT's public host | lemma matching for the vocabulary                                                          |
-| `LINDAT_MIN_INTERVAL_S` / `LINDAT_MAX_RETRIES` / `LINDAT_BACKOFF_BASE_S` | `0.0` / `4` / `1.0`  | rate-limits this deployment against a shared public service                                |
-| `LINDAT_GUARD_RETRIES`                                                   | `2`                  | re-requests of a reply that is not a translation (looping, empty, runaway)                 |
-| `TRANSLATION_RERUN_ROUNDS` / `TRANSLATION_RERUN_DELAY_S`                 | `1` / `10.0`         | end-of-document re-run of segments that stayed bad; a long request grows by the delay      |
-| `DEFAULT_SOURCE_LANG`                                                    | `cs`                 | the source language `auto` falls back to                                                   |
-| `LANG_ID_MIN_CONFIDENCE` / `LANG_ID_MIN_LETTERS` / `LANG_ID_LANGUAGES`   | `0.5` / `20` / —     | when a FastText guess is trusted                                                           |
-| `OUTPUT_MODE`                                                            | `replace`            | the default `replace` / `append` mode for `/translate`                                     |
-| `AMCR_FIELDS_PATH`                                                       | `amcr-fields.txt`    | the XPath targets for metadata mode — unreadable means a 422                               |
-| `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`                               | —                    | required by `openai_compatible`; the key belongs in a Secret                               |
-| `CT2_MODEL_DIR`, `CT2_MODEL_FAMILY`, `CT2_DEVICE`, …                     | —                    | required by `ct2`; see [translator → Reference](tools/translator/reference.md#environment) |
+| Variable                                                                 | Default              | Effect                                                                                                                                                         |
+|--------------------------------------------------------------------------|----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `TRANSLATION_BACKEND`                                                    | `lindat`             | `lindat` (CUBBITT), `openai_compatible` or `ct2`                                                                                                               |
+| `TRANSLATION_URL`                                                        | LINDAT's public host | attach a self-hosted translation service; `LINDAT_BASE_URL` is accepted as an alias                                                                            |
+| `UDPIPE_URL`                                                             | LINDAT's public host | lemma matching for the vocabulary                                                                                                                              |
+| `LINDAT_MIN_INTERVAL_S` / `LINDAT_MAX_RETRIES` / `LINDAT_BACKOFF_BASE_S` | `0.0` / `4` / `1.0`  | rate-limits this deployment against a shared public service                                                                                                    |
+| `LINDAT_GUARD_RETRIES`                                                   | `2`                  | re-requests of a reply that is not a translation (looping, empty, runaway)                                                                                     |
+| `TRANSLATION_RERUN_ROUNDS` / `TRANSLATION_RERUN_DELAY_S`                 | `1` / `10.0`         | end-of-document re-run of segments that stayed bad; a long request grows by the delay                                                                          |
+| `DEFAULT_SOURCE_LANG`                                                    | `cs`                 | the source language `auto` falls back to                                                                                                                       |
+| `LANG_ID_MIN_CONFIDENCE` / `LANG_ID_MIN_LETTERS` / `LANG_ID_LANGUAGES`   | `0.5` / `20` / —     | when a FastText guess is trusted                                                                                                                               |
+| `OUTPUT_MODE`                                                            | `replace`            | the default `replace` / `append` mode for `/translate`                                                                                                         |
+| `AMCR_FIELDS_PATH`                                                       | `amcr-fields.txt`    | the XPath targets for metadata mode — unreadable means a 422                                                                                                   |
+| `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`                               | —                    | required by `openai_compatible`; the key belongs in a Secret                                                                                                   |
+| `CT2_MODEL_DIR`, `CT2_MODEL_FAMILY`, `CT2_DEVICE`, …                     | —                    | required by `ct2`; see [translator → Reference](https://github.com/ufal/atrium-translator/blob/test/docs/configuration.md#ct2-a-self-hosted-ctranslate2-model) |
 
 Three settings behave in ways worth knowing before the first deployment:
 

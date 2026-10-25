@@ -40,8 +40,12 @@ A short explanation for readers outside the project is on the documentation site
 1. **Who asserts output rights:** AMČR, for the outputs it publishes, on the basis of the source's rights and
    permissions. No processing tool makes an automatic or default licence assertion.
 2. **The crate root without an assertion:** leave `license` out. Still open: RO-Crate 1.2 makes the root's
-   `license` a MUST (and allows a text there), so a standalone crate without it fails the validator; asked on
-   #6. A fragment, which AMČR embeds under its own root, is not affected.
+   `license` a MUST (and allows a text there), so a standalone crate without it fails the validator. Two ways
+   to meet both, put to motyc on #6: (a) the root's `license` names a contextual entity `#no-licence-asserted`
+   ("No licence asserted"; its description says the rights depend on the source and on AMČR's permission),
+   which asserts nothing and keeps the crate valid; (b) leave it out and accept the validator's error for
+   standalone crates. Until he answers, `atrium_rocrate` keeps writing the calculated label. A fragment,
+   which AMČR embeds under its own root, is not affected.
 3. **The policy:** AMČR defines it; ÚFAL provides the schema, the reference implementation and examples. External
    processing is also allowed or refused **per document** (aiscr-webamcr#2590), and a missing authorisation
    refuses it.
@@ -132,7 +136,7 @@ No tool fills it from component licences. An unknown status stays unknown.
 - **The root dataset's `license` is written only from a rights assertion** whose `scope` is the record (or the
   run, for a run crate). Without one it is left out, and the crate's description says that rights are not
   established. RO-Crate 1.2 requires a root licence, so a standalone crate without it fails the validator; how to
-  meet both is the open point on #6 (a fragment is not affected).
+  meet both is the open point on #6, with the two options under "What AMČR decided" (a fragment is not affected).
 - For a collection of derived files, `atrium_rocrate` can also write a `REUSE.toml`, generated from the rights
   assertions of those files, never from component licences.
 
@@ -167,7 +171,8 @@ calculated value labelled as such (`migrate_document()` in memory for a record; 
 ### Order of work, once agreed
 
 1. **The correction first:** the schema and the docs describe `provenance.license` and the paradata `license` as
-   calculated from the components, not as the output's licence; the crate root stops carrying it (once the
+   calculated from the components, not as the output's licence (done 2026-10-25: the record schema's
+   descriptions, `document_schema.md`, `paradata_schema.md`, `rocrate_export.md` and the site pages); the crate root stops carrying it (once the
    RO-Crate point above is settled); historical files untouched.
 2. Shared modules: `atrium_document` gains `rights` and `assert_rights()` (with `scope` and `basis` required);
    `atrium_rocrate` writes the root licence from `rights` only and emits component entities.

@@ -114,9 +114,9 @@ list, and a re-run replaces each block whole. Records already written keep the p
 
 ## On other platforms
 
-**SSH Open Marketplace.** The tool has no record of its own yet; the llm-enrich record
-[`j9fqxo`](https://marketplace.sshopencloud.eu/tool-or-service/j9fqxo) described this stage and is
-to be re-pointed to it.
+**SSH Open Marketplace.** Tool record [`j9fqxo`](https://marketplace.sshopencloud.eu/tool-or-service/j9fqxo),
+"Keyword extraction from archival documents (statistical and vocabulary-controlled)". It described the
+llm-enrich stage until 24 October 2026, when it was re-pointed to this repository.
 
 **Galaxy.** Inputs map to `json` (the record) and `txt`; outputs to `json`. Inside ATRIUM,
 DARIAH's Galaxy tools already chain PDF text extraction with vocabulary-driven information

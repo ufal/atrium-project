@@ -1,14 +1,14 @@
 # mkdocs.yml — ATRIUM aggregate documentation site (atrium-project#57)
 #
-# ROUND 3. The nav below matches docs_site/ exactly, in both directions.
+# ROUND 3. The nav below matches docs_site/ in both directions, except the ten
+# `tools/*/` pages kept only so their old addresses still answer.
 #
-# The `- Tools:` block carries the two sections that are WRITTEN --
-# page-classification and translator. The other four tool repositories
-# (ocr-postprocess, nlp-enrich, keyword-extract, digital-convert) have their
-# workflow page under Workflows and a landing page of their own, and are
-# deliberately absent from this block: under `strict: true` a nav entry with no file is a build failure, so a section
-# appears here only once its pages exist. nav_order reserves 40-44 and 60-74
-# for them.
+# Since atrium-project#79 (2026-10-25) there is no `- Tools:` block: each tool's
+# guides, references and history live in its own repository, and this site keeps
+# the shared architecture, the workflows and the navigation. The former
+# page-classification and translator sections are now short "moved" pages under
+# docs_site/tools/, outside the nav, each pointing to its new home; every tool
+# has its workflow page under Workflows and a landing page of its own.
 #
 # The round-2 assembler (57.plan.md B) is RETIRED. It existed to slice each tool
 # README into site pages, which is exactly the mirror the maintainer rejected
@@ -142,17 +142,4 @@ nav:
       - Overview: operations.md
       - S2 pilot handover: pilot.md
   - Contributing standards: contributing-standards.md
-  - Tools:
-      - page-classification:
-          - Overview: tools/page-classification/index.md
-          - Guide: tools/page-classification/guide.md
-          - Reference: tools/page-classification/reference.md
-          - Changelog: tools/page-classification/changelog.md
-          - History: tools/page-classification/history.md
-      - translator:
-          - Overview: tools/translator/index.md
-          - Guide: tools/translator/guide.md
-          - Reference: tools/translator/reference.md
-          - Changelog: tools/translator/changelog.md
-          - History: tools/translator/history.md
   - Development history: development-history.md

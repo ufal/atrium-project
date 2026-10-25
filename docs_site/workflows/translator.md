@@ -11,7 +11,7 @@ authored: true
 
 # Translating XML documents with a protected domain vocabulary
 
-*The translator workflow.* Tool section: [translator](../tools/translator/index.md).
+*The translator workflow.* Tool section: [translator](https://github.com/ufal/atrium-translator/blob/test/README.md).
 
 ## Purpose
 
@@ -124,7 +124,7 @@ language named explicitly. The recommended model is Qwen3.8-27B through `openai_
 recorded with `LLM_LICENSE_COMPONENT=qwen3_8`; a `ct2` model of the EuroLLM, MADLAD-400 or
 Opus-MT family also qualifies. The AMČR and TEATER vocabularies are CC0 and do not stand in its
 way. How the label is computed is on
-[Reference → Licence](../tools/translator/reference.md#licence-is-computed-not-declared).
+[Reference → Licence](https://github.com/ufal/atrium-translator/blob/test/docs/reference/licences.md#what-a-run-records).
 
 In the [document record](../ecosystem/document-contract.md) the tool owns the `translations`
 block and records the translated file as `derived_from.translated_xml`. The block also counts
@@ -181,6 +181,6 @@ records **provenance**, not a build instruction.
 | `data_samples/README.md`, `data_samples/vocabulary.csv`                                                                                                                                                                      | test data; the shipped vocabulary                                                              |
 | `CITATION.cff`                                                                                                                                                                                                               | credit, the release date                                                                       |
 | `CONTRIBUTING.md` (release rows `v1.2.2-beta` to `v1.5.0-beta`; Branches & Environments), `.github/workflows/release.yml`, `docker.yml`                                                                                      | what changed since `v1.2.1-beta`; the release branch                                           |
-| `atrium-project/docs_site/tools/translator/*`, `docs_site/pipelines.md` § W7                                                                                                                                                 | outputs, design limits, the vocabulary workflow                                                |
+| the tool's `docs/` (until 2026-10-25 the hub's `tools/translator/` pages), `docs_site/pipelines.md` § W7                                                                                                                     | outputs, design limits, the vocabulary workflow                                                |
 | SSH Open Marketplace `CizIUW`, `13eHAZ`                                                                                                                                                                                      | record identifiers                                                                             |
 | `usegalaxy-eu/usegalaxy-eu-tools`; `bgruening/galaxytools`; `DARIAH-ERIC/atrium-galaxy-tools`                                                                                                                                | the Galaxy analogues and conventions                                                           |

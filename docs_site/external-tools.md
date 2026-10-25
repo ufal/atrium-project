@@ -62,14 +62,14 @@ and each `String` carries one token in a `CONTENT` attribute plus its bounding b
 
 **Where ATRIUM uses it.** It is the backbone format of the whole pipeline. `ocr-postprocess`
 consumes OCR ALTO and emits per-page ALTO under `PAGE_ALTO/`; the
-[translator](tools/translator/index.md) rewrites ALTO in place, preserving every coordinate;
+[translator](https://github.com/ufal/atrium-translator/blob/test/README.md) rewrites ALTO in place, preserving every coordinate;
 the E2E fixture is one ALTO v3 page. Versions v1–v4 are in scope, with one catch:
 ocr-postprocess's ALTO methods split only v3 files (`page_split.py`), while its text-lines
 method and service read every version.
 
 **Why it is harder than it looks.** Because ALTO stores text *spatially*, translating or
 rewriting it is not a text operation — see
-[ALTO dual-pass reconstruction](tools/translator/reference.md#alto-dual-pass-reconstruction)
+[ALTO dual-pass reconstruction](https://github.com/ufal/atrium-translator/blob/test/docs/how-it-works.md#alto-dual-pass-reconstruction)
 for what preserving that structure actually costs.
 
 **Onward:** <https://www.loc.gov/standards/alto/>
@@ -168,9 +168,9 @@ Each has a reference in the repository that uses it:
   [Formats and their standards](https://github.com/ufal/atrium-ocr-postprocess/blob/master/docs/text_inputs.md#formats-and-their-standards).
 * **TEITOK as an output** — the standards it builds on, how nlp-enrich composes a file from the
   line table, UDPipe, NameTag and the ALTO layout, the tools that write or read it, and the
-  pitfalls: nlp-enrich's README, from
-  [The format and the standards it builds on](https://github.com/ufal/atrium-nlp-enrich#the-format-and-the-standards-it-builds-on)
-  to [Pitfalls](https://github.com/ufal/atrium-nlp-enrich#pitfalls).
+  pitfalls: nlp-enrich's documentation, from
+  [The format and the standards it builds on](https://github.com/ufal/atrium-nlp-enrich/blob/test/docs/how-it-works.md#the-format-and-the-standards-it-builds-on)
+  to [Pitfalls](https://github.com/ufal/atrium-nlp-enrich/blob/test/docs/reference/teitok.md#pitfalls).
 
 ## Models
 
@@ -197,7 +197,7 @@ one revision per generation.
 **Where ATRIUM uses it.** `setup/config.txt` `[HF] repo_name`, and the HTTP service. The
 service warms revisions `v1.4`–`v5.4`, the five-model canonical ensemble. Revisions are named
 `vX.Y` — model slot and data generation; see
-[page-classification → The models](tools/page-classification/index.md#the-models).
+[page-classification → The models](https://github.com/ufal/atrium-page-classification/blob/test/docs/reference/models.md#how-a-revision-is-named).
 
 !!! note "Name a revision"
     Pass the revision you mean — `-rev v4.4` for the recommended single model, or `--best` for
@@ -213,7 +213,7 @@ pre-trained with Meta's SWAG weakly-supervised method and fine-tuned on ImageNet
 
 **Where ATRIUM uses it.** The default `[SETUP] base_model`, and the base of the published revisions
 `v4.3` and `v4.4` — `v4.4` at 95.81 % top-1 and 99.79 % top-3 on its held-out fold (see
-[the classifier's page](tools/page-classification/index.md#how-well-it-works)). It is also what the E2E smoke
+[the classifier's page](https://github.com/ufal/atrium-page-classification/blob/test/docs/evaluation/results.md#the-vx4-models-on-held-out-pages)). It is also what the E2E smoke
 test passes as `-m`. Notable because it matches the ViT variants while being a quarter the size of the largest.
 
 **Onward:** <https://huggingface.co/timm/regnety_160.swag_ft_in1k>
@@ -228,7 +228,7 @@ no GPU and essentially no latency.
 output to the 639-1 codes translation services expect, and uses a guess only when the text has
 at least 20 letters, the score is at least 0.5 and the language is one the backend translates;
 otherwise the element's own language label, the document's language and a default (`cs`)
-decide — see [the translator's language rules](tools/translator/reference.md#languages). In ALTO
+decide — see [the translator's language rules](https://github.com/ufal/atrium-translator/blob/test/docs/how-it-works.md#source-language-identification). In ALTO
 mode it runs once per `TextBlock` so every line in a block is translated consistently.
 
 **Two things to know.** Its weights are **CC BY-NC 4.0**, so auto-detection alone makes a run's
@@ -252,7 +252,7 @@ fetched live from the API and composed as `<src>-<tgt>`; the endpoint is attacha
 **Licence.** CUBBITT's models are **CC BY-NC-SA 4.0**, and the service is offered under
 [LINDAT's terms of use](https://lindat.mff.cuni.cz/en/terms-of-use). A default translator run lists
 CUBBITT, so its computed licence label is CC BY-NC-SA 4.0 — see
-[translator → Licence](tools/translator/reference.md#licence-is-computed-not-declared). The label is
+[translator → Licence](https://github.com/ufal/atrium-translator/blob/test/docs/reference/licences.md#what-a-run-records). The label is
 not the licence of the translation ([Licences and paradata](ecosystem/licences.md)).
 
 **Onward:** <https://lindat.mff.cuni.cz/services/translation/>
@@ -425,7 +425,8 @@ and the tools or services it uses as related records.
 (ocr-postprocess), [`CizIUW`](https://marketplace.sshopencloud.eu/tool-or-service/CizIUW)
 (translator), [`EMhu3X`](https://marketplace.sshopencloud.eu/tool-or-service/EMhu3X)
 (nlp-enrich), [`j9fqxo`](https://marketplace.sshopencloud.eu/tool-or-service/j9fqxo)
-(llm-enrich, to be re-pointed to keyword-extract). The translator's workflow has its own record,
+(keyword-extract, re-pointed from llm-enrich on 24 October 2026) and
+[`jGxgQI`](https://marketplace.sshopencloud.eu/tool-or-service/jGxgQI) (digital-convert, created the same day). The translator's workflow has its own record,
 [`13eHAZ`](https://marketplace.sshopencloud.eu/workflow/13eHAZ), and the AMČR text workflow,
 [`0xSpVP`](https://marketplace.sshopencloud.eu/workflow/0xSpVP), strings the tools together.
 The text these records are built from is on [Workflows](workflows/index.md).
@@ -740,7 +741,7 @@ shellcheck for its data scripts), with ruff at line length 120, Python 3.11, rul
 `python:3.11-slim` never changes name, so there is nothing to propose. Pinning the base by
 digest and declaring the ecosystem turns a base-image update into a reviewed pull request; the
 hub's `docs/templates/Dockerfile` and example Dependabot configuration do both. The background
-is [the base image that blocked a release](tools/translator/history.md#the-base-image-that-blocked-a-release).
+is [the base image that blocked a release](https://github.com/ufal/atrium-translator/blob/test/docs/decisions/history.md#the-base-image-that-blocked-a-release).
 
 **Onward:** <https://docs.astral.sh/ruff/> · <https://pre-commit.com/> ·
 <https://docs.github.com/code-security/dependabot>

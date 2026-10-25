@@ -4,6 +4,7 @@ This document defines the schema versioning policy for the `atrium_paradata.py` 
 
 ## Schema `2.0` Context
 - **Contract:** Establishes fixed `provenance`, `license`, `timing`, `config`, and `statistics` blocks along with `record_type` for multi-stage pipelines.
+- **The `license` block is a calculation:** the components the run used, each with its licence, and the most restrictive of them (`para_licenses.merge_effective_licenses`). It is evidence about the components, not the licence of the run's output; the rights in an output depend on the source document and are stated only by whoever holds them ([#6](https://github.com/ufal/atrium-project/issues/6), agreed 2026-10-22; [`proposals/rights-and-policy.md`](proposals/rights-and-policy.md)). Dropping or renaming the block would be a `3.0` change (rule 2 below).
 - **Old Log Validity:** Pre-`2.0` (or unversioned `1.0` logs) remain completely valid. Tools load historical logs using the transparent migrator built into `atrium_paradata.py` (`load_paradata()` automatically upconverts them).
 
 ## Versioning Rules

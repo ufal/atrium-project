@@ -78,8 +78,8 @@ a born-digital record, give `scale` = the images' DPI / 72.
 HTTP status. LINDAT not answering after its retries is exit 6 (502 `upstream_unavailable`); every
 attempt timing out is exit 7 (504); a TEITOK file that fails its check is exit 5 (500). Before the
 first stage the runner checks that the stages' `python3` can import what they need; if it cannot,
-it stops with exit 3 (500) and says how to fix it. The README's
-[exit codes](https://github.com/ufal/atrium-nlp-enrich#exit-codes) list them all.
+it stops with exit 3 (500) and says how to fix it. The usage guide's
+[exit codes](https://github.com/ufal/atrium-nlp-enrich/blob/test/docs/usage.md#exit-codes) list them all.
 
 ## Provenance and licence
 

@@ -120,13 +120,13 @@ OCR.
 
 **Stages.**
 
-| # | Stage                                                     | Reads                                    | Writes                          | Block                                 |
-|---|-----------------------------------------------------------|------------------------------------------|---------------------------------|---------------------------------------|
-| 1 | [page-classification](tools/page-classification/index.md) | the page image                           | a Top-N CSV                     | `page_categories`                     |
-| 2 | ocr-postprocess                                           | `ALTO/`                                  | `PAGE_ALTO/`, `DOC_LINE_CATEG/` | `pages`, `content`, `lines`, `tables` |
-| 3 | [translator](tools/translator/index.md)                   | `PAGE_ALTO/<doc>/<doc>-N.alto.xml`       | `TRANSLATED/`                   | `translations`                        |
-| 4 | nlp-enrich                                                | `DOC_LINE_CATEG/` + the original `ALTO/` | `TEITOK/`                       | `entities`                            |
-| 5 | keyword-extract                                           | the record from stage 4                  | keywords with method and score  | `enrichment` (controlled kind)        |
+| # | Stage                                                                                         | Reads                                    | Writes                          | Block                                 |
+|---|-----------------------------------------------------------------------------------------------|------------------------------------------|---------------------------------|---------------------------------------|
+| 1 | [page-classification](https://github.com/ufal/atrium-page-classification/blob/test/README.md) | the page image                           | a Top-N CSV                     | `page_categories`                     |
+| 2 | ocr-postprocess                                                                               | `ALTO/`                                  | `PAGE_ALTO/`, `DOC_LINE_CATEG/` | `pages`, `content`, `lines`, `tables` |
+| 3 | [translator](https://github.com/ufal/atrium-translator/blob/test/README.md)                   | `PAGE_ALTO/<doc>/<doc>-N.alto.xml`       | `TRANSLATED/`                   | `translations`                        |
+| 4 | nlp-enrich                                                                                    | `DOC_LINE_CATEG/` + the original `ALTO/` | `TEITOK/`                       | `entities`                            |
+| 5 | keyword-extract                                                                               | the record from stage 4                  | keywords with method and score  | `enrichment` (controlled kind)        |
 
 ocr-postprocess also takes OCR output that is not ALTO — PAGE XML, hOCR, ABBYY FineReader XML,
 DjVuXML, Tesseract TSV, OCR JSON, a PDF's OCR layer — through its text-lines and json-keys
@@ -152,8 +152,8 @@ at which version, produced each of them.
     the record passed with `--document-json` / `--document-json-out`. The
     [E2E workflow (W6)](#w6--e2e-smoke-the-integration-contract) is the reference sequence of
     `docker run` invocations; the two stages documented here are reproduced in
-    [page-classification → Guide](tools/page-classification/guide.md#4--run-it-as-one-stage-of-the-pipeline)
-    and [translator → Guide](tools/translator/guide.md#5--run-it-as-one-stage-of-the-pipeline).
+    [page-classification → Guide](https://github.com/ufal/atrium-page-classification/blob/test/docs/usage.md#in-the-atrium-pipeline-and-from-a-coding-agent)
+    and [translator → Guide](https://github.com/ufal/atrium-translator/blob/test/docs/usage.md#as-one-stage-of-the-pipeline).
 
 ### W4 — Containerised service / API workflow
 
@@ -369,9 +369,9 @@ actually used, evaluation CSVs, confusion matrices, and paradata whose resolved 
 `splitN ↔ foldN ↔ seed 420+(N−1)` and `REVISION_BEST_FOLDS` mean a published revision can be
 retrained on the split it originally saw — which is how the `v*.4` generation was trained on
 the licensed subset and compared page by page with the generation before it; see
-[page-classification → History](tools/page-classification/history.md#2026-06--08--retraining-on-the-licensed-dataset-15).
+[page-classification → History](https://github.com/ufal/atrium-page-classification/blob/test/docs/decisions/history.md#2026-06-to-08-retraining-on-the-licensed-dataset-15).
 
-Full flag reference: [page-classification → Reference](tools/page-classification/reference.md#training-and-evaluation).
+Full flag reference: [page-classification → Reference](https://github.com/ufal/atrium-page-classification/blob/test/docs/reference/cli.md#training-and-evaluation).
 
 ### W12 — Annotation round trip (page-classification's half)
 

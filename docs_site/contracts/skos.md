@@ -159,7 +159,7 @@ controlled vocabulary is something else: a **translation glossary**,
 `https://api.aiscr.cz/id/HES-000497` for AMCR's *(polo)zemnice*, "pit house" — so a protected
 term stays traceable without ATRIUM minting a URI for it. The glossary protects terms during
 translation; it does not label anything in the record. See
-[translator → Guide](../tools/translator/guide.md#6--use-the-vocabulary).
+[translator → Guide](https://github.com/ufal/atrium-translator/blob/test/docs/usage.md#use-a-vocabulary).
 
 ## "`broader` means two things"
 

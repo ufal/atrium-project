@@ -428,6 +428,8 @@ def check_caller_ref(
     """
     checked = 0
     for job_name, job in (doc.get("jobs") or {}).items():
+        if isinstance(job, dict):
+            checked += _check_hub_action_steps(path, job_name, job, text, findings, require_sha)
         if not isinstance(job, dict) or "uses" not in job:
             continue
         uses = str(job["uses"])
@@ -476,6 +478,49 @@ def check_caller_ref(
             f"job '{job_name}' pins a hub reusable at '@{ref}', not '@{HUB_CHANNEL}' or a commit of it. "
             "Branch and pre-release pins make a hub change reach this repo without anyone adopting it; "
             f"`{HUB_CHANNEL}` is the ecosystem's adoption point.",
+        )
+    return checked
+
+
+def _check_hub_action_steps(
+    path: Path, job_name: str, job: dict, text: str, findings: Findings, require_sha: bool
+) -> int:
+    """The hub's composite actions (`ufal/atrium-project/.github/actions/<name>@ref`, e.g.
+    `lane-failure-issue`, #81) follow the same adoption rule as its reusables: `@v1`, or a commit
+    of it named `# v1`; under --require-sha-pins only the commit. Without this, the sweep's pinned
+    callers would still run an action from the moving tag."""
+    checked = 0
+    for step in job.get("steps") or []:
+        if not isinstance(step, dict):
+            continue
+        uses = str(step.get("uses") or "")
+        if "ufal/atrium-project/.github/actions/" not in uses:
+            continue
+        checked += 1
+        ref = uses.rsplit("@", 1)[-1] if "@" in uses else ""
+        if ref == HUB_CHANNEL:
+            if require_sha:
+                findings.error(
+                    path,
+                    f"job '{job_name}' uses a hub action at '@{HUB_CHANNEL}'; pin it to a commit of "
+                    f"{HUB_CHANNEL} (`@<sha>  # {HUB_CHANNEL}`, scripts/pin_hub_reusables.py).",
+                )
+            continue
+        if SHA_RE.match(ref):
+            comments = [
+                VERSION_COMMENT_RE.search(m["rest"])
+                for m in re.finditer(rf"uses:\s*{re.escape(uses)}(?P<rest>[^\n]*)", text)
+            ]
+            if not comments or any(c is None or c["version"] != HUB_CHANNEL for c in comments):
+                findings.error(
+                    path,
+                    f"job '{job_name}' pins a hub action to a commit without a '# {HUB_CHANNEL}' comment: "
+                    "name the channel the commit was taken from.",
+                )
+            continue
+        findings.error(
+            path,
+            f"job '{job_name}' uses a hub action at '@{ref}', not '@{HUB_CHANNEL}' or a commit of it.",
         )
     return checked
 
