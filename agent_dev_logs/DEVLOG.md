@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `test` = `e0c19f3` (2026-10-25) = `v1` (the tools pinned to `18f0668`); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-26, at the end of the file (this file is not in date order): the paper's typography, #81's evidence by the first gated tags, the SWAG licence question._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `test` = `0c3d3ed` (2026-10-25) = `v1` (the tools pinned to `18f0668`); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-26 (triage), at the end of the file (this file is not in date order): every open issue triaged against the repositories._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -2690,3 +2690,45 @@ Against `test` `a38ae4d` and every `agent-skill` head of 12:29–12:53 (the roun
 - **page-classification:** CONTRIBUTING's branch table; `licences.md`/`models.md` state that the RegNetY base
   (`regnety_160.swag_ft_in1k`, SWAG) is CC BY-NC 4.0; `para_config.txt` is unchanged until #6 answers.
 - Plans 13, 40 and 81 and digest 40 updated.
+
+## 2026-10-26 (morning) — The first Monday with the pins; the #13 letters for the co-author round
+- **Lanes (#81):** every scheduled lane of the six tools and the hub green, the first Monday on pinned workflows,
+  except the weekly Security & Supply-chain scan of digital-convert, nlp-enrich and keyword-extract: Trivy could not
+  download its database (`mirror.gcr.io`, 404 for the layer, 05:12–05:16 UTC), so nothing was scanned. One re-run
+  each is asked of the maintainer; `ci_policy.md` (Noise) records the case, which a release's CVE gate would meet
+  the same way.
+- **#13:** `plans/13.letters.md` follows the manuscript of 25 October (v17): the title, the abstract, the authors
+  and affiliations as printed, Kate as corresponding author, the software identifiers the paper cites; letter 2
+  points to the PDF's own statements. The plan names the 28 October step.
+- Plans 13 and 81 updated.
+
+## 2026-10-26 (triage) — Every open issue read against the seven repositories
+- **Scope:** the 25 open issues and one PR of the seven repositories (project 21's board is not readable here), each
+  checked against its thread, its plan and digest, and the `test` heads (equal to the default branches).
+- **Closable:** none. **Moved:** #78's Monitoring is met (nlp-enrich's first scheduled LINDAT check green, 10-26
+  07:12; the translator's daily since 10-23).
+- **Boxes and comments drafted for the maintainer:** #78 (Monitoring), #79 (98 and 101, with the three missing
+  relocation maps), #81 (the three provable boxes), #6 (box 1, with a link to the licence summary), #4 (the "???"
+  line as the six tool records), #56 (the current repositories; after the pilot), and comments on #10 (deferred after
+  the pilot, the maintainer's decision), #15 (the IJDL submission closed; IJDAR proposed; Pavel asked to review the
+  corrected evaluation, as motyc suggested), #24, nlp-enrich#7 and #18 (deferred after the pilot, never said on
+  their threads), page-classification#62 (`@dependabot rebase`: red only from its stale base).
+- **Left with others:** the rulesets and branch protection (@stranak; none of the 14 default and `test` branches is
+  protected, and four tools still lack the `v*` tag ruleset), the LINDAT terms (@stranak, AMČR), the crate root,
+  `0xSpVP` and the data copies (motyc), the #79 review and the keyword-extract halves (@david-spacil), the
+  11 November images and the acceptance (AMČR).
+- **Fixed in the repositories:** the **Record** rows of `docs_site/workflows/digital-convert.md` and
+  `keyword-extract.md`; `docs/docker_gha_roadmap.md` (W7) says `issue-log-refresh.yml` was deleted in `3ea60ff`.
+  In the tools: three READMEs link their SSHOMP records, translator's silent vocabulary-test skip, nlp-enrich's
+  `v.0.4.0` row, keyword-extract's workflow comments.
+- **Not changed, on purpose:** page-classification's two strict xfails on `v4.3.1`. In the sweep numbering the
+  registry documents, `v4.3.x` is EfficientNetV2-L, so reordering the keys would break those revisions; it stays a
+  documented collision. Also the hub's provenance tables (they name the release they were read at), the pilot page's
+  commit-pinned runbooks, translator's deliberate `v1.3.0-beta` vocabulary pin.
+- **Cluster jobs for the maintainer:** ocr-postprocess#8's two rerun reports (print them, or submit
+  `tools/page_stats_rerun.sh` for a missing one) and digital-convert#5's C5 routing counts (the samples job, then a
+  CPU job that compares its `/describe` reports with C4's in `data_samples/`, counts only).
+- **#13:** David Spáčil resolved his three `CHECK(David)` notes in Overleaf (10-26 07:29; v18 builds at 14 pages,
+  4,709 words); the 28 October comment now names his corrections, and letter 2's table offers the Brno affiliation
+  to the three acknowledged contributors if they choose co-authorship.
+- Plans and digests 4, 6, 10, 13, 15, 16, 22, 24, 56, 66, 78, 79 and 81 updated.

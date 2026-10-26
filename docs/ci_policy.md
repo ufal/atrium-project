@@ -104,6 +104,12 @@ open: the hub action `.github/actions/lane-failure-issue` (a marker per lane, an
 by every scheduled lane that reports. Only scheduled runs report; a permitted skip is not a failure and
 reports nothing. CodeQL and the image scans write native code-scanning alerts and open no issue.
 
+A scan that fails before it scans, because Trivy cannot download its vulnerability database, is re-run once
+and is not a finding: on 2026-10-26 `mirror.gcr.io` answered 404 for the database layer and three weekly scans
+failed in the same four minutes. Trivy moves on to its second registry only on a 429 or 5xx answer, so the
+registry list does not prevent this. The same failure in a release's CVE gate stops the release until it is
+re-run.
+
 ## Changing CI
 
 Before a new check or a change to a shared template, answer in the pull request:

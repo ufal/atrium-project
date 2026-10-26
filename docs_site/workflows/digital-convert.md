@@ -49,7 +49,7 @@ refused, because it belongs to the OCR route and [ocr-postprocess](ocr-postproce
 | **Network**            | none for `/reformat` and the command line; `/describe` calls page-classification and ocr-postprocess when their URLs are set; the optional layout-model engine fetches its models at build time                                                                                                                |
 | **Code licence**       | MIT                                                                                                                                                                                                                                                                                                            |
 | **Component licences** | the default engine uses permissively licensed libraries; the optional layout-model engine adds model weights under Apache-2.0 and CDLA-Permissive-2.0; LibreOffice, which converts DOC and XLS, is listed. The rights in the text are the source document's: [Licences and paradata](../ecosystem/licences.md) |
-| **Record**             | none of its own yet                                                                                                                                                                                                                                                                                            |
+| **Record**             | SSH Open Marketplace tool [`jGxgQI`](https://marketplace.sshopencloud.eu/tool-or-service/jGxgQI)                                                                                                                                                                                                               |
 
 ## Steps
 
