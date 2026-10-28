@@ -2732,3 +2732,25 @@ Against `test` `a38ae4d` and every `agent-skill` head of 12:29–12:53 (the roun
   4,709 words); the 28 October comment now names his corrections, and letter 2's table offers the Brno affiliation
   to the three acknowledged contributors if they choose co-authorship.
 - Plans and digests 4, 6, 10, 13, 15, 16, 22, 24, 56, 66, 78, 79 and 81 updated.
+
+## 2026-10-27 – 10-28 — The alignment released; four releases repaired; the paper's citations; Galaxy round 2
+
+- **Released, each with a GitHub release and `images.json`:** page-classification `v1.10.5-beta`, ocr-postprocess
+  `v1.13.1-beta`, keyword-extract `v1.5.1-beta` (10-27), translator `v1.6.1-beta` (10-28). digital-convert
+  `v1.3.0-beta` and nlp-enrich `v1.2.0-beta` were released on 10-26. The service–CLI alignment is in all six (#72).
+- **The failed tags and their guards (#72, #81):** four tags published images but no release. The causes were the
+  bundle `cp` list (page-classification, ocr-postprocess), stale vocabulary stamps (keyword-extract), a torch-only
+  test's stand-in (page-classification `v1.10.4`) and the runner's Python 3.14 (translator). Each now fails on push.
+- **Hub:** `atrium_rocrate.py` names each tool's own authors from its `CITATION.cff` (`PROGRAM_AUTHORS`; `CORE_AUTHORS`
+  for a program it does not list); its shared test and the self-check follow; the tools re-vendor it after the `v1`
+  move. The six workflow pages are re-read at the new releases, and the pilot page lists them.
+- **Documentation (#79, #6):** decorative emoji out of the tools' user pages; the agreed licence-label wording in
+  ocr-postprocess and digital-convert; flags, version examples and runbooks checked at the new tags.
+- **#13:** citation-only edits to v27 prepared as files (HF models, Process Run Crate, "Taming the Beast", KER, YAKE
+  2018); no undefined citation in a TeX Live build. Pavel's rule of 10-27 ("without any AI") is recorded; using the
+  edits is Kate's and Pavel's call.
+- **#4:** the six redrawn diagrams reviewed against the code; the differences are suggestions in plan § 9.
+- **#66:** the refined page-classification wrapper (image `1.10.5-beta`, a data manager for staged models, PDFs, the
+  ensemble, one workflow), lint-clean and its job scripts run under Docker against the real entry point; a plan for
+  the other five, which first need the same entry-point change.
+- Plans and digests 4, 6, 13, 66, 67, 72, 77, 79 and 81 updated.

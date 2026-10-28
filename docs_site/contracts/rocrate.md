@@ -50,8 +50,8 @@ page-classification's `page_categories` and `pages`, then the translator's `tran
 | each program                                      | a `SoftwareApplication` whose `@id` is its release page, with `version`, the repository `url` and the authors as `creator`                     | the program, its version and its authors; without paradata the id is the repository and the version reads `unrecorded`                                                                                           |
 | `provenance.license`                              | the root's `license`                                                                                                                           | the record's computed licence label, stated as the crate's licence today. It is not the licence of the crate's contents; the proposal on #6 stops writing it ([Licences and paradata](../ecosystem/licences.md)) |
 
-The root declares the Process Run Crate profile; the project's authors appear as ORCID `Person`
-entities, the `creator` of each tool.
+The root declares the Process Run Crate profile; each tool's own authors (its `CITATION.cff`)
+appear as ORCID `Person` entities, the `creator` of that tool.
 
 For page-classification's half of that record, the heart of the output reads:
 

@@ -184,12 +184,15 @@ makes a MUST: without paradata it reads `"unrecorded"`, which states the gap ins
 | root `mentions`              | the `CreateAction`s and the regenerable recipes                                          |                                                                                                                                                  |
 | `CreateAction`               | one per `provenance.contributors[]` entry                                                | `@id` = its `run_uuid`; a record written before #71 keeps `#run-<program>-<run_id>`                                                              |
 | `CreativeWork` per block     | one per `assembled.blocks[…]` stamp                                                      | §4.3; the action that wrote it lists it as `result`                                                                                              |
-| `SoftwareApplication`        | `REPO_URLS` plus, with paradata, `repository` / `tool_version` / `python_version`        | `@id` = the release page; `version`; the four ORCID authors as `creator`                                                                         |
+| `SoftwareApplication`        | `REPO_URLS` plus, with paradata, `repository` / `tool_version` / `python_version`        | `@id` = the release page; `version`; its own authors (`PROGRAM_AUTHORS`) as `creator`                                                            |
 | `ContainerImage`, `agent`    | paradata `docker_image` (ATRIUM_RUNNER_IMAGE) and `run_agent` (ATRIUM_RUN_AGENT)         | on the action, only when recorded                                                                                                                |
 
-The ATRIUM authors are each **tool's `creator`**, not the root's `author`: the record is the
-archive's, the software is theirs (atrium-project#71). ORCIDs are their `@id`s, so no ATRIUM
-identifier is minted for a person.
+Each **tool's `creator`** is its own authors, not the root's `author`: the record is the
+archive's, the software is theirs (atrium-project#71). Who wrote which tool is `PROGRAM_AUTHORS`,
+taken from each tool's `CITATION.cff`; a program it does not list (a predecessor) gets the authors
+every tool has (`CORE_AUTHORS`), and a service's `-api` suffix is ignored. Until 2026-10-28 every
+tool named the same four people. ORCIDs are their `@id`s, so no ATRIUM identifier is minted for a
+person.
 
 ### 4.2 The reference-discipline rule, restated in RO-Crate terms
 
@@ -601,7 +604,7 @@ starts and carried in the record; `run_id` has one-second resolution and two par
 share one. A tool is its release page, an absolute URL that resolves. An upload is its content
 (`ni:` URI). None of them is minted by the exporter.
 
-**`creator` is for people.** The ATRIUM authors are each tool's `creator`. A block is attributed
+**`creator` is for people.** A tool's authors are its `creator`. A block is attributed
 by the run that wrote it, not by a `creator` naming software.
 
 **`PROCESS_RUN_PROFILE` is pinned and checked.** 0.5 is the profile IRI the validator ships; the
