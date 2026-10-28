@@ -11,10 +11,11 @@
 # already told maintainers to "use scripts/revendor_shared.sh" — a script that
 # did not exist (issue #10, finding D9).
 #
-# It is also what makes issue #10 finding G4's atomic window practical: template
-# edit + six re-vendorings + retag has to happen inside one window, because a
-# moving `v1` makes identical commits fail para-drift in one repo and pass in
-# another minutes later. Doing six copies by hand is how that window gets wide.
+# It is also what made issue #10 finding G4's atomic window practical while the
+# callers read `hub-ref: v1`: template edit + six re-vendorings + retag had to happen
+# inside one window, because a moving `v1` made identical commits fail para-drift in
+# one repo and pass in another minutes later. With the callers pinned (THE PINS below)
+# there is no window: each tool's copies and its pin move in one commit.
 #
 # DESTINATIONS ARE NOT UNIFORM — this is the whole reason a script beats a
 # `cp -t`: the tests go to tests/, the service base class goes to service/, and
@@ -42,6 +43,15 @@
 # pass" stops being true the moment a selftest step exists that this script does
 # not know about. See SELFTESTS below.
 #
+# THE PINS (atrium-project#72, 2026-10-28). Since 2026-10-25 every tool calls the hub's
+# reusables by commit and passes that commit as `hub-ref`, and para-drift diffs the vendored
+# copies against the hub AT THAT COMMIT, not against this checkout. Copies newer than the pin
+# fail it: on 2026-10-28 atrium_rocrate.py was re-vendored from 5a996d3 into all six while
+# every caller still read 18f0668, and para-drift went red in all six. So the copies and the
+# pin move in one tool commit, and this script checks that the shared files here are those
+# of every hub ref each tool names (scripts/pin_hub_reusables.py --print-pins); a tool
+# pinned elsewhere fails the run, with the command that moves its pins.
+#
 # SIBLING-OWNED FILES (atrium-project#72 B). A few layers are owned by one TOOL and
 # vendored by another: not hub-canonical, so not in MANIFEST.json and not in the
 # hub-parity diff, but refreshed by the same run so a maintainer has one command.
@@ -60,8 +70,9 @@
 #   scripts/revendor_shared.sh --check              # verify only, write nothing
 #   scripts/revendor_shared.sh --repo atrium-translator [--repo ...]
 #
-# Exit code is 0 when every destination matches the canonical byte-for-byte —
-# i.e. when para-drift would pass — and 1 otherwise. Re-running on an
+# Exit code is 0 when every destination matches the canonical byte-for-byte and every
+# tool is pinned to a hub commit with these canonical files — i.e. when para-drift would
+# pass — and 1 otherwise. Re-running on an
 # already-vendored tree is a no-op that reports "up to date", so it is safe in a
 # loop, in a pre-push hook, or twice by accident.
 
@@ -296,6 +307,36 @@ if [[ "$CHECK_ONLY" -eq 0 ]]; then
     done
 fi
 
+# The pins: para-drift reads the canonical files at each caller's `hub-ref`, so the copies pass
+# only where that commit has the same docs/templates/shared as this checkout (THE PINS above).
+# Checked in both modes: a copy written here and a pin left behind is exactly the red run this
+# guards against.
+echo
+echo "Checking the pins (para-drift reads the hub at each caller's hub-ref, not this checkout):"
+PIN_STALE=()
+PIN_ARGS=()
+for repo in "${REPOS[@]}"; do
+    PIN_ARGS+=(--repo "$repo")
+done
+while IFS=$'\t' read -r repo ref; do
+    commit="$(git -C "$HUB_ROOT" rev-parse --verify --quiet "$ref^{commit}" \
+        || git -C "$HUB_ROOT" rev-parse --verify --quiet "origin/$ref^{commit}" || true)"
+    if [[ -z "$commit" ]]; then
+        echo "  FAIL  $repo — names hub ref $ref, which this checkout does not have (fetch the hub)"
+        FAILED=1
+    elif git -C "$HUB_ROOT" diff --quiet "$commit" -- docs/templates/shared; then
+        echo "  ok    $repo @ ${ref:0:12}"
+    else
+        echo "  STALE $repo @ ${ref:0:12} — that commit's docs/templates/shared differs from this checkout's"
+        PIN_STALE+=("$repo")
+        FAILED=1
+    fi
+done < <(python3 "$HUB_ROOT/scripts/pin_hub_reusables.py" --print-pins --root "$SIBLING_ROOT" "${PIN_ARGS[@]}")
+if [[ ${#PIN_STALE[@]} -gt 0 ]]; then
+    echo "  NOTE  move the pins of $(printf '%s ' "${PIN_STALE[@]}")to the hub commit with these files (once \`v1\` is on it),"
+    echo "        in the same commit as the copies: python3 scripts/pin_hub_reusables.py --sha \"\$(git rev-parse 'v1^{commit}')\""
+fi
+
 # Byte-parity says the five copies agree with the hub. It does not say the thing
 # they agree on works — a canonical module can be identical everywhere and broken
 # everywhere. para-drift runs each `--selftest` as its own step for exactly that
@@ -340,5 +381,5 @@ fi
 
 echo "RESULT: all ${#SHARED_FILES[@]} canonical files are in parity across ${#REPOS[@]} repo(s), and every selected sibling-owned copy matches its owner."
 echo
-echo "Next, per issue #10 finding G4: commit the tool-repo copies and the hub"
-echo "edit in ONE window, then move \`v1\` — never before the copies have landed."
+echo "Next: commit each tool repo's copies together with its pins, in one commit"
+echo "(docs/docker_gha.md, \"The procedure\")."

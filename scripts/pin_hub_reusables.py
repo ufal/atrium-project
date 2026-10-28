@@ -34,6 +34,11 @@ then commit the callers in each tool repo. The pinned workflow-lint caller passe
 then on; the hub's own callers stay at `@v1` and keep the default (false). Re-running with the same commit changes
 nothing; with a new commit it moves every pin together. Exit 0: nothing (left) to change;
 1: `--check` found callers to change; 2: usage error.
+
+``--print-pins`` (no ``--sha``) prints, per repository, every hub ref its workflows name (the
+``@ref`` of a hub ``uses:`` and each ``hub-ref:`` passed), one ``<repo>\t<ref>`` line each.
+``scripts/revendor_shared.sh`` reads it: para-drift compares a tool's copies with the hub at that
+ref, so copies newer than the pin fail it (atrium-project#72, 2026-10-28).
 """
 
 from __future__ import annotations
@@ -62,6 +67,7 @@ USES_RE = re.compile(
     r"@(?P<ref>\S+)"
     r"(?P<rest>.*)$"
 )
+HUB_REF_RE = re.compile(r"^\s+hub-ref:\s*(?P<ref>[^\s#]+)")
 
 
 def _indent(line: str) -> int:
@@ -150,9 +156,20 @@ def workflow_files(repo: Path) -> list[Path]:
     return sorted([*directory.glob("*.yml"), *directory.glob("*.yaml")])
 
 
+def pins_of(repo: Path) -> list[str]:
+    """Every hub ref a repository's workflows name: the `@ref` of each hub `uses:` and each `hub-ref:`."""
+    refs = set()
+    for path in workflow_files(repo):
+        for line in path.read_text(encoding="utf-8").split("\n"):
+            match = USES_RE.match(line) or HUB_REF_RE.match(line)
+            if match:
+                refs.add(match["ref"])
+    return sorted(refs)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--sha", required=True, help=f"the 40-character hub commit `{CHANNEL}` points to")
+    parser.add_argument("--sha", help=f"the 40-character hub commit `{CHANNEL}` points to")
     parser.add_argument(
         "--root", type=Path, default=HUB_ROOT.parent, help="where the tool repos sit (default: beside the hub)"
     )
@@ -161,8 +178,21 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--check", action="store_true", help="report callers that are not pinned to --sha; write nothing"
     )
+    parser.add_argument(
+        "--print-pins", action="store_true", help="print `<repo>\\t<ref>` for every hub ref each repo names"
+    )
     args = parser.parse_args(argv)
 
+    if args.print_pins:
+        for name in args.repo or REPOS:
+            repo = args.root / name
+            if repo.is_dir():
+                for ref in pins_of(repo):
+                    print(f"{name}\t{ref}")
+        return 0
+    if not args.sha:
+        print("--sha is required (or --print-pins)", file=sys.stderr)
+        return 2
     if not SHA_RE.match(args.sha):
         print(f"--sha must be a full 40-character commit, not {args.sha!r}", file=sys.stderr)
         return 2

@@ -194,6 +194,19 @@ def test_a_second_sweep_changes_nothing_and_a_new_commit_moves_every_pin(tmp_pat
     assert sum(text.count("hub-ref:") for text in texts) == 2, "hub-ref updated in place, never added twice"
 
 
+def test_print_pins_names_every_hub_ref_a_repo_reads(tmp_path):
+    """What scripts/revendor_shared.sh checks the copies against (atrium-project#72, 2026-10-28)."""
+    repo = _repo(tmp_path)
+    assert _run("--print-pins", "--root", str(tmp_path), "--repo", repo.name) == (0, f"{repo.name}\tv1\n")
+    _run("--sha", SHA, "--root", str(tmp_path), "--repo", repo.name)
+    rc, out = _run("--print-pins", "--root", str(tmp_path), "--repo", repo.name, "--repo", "atrium-absent")
+    assert (rc, out) == (0, f"{repo.name}\t{SHA}\n"), "uses: and hub-ref: agree after a sweep; no row for a repo absent"
+
+
+def test_without_sha_or_print_pins_it_is_a_usage_error(tmp_path):
+    assert _run("--root", str(tmp_path))[0] == 2
+
+
 def test_a_short_sha_is_a_usage_error(tmp_path):
     assert _run("--sha", "0123abc", "--root", str(tmp_path))[0] == 2
 

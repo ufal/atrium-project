@@ -151,7 +151,10 @@ by the next version, never by moving its tag or replacing an asset.
    reusable left at `@v1`. The input defaults to false and must stay so: the hub's own callers
    (`hub-self-check.yml`) call the reusables by path, with `hub-ref: ${{ github.sha }}`, and making
    the flag the reusable's default would fail them. From then on a hub change reaches a tool repository only through a reviewed pin move
-   (the same script with a new `--sha`, or a Dependabot PR).
+   (the same script with a new `--sha`, or a Dependabot PR). A change to the canonical shared
+   files moves the copies and the pin in the same tool commit: `para-drift` reads the canonical
+   files at the pin ([`docker_gha.md`](docker_gha.md), "The procedure"; red in all six on
+   2026-10-28 when only the copies moved).
 9. **Post the evidence**: the `status` output on #72 and #40.
 
 ## Reading the result

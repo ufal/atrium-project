@@ -471,8 +471,9 @@ hub commit carrying all of:
 3. a `## Changelog — <date>` section in this document;
 4. the producer shapes it has to keep admitting, in `tests/test_document_required.py`.
 
-Then the usual order: `scripts/revendor_shared.sh` into the six tool repos, commit them in one
-window, move `v1`.
+Then the usual order ([`docker_gha.md`](docker_gha.md), "The procedure"): land the hub commit, move
+`v1` to it, then one commit per tool repo with the copies (`scripts/revendor_shared.sh`) and the pins
+(`scripts/pin_hub_reusables.py`).
 
 **Removing or renaming a declared field, or re-attributing a written block, is a MAJOR bump**
 (rule 2). The test has no register entry for a removal on purpose. The order:
@@ -482,7 +483,8 @@ window, move `v1`.
 3. add `atrium_document.schema.doc-schema-v2.json` (the file as that tag has it) to
    `docs/templates/shared/` with its `MANIFEST.json` row, add `FREEZES[2]` to
    `test_schema_freeze.py`, and start its `POST_FREEZE_CHANGES` empty;
-4. `scripts/revendor_shared.sh`, commit the six tool repos in one window, move `v1`;
+4. move `v1` to that hub commit, then one commit per tool repo with the copies
+   (`scripts/revendor_shared.sh`) and the pins (`scripts/pin_hub_reusables.py`);
 5. update the tool repos' README and `CITATION.cff` references to the new tag.
 
 `doc-schema-v1` and its frozen copy stay: `1.0` records already written still exist, and
@@ -578,9 +580,10 @@ two-schema commitment.
 
 > 📌 These edits are to the **hub canonical** files. `para-drift.reusable.yml` `diff -u`s
 > `atrium_document.py` and `atrium_document.schema.json` against every tool repo, so the
-> change is not landed until all five vendored copies are updated and `v1` is moved. Use
-> `scripts/revendor_shared.sh`, and remember the check reads the hub side at `hub-ref`
-> (default `v1`), not at the branch you merged to.
+> change is not landed until all six vendored copies are updated and each tool's pin is moved.
+> Use `scripts/revendor_shared.sh` and `scripts/pin_hub_reusables.py`, and remember the check
+> reads the hub side at each caller's `hub-ref` (its pinned commit), not at `v1` or the branch you
+> merged to.
 
 ## Changelog — Issue #18 review pass (originator hardening)
 

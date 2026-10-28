@@ -2766,3 +2766,18 @@ Against `test` `a38ae4d` and every `agent-skill` head of 12:29–12:53 (the roun
 - The #72 plan says what a blank line is, for motyc's question; whether born-digital inputs keep them by default is open.
 - `atrium_rocrate.py` is re-vendored in all six tools; `v1` = `5a996d3`.
 
+## 2026-10-28 (evening) — Para-drift red in all six tools; the re-vendor now checks the pins
+
+- **Released:** page-classification `v1.11.0-beta` and ocr-postprocess `v1.14.0-beta` (#72), each with its GitHub release.
+- **Para-drift red in all six tools** (`test`, the default branches, page-classification's `vit`) since the morning
+  pushes: `atrium_rocrate.py` and its test were re-vendored from `5a996d3` (`v1`) while every caller still passed
+  `hub-ref: 18f0668`, the pin of 10-25, and para-drift reads the canonical files at the pin. Between the two commits
+  only those two files changed, so moving the pins to `v1` (`scripts/pin_hub_reusables.py`, rehearsed: only pin lines
+  change, the lint with `--require-sha-pins` and pre-commit clean in all six) restores it without changing any workflow.
+- **Guard:** `scripts/revendor_shared.sh` reads each tool's pins (`pin_hub_reusables.py --print-pins`, new) and exits 1
+  when a pinned commit has other canonical files than the hub checkout, with the sweep command; `--check` against the six
+  as they are fails, and passes after the sweep. `tests/test_revendor_pins.py` (a scratch hub with two commits) and a
+  `--print-pins` test. `docs/docker_gha.md` "The procedure" now reads: land the hub change, move `v1`, then one commit
+  per tool with the copies and the pins; `docs/document_schema.md` and `docs/release_trust.md` point to it.
+- **Hub pre-commit red on `d6b27f1`:** this file ended with a blank line (end-of-file-fixer); fixed. Every delivery now
+  runs the repository's pre-commit hooks on the files it changes.

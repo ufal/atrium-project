@@ -128,42 +128,39 @@ default-branch callers.
 > **`hub-ref`** input (default `v1`). Keep it in step with the ref the workflow is called at — a caller
 > on `@test` should pass `hub-ref: test`, or it compares against the wrong generation of templates.
 
-#### Re-vendoring the canonical files: move `v1` **last**, and only once
+#### Re-vendoring the canonical files: the copies and their pin move in one commit
 
-Because `para-drift` reads the canonical files at `hub-ref` (default `v1`), moving `v1` does not just
-change which workflow *logic* runs — it changes **what every tool repo is required to contain**, in all
-six repos, at the instant the tag moves. Editing a canonical template and moving `v1` before the
-vendored copies are updated makes `para-drift` fail everywhere; doing it while the copies are being
-updated makes it fail *non-deterministically*, which is worse, because the failure is not attributable
-to the repo it appears in.
+`para-drift` reads the canonical files at the caller's `hub-ref`. Since 2026-10-25 every tool caller is
+pinned to a hub commit and passes that commit as `hub-ref`
+([`release_trust.md`](release_trust.md)), so a tool's copies are compared with the hub **at its pin**: not
+at `v1`, and not at the hub checkout they were copied from. Copies newer than their pin fail, in every
+repo and on every branch. On 2026-10-28 `atrium_rocrate.py` and its test were re-vendored from
+`5a996d3` (= `v1`) into all six while every caller still read `18f0668`, and `para-drift` went red in all
+six (atrium-project#72).
 
-That is not hypothetical. On 2026-08-03/04 the *same commit SHA* failed `para-drift`'s
-`atrium_document.py` parity step on `test` and passed on the default branch minutes later, in two
-repos independently — alto-postprocess `ea6f0b3` (fail 13:23:36Z, pass 13:29:22Z) and translator
-`5ea50da` (fail 13:23:06Z, pass 13:30:11Z) — because `v1` was repointed to `ba7a264` at 13:24:58Z,
-between each pair. The callers were correct; the tag moved under them. Whoever saw the red build first
-had no way to tell it from genuine drift.
+**The procedure (issue #10 G4, revised for the pins on 2026-10-28):**
 
-**The procedure (issue #10, G4):**
+1. Edit the canonical file(s) under `docs/templates/shared/` on the hub, and land that on `test` and
+   `main`.
+2. Move `v1` to that commit, and record it as an immutable `v1.x.y` tag. In the pinned repos this
+   changes nothing yet.
+3. In each tool repo, make **one commit** with the copies and the pins:
+   `scripts/revendor_shared.sh` writes the copies, and
+   `python3 scripts/pin_hub_reusables.py --sha "$(git rev-parse 'v1^{commit}')"` moves the pins.
+   `revendor_shared.sh` checks the pins as well (`pin_hub_reusables.py --print-pins`): it exits 1 while
+   a tool's pin carries other canonical files than the hub checkout, and prints the sweep command.
+4. Push the six. Each repo is green on its own push, so there is no window to keep closed.
 
-1. Edit the canonical file(s) under `docs/templates/shared/` on the hub, and land that on `main`.
-2. Re-vendor into all six tool repos in one pass — `scripts/revendor_shared.sh` exists for exactly
-   this, and verifies each copy with a `diff` afterwards.
-3. Land the vendored copies in all six repos.
-4. **Only then** cut the immutable `v1.x.y` tag and move `v1` to it.
+**Before the pins** (until 2026-10-25), callers read `hub-ref: v1`, so moving `v1` changed what all six
+repos had to contain at the instant the tag moved. On 2026-08-03/04 the *same commit SHA* failed
+`para-drift`'s `atrium_document.py` parity step on `test` and passed on the default branch minutes later,
+in two repos independently: alto-postprocess `ea6f0b3` (fail 13:23:36Z, pass 13:29:22Z) and translator
+`5ea50da` (fail 13:23:06Z, pass 13:30:11Z), because `v1` was repointed to `ba7a264` at 13:24:58Z,
+between each pair. A caller still at `@v1` (the hub's own) keeps that older order: re-vendor, land the
+copies, and only then move `v1`.
 
-Steps 1–3 are the *atomic window*: while it is open, `v1` still points at the previous generation, so
-every repo's `para-drift` keeps comparing old-canonical against old-vendored and stays green. Nothing
-is enforced against a file that does not exist yet. Never move `v1` mid-window "so CI picks it up" —
-that is precisely what produces the phantom failures above.
-
-If a hub change genuinely needs validating against real callers before the tag moves, pin **one**
-caller to `@test` temporarily (and pass `hub-ref: test` so its parity check stays self-consistent),
-rather than moving `v1` to test it on all six at once.
-
-Once the callers are commit-pinned ([`release_trust.md`](release_trust.md)), step 4 is followed by the pin
-sweep, and moving `v1` no longer changes what any repo enforces: each caller reads the canonical files at
-its own pin.
+To validate a hub change against real callers before it is on `v1`, pin **one** caller to that commit
+(with the same `hub-ref`), rather than moving `v1`.
 
 ### Localized Repository Workflows
 
