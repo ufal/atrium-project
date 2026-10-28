@@ -2754,3 +2754,15 @@ Against `test` `a38ae4d` and every `agent-skill` head of 12:29–12:53 (the roun
   ensemble, one workflow), lint-clean and its job scripts run under Docker against the real entry point; a plan for
   the other five, which first need the same entry-point change.
 - Plans and digests 4, 6, 13, 66, 67, 72, 77, 79 and 81 updated.
+
+## 2026-10-28 (afternoon) — #72: the two differences left, aligned
+
+- **page-classification `v1.11.0-beta`** (to tag): the service puts a transparent image on white, as the command line
+  does, and `version=all` averages each member's own top-N, as `--best`.
+- **ocr-postprocess `v1.14.0-beta`** (to tag): a blank line is an `Empty` line numbered with the rest on both sides (an
+  ALTO page's paragraph breaks; a text-lines input's only with `KEEP_BLANK_LINES`, which the service now reads);
+  `reading_order=alto` reads the page with the vendored alto-tools, as `--method alto-tools`; a page's `quality_score`
+  is the batch's mean of its `Clear` and `Noisy` lines on both sides. The parity tests run the batch stages themselves.
+- The #72 plan says what a blank line is, for motyc's question; whether born-digital inputs keep them by default is open.
+- `atrium_rocrate.py` is re-vendored in all six tools; `v1` = `5a996d3`.
+
