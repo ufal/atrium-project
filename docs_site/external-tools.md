@@ -10,9 +10,9 @@ authored: true
 # External tools & services
 
 Every external standard, service, model and institution ATRIUM depends on, in a couple of
-sentences each, with a pointer to where it is actually used. Written for someone who has
-never met SKOS, LINDAT or ALTO — if a name in this documentation is unfamiliar, it should be
-explained here.
+sentences each, with a pointer to where it is actually used. It is written for someone who has
+never met SKOS, LINDAT or ALTO. A short explanation of every term these pages use, ATRIUM's own
+included, is in the [Glossary](glossary.md).
 
 !!! info "Scope"
     Every entry page-classification and the translator depend on, including the shared
@@ -21,7 +21,6 @@ explained here.
     end of each section.
 
 **On this page:**
-[Terms used across this site](#terms-used-across-this-site) ·
 [Data & OCR formats](#data--ocr-formats) ·
 [Models](#models) ·
 [Hosting, repository & registration](#hosting-repository--registration) ·
@@ -30,26 +29,6 @@ explained here.
 [Runtime & infrastructure](#runtime--infrastructure) ·
 [The ATRIUM project itself](#the-atrium-project-itself) ·
 [Named in the DMP, deliberately not implemented](#named-in-the-dmp-deliberately-not-implemented)
-
-## Terms used across this site
-
-| Term                    | Meaning                                                                                                                                                                                   |
-|-------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **OCR** / **HTR**       | optical character recognition (printed or typed text) / handwritten text recognition — different engines, which is why pages are classified first                                         |
-| **NMT**                 | neural machine translation — a model trained to translate whole sentences, such as CUBBITT                                                                                                |
-| **record**              | the `atrium_document` JSON file that travels through the pipeline, one per document — see [The document contract](ecosystem/document-contract.md)                                         |
-| **block**               | one top-level part of the record, written by exactly one tool — `page_categories`, `translations`, …                                                                                      |
-| **accretion**           | how the record grows: each stage adds its own block and carries every other block forward unchanged                                                                                       |
-| **paradata**            | data about the *process*: which program, version and configuration produced an output, when, and under which licence — one JSON file per run                                              |
-| **provenance**          | the record's account of who contributed what: per-block stamps plus a list of contributing runs                                                                                           |
-| **FAIR**                | Findable, Accessible, Interoperable, Reusable — the principles research data publication aims at; RO-Crate export is ATRIUM's route to them                                               |
-| **`PAGE_ALTO/`**        | ocr-postprocess's output: one ALTO file per page, `<doc>/<doc>-N.alto.xml` — what the translator reads                                                                                    |
-| **`DOC_LINE_CATEG/`**   | ocr-postprocess's per-line table: every text line with its quality category — what nlp-enrich reads                                                                                       |
-| **TEITOK**              | a corpus format and platform built on TEI XML, keeping tokens linked to their position on the page — nlp-enrich's output                                                                  |
-| **GraphQL**             | a query language for web APIs, in which the client names exactly the fields it wants — how TEATER is queried                                                                              |
-| **originator**          | the program that creates the positional plane (`pages`, `content`, `lines`, `tables`) of a record: ocr-postprocess for OCR, `digital-convert` otherwise                                   |
-| **workflow narrative**  | a tool's workflow told step by step, with the formats in and out of every step — the text its SSH Open Marketplace and Galaxy records are built from; see [Workflows](workflows/index.md) |
-| **actionable workflow** | a workflow described on the SSH Open Marketplace that can also be run — in ATRIUM, as a Galaxy workflow                                                                                   |
 
 ## Data & OCR formats
 

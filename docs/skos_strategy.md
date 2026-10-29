@@ -8,7 +8,7 @@
 
 _Issue: [ufal/atrium-project#51](https://github.com/ufal/atrium-project/issues/51) · Milestone: Q3 [WP8 / WP7] · Date: 2026-09-08_
 _Status: **normative for the vocabulary layer of all six repos.** Supersedes
-[`../agent_dev_logs/plans/51.plan.md`](../agent_dev_logs/plans/51.plan.md) §A ("do nothing")._
+option A ("do nothing") of the plan for [#51](https://github.com/ufal/atrium-project/issues/51)._
 _Companion documents: [`document_schema.md`](document_schema.md) (the record these terms travel in) ·
 [`paradata_schema.md`](paradata_schema.md) (how a run that used them is described)._
 

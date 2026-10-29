@@ -3,7 +3,19 @@
 <One-line purpose: what goes in, what comes out.> The service version is read
 from `para_config.txt` `[tool]` (single source of truth, never hard-coded).
 
+<!--
+Written for the operator who runs this service (atrium-project/docs/documentation-style.md, Readers).
+State facts, not their history: no issue numbers in headings or running text, no "since vX".
+Link an issue only for an open problem the operator may want to follow. Delete this comment.
+-->
+
 ## Start
+
+**At a glance:**
+
+| Image                                      | CPU / GPU                                   | Memory                                            | Volumes                         | Calls out to                                       | Ready after                                    |
+|--------------------------------------------|---------------------------------------------|---------------------------------------------------|---------------------------------|----------------------------------------------------|------------------------------------------------|
+| `ghcr.io/ufal/atrium-<tool>-api:<version>` | <CPU only / a CUDA GPU optional / required> | <steady-state use; the `limits.memory` that fits> | <`/cache/huggingface`, or none> | <hosts called at start and per request, or "none"> | <seconds to `/ready` 200, warm and cold cache> |
 
 The published image first: it is what a deployment runs, and it needs no checkout.
 
@@ -57,9 +69,9 @@ curl -s http://localhost:8000/info
 <real example response — copy from an actual server run>
 ```
 
-| Field   | Type   | Description                                                         |
-|---------|--------|---------------------------------------------------------------------|
-| <field> | <type> | <meaning — MUST match what api.py actually returns (defect-d rule)> |
+| Field   | Type   | Description                                              |
+|---------|--------|----------------------------------------------------------|
+| <field> | <type> | <meaning — MUST match what the service actually returns> |
 
 ## Errors
 
@@ -87,7 +99,7 @@ statuses are listed in the spec's `x-atrium-reason-codes` (see [OpenAPI](#openap
 
 ## Limits
 
-Every limit this service has (atrium-project#53): each is a setting, reported with its
+Every limit this service has is a setting, reported with its
 current value in `/info` `limits` (and the variable that sets it in `limits_meta`). Over a
 limit, the service refuses with `reason: "limit_exceeded"` or processes the input in full;
 where a limit shapes a result, the response's `limits_applied` says so (and the paradata).
@@ -125,15 +137,15 @@ before they trust a result.
 |-----------------------|-----------|-------------------------------------------------------------------------|
 | `PORT`                | `8000`    | port the service **binds**, and the one `service/healthcheck.py` probes |
 | `HOST`                | `0.0.0.0` | bind address; see the note below                                        |
-| `GRACEFUL_SHUTDOWN_S` | `20`      | seconds uvicorn waits for in-flight requests (issue #55)                |
+| `GRACEFUL_SHUTDOWN_S` | `20`      | seconds uvicorn waits for in-flight requests on shutdown                |
 | `RELOAD`              | `false`   | filesystem auto-reload — development only, never in a deployment        |
 | `LOG_LEVEL`           | `INFO`    | root logger level for the `python -m service.<module>` start path       |
 | `MAX_UPLOAD_MB`       | <n>       | canonical upload limit                                                  |
 | `ALLOWED_ORIGINS`     | `*`       | CSV of CORS origins                                                     |
 | <service vars>        | <…>       | operator-facing only — the complete ledger is `.env.example`            |
 
-The first five rows are the ecosystem-wide contract (atrium-project#58, #55, #61) and are
-identical in all six services — copy them verbatim rather than rewording per repo. They
+The first five rows are the ecosystem-wide contract and are identical in all six services:
+copy them verbatim rather than rewording per repo. They
 are read by `service/<module>.py`'s `__main__` block, which is what the `api` image's
 `ENTRYPOINT` runs.
 
@@ -149,13 +161,13 @@ in the hub. The cross-service operator reference is the hub's `docs/k8s_deployme
 
 ## How it works
 
-<2–6 sentences: what the endpoint drives internally, concurrency/timeout
-behavior, provenance (paradata) if actually written>
+<2–6 sentences: what the endpoint drives internally, concurrency and timeout
+behaviour, provenance (paradata) if actually written>
 
 ## Frontend(s)
 
-<where mounted, what they demonstrate; every frontend carries the §9 API
-footer: curl example + /docs + /openapi.json + this README>
+<where mounted, what they demonstrate; every frontend carries the API footer
+(hub `docs/agent_skill_strategy.md` §9): curl example + /docs + /openapi.json + this README>
 
 ## OpenAPI (the typed contract)
 

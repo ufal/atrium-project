@@ -134,7 +134,7 @@ service at all**. Verified against the `test` HEADs.
 **Round 2 (2026-09-28, A6–A9) — the typed contract and the spec as a release artefact.** David
 Motyčka (AMČR) writes the pipeline's Temporal activities against the services' OpenAPI; K4TEL's
 three additions, accepted 09-27, are prepared in the working trees (normative text:
-`agent_skill_strategy.md` §4.8; work sheet: `agent_dev_logs/plans/32.plan.md`).
+`agent_skill_strategy.md` §4.8; work sheet: the plan for issue #32).
 * **A6 — typed responses.** Every primary endpoint's JSON 200 and `/info` is a named model,
   documented rather than filtered (`response_model=None`); errors are declared per route as
   `ErrorBody`; operationIds are handler names; a returned record is the vendored record schema
@@ -248,12 +248,12 @@ fast lanes green, ruff clean):
 ### DOC — Documentation reality (NEW — P2)
 * This file was 4 weeks and two release waves stale (it still said "Last reviewed 2026-06-24",
   omitted llm-enrich, and listed every F/G/H/I item as open). This refresh closes that.
-* `10.digest.md` / `10.plan.md` refreshed on `test` (2026-07-22); `project_state_2207.md`
+* Issue #10's digest and plan refreshed on `test` (2026-07-22); the 22 July project-state snapshot
   replaced with the independently-corrected edition (T1/T2 already resolved by same-day
   releases; alto branch-HEAD mislabel fixed; the dangling `issue10_alignment_1307.md` citation
   dropped — that evidence file was never committed).
-* **Forward-merge `test` → `main`** on the hub: `main` still lacks `project_state_2207.md` and
-  the refreshed digest/plan, so default-branch readers can't see any of this. Maintainer action
+* **Forward-merge `test` → `main`** on the hub: `main` still lacks that snapshot and
+  the refreshed digest and plan, so default-branch readers can't see any of this. Maintainer action
   (not auto-done — `main` is not a session-designated branch).
 
 ## 6. Per-repository diagnostics (2026-07-22)
@@ -304,7 +304,7 @@ repo carries a ~12-line caller. Scope boundary per §5.H / §5.M.
 | R para_config path | pc,alto → `setup/para_config.txt`; nlp,translator,llm → `para_config.txt`                    |
 | I1 C4              | `nlp/tests/test_teitok_integraion.py` (subprocess `--help` → `build_parser().format_help()`) |
 | M governance       | `nlp/{llm_utils,vocab_manager,llm_run}.py` ↔ `llm/{…}.py` (decision)                         |
-| DOC forward-merge  | hub `test` → `main` (digests, project_state_2207, this file)                                 |
+| DOC forward-merge  | hub `test` → `main` (the working records, this file)                                         |
 
 ---
 

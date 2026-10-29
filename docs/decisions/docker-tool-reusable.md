@@ -387,8 +387,8 @@ The `if:` of `build-and-push`: the release gate (atrium-project#81) and the `:te
 > `type=raw,value=test` tag rule below, but this gate still admitted only tag
 > pushes and release events — and `github.ref` is never `refs/heads/test` on a
 > tag. The two were MUTUALLY EXCLUSIVE, so the `:test` channel could not be
-> published by any event, and `#10.plan.md`'s "BLOCKED (soft) — needs one branch
-> push per repo" was a hard block: llm-enrich pushed `test` six times on
+> published by any event, and the "BLOCKED (soft) — needs one branch push per
+> repo" of the plan for issue #10 was a hard block: llm-enrich pushed `test` six times on
 > 2026-08-06, every run green, no image published. `type=sha` lives in this same
 > job, so a branch push published nothing at all.
 >

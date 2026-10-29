@@ -16,7 +16,7 @@ of something already public.** A mirror rebuilt on a cron can only tie its sourc
 `f47bf54` then removed the 25 `docs_site/tools/**` mirror pages and the `- Tools:` nav block,
 leaving 13 hub shells and no tool sections at all.
 
-**Round 3 writes pages instead of generating them.** The assembler (`57.plan.md` §B) is
+**Round 3 writes pages instead of generating them.** The assembler (issue #57's plan, part B) is
 retired along with `_generators/{make_hub,make_config,headings,hub_spec}.py`. Ten tool pages
 are written — five for `page-classification`, five for `translator`, the two repositories
 whose documentation is furthest along — and every claim in them was verified against the
@@ -64,8 +64,8 @@ translator:
   stack, the translator's other back-ends and its evaluation metrics, the runtime and CI
   infrastructure, the project and its institutions, and the DMP standards deliberately not
   implemented. Entries only the other tools use stay marked *pending*.
-- **`development-history.md`** — the cross-repository chronology, condensed from the hub
-  `DEVLOG.md` into six eras, plus the four lessons that record keeps repeating.
+- **`development-history.md`** — the cross-repository chronology, condensed from the hub's
+  timeline into six eras, plus the four lessons that record keeps repeating.
 
 **Every behavioural claim the surveys could only infer was run** on copies in a scratch directory
 — `sort.sh`, `move_single.sh`, `pdf2png.sh` (against a stub `pdftoppm`), `filtering.py`,
@@ -88,8 +88,8 @@ write-ups, README-versus-code asides, open-issue status, commit SHAs and `file:N
 prose. The maintainer's #57 TODO asks for static, unchangeable descriptions instead. Round 6
 rewrote all **23** pages to that bar, scoped as before to page-classification and the
 translator, and moved every removed finding — re-checked against the current heads, with a
-status each — into [`agent_dev_logs/digests/57.findings.md`](agent_dev_logs/digests/57.findings.md),
-which lives outside `docs_site/` and is never published.
+status each — into issue #57's findings register, a working record
+([Development history](docs_site/development-history.md#the-working-records)) that lives outside `docs_site/` and is never published.
 
 - **Stripped:** both tools' `## Known drift` sections; the agent-skills Known drift; the
   contributing-standards "Contradictions" section; the schemas "What the schema says that the
@@ -173,16 +173,16 @@ language rules existed; each claim was re-read against the code and corrected:
 
 ## Layout
 
-| Path                                    | What it is                                                                                                               |
-|-----------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| `mkdocs.yml`                            | site config. `docs_dir: docs_site`, `site_dir: site`, `strict: true`, `validation.links.anchors: warn`                   |
-| `PAGES_SETUP.md`                        | the publishing mechanics: why a branch source, how Pages is enabled, what the legacy Jekyll builder would have published |
-| `docs_site/**`                          | **30 pages** — 13 hub pages + 7 Workflows pages + 2 repos × 5 tool-section pages                                         |
-| `agent_dev_logs/digests/57.findings.md` | the unpublished findings register: everything round 6 removed from the pages, by owning repository, with a status        |
-| `docs_site/assets/extra.css`            | styling hook; the `.atrium-pipeline` strip on each tool index uses it                                                    |
-| `.github/workflows/pages.yml`           | builds `docs_site/` with `--strict`; publishes to `gh-pages` on push to `main`                                           |
-| `tools/docs/requirements.txt`           | the toolchain ranges — verified with mkdocs 1.6.1, mkdocs-material 9.7.7, pymdown-extensions 12.x                        |
-| `_generators/`                          | the landing-card generator: `make_stubs.py`, `repos.py` (with each card's `docs_path`), `style.css`                      |
+| Path                          | What it is                                                                                                               |
+|-------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| `mkdocs.yml`                  | site config. `docs_dir: docs_site`, `site_dir: site`, `strict: true`, `validation.links.anchors: warn`                   |
+| `PAGES_SETUP.md`              | the publishing mechanics: why a branch source, how Pages is enabled, what the legacy Jekyll builder would have published |
+| `docs_site/**`                | **30 pages** — 13 hub pages + 7 Workflows pages + 2 repos × 5 tool-section pages                                         |
+| issue #57's findings register | the unpublished findings register: everything round 6 removed from the pages, by owning repository, with a status        |
+| `docs_site/assets/extra.css`  | styling hook; the `.atrium-pipeline` strip on each tool index uses it                                                    |
+| `.github/workflows/pages.yml` | builds `docs_site/` with `--strict`; publishes to `gh-pages` on push to `main`                                           |
+| `tools/docs/requirements.txt` | the toolchain ranges — verified with mkdocs 1.6.1, mkdocs-material 9.7.7, pymdown-extensions 12.x                        |
+| `_generators/`                | the landing-card generator: `make_stubs.py`, `repos.py` (with each card's `docs_path`), `style.css`                      |
 
 ## Page status
 
@@ -231,7 +231,7 @@ stays true until the tool itself changes.** Two things earn the first — cross-
 the tool repository cannot state about itself, and values read from code rather than prose.
 The second rules out, since round 6, anything time-bound: drift between documents and code,
 defects, open-issue status, dated measurements. Those go to
-[`57.findings.md`](agent_dev_logs/digests/57.findings.md) as candidate issues for their owners.
+issue #57's findings register ([working records](docs_site/development-history.md#the-working-records)) as candidate issues for their owners.
 
 ## Verified
 
@@ -288,7 +288,7 @@ As of round 5 (2026-09-23), on the maintainer's `88bc1a6` plus that round's file
   .github/workflows/pages.yml
   INDEX.md
   PAGES_SETUP.md
-  agent_dev_logs/digests/57.findings.md
+  (issue #57's findings register, among the working records)
   mkdocs.yml
   tools/docs/requirements.txt
   _generators/make_stubs.py
@@ -338,9 +338,9 @@ As of round 5 (2026-09-23), on the maintainer's `88bc1a6` plus that round's file
 - **Tool sections behind the landing cards.** Since round 7 a card links to its tool section
   where one exists (page-classification, translator) and to its workflow page otherwise;
   `repos.py`'s `docs_path` is the one value to change when a section is written.
-- **`PAGES_STRATEGY.md`.** It is referenced by `PAGES_SETUP.md`, `DEVLOG.md`,
-  `57.digest.md` and `57.plan.md`, and **has never existed in this repository** — every
-  `§`-reference to it points nowhere. Its 12-page design survives only as a DEVLOG summary.
+- **`PAGES_STRATEGY.md`.** It is referenced by `PAGES_SETUP.md` and by issue #57's working
+  records, and **has never existed in this repository** — every `§`-reference to it points
+  nowhere. Its 12-page design survives only as a summary in the hub's timeline.
   Flagged here, not written.
 - **The hub's licence statement.** `mkdocs.yml`'s `copyright:` line and every landing card say
   "MIT licensed", but the hub has **no `LICENSE` and no `CITATION.cff`** — the two tools are MIT,

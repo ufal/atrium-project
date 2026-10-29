@@ -118,6 +118,8 @@ validation:
 
 nav:
   - Home: index.md
+  - For archives: for-archives.md
+  - Status: status.md
   - Pipelines: pipelines.md
   - Workflows:
       - Overview: workflows/index.md
@@ -128,6 +130,7 @@ nav:
       - keyword-extract: workflows/keyword-extract.md
       - digital-convert: workflows/digital-convert.md
   - External tools & services: external-tools.md
+  - Glossary: glossary.md
   - Ecosystem:
       - Architecture: ecosystem/architecture.md
       - Repository map: ecosystem/repository-map.md

@@ -127,11 +127,32 @@ The same four lessons recur across six months of entries, in different words eac
 4. **One manifest instead of many hand-kept lists.** `MANIFEST.json` replaced fourteen enumerations
    of the shared files; the next canonical file cost one manifest row and one `ruff.toml` entry.
 
-## Why the raw records are not published here
+## The working records
 
-`agent_dev_logs/` across the repositories holds issue digests, plans, verbatim issue
-exports, periodic `project_state_*` snapshots and one `DEVLOG.md` timeline per repository. They
-stay in their repositories and on GitHub, for two reasons:
+Each repository keeps the maintainers' working records in its `agent_dev_logs/` folder:
+
+- `DEVLOG.md`, the repository's timeline;
+- `digests/` and `plans/`, one summary and one plan per issue, refreshed as the issue moves;
+- `issues/`, verbatim exports of the issue threads;
+- in the hub, the cross-repository `project_state_*` snapshots in `digests/`, and the findings
+  register `digests/57.findings.md`: every finding round 6 removed from this site, by owning
+  repository, with a status.
+
+| Repository                   | Working records                                                                                  |
+|------------------------------|--------------------------------------------------------------------------------------------------|
+| `atrium-project` (hub)       | [`agent_dev_logs/`](https://github.com/ufal/atrium-project/tree/test/agent_dev_logs)             |
+| `atrium-page-classification` | [`agent_dev_logs/`](https://github.com/ufal/atrium-page-classification/tree/test/agent_dev_logs) |
+| `atrium-ocr-postprocess`     | [`agent_dev_logs/`](https://github.com/ufal/atrium-ocr-postprocess/tree/test/agent_dev_logs)     |
+| `atrium-translator`          | [`agent_dev_logs/`](https://github.com/ufal/atrium-translator/tree/test/agent_dev_logs)          |
+| `atrium-nlp-enrich`          | [`agent_dev_logs/`](https://github.com/ufal/atrium-nlp-enrich/tree/test/agent_dev_logs)          |
+| `atrium-keyword-extract`     | [`agent_dev_logs/`](https://github.com/ufal/atrium-keyword-extract/tree/test/agent_dev_logs)     |
+| `atrium-digital-convert`     | [`agent_dev_logs/`](https://github.com/ufal/atrium-digital-convert/tree/test/agent_dev_logs)     |
+
+**This is the hub's only page that points to them.** Every other hub page cites the issue instead,
+and in each tool `docs/development.md` plays the same part
+([documentation style](https://github.com/ufal/atrium-project/blob/main/docs/documentation-style.md#working-records)).
+
+**They are not published on this site**, for two reasons:
 
 1. **Volume.** Publishing them would multiply this site's page count several times over with
    material written for a different audience.
@@ -139,8 +160,8 @@ stay in their repositories and on GitHub, for two reasons:
    snapshots carry personal addresses. Publishing the set wholesale is a disclosure problem as
    well as a volume one.
 
-The history pages are therefore **condensed and written**, with every raw record linked, and
-each cites the commit it was written from.
+The history pages are therefore **condensed and written**, and each cites the commit it was
+written from.
 
 ## Sources
 

@@ -9,11 +9,11 @@ All seven repositories (the hub and the six tools) publish from a **`gh-pages` b
 > **What publishes, and why, is decided in [`INDEX.md`](INDEX.md)** (round 3, 2026-09-21).
 > This file remains the mechanics and live-state record.
 >
-> ⚠️ Every reference in this file to `PAGES_STRATEGY.md` names **a document that has never
-> existed in this repository** — not in the working tree and not in any commit. It is cited here,
-> in `agent_dev_logs/DEVLOG.md`, in `digests/57.digest.md` and in `plans/57.plan.md`, and every
-> `§`-reference to it points nowhere. Its 12-page design survives only as a DEVLOG summary. Treat
-> those citations as unresolved, not as a file you have not found yet.
+> **Note:** every reference in this file to `PAGES_STRATEGY.md` names **a document that has never
+> existed in this repository** — not in the working tree and not in any commit. It is cited here and
+> in issue #57's working records, and every `§`-reference to it points nowhere. Its 12-page design
+> survives only as a summary in the hub's timeline. Treat those citations as unresolved, not as a
+> file you have not found yet.
 
 ## Where each repository actually stands — all six, 2026-09-21
 
@@ -145,19 +145,17 @@ two files to the entire repository:
 
 The three the docs-scoped fence never reached:
 
-* `agent_dev_logs/digests/project_state_1307.md` — a personal address
-* `agent_dev_logs/digests/project_state_2706.md` — a personal address
-* `agent_dev_logs/issues/2026-06-12.21.issue.open.md` — a partner address
+* two project-state snapshots (13 July and 27 June) — a personal address each
+* the export of issue #21 — a partner address
 
 …on top of 23 issue exports, several of which are open memos addressed to named individuals, which
-`57.plan.md` §E says are not published at all.
+issue #57's plan (part E) says are not published at all.
 
 And the nine files that now crash the build include **`PAGES_SETUP.md` — this file, at line 66**,
 which quotes the failing Liquid expression verbatim in a fenced block. Documenting the error
-reproduced it. The full set: `PAGES_SETUP.md`, `agent_dev_logs/DEVLOG.md`,
-`agent_dev_logs/digests/10.digest.md`, `agent_dev_logs/digests/57.digest.md`,
-`agent_dev_logs/digests/project_state_0709.md`, `agent_dev_logs/issues/2026-05-27.18.issue.open.md`,
-`agent_dev_logs/plans/57.plan.md`, `docs/docker_gha.md`, `docs/docker_gha_roadmap.md`.
+reproduced it. The full set: `PAGES_SETUP.md`, `docs/docker_gha.md`, `docs/docker_gha_roadmap.md`,
+and six working records: the hub's timeline, the digests of issues #10 and #57, the plan of #57,
+the 7 September project-state snapshot and the export of issue #18.
 
 ## The fences: `_config.yml` and `docs/_config.yml`
 
@@ -250,8 +248,8 @@ archived; they are not regenerated.
 
 The six tool-repo branches are **orphan** branches holding a static landing card. They share no
 history with `test`/`master`/`main`/`vit` and never need regenerating — which is the main
-simplification the branch source buys over an Actions source. `57.plan.md` §G's
-`pages-stub.reusable.yml` plus a per-repo caller is therefore **obsolete**: the stubs shipped as
+simplification the branch source buys over an Actions source. The `pages-stub.reusable.yml` of
+issue #57's plan (part G), plus a per-repo caller, is therefore **obsolete**: the stubs shipped as
 static files on 2026-09-19 and there is nothing left for a reusable workflow to do.
 
 The hub's branch is different: it is **derived output**, rewritten by `mkdocs gh-deploy --force

@@ -775,8 +775,8 @@ per-repo parameter table).
 - Implementation happens on each repo's **`agent-skill`** branch: page-classification updates
   the existing one; the others create it **from the default branch head** (translator: `master`;
   alto-postprocess: `master`; nlp-enrich: `master`; llm-enrich: `main`).
-- Each implementation session logs per convention in that repo's `agent_dev_logs/`
-  (`plans/`, `digests/`, DEVLOG).
+- Each implementation session is logged in that repo's working records, which its
+  `docs/development.md` links.
 
 ---
 
@@ -937,5 +937,5 @@ a freshness test that turns the drift into a red build (§2.2, §4.8).
 ---
 _Maintained in `atrium-project` next to the ecosystem record
 ([`plan_repo_review.md`](plan_repo_review.md)). Templates graduate to `docs/templates/skill/`
-after validation (rollout step 3). Session log: `agent_dev_logs/plans/31.plan.md` ·
-`agent_dev_logs/digests/31.digest.md`._
+after validation (rollout step 3). Session log: issue #31's working records
+([Development history](../docs_site/development-history.md#the-working-records))._

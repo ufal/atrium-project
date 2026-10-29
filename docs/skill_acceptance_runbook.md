@@ -5,8 +5,8 @@
 > scripts named below are those of the previous repositories until then.
 
 Per-repo end-to-end acceptance for the `agent-skill` branches. Run in the order below (cheapest /
-most foundational first). Each repo's block is self-contained; record PASS/FAIL + notes under that
-repo's `agent_dev_logs/`. **Requires model downloads and a running server** — expect the first
+most foundational first). Each repo's block is self-contained; record PASS/FAIL + notes in that
+repo's working records (linked from its `docs/development.md`). **Requires model downloads and a running server** — expect the first
 start of the model-heavy services to take minutes (page-classification, ocr-postprocess,
 nlp-enrich, keyword-extract); translator is light (calls remote LINDAT).
 

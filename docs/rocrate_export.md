@@ -516,13 +516,13 @@ changed on every export could not be committed, diffed, or checksummed.
 
 Recorded rather than papered over. None of these blocks a crate; each makes it materially better.
 
-| Gap                                                                                            | Consequence                                                                                | Fix                                                                        |
-|------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
-| **No git SHA.** Paradata carries `runner_ref` (a branch or tag), not a commit.                 | Software provenance is "this release", not "this commit".                                  | add a commit SHA to `atrium_paradata`                                      |
-| **No output checksums.** `sha256` exists only on `source` and on a service's inputs.           | Every `hasPart` file is named without a hash, so tampering is undetectable from the crate. | add `sha256` alongside each `derived_from` value                           |
-| **`derived_from` paths are the tools' own**, sometimes absolute or bare names.                 | A crate over a real record needs its files placed by hand; a fragment leaves them out.     | relative paths in every tool's `derived_from`                              |
-| **No DOI or PID anywhere** — not on any `CITATION.cff`, not on any record.                     | The crate has no persistent identifier; `@id` is a local path.                             | out of scope here; needs a repository deposit                              |
-| **`forms` has no writer** in any repo, and `entities[].translation_en` is owned-but-unwritten. | Two declared parts of the schema can never appear in a crate.                              | `forms`: see `54.plan.md` §C; `translation_en`: reserved (#70, 2026-09-30) |
+| Gap                                                                                            | Consequence                                                                                | Fix                                                                                   |
+|------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| **No git SHA.** Paradata carries `runner_ref` (a branch or tag), not a commit.                 | Software provenance is "this release", not "this commit".                                  | add a commit SHA to `atrium_paradata`                                                 |
+| **No output checksums.** `sha256` exists only on `source` and on a service's inputs.           | Every `hasPart` file is named without a hash, so tampering is undetectable from the crate. | add `sha256` alongside each `derived_from` value                                      |
+| **`derived_from` paths are the tools' own**, sometimes absolute or bare names.                 | A crate over a real record needs its files placed by hand; a fragment leaves them out.     | relative paths in every tool's `derived_from`                                         |
+| **No DOI or PID anywhere** — not on any `CITATION.cff`, not on any record.                     | The crate has no persistent identifier; `@id` is a local path.                             | out of scope here; needs a repository deposit                                         |
+| **`forms` has no writer** in any repo, and `entities[].translation_en` is owned-but-unwritten. | Two declared parts of the schema can never appear in a crate.                              | `forms`: the plan for issue #54, part C; `translation_en`: reserved (#70, 2026-09-30) |
 
 ---
 

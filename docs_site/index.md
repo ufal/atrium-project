@@ -1,28 +1,58 @@
 ---
-title: ATRIUM — UFAL documentation
+title: ATRIUM — ÚFAL documentation
 nav_order: 1
 status: published
 round: 7
 issue: 57
 ---
 
-# ATRIUM — UFAL documentation
+# ATRIUM — ÚFAL documentation
 
-The tools the Institute of Formal and Applied Linguistics (ÚFAL, Charles University) builds for
-**ATRIUM**, and how they fit together: a pipeline that takes scanned archival pages — typewritten
-reports, handwritten field notes, photographs, drawings — and turns them into structured,
-searchable, linguistically enriched records.
+The Institute of Formal and Applied Linguistics (ÚFAL, Charles University) builds six tools for
+**ATRIUM**. Together they take archival documents, such as typewritten reports, handwritten field notes,
+photographs, drawings and born-digital files, and turn them into structured, searchable records. This
+site explains what each tool does and how they fit together.
 
 ## What ATRIUM is
 
-**ATRIUM** — *Advancing fronTier Research In the arts and hUManities* — is an EU project that
-bridges four European research infrastructures: **DARIAH** (arts and humanities), **ARIADNE**
-(archaeology), **CLARIN** (language technologies) and **OPERAS** (open scholarly communication).
-More at [atrium-research.eu](https://atrium-research.eu/), and in the
+**ATRIUM** (*Advancing fronTier Research In the arts and hUManities*) is an EU project. It connects four
+European research infrastructures: **DARIAH** (arts and humanities), **ARIADNE** (archaeology),
+**CLARIN** (language technologies) and **OPERAS** (open scholarly communication). More at
+[atrium-research.eu](https://atrium-research.eu/), and in the
 [project presentation on Zenodo](https://zenodo.org/records/19500212).
 
-This site documents ÚFAL's part: six tool repositories and the hub that holds them
-together — seven repositories in all.
+This site documents ÚFAL's part: six tool repositories and the hub that holds them together, seven
+repositories in all.
+
+## Start here
+
+Find the line that describes you:
+
+| You are                              | Start with                                | Then                                                                                                                        |
+|--------------------------------------|-------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| archive or collection staff          | [For archives](for-archives.md)           | [Licences and paradata](ecosystem/licences.md) · [Glossary](glossary.md)                                                    |
+| running the services                 | [Operations](operations.md)               | [S2 pilot handover](pilot.md), which links each service's runbook                                                           |
+| calling a tool from your own code    | [Workflows](workflows/index.md)           | [The document contract](ecosystem/document-contract.md) · [Schemas](contracts/schemas.md) · [Agent skills](agent-skills.md) |
+| developing the tools                 | [Architecture](ecosystem/architecture.md) | [Contributing standards](contributing-standards.md) · [Development history](development-history.md)                         |
+| managing or coordinating the project | [Status](status.md)                       | [S2 pilot handover](pilot.md) · [Repository map](ecosystem/repository-map.md)                                               |
+| judging the methods and results      | [Pipelines](pipelines.md)                 | each tool's evaluation pages, from the documentation map in its README                                                      |
+
+Or by question:
+
+| If you want to…                                                     | Read                                                                                            |
+|---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| look up an unfamiliar word                                          | [Glossary](glossary.md)                                                                         |
+| see what each tool does, step by step                               | [Workflows](workflows/index.md)                                                                 |
+| see what passes from one tool to the next                           | [Pipelines](pipelines.md)                                                                       |
+| know what a record written by these tools looks like                | [The document contract](ecosystem/document-contract.md)                                         |
+| run a tool as a service, or on Kubernetes                           | [Operations](operations.md)                                                                     |
+| let a coding agent use a tool                                       | [Agent skills](agent-skills.md)                                                                 |
+| know what every field and label means                               | [Schemas](contracts/schemas.md) · [SKOS & the ATRIUM vocabulary](contracts/skos.md)             |
+| publish results to a repository or catalogue                        | [RO-Crate export](contracts/rocrate.md)                                                         |
+| describe a tool's workflow on the SSH Open Marketplace or in Galaxy | [Workflows](workflows/index.md)                                                                 |
+| read about a standard, model or service the tools use               | [External tools & services](external-tools.md)                                                  |
+| find which repository owns what                                     | [Repository map](ecosystem/repository-map.md)                                                   |
+| change shared code, or contribute                                   | [Architecture](ecosystem/architecture.md) · [Contributing standards](contributing-standards.md) |
 
 ## The seven repositories
 
@@ -32,8 +62,8 @@ together — seven repositories in all.
 
     ---
 
-    Sorts a scanned page into one of **eleven structural categories** — so a person or a script
-    can decide whether it needs OCR, handwriting recognition, table extraction or image handling.
+    Sorts each scanned page into one of **eleven page types**. A person or a script then decides
+    whether the page needs OCR, handwriting recognition, table extraction or image handling.
 
     [Workflow](workflows/page-classification.md) · [Documentation](https://github.com/ufal/atrium-page-classification/blob/test/README.md#documentation) · [Landing page](https://ufal.github.io/atrium-page-classification/) · [Source](https://github.com/ufal/atrium-page-classification)
 
@@ -41,18 +71,18 @@ together — seven repositories in all.
 
     ---
 
-    Turns OCR output into per-page ALTO, extracted text and a scored table of line quality — the
-    point the whole pipeline fans out from. Besides ALTO it reads the other OCR formats (PAGE XML,
-    hOCR, ABBYY FineReader XML, DjVuXML, Tesseract TSV, OCR JSON) and PDF, office and text files.
+    Checks OCR output line by line. Every line gets its language and a quality label, so you know
+    which lines to use, correct or send to OCR again. It reads ALTO and the other common OCR formats,
+    and PDF, office and text files.
 
-    [Workflow](workflows/ocr-postprocess.md) · [Landing page](https://ufal.github.io/atrium-ocr-postprocess/) · [Source](https://github.com/ufal/atrium-ocr-postprocess)
+    [Workflow](workflows/ocr-postprocess.md) · [Documentation](https://github.com/ufal/atrium-ocr-postprocess/blob/test/README.md#documentation) · [Landing page](https://ufal.github.io/atrium-ocr-postprocess/) · [Source](https://github.com/ufal/atrium-ocr-postprocess)
 
 -   **translator**
 
     ---
 
-    Translates ALTO pages and AMCR metadata records **in place** — every tag, namespace and
-    coordinate preserved; only the text changes.
+    Translates ALTO pages and AMČR metadata records **in place**. Every tag, namespace and coordinate
+    stays; only the text changes.
 
     [Workflow](workflows/translator.md) · [Documentation](https://github.com/ufal/atrium-translator/blob/test/README.md#documentation) · [Landing page](https://ufal.github.io/atrium-translator/) · [Source](https://github.com/ufal/atrium-translator)
 
@@ -60,64 +90,41 @@ together — seven repositories in all.
 
     ---
 
-    Morphology, syntax and named entities for every text line, from LINDAT's UDPipe and NameTag,
-    and the TEITOK corpus format with bounding boxes kept.
+    Adds each word's base form, part of speech and grammar, and the names of people, places and
+    organisations, using LINDAT's UDPipe and NameTag. The result is a TEITOK file that keeps every
+    word's place on the page.
 
-    [Workflow](workflows/nlp-enrich.md) · [Landing page](https://ufal.github.io/atrium-nlp-enrich/) · [Source](https://github.com/ufal/atrium-nlp-enrich)
+    [Workflow](workflows/nlp-enrich.md) · [Documentation](https://github.com/ufal/atrium-nlp-enrich/blob/test/README.md#documentation) · [Landing page](https://ufal.github.io/atrium-nlp-enrich/) · [Source](https://github.com/ufal/atrium-nlp-enrich)
 
 -   **keyword-extract**
 
     ---
 
-    Both kinds of keywords: statistical ones (KeyBERT, YAKE, KER), and terms of the AMČR and TEATER
-    controlled vocabularies chosen by a language model.
+    Gives documents two kinds of keyword: statistical ones taken from the text, and terms from AMČR's
+    keyword lists and the TEATER thesaurus, chosen by a language model.
 
-    [Workflow](workflows/keyword-extract.md) · [Landing page](https://ufal.github.io/atrium-keyword-extract/) · [Source](https://github.com/ufal/atrium-keyword-extract)
+    [Workflow](workflows/keyword-extract.md) · [Documentation](https://github.com/ufal/atrium-keyword-extract/blob/test/README.md#documentation) · [Landing page](https://ufal.github.io/atrium-keyword-extract/) · [Source](https://github.com/ufal/atrium-keyword-extract)
 
 -   **digital-convert**
 
     ---
 
-    Reads born-digital PDF, DOCX, ODT, ODS, XLSX and RTF files (and DOC/XLS through LibreOffice)
-    into the document record without OCR, and flags the pages whose text layer does not decode, so
-    only those go to OCR.
+    Reads born-digital files (PDF, DOCX, ODT, ODS, XLSX, RTF; DOC and XLS through LibreOffice) into the
+    document record, without OCR. Pages whose text cannot be read are marked, so only those go to OCR.
 
-    [Workflow](workflows/digital-convert.md) · [Landing page](https://ufal.github.io/atrium-digital-convert/) · [Source](https://github.com/ufal/atrium-digital-convert)
+    [Workflow](workflows/digital-convert.md) · [Documentation](https://github.com/ufal/atrium-digital-convert/blob/test/README.md#documentation) · [Landing page](https://ufal.github.io/atrium-digital-convert/) · [Source](https://github.com/ufal/atrium-digital-convert)
 
--   **atrium-project** — the hub
+-   **atrium-project**, the hub
 
     ---
 
-    The shared code every tool vendors, the CI they all run, the end-to-end tests, and this site.
+    The code every tool shares, the checks they all run, the end-to-end tests, and this site.
 
     [Architecture](ecosystem/architecture.md) · [Repository map](ecosystem/repository-map.md)
 
 </div>
 
-## Start here
-
-- **[Workflows](workflows/index.md)** — what each of the six tools does and where it sits in the
-  chain; each workflow page links the tool's own documentation
-- **[Pipelines](pipelines.md)** — what the tools do, end to end: what each stage reads and
-  writes, drawn as the file flow and the record flow
-- **[Workflows](workflows/index.md)** — each tool's own workflow, step by step, with the formats
-  in and out — the text its SSH Open Marketplace and Galaxy records are built from
-- **[External tools & services](external-tools.md)** — the glossary, if a name is unfamiliar
-- **[Repository map](ecosystem/repository-map.md)** — which repo owns what
-
-And by question:
-
-| If you want to…                                                     | Read                                                                                            |
-|---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| know what a record written by these tools looks like                | [The document contract](ecosystem/document-contract.md)                                         |
-| run a tool as a service, or on Kubernetes                           | [Operations](operations.md)                                                                     |
-| let a coding agent use a tool                                       | [Agent skills](agent-skills.md)                                                                 |
-| know what every field and label means                               | [Schemas](contracts/schemas.md) · [SKOS & the ATRIUM vocabulary](contracts/skos.md)             |
-| publish results to a repository or catalogue                        | [RO-Crate export](contracts/rocrate.md)                                                         |
-| describe a tool's workflow on the SSH Open Marketplace or in Galaxy | [Workflows](workflows/index.md)                                                                 |
-| change shared code, or contribute                                   | [Architecture](ecosystem/architecture.md) · [Contributing standards](contributing-standards.md) |
-
-## How the ecosystem works
+## How the tools work together
 
 ```mermaid
 flowchart LR
@@ -133,32 +140,31 @@ flowchart LR
   TR --> EN[/"English editions"/]
 ```
 
-**Six tools, each a separate repository.** Every tool is a command-line program and an HTTP
-service built from the same code, shipped as two container images. The tools need very
-different environments — a vision-model stack, CPU heuristics, remote translation services,
-GPU language models — so they are not combined into one program.
+**Six tools, each in its own repository.** Each tool is a command-line program and an HTTP service built
+from the same code. Each ships as container images. The tools need very different environments: a
+vision-model stack, CPU rules, remote translation services, GPU language models. So they are not
+combined into one program.
 
-**One record per document.** What ties the stages together is a JSON record,
-`<doc_id>.document.json`, that each stage reads, extends with the one block it owns, and passes
-on. By the end it holds the page categories, the text layer, the translation reference, the
-entities and the enrichment — and a provenance trail saying which program, at which version and
-under which licence, wrote each part. See [The document contract](ecosystem/document-contract.md).
+**One record per document.** A JSON file, `<doc_id>.document.json`, ties the stages together. Each stage
+reads it, adds the one block it owns, and passes it on. By the end it holds the page categories, the
+text, the translation reference, the entities and the keywords. It also records which program, at which
+version and with which components, wrote each part. See [The document contract](ecosystem/document-contract.md).
 
-**One hub.** `atrium-project` holds the code every tool shares — the record, the run log, the
-licence rules, the vocabulary, the service contract — and hands out byte-identical copies of
-it; it runs the CI every tool calls, and the end-to-end test that runs them together. See
+**One hub.** `atrium-project` holds the code every tool shares: the record, the paradata, the licence
+rules, the vocabulary and the service contract. It hands out identical copies of that code, runs the
+checks every tool calls, and runs the end-to-end test of all the tools together. See
 [Architecture](ecosystem/architecture.md).
 
-**Built here, run by the partners.** ÚFAL builds, tests and publishes the container images;
-the partner institutes of archaeology run them on their own infrastructure, next to their own
-collections. See [Operations](operations.md).
+**Built here, run by the partners.** ÚFAL builds, tests and publishes the container images. The partner
+institutes of archaeology run them on their own infrastructure, next to their own collections. See
+[Operations](operations.md).
 
 ## About this site
 
-Every page here is **written**, not generated: it explains how the parts fit together, and ends
-with a *Sources* table naming what it was written from. The tools' own `README.md` and
-`CONTRIBUTING.md` stay the full-length references; these pages are the map between them.
+Every page here is **written**, not generated. It explains how the parts fit together, and ends with a
+*Sources* table naming what it was written from. Each tool's own documentation, its README and its
+`docs/` pages, holds the details; these pages connect them.
 
-The site's source is `docs_site/` in the hub. A pull request builds it with
-`mkdocs build --strict`, which fails on any broken link or anchor between pages; a merge to `main`
-publishes it to the `gh-pages` branch.
+The site's source is `docs_site/` in the hub. A pull request builds it with `mkdocs build --strict`,
+which fails on any broken link or anchor between pages. A merge to `main` publishes it to the
+`gh-pages` branch.

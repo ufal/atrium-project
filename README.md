@@ -29,7 +29,10 @@ since 2026-10-19.
 
 | To                                                  | Read                                                                                                                                                     |
 |-----------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| see how the tools fit together, and each workflow   | the [documentation site](https://ufal.github.io/atrium-project/)                                                                                         |
+| see how the tools fit together, and each workflow   | the [documentation site](https://ufal.github.io/atrium-project/), whose "Start here" has a path for each kind of reader                                  |
+| know what the tools do with archival documents      | [For archives](docs_site/for-archives.md)                                                                                                                |
+| see what is ready, measured or experimental         | [Status](docs_site/status.md)                                                                                                                            |
+| look up an unfamiliar term                          | [Glossary](docs_site/glossary.md)                                                                                                                        |
 | deploy the services and accept them on Kubernetes   | [docs/k8s_deployment.md](docs/k8s_deployment.md), [docs/k8s_acceptance_runbook.md](docs/k8s_acceptance_runbook.md)                                       |
 | change code shared by the tools                     | [docs/shared_components.md](docs/shared_components.md)                                                                                                   |
 | add or change a CI check                            | [docs/ci_policy.md](docs/ci_policy.md)                                                                                                                   |

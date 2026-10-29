@@ -899,7 +899,7 @@ authorisation is additive; re-attributing an already-written block would not be*
 analogue is: **narrowing what a validator accepts is additive when the narrowed set still
 contains everything the producers produce.** It stops being additive the moment a real producer
 is excluded, and the way to know which case you are in is to enumerate the producers — which is
-what the per-stage record table in `54.plan.md` does.
+what the per-stage record table in the plan for issue #54 does.
 
 A bump would also be actively harmful. `SCHEMA_VERSION` is what `load_document()`'s MAJOR-refuse
 guard reads: bumping to `2.0` would make every already-written `1.0` record refuse to load in

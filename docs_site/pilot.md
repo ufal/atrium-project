@@ -7,22 +7,22 @@ issue: 77
 
 # S2 pilot handover
 
-AMČR colleagues run the six ATRIUM services themselves in the S2 pilot (December 2026 – January
-2027). This page is where the handover starts: which images, which runbook for each, what to watch
-for, and whom to ask. It follows the handover rules of the
+AMČR colleagues run the six ATRIUM services themselves in the S2 pilot, from December 2026 to January
+2027. This page is where the handover starts: which images, which runbook for each, what to watch for,
+and whom to ask. It follows the handover rules of the
 [acceptance runbook](https://github.com/ufal/atrium-project/blob/main/docs/k8s_acceptance_runbook.md#handover-rules).
+What each service does with the documents, in plain words: [For archives](for-archives.md). What is
+measured and what is experimental: [Status](status.md).
 
 ## The six services
 
-The versions below are the pilot candidates, one patch release per tool on top of the releases of 29 October
-2026, which aligned the command line and the service of each tool
-([#72](https://github.com/ufal/atrium-project/issues/72)). Each program behaves the same from either entry point,
-and each `docs/usage.md` has one table of what still differs and why. The patch releases add one fix to all six: a
-record whose `pages`, `lines`, `tables` or `entities` is not a list of objects is refused with 422
-`invalid_record` where it used to end in a 500. **11 November** is the target for choosing and approving the six
-`-api` images. AMČR approves them explicitly, by digest, and the digests are entered here once approved; until
-then the column stays empty, and `latest` or `test` are never the baseline. Acceptance on AMČR's cluster follows
-separately (below).
+The versions below are the pilot candidates, one release per tool. Each tool's command line and service
+give the same results from the same input; what still differs, and why, is in one table in each tool's
+`docs/usage.md`.
+
+**11 November** is the target for choosing and approving the six `-api` images. AMČR approves each one
+explicitly, by digest, and the digest is entered here once approved. Until then the column stays empty,
+and `latest` or `test` are never the baseline. Acceptance on AMČR's cluster follows separately (below).
 
 | Stage                              | Image                                         | Release       | Approved digest | Runbook                                                                                                                                                                                  | Issues                                                               |
 |------------------------------------|-----------------------------------------------|---------------|-----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|
@@ -33,17 +33,19 @@ separately (below).
 | keywords                           | `ghcr.io/ufal/atrium-keyword-extract-api`     | `1.6.1-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-keyword-extract/blob/v1.6.1-beta/service/README.md)                                                                                   | [tracker](https://github.com/ufal/atrium-keyword-extract/issues)     |
 | English metadata                   | `ghcr.io/ufal/atrium-translator-api`          | `1.7.1-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-translator/blob/v1.7.1-beta/service/README.md)                                                                                        | [tracker](https://github.com/ufal/atrium-translator/issues)          |
 
-Each of these releases certifies its images: its `images.json` asset names the digest of each image it
-published (#81; digital-convert since `1.2.2-beta`, the other five since their releases of 26–28 October).
-The image tag is the release without its leading `v`. Read a digest from the release's `images.json`, or
-with `docker buildx imagetools inspect <image>:<tag>`. Every E2E run also records the digest and the source
-ref of each image it ran (`e2e-manifest.json`, an artifact of the run): a green run at these release
-tags shows which releases passed together. The lanes run the batch images for most stages, so the
-approved digests are still those of the `-api` images of the same releases.
+**For operators: finding a digest.**
+
+- Each release lists the digest of every image it published in its `images.json` asset. The image tag is
+  the release without its leading `v`.
+- Read a digest from that file, or with `docker buildx imagetools inspect <image>:<tag>`.
+- Every end-to-end run records the digest and source of each image it ran (`e2e-manifest.json`, an
+  artifact of the run). A green run at these release tags shows which releases passed together.
+- The end-to-end lanes run the batch images for most stages. The digests to approve are still those of
+  the `-api` images of the same releases.
 
 ## Before you rely on a result
 
-Each runbook ends with a **Known limits** section. The ones a pilot user meets first:
+Each runbook has a **Known limits** section. These are the ones a pilot user meets first:
 
 - **ocr-postprocess** scores language and quality line by line; its rules are tuned for Czech, so
   lines in other languages are scored less reliably.
@@ -65,9 +67,9 @@ Each runbook ends with a **Known limits** section. The ones a pilot user meets f
 
 AMČR's acceptance on its own cluster is planned for the **second half of November**, before the December
 pilot, coordinated with [@rharasim](https://github.com/rharasim). The procedure and its results table are in
-the [Kubernetes acceptance runbook](https://github.com/ufal/atrium-project/blob/main/docs/k8s_acceptance_runbook.md):
-one row per service, with the digest each pod ran and what each check printed, and for the translator a run
-on real AMČR metadata. The completed table is linked here when AMČR returns it.
+the [Kubernetes acceptance runbook](https://github.com/ufal/atrium-project/blob/main/docs/k8s_acceptance_runbook.md).
+The table has one row per service: the digest each pod ran and what each check printed, and for the
+translator a run on real AMČR metadata. The completed table is linked here when AMČR returns it.
 
 ## Contacts
 

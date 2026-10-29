@@ -233,12 +233,12 @@ code; CI does not compare them across repositories:
 
 This table records **provenance**: what this page was written from, not a build instruction.
 
-| Source                                                                      | What was taken from it                                             |
-|-----------------------------------------------------------------------------|--------------------------------------------------------------------|
-| `atrium-project/docs/templates/shared/MANIFEST.json`                        | the 24 files and their destinations                                |
-| `atrium-page-classification@adee922`, `atrium-translator@71feaef`           | vendored destinations, repository-local helpers, Dockerfile stages |
-| `atrium-project/scripts/revendor_shared.sh`                                 | the re-vendoring procedure and its exit semantics                  |
-| `atrium-project/.github/workflows/*.reusable.yml` and the hub-own workflows | the federation                                                     |
-| each tool's `.github/workflows/*.yml` at its default branch                 | the per-tool tables                                                |
-| each tool's `ruff.toml` and `.pre-commit-config.yaml`                       | tool-owned configuration                                           |
-| `atrium-project/agent_dev_logs/digests/project_state_2706.md` §3            | the reason there is no monorepo — **rewritten from**, not quoted   |
+| Source                                                                                                             | What was taken from it                                             |
+|--------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| `atrium-project/docs/templates/shared/MANIFEST.json`                                                               | the 24 files and their destinations                                |
+| `atrium-page-classification@adee922`, `atrium-translator@71feaef`                                                  | vendored destinations, repository-local helpers, Dockerfile stages |
+| `atrium-project/scripts/revendor_shared.sh`                                                                        | the re-vendoring procedure and its exit semantics                  |
+| `atrium-project/.github/workflows/*.reusable.yml` and the hub-own workflows                                        | the federation                                                     |
+| each tool's `.github/workflows/*.yml` at its default branch                                                        | the per-tool tables                                                |
+| each tool's `ruff.toml` and `.pre-commit-config.yaml`                                                              | tool-owned configuration                                           |
+| the hub's project-state snapshot of 27 June, §3 ([working records](../development-history.md#the-working-records)) | the reason there is no monorepo — **rewritten from**, not quoted   |

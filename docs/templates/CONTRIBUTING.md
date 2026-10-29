@@ -5,10 +5,11 @@ Welcome! Thank you for your interest in contributing. This repository [^repo] pr
 page-classification → ocr-postprocess → nlp-enrich → keyword-extract → translator, or
 digital-convert for born-digital files».
 
-This document describes the project's capabilities, development workflow, code
-conventions, and rules for contributors. ATRIUM-wide conventions (branching, commit
-types, the test/lint standard) are identical across all repositories; anything
-repo-specific is called out explicitly.
+This document is for contributors: the release history, the branches, the pull request and
+commit formats, the code and test conventions. What the tool does is in `README.md`; how to set
+it up for development, and where the maintainers' working records are, is in
+`docs/development.md`. ATRIUM-wide conventions (branching, commit types, the test/lint standard)
+are identical across all repositories; anything repo-specific is called out explicitly.
 
 ## Release History
 
@@ -27,13 +28,6 @@ repo-specific is called out explicitly.
 fails the build otherwise. The API service reports this same value (see Code
 Conventions → *Single source of truth for the version*). Update `date-released:` in
 `CITATION.cff` to the actual release date on every version bump.
-
----
-
-## Project Contributions & Capabilities
-
-«Describe the 2–4 major capabilities this tool contributes, cross-referencing
-`README.md` rather than duplicating it. One subsection per capability.»
 
 ---
 
@@ -192,10 +186,22 @@ tool (the document reader, the TEITOK reader) and the bundled vocabulary are pin
 
 ## Repository Documentation Management
 
-| File              | Audience        | Responsibility                                 |
-|-------------------|-----------------|------------------------------------------------|
-| `README.md`       | GitHub visitors | Project overview, workflow stages, quick start |
-| `CONTRIBUTING.md` | Developers      | Code conventions, branches, PRs, testing       |
+| File                    | Reader                     | Holds                                                                     |
+|-------------------------|----------------------------|---------------------------------------------------------------------------|
+| `README.md`             | everyone, first            | what the tool does, inputs and outputs, quick start, limits, the docs map |
+| `docs/usage.md`         | users, integrators         | running it, choosing a mode, reading the result, troubleshooting          |
+| `service/README.md`     | operators, integrators     | the service runbook: start, models and caches, errors, limits, settings   |
+| `service/openapi.json`  | integrators                | the API contract                                                          |
+| `docs/configuration.md` | users, operators           | every option and its default                                              |
+| `docs/how-it-works.md`  | anyone who wants the idea  | the processing flow in plain words                                        |
+| `docs/reference/`       | developers, experts        | formats, fields, rules, paradata, licences                                |
+| `docs/evaluation/`      | anyone judging the results | what was measured, on which data; known failure modes                     |
+| `docs/decisions/`       | developers, managers       | dated decisions and why they were taken                                   |
+| `docs/development.md`   | developers                 | setup, tests, project layout; the only pointer to the working records     |
+| `CONTRIBUTING.md`       | contributors               | release history, branches, PRs, commits, code and test conventions        |
+
+Leave out a row the repository does not have. The maintainers' working records are linked from
+`docs/development.md` and from no other page.
 
 Do not duplicate rules across files — cross-reference the canonical source. Where each kind of
 information belongs, and the checklist for a documentation pull request:
@@ -206,9 +212,10 @@ What each CI check proves, and the checklist for a new one:
 ---
 
 ## Contacts & Acknowledgements
-Maintainer: **«email»** [^repo] · Developed by UFAL [^ufal] · Funded by ATRIUM [^atrium]
+Maintainer: **«email»** [^repo] · Developed by ÚFAL [^ufal] · Funded by ATRIUM [^atrium].
+The full acknowledgements, with the LINDAT/CLARIAH-CZ and AIS CR infrastructures, are in `README.md`.
 
-**©️ 2026 UFAL & ATRIUM**
+© 2026 ÚFAL & ATRIUM
 
 [^repo]: https://github.com/ufal/«repo»
 [^ufal]: https://ufal.mff.cuni.cz/home-page

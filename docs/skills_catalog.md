@@ -96,6 +96,5 @@ Treat any snapshot here as perishable: run the tool rather than trusting this li
 
 Refinement still open: one green `skill-validate` run per branch with the repaired callers,
 live end-to-end acceptance round-trips, and release tags. The per-repo `agent-skill: <repo>`
-sub-issues under #31 (§13) have **not** been created — tracking is in the hub logs meanwhile:
-[`agent_dev_logs/plans/31.plan.md`](../agent_dev_logs/plans/31.plan.md) ·
-[`agent_dev_logs/digests/31.digest.md`](../agent_dev_logs/digests/31.digest.md).
+sub-issues under #31 (§13) have **not** been created — tracking is in the hub's working records
+for #31 meanwhile ([Development history](../docs_site/development-history.md#the-working-records)).
