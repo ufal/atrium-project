@@ -109,7 +109,8 @@ default-branch callers.
 > **Moving `v1`:** land the hub change on `main`, validate it via a caller temporarily pinned `@test`,
 > then `git tag -f v1 <sha> && git push -f origin v1`. Callers need no edit.
 >
-> ⚠️ **The trade-off, stated plainly** (superseded by the commit pins below once the sweep lands):
+> ⚠️ **The trade-off, stated plainly** (superseded by the commit pins below since the sweep of 2026-10-25;
+> the `v1.x.y` record it asks for was never kept, and the pins make it unnecessary):
 > `v1` is a **force-pushable tag**, and `workflow_lint.py`'s
 > `WRITE_SCOPED` allowlist deliberately exempts reusable-workflow refs from the SHA-pin rule. So the
 > ecosystem's single largest dependency is also its least-pinned one. This is accepted — pinning callers to
@@ -118,11 +119,11 @@ default-branch callers.
 > `v1.x.y` tag** so there is an audit trail.
 >
 > 🔁 **Commit pins (#72, #40).** AMČR's production gate needs a hub change to reach a tool repository only
-> through a reviewed change, so the trade-off above is being closed. The linter already accepts
-> `@<40-char sha>  # v1` beside `@v1`, and fails a pinned caller whose `hub-ref` differs from its pin;
-> `scripts/pin_hub_reusables.py --sha <v1 commit>` moves every caller of the six repos in one sweep, so a
-> hub fix still ships centrally — as one scripted pin move instead of a tag move. Once all six are
-> pinned, `--require-sha-pins` makes it mandatory. Order and settings: [`release_trust.md`](release_trust.md).
+> through a reviewed change, so the trade-off above is closed: since 2026-10-25 all six are pinned, and
+> `--require-sha-pins` fails any caller left at `@v1`. The linter accepts `@<40-char sha>  # v1`, and fails
+> a pinned caller whose `hub-ref` differs from its pin; `scripts/pin_hub_reusables.py --sha <v1 commit>`
+> moves every caller of the six repos in one sweep, so a hub fix still ships centrally — as one scripted
+> pin move instead of a tag move. Order and settings: [`release_trust.md`](release_trust.md).
 >
 > ⚠️ `para-drift.reusable.yml` also reads the canonical `docs/templates/shared/*` files via its
 > **`hub-ref`** input (default `v1`). Keep it in step with the ref the workflow is called at — a caller
@@ -142,8 +143,7 @@ six (atrium-project#72).
 
 1. Edit the canonical file(s) under `docs/templates/shared/` on the hub, and land that on `test` and
    `main`.
-2. Move `v1` to that commit, and record it as an immutable `v1.x.y` tag. In the pinned repos this
-   changes nothing yet.
+2. Move `v1` to that commit. In the pinned repos this changes nothing yet.
 3. In each tool repo, make **one commit** with the copies and the pins:
    `scripts/revendor_shared.sh` writes the copies, and
    `python3 scripts/pin_hub_reusables.py --sha "$(git rev-parse 'v1^{commit}')"` moves the pins.

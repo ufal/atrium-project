@@ -485,6 +485,13 @@ def _error_app() -> FastAPI:
     def boom():
         raise RuntimeError("an unexpected failure")
 
+    @app.get("/unmergeable")
+    def unmergeable():
+        # A record that opens but cannot be added to: its `pages` is a string (atrium-project#72).
+        doc = atrium_document.DocumentRecord("C-1", "alto-postprocess", baseline={"doc_id": "C-1", "pages": "1"})
+        doc.merge_block("pages", [{"page": "1", "quality_band": "Clear"}])
+        return {"ok": True}
+
     return app
 
 
@@ -559,6 +566,16 @@ def test_uncaught_exception_is_a_json_500():
     r = TestClient(_error_app(), raise_server_exceptions=False).get("/boom")
     assert r.status_code == 500
     assert r.json() == {"status": 500, "reason": None, "detail": "Internal server error."}
+
+
+def test_a_record_that_cannot_be_added_to_is_a_422_invalid_record():
+    """It used to be an AttributeError inside the merge, and so a 500 (atrium-project#72)."""
+    r = TestClient(_error_app(), raise_server_exceptions=False).get("/unmergeable")
+    assert r.status_code == 422
+    body = r.json()
+    assert body["reason"] == "invalid_record" and set(body) == {"status", "reason", "detail"}
+    assert "'pages'" in body["detail"] and "string" in body["detail"]
+    assert "not a list of objects" in REASON_CODES["invalid_record"]
 
 
 def test_read_upload_bounded_refuses_past_the_limit():

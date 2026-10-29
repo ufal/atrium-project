@@ -74,7 +74,7 @@ and turning PDFs into a labelled training set and corrections back into it
 * **Evidence for review** — the all-scores table, and, with the command-line ensemble, each
   model's own vote.
 * **A provenance record** — the paradata log of the run, or the `paradata` of a service answer,
-  with the licence it resolved to.
+  with each component's licence.
 * **A document record** (on request) — `page_categories` maps each page to its label, and every
   page carries its category and confidence, ready for the next stage to build on.
 

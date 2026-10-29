@@ -81,14 +81,20 @@ required build, probe or security gate means no release.
   of 10-25 are the demonstration: one with a simulated probe failure (`simulate-probe-failure`), which ended
   at the probe with nothing pushed or released
   ([run](https://github.com/ufal/atrium-digital-convert/actions/runs/40215852852)), and one clean
-  ([run](https://github.com/ufal/atrium-digital-convert/actions/runs/40215872101)). The other five carry the
-  same `image` job on `test` since 2026-10-25 and certify their images from their next tags; a clean dry run
-  of each (dispatch on `test`) checks its own inputs before that tag.
+  ([run](https://github.com/ufal/atrium-digital-convert/actions/runs/40215872101)). The other five were
+  checked on their first gated tags instead of dry runs (the maintainer's decision of 10-26): nlp-enrich
+  `v1.2.0-beta` (10-26), page-classification, ocr-postprocess and keyword-extract (10-27), the translator
+  (10-28). All six pilot releases of 29 October carry `images.json`.
+- **What a published image does not promise:** steps that run after the images are promoted (the release
+  bundle, the vocabulary stamps) can still fail. The version then has published images but no GitHub
+  Release, and it is not a release: use a version only when its GitHub Release exists and names the
+  digest. Between 26 and 28 October, tags in four repositories ended this way (page-classification
+  `v1.10.0`–`v1.10.4`, ocr-postprocess `v1.13.0`, keyword-extract `v1.5.0`, translator `v1.6.0`). Each
+  cause now fails on every push (#72), and the fix of a release is a new patch version, never a moved tag.
 
-Until a repository's next tag, its newest release and its image ran independently: check GHCR for
-`atrium-<tool>-api:<version without v>` and its digest before using that release. Four releases of
-October 2026 had no image or an image no release described (#81, 10-20; page-classification
-`v1.9.6-beta`, whose images the CVE gate stopped after the release was published).
+Before the gate, a release and its image ran independently: four releases of October 2026 had no
+image, or an image no release described (#81, 10-20). One was page-classification `v1.9.6-beta`, whose
+images the CVE gate stopped after the release was published.
 
 ## Integration baseline
 
@@ -104,11 +110,14 @@ open: the hub action `.github/actions/lane-failure-issue` (a marker per lane, an
 by every scheduled lane that reports. Only scheduled runs report; a permitted skip is not a failure and
 reports nothing. CodeQL and the image scans write native code-scanning alerts and open no issue.
 
-A scan that fails before it scans, because Trivy cannot download its vulnerability database, is re-run once
-and is not a finding: on 2026-10-26 `mirror.gcr.io` answered 404 for the database layer and three weekly scans
-failed in the same four minutes. Trivy moves on to its second registry only on a 429 or 5xx answer, so the
-registry list does not prevent this. The same failure in a release's CVE gate stops the release until it is
-re-run.
+A scan that fails before it scans, because Trivy cannot download its vulnerability database, is not a finding:
+on 2026-10-26 `mirror.gcr.io` answered 404 for the database layer and three weekly scans failed in the same
+four minutes. Trivy moves on to its second registry only on a 429 or 5xx answer, so the registry list did not
+prevent it. Since `b07090f` (10-29) both report-only scans, the release job's and the weekly one, retry the
+download once from `ghcr.io` alone, and the CVE release gate reads the database already on disk
+([Trivy DB retry](decisions/docker-tool-reusable.md#trivy-db-retry)). An outage of both registries still
+fails the job, and that run is re-run once. The weekly scans of 2 November are the retry's first scheduled
+run.
 
 ## Changing CI
 
@@ -135,11 +144,11 @@ not a claim that every row already meets the rules above.
 | Unit tests (`docker-tool` `test`)                               | 1: PR, push                               | yes                                                   | the test suite passes; coverage and the skip count are in the summary                                                                                                                  | skips are counted, not limited, unless the caller sets `max-skips`                                                                                       | summary, test report                              |
 | API contract (`api-contract.reusable.yml`, openapi-compat)      | 1: PR, push, tag                          | yes                                                   | `/info`, `/health`, `/ready`, the error body, the committed spec current and compatible with the last release                                                                          | until 10-20 an empty run (exit 5) passed; it now fails, with counts in the summary                                                                       | summary, contract job                             |
 | Shared-file parity (`para-drift.reusable.yml`)                  | 1: PR, push                               | yes                                                   | the 24 hub files are byte-identical, their selftests pass, tool-to-tool copies match their pins                                                                                        | the owners' newer changes are a job summary, not a failure (#82, by design)                                                                              | the parity job                                    |
-| Workflow policy (`workflow-lint.reusable.yml`)                  | 1: PR, push                               | yes                                                   | caller rules (pinned write-scoped actions, timeouts, permissions, release drafts), the production-image closure                                                                        | the six tools lint with `require-sha-pins`, pinned to `18f0668` (10-25); a hub change reaches them only by a pin move                                    | the lint job                                      |
+| Workflow policy (`workflow-lint.reusable.yml`)                  | 1: PR, push                               | yes                                                   | caller rules (pinned write-scoped actions, timeouts, permissions, release drafts), the production-image closure                                                                        | the six tools lint with `require-sha-pins`, pinned to `b07090f` (10-29); a hub change reaches them only by a pin move                                    | the lint job                                      |
 | Documentation (`workflow-lint.reusable.yml`)                    | 1: PR, push                               | advisory until the newcomer review (#79 D), then yes  | `tools/docs_check.py`: no emoji in a heading; every relative link and anchor resolves under GitHub's rules; the README has its documentation map and the style-guide link              | not the prose, the examples, or whether the pages match the released code: that is the review's job (#79)                                                | the step's summary                                |
-| Container probe (`docker-tool` `docker-build-smoke`)            | 1: PR, `test` push, tag, dispatch         | yes, for the job; with `release-gate`, for publishing | the image starts, passes HEALTHCHECK, `/health`, `/ready`, serves its spec, honours `PORT`/`HOST`/`LOG_LEVEL`, stops on SIGTERM                                                        | all six `release.yml` pass `release-gate`; the five other than digital-convert from their next tag                                                       | the probe job                                     |
+| Container probe (`docker-tool` `docker-build-smoke`)            | 1: PR, `test` push, tag, dispatch         | yes, for the job; with `release-gate`, for publishing | the image starts, passes HEALTHCHECK, `/health`, `/ready`, serves its spec, honours `PORT`/`HOST`/`LOG_LEVEL`, stops on SIGTERM                                                        | all six `release.yml` pass `release-gate`, and each has released through it                                                                              | the probe job                                     |
 | Publish and CVE gate (`docker-tool` `build-and-push`, `images`) | 3: tag; `test` push for `:test`           | yes on tags: fixable CRITICAL, scanned by digest      | the published digest passed the gate before `<version>` and `latest` moved; on a tag, `images` names each promoted digest                                                              | `:test` is promoted without the gate (by design)                                                                                                         | summary (promoted tags, certified digests), Trivy |
-| Release (`release.yml`, per tool)                               | 3: tag; dispatch (dry run)                | yes, for the release                                  | tag = `CITATION.cff` = `para_config.txt`; the committed spec current; no breaking change; bundle or vocabulary assets; where moved, the image job passed and `images.json` is attached | the five other than digital-convert attach `images.json` from their next tag (their image job is on `test` since 10-25)                                  | the release job, `images.json`                    |
+| Release (`release.yml`, per tool)                               | 3: tag; dispatch (dry run)                | yes, for the release                                  | tag = `CITATION.cff` = `para_config.txt`; the committed spec current; no breaking change; bundle or vocabulary assets; where moved, the image job passed and `images.json` is attached | a step after promotion (bundle, stamps) can fail with the images published: no release, so not a release (Releases above)                                | the release job, `images.json`                    |
 | Weekly image scan (`security.yml`)                              | 4: schedule (and push, PR)                | advisory                                              | the scanned image has no new fixable CRITICAL                                                                                                                                          | four repositories scan the base image, not `-api`; its alerts are native code-scanning alerts, with no issue (#81)                                       | Trivy summary, code scanning                      |
 | CodeQL (`codeql.reusable.yml`)                                  | 1 and 4: PR, push, schedule               | advisory                                              | static-analysis alerts                                                                                                                                                                 | its alerts are native code-scanning alerts, with no issue (#81)                                                                                          | code scanning alerts                              |
 | Fresh-environment suite (`scheduled-smoke.yml`, per tool)       | 4: nightly or weekly                      | advisory; one issue per lane                          | the suite still passes with freshly resolved dependencies                                                                                                                              | adds no coverage                                                                                                                                         | the job, the lane's issue                         |

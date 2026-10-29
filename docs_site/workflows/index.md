@@ -121,7 +121,7 @@ instruction.
 
 | Source                                                                                                                                  | What was taken from it                                               |
 |-----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|
-| SSH Open Marketplace records `RER7Fw`, `YParYU`, `CizIUW`, `EMhu3X`, `13eHAZ`, `0xSpVP`, `IrpmkB`                                       | record identifiers; the fields of a workflow record and of its steps |
+| SSH Open Marketplace records `RER7Fw`, `YParYU`, `CizIUW`, `EMhu3X`, `jGxgQI`, `j9fqxo`, `13eHAZ`, `0xSpVP`, `IrpmkB`                   | record identifiers; the fields of a workflow record and of its steps |
 | SSH Open Marketplace metadata guidelines (`SSHOC/sshoc-marketplace-frontend`, `content/contribute/metadata-guidelines`)                 | the recommended description length; relation types                   |
 | `DARIAH-ERIC/atrium-galaxy-tools` — `README.md`, `workflows/README.md`, `workflows/T4.2.1-Vocab_Driven_IE.ga`, `tools/atrium_tools.xml` | the narrative-to-Galaxy pairing                                      |
 | `galaxyproject/iwc` — `workflows/README.md`; `galaxyproject/planemo` — `docs/best_practices_workflows.rst`                              | workflow metadata best practice                                      |

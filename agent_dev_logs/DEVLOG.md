@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `v1` = `9a08026` (2026-10-28; the tools still pinned to `18f0668` until the sweep); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-29 (noon), at the end of the file (this file is not in date order): the six pilot tags, the para-drift cause and a Trivy DB retry._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `v1` = `b07090f` (2026-10-29); the six tools are pinned to it, and the `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-29 (evening), at the end of the file (this file is not in date order): the shared fix for a record that cannot be added to, six patch releases prepared, #72 and #67 ready to close._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -2820,3 +2820,83 @@ Against `test` `a38ae4d` and every `agent-skill` head of 12:29–12:53 (the roun
   (`docker-tool.reusable.yml`, `security.reusable.yml`) now retry once from `ghcr.io`; the retry is not
   `continue-on-error`, and the CVE release gate reads the DB already on disk. Recorded in
   `docs/decisions/docker-tool-reusable.md` ("Trivy DB retry"); `tests/test_trivy_db_retry.py` holds the shape.
+
+## 2026-10-29 (evening) — #72's last items met; one shared fix and six patch releases prepared
+
+- **Seen since the noon entry:**
+  - **The pin sweep ran** (12:15–12:17 UTC, "fix GHA problems" in all six). Every tool calls the hub at `b07090f`
+    (= `v1`), 8 callers and 1–3 action steps each, so para-drift is green again.
+  - **The four missing rulesets are on.** stranak added the "Protect v* Tags" ruleset to ocr-postprocess,
+    digital-convert, keyword-extract and the translator at 10:18–10:19 UTC (#72, 10:20), before the six tags, so the
+    ruleset is now in 6 of 6.
+  - **keyword-extract `v1.6.0-beta`** was released at 12:49 UTC, not before noon: its `-llm` image took 44 minutes
+    to build. All six releases of 10-29 are now immutable and carry `images.json`.
+  - **E2E:** the scanned-document E2E is green on those tags (run 40871582603). The born-digital lane has not yet
+    run on digital-convert 1.4.0 (next: 10-31 06:00).
+  - **Weekly scans:** the Security scans of 10-26 were never re-run. The scans of 11-02 are the first run with the
+    Trivy retry.
+- **#72, `merge_block` (the fix decided at noon, built now that the tags exist):**
+  - `atrium_document.py` raises `InvalidRecordError` (a `ValueError` with `reason = "invalid_record"`) when a
+    list block the merge adds rows to is not a list of objects, before anything is written. It used to be an
+    `AttributeError`: a 500 from a service, a traceback from a CLI.
+  - `atrium_service.attach_error_handlers()` answers it with 422 `invalid_record`. The registry text names the case,
+    so all six specs carry it.
+  - Tests: `tests/test_document_block_shape.py` (new) and `tests/test_atrium_service.py`.
+  - digital-convert's command line exits 3 `invalid_record`, as its service.
+  - The other five CLIs report the named error.
+  - Each tool's README error row names the blocks that tool merges into (the translator merges none). Also
+    updated: `docs/agent_skill_strategy.md`, `docs/document_schema.md` (rule 6) and the runbook template.
+- **Six patch releases prepared (the maintainer's decision):** page-classification `v1.12.1-beta`,
+  ocr-postprocess `v1.15.1-beta`, digital-convert `v1.4.1-beta`, nlp-enrich `v1.3.1-beta`, keyword-extract
+  `v1.6.1-beta`, translator `v1.7.1-beta`.
+  - Each changes `CITATION.cff`, `para_config.txt`, the spec's version and registry text, a CONTRIBUTING row and the
+    version examples. keyword-extract's vocabulary sidecars are restamped (`vocab_build.py --from-flat --skos`:
+    only the stamps and times change).
+  - The pilot candidates move to these releases. `docs_site/pilot.md` and the acceptance runbook's examples go in
+    a second hub archive, unpacked after the tags.
+- **Decided fixes carried by the same releases:**
+  - the translator's release runs on `v*` tags (#81 A.3), and its `data_samples/README.md` says "calculated
+    licence summary" (#6);
+  - keyword-extract's quick start sets `DEFAULT_KW_METHOD=yake`, so "no model to download" holds, and its YAKE line
+    no longer says a run "is declared AGPL-3.0";
+  - the page-classification and translator READMEs link the style guide on `main`.
+- **Hub docs:**
+  - `release_trust.md`: the state of 10-29.
+  - `ci_policy.md`:
+    - the other five checked on their first gated tags (the decision of 10-26);
+    - what a published image does not promise (images without a release are not a release);
+    - the Trivy retry;
+    - the map's rows.
+  - `docker_gha.md`: the "immutable `v1.x.y` tag" sentence goes (the maintainer: drop it), and the commit pins
+    close the old trade-off.
+  - `external-tools.md`: the tools call the hub by commit.
+  - The workflow pages:
+    - "each component's licence" for "the licence it resolved to";
+    - `13eHAZ` to be rebuilt;
+    - the Sources row names `jGxgQI` and `j9fqxo`;
+    - digital-convert names its `0xSpVP` step.
+- **Decisions of this round (the maintainer):**
+  - archives only: the vendored shared files are not in the tool archives, and the hub's `revendor_shared.sh`
+    writes them;
+  - `release_trust.md`'s admin-bypass wording is kept;
+  - #72 and #67 are proposed for closing, with flexiconv's missing LICENSE moved to #6;
+  - the translator gets a patch release too, so that all six candidates carry one generation of the shared modules
+    and specs, although its answers do not change (motyc's "no routine docs-only patch releases", #79 10-21, was
+    weighed);
+  - the published releases' notes are not amended: the gaps go into the repositories' logs and the patch
+    releases' notes.
+- **Order:**
+  1. the hub, then move `v1`;
+  2. in each tool, one commit: `revendor_shared.sh`, the tool archive, `pin_hub_reusables.py --sha`, then
+     `revendor_shared.sh --check`;
+  3. the six tags;
+  4. the hub's after-tags archive;
+  5. the comments.
+- **Checks:**
+  - hub: 601 passed, 4 skipped, and the shared modules 270 passed, 5 skipped;
+  - tools, without torch: page-classification 859, ocr-postprocess 2307, digital-convert 970, nlp-enrich 1117,
+    keyword-extract 1058, translator 1217 passed;
+  - `mkdocs build --strict`; `docs_check` 7/7; `runbook_check` 6/6; `workflow_lint --require-sha-pins` 6/6;
+    pre-commit on the changed files in all seven;
+  - `revendor_shared.sh --check`: 145 copies in parity; the pins are stale until the move.
+- Plans and digests 4, 6, 17, 40, 67, 72, 77, 79 and 81 updated.

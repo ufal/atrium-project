@@ -46,7 +46,7 @@ rendered the same way in every document.
 | 4 | Protect domain terms (optional)        | Vocabulary terms found in the text are replaced by placeholders before translation and restored as their agreed translations afterwards; multi-word terms are matched first, single words by lemma. Language-model backends receive the matching terms as a glossary in the prompt instead; the OpenAI-compatible backend can add each term's description as context (off by default). The command line takes the vocabulary with `--vocabulary`; the service applies one only when `VOCABULARY_PATH` names it.                                                                                                                                                                                                                      | CSV         | Lemmatizing |
 | 5 | Translate                              | The text goes to the chosen backend: the LINDAT translation service (CUBBITT, the default), an OpenAI-compatible language-model API (such as Qwen3.8-27B on one's own vLLM server), or a self-hosted CTranslate2 model. Long texts are split at sentence boundaries first. Every reply is checked against its source: one that is empty, runaway, cut short, looping, or mixes Latin and Cyrillic letters in a word is requested again, re-run at the end of the document if it still fails, and never written.                                                                                                                                                                                                                      | —           | Translating |
 | 6 | Rebuild and validate the document      | ALTO: each text block is translated as a whole and line by line; the fluent whole-block translation is then divided among the original lines and written into the original word elements — replacing their text, or added beside it as an alternative. Metadata: the translation replaces the source text, or is added beside it with language labels. Metadata output can be validated against an XSD schema, such as the AMČR schema, which accepts replaced records and not appended ones: `--xsd` on the command line, `XSD_PATH` in the service (since v1.6.0-beta).                                                                                                                                                            | → ALTO, XML | —           |
-| 7 | Review and record provenance           | A translation log beside each output pairs source and target text line by line or field by field, with a status saying whether each was translated normally, recovered by a re-run, placed approximately, kept as source, or translated from a fallback language because the backend cannot translate the detected one. The paradata log records what was run and the licence it resolved to; the document record notes the languages, the backend, the translated file and the same licence.                                                                                                                                                                                                                                        | → CSV, JSON | —           |
+| 7 | Review and record provenance           | A translation log beside each output pairs source and target text line by line or field by field, with a status saying whether each was translated normally, recovered by a re-run, placed approximately, kept as source, or translated from a fallback language because the backend cannot translate the detected one. The paradata log records what was run, with each component's licence; the document record notes the languages, the backend, the translated file and the same component licences.                                                                                                                                                                                                                             | → CSV, JSON | —           |
 
 **Which backend.** LINDAT stays the default. The recommended self-hosted alternative is
 `openai_compatible` with Qwen3.8-27B (Apache-2.0) on one's own vLLM server: in the bake-off
@@ -69,7 +69,7 @@ The vocabulary step is its own workflow on Pipelines —
   or translated from a fallback language.
 * **Consistent terminology** — every protected term carries its agreed translation, and the
   paradata counts the protected terms per document.
-* **A provenance record** — the paradata log of the run, with the licence it resolved to, and a
+* **A provenance record** — the paradata log of the run, with each component's licence, and a
   document record per file, `<name>.document.json`.
 
 The translator's output is an end product: an edition for readers and for publication. No later
@@ -146,8 +146,8 @@ the segments in a language the backend cannot translate (`unsupported_source_lan
 ## On other platforms
 
 **SSH Open Marketplace.** Tool record [`CizIUW`](https://marketplace.sshopencloud.eu/tool-or-service/CizIUW);
-workflow record [`13eHAZ`](https://marketplace.sshopencloud.eu/workflow/13eHAZ), whose steps are the
-seven above. Related records: LINDAT Translation, UDPipe.
+workflow record [`13eHAZ`](https://marketplace.sshopencloud.eu/workflow/13eHAZ), to be rebuilt with the
+seven steps above (#4). Related records: LINDAT Translation, UDPipe.
 
 **Galaxy sheet.**
 

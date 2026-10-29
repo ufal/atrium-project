@@ -64,7 +64,10 @@ block changes), and needs no shared volume or orchestrator.
    of the record or of any output: the rights in an output depend on the source document and are
    stated only by whoever holds them (#6, agreed 2026-10-22; the schema's descriptions say so).
 6. **Unknown or newer blocks are preserved** verbatim; a newer MAJOR `schema_version` is refused
-   with the same guard as `load_paradata()`.
+   with the same guard as `load_paradata()`. A baseline that does not validate is still accreted
+   onto, except where a tool must add rows: a list block it merges into (`pages`, `lines`,
+   `tables`, `entities`) that is not a list of objects raises `InvalidRecordError` before anything
+   is written, and a service answers it with 422 `invalid_record` (#72; it used to be a 500).
 
 ## The AMČR seed
 

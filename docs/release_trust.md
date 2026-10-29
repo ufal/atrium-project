@@ -38,29 +38,32 @@ workflow callers, not a source release, so no tag rule covers it. The tool repos
 following it when they call the hub's reusables by commit (step 7). The hub's genuinely fixed
 references, the `doc-schema-v*` freezes, have their own rule.
 
-## State on 2026-10-25
+## State on 2026-10-29
 
-Releases and callers read with the public API and the `test` trees (no admin rights needed); the
-ruleset column is as `status` read it on 10-20, nothing has been reported since. `status` gives
-the rulesets in detail. The callers' column is the pin sweep of 10-25 (night): every caller and action step at
-the hub commit `18f0668` (`v1` then), with `require-sha-pins` on.
+Read with the public API and the `test` trees (no admin rights needed): the rulesets with
+`GET /repos/ufal/<repo>/rulesets`, the releases' `immutable` flag, and the callers in each
+`.github/workflows/`. The four rulesets stranak added on 10-29 (10:18–10:19 UTC,
+[#72](https://github.com/ufal/atrium-project/issues/72)) came before that day's six tags, so every pilot
+release is covered. The callers' column is the pin sweep of 10-29 (12:15–12:17 UTC): every caller and
+action step at the hub commit `b07090f` (`v1` then), with `require-sha-pins` on; no reference to `@v1` is
+left.
 
-| Repository          | Tag ruleset on `v*` (10-20)           | Latest release immutable | Hub references by commit (`18f0668`)       |
-|---------------------|---------------------------------------|--------------------------|--------------------------------------------|
-| page-classification | yes (`Protect v* Tags`, 10-19)        | yes (`v1.9.10-beta`)     | 8 of 8 callers, 1 of 1 action steps        |
-| ocr-postprocess     | **no**                                | yes (`v1.12.1-beta`)     | 8 of 8, 1 of 1                             |
-| digital-convert     | **no**                                | yes (`v1.2.2-beta`)      | 8 of 8, 1 of 1                             |
-| nlp-enrich          | yes (`Protect v* Tags`, 10-19)        | yes (`v1.1.3-beta`)      | 8 of 8, 2 of 2                             |
-| keyword-extract     | **no**                                | yes (`v1.4.0-beta`)      | 8 of 8, 3 of 3                             |
-| translator          | **no**                                | yes (`v1.5.0-beta`)      | 8 of 8, 2 of 2                             |
-| hub                 | `doc-schema-v*`: **no**               | —                        | —                                          |
+| Repository          | Tag ruleset on `v*`                  | Latest release immutable, with `images.json` | Hub references by commit (`b07090f`) |
+|---------------------|--------------------------------------|----------------------------------------------|--------------------------------------|
+| page-classification | yes (`Protect v* Tags`, 10-19)       | yes (`v1.12.0-beta`)                         | 8 of 8 callers, 1 of 1 action steps  |
+| ocr-postprocess     | yes (`Protect v* Tags`, 10-29)       | yes (`v1.15.0-beta`)                         | 8 of 8, 1 of 1                       |
+| digital-convert     | yes (`Protect v* Tags`, 10-29)       | yes (`v1.4.0-beta`)                          | 8 of 8, 1 of 1                       |
+| nlp-enrich          | yes (`Protect v* Tags`, 10-19)       | yes (`v1.3.0-beta`)                          | 8 of 8, 2 of 2                       |
+| keyword-extract     | yes (`Protect v* Tags`, 10-29)       | yes (`v1.6.0-beta`)                          | 8 of 8, 3 of 3                       |
+| translator          | yes (`Protect v* Tags`, 10-29)       | yes (`v1.7.0-beta`)                          | 8 of 8, 2 of 2                       |
+| hub                 | `doc-schema-v*`: **no**              | —                                            | —                                    |
 
 An action step is a step that runs one of the hub's composite actions
 (`ufal/atrium-project/.github/actions/lane-failure-issue`, #81); step 7 pins it with the callers.
 
 Releases from before immutability was switched on stay mutable (page-classification up to
 `v1.9.4-beta`, nlp-enrich up to `v1.1.0-beta`, translator up to `v1.4.0-beta`); AMČR mirrors only
-the immutable ones. The two hand-made rulesets refuse update, deletion and non-fast-forward on
+the immutable ones. The six hand-made rulesets refuse update, deletion and non-fast-forward on
 `refs/tags/v*`, so `tag-rules` keeps them and updates them in place.
 
 ## What the release workflows need — nothing
@@ -77,9 +80,9 @@ any `gh release upload` or upload-release-asset step after the release exists.
 `release.yml` (digital-convert first; [`ci_policy.md`](ci_policy.md), Releases) attaches `images.json` in
 that same step: the reusable's `images` job reads the digest each promoted tag resolves to, and the
 release job writes it out before the release exists. digital-convert released this way first
-(`v1.2.2-beta`); the other five carry the same `image` job on `test` since 2026-10-25 and certify
-their images from their next tags. The image job is a cross-repo `uses:`, the one
-exception to "a release gate must not depend on a cross-repo `uses:` resolving at tag-push time"
+(`v1.2.2-beta`); the other five followed with their releases of 26–28 October (nlp-enrich `v1.2.0-beta`
+first), and all six pilot releases of 29 October certify their images. The image job is a cross-repo
+`uses:`, the one exception to "a release gate must not depend on a cross-repo `uses:` resolving at tag-push time"
 (`docker_gha_roadmap.md` §3.3): only the hub's reusable builds, probes and scans the image a release must
 now certify. It is adopted at `v1`, then by commit with the other callers (step 7 below). The version
 guard and the OpenAPI checks stay vendored.

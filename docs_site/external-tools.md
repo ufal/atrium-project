@@ -706,12 +706,15 @@ environment and sizing for each tool are on [Operations](operations.md).
 **What it is.** GitHub's built-in CI: workflows in `.github/workflows/`, and *reusable* workflows
 that one repository can call from another.
 
-**Where ATRIUM uses it.** Each tool calls seven hub reusables at `@v1` — `api-contract`, `codeql`,
-`docker-tool`, `para-drift`, `pre-commit`, `security`, `workflow-lint` — plus workflows of its own.
+**Where ATRIUM uses it.** Each tool calls seven hub reusables — `api-contract`, `codeql`,
+`docker-tool`, `para-drift`, `pre-commit`, `security`, `workflow-lint` — and the hub's
+`lane-failure-issue` action, plus workflows of its own.
 See [Architecture → The CI federation](ecosystem/architecture.md#the-ci-federation).
 
-**Worth knowing.** `v1` is a movable major tag, so the hub can update every caller at once.
-Third-party actions are pinned by commit SHA instead — `trivy-action`, `build-push-action`,
+**Worth knowing.** The tools call the hub by commit SHA, with the matching `hub-ref`. The hub's `v1`
+is a moving pointer that the tools no longer follow: a hub change reaches a tool only through a
+reviewed pin move ([release trust](https://github.com/ufal/atrium-project/blob/main/docs/release_trust.md)).
+Third-party actions are pinned by commit SHA too — `trivy-action`, `build-push-action`,
 `action-gh-release` — so a moved upstream tag cannot change what runs.
 
 **Onward:** <https://docs.github.com/actions>

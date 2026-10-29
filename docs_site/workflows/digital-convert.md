@@ -99,6 +99,8 @@ when its own part of the record comes back unchanged. The program id in the reco
 * **What follows it.** The record goes on to [nlp-enrich](nlp-enrich.md) and
   [keyword-extract](keyword-extract.md), which reads the converter's lines like any other
   record's.
+* **Born-digital extraction** step of the AMČR text workflow
+  [`0xSpVP`](https://marketplace.sshopencloud.eu/workflow/0xSpVP) (step 6, beside GROBID).
 * **The service image** is one of the containerised services —
   [Pipelines → W4](../pipelines.md#w4--containerised-service--api-workflow).
 
