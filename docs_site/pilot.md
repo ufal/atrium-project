@@ -14,26 +14,29 @@ for, and whom to ask. It follows the handover rules of the
 
 ## The six services
 
-The versions below are the pilot candidates, one release per tool prepared on 29 October 2026 after the
-command line and the service of each tool were aligned ([#72](https://github.com/ufal/atrium-project/issues/72)).
-Each program now behaves the same from either entry point, and each `docs/usage.md` has one table of what still
-differs and why. **11 November** is the target for choosing and approving the six `-api` images. AMČR approves
-them explicitly, by digest, and the digests are entered here once approved; until then the column stays empty,
-and `latest` or `test` are never the baseline. Acceptance on AMČR's cluster follows separately (below).
+The versions below are the pilot candidates, one patch release per tool on top of the releases of 29 October
+2026, which aligned the command line and the service of each tool
+([#72](https://github.com/ufal/atrium-project/issues/72)). Each program behaves the same from either entry point,
+and each `docs/usage.md` has one table of what still differs and why. The patch releases add one fix to all six: a
+record whose `pages`, `lines`, `tables` or `entities` is not a list of objects is refused with 422
+`invalid_record` where it used to end in a 500. **11 November** is the target for choosing and approving the six
+`-api` images. AMČR approves them explicitly, by digest, and the digests are entered here once approved; until
+then the column stays empty, and `latest` or `test` are never the baseline. Acceptance on AMČR's cluster follows
+separately (below).
 
 | Stage                              | Image                                         | Release       | Approved digest | Runbook                                                                                                                                                                                  | Issues                                                               |
 |------------------------------------|-----------------------------------------------|---------------|-----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|
-| page categories                    | `ghcr.io/ufal/atrium-page-classification-api` | `1.12.0-beta` | —               | [service/README.md](https://github.com/ufal/atrium-page-classification/blob/v1.12.0-beta/service/README.md)                                                                              | [tracker](https://github.com/ufal/atrium-page-classification/issues) |
-| OCR output and text files → lines  | `ghcr.io/ufal/atrium-ocr-postprocess-api`     | `1.15.0-beta` | —               | [service/README.md](https://github.com/ufal/atrium-ocr-postprocess/blob/v1.15.0-beta/service/README.md)                                                                                  | [tracker](https://github.com/ufal/atrium-ocr-postprocess/issues)     |
-| born-digital files → the record    | `ghcr.io/ufal/atrium-digital-convert-api`     | `1.4.0-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-digital-convert/blob/v1.4.0-beta/service/README.md)                                                                                   | [tracker](https://github.com/ufal/atrium-digital-convert/issues)     |
-| morphology, named entities, TEITOK | `ghcr.io/ufal/atrium-nlp-enrich-api`          | `1.3.0-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-nlp-enrich/blob/v1.3.0-beta/service/README.md)                                                                                        | [tracker](https://github.com/ufal/atrium-nlp-enrich/issues)          |
-| keywords                           | `ghcr.io/ufal/atrium-keyword-extract-api`     | `1.6.0-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-keyword-extract/blob/v1.6.0-beta/service/README.md)                                                                                   | [tracker](https://github.com/ufal/atrium-keyword-extract/issues)     |
-| English metadata                   | `ghcr.io/ufal/atrium-translator-api`          | `1.7.0-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-translator/blob/v1.7.0-beta/service/README.md)                                                                                        | [tracker](https://github.com/ufal/atrium-translator/issues)          |
+| page categories                    | `ghcr.io/ufal/atrium-page-classification-api` | `1.12.1-beta` | —               | [service/README.md](https://github.com/ufal/atrium-page-classification/blob/v1.12.1-beta/service/README.md)                                                                              | [tracker](https://github.com/ufal/atrium-page-classification/issues) |
+| OCR output and text files → lines  | `ghcr.io/ufal/atrium-ocr-postprocess-api`     | `1.15.1-beta` | —               | [service/README.md](https://github.com/ufal/atrium-ocr-postprocess/blob/v1.15.1-beta/service/README.md)                                                                                  | [tracker](https://github.com/ufal/atrium-ocr-postprocess/issues)     |
+| born-digital files → the record    | `ghcr.io/ufal/atrium-digital-convert-api`     | `1.4.1-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-digital-convert/blob/v1.4.1-beta/service/README.md)                                                                                   | [tracker](https://github.com/ufal/atrium-digital-convert/issues)     |
+| morphology, named entities, TEITOK | `ghcr.io/ufal/atrium-nlp-enrich-api`          | `1.3.1-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-nlp-enrich/blob/v1.3.1-beta/service/README.md)                                                                                        | [tracker](https://github.com/ufal/atrium-nlp-enrich/issues)          |
+| keywords                           | `ghcr.io/ufal/atrium-keyword-extract-api`     | `1.6.1-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-keyword-extract/blob/v1.6.1-beta/service/README.md)                                                                                   | [tracker](https://github.com/ufal/atrium-keyword-extract/issues)     |
+| English metadata                   | `ghcr.io/ufal/atrium-translator-api`          | `1.7.1-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-translator/blob/v1.7.1-beta/service/README.md)                                                                                        | [tracker](https://github.com/ufal/atrium-translator/issues)          |
 
 Each of these releases certifies its images: its `images.json` asset names the digest of each image it
-published (#81; digital-convert since `1.2.2-beta`, the other five since their releases of 27–28 October).
-The image tag is the release without its leading `v`. A digest is read with
-`docker buildx imagetools inspect <image>:<tag>`. Every E2E run also records the digest and the source
+published (#81; digital-convert since `1.2.2-beta`, the other five since their releases of 26–28 October).
+The image tag is the release without its leading `v`. Read a digest from the release's `images.json`, or
+with `docker buildx imagetools inspect <image>:<tag>`. Every E2E run also records the digest and the source
 ref of each image it ran (`e2e-manifest.json`, an artifact of the run): a green run at these release
 tags shows which releases passed together. The lanes run the batch images for most stages, so the
 approved digests are still those of the `-api` images of the same releases.

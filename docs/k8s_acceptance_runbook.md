@@ -46,9 +46,9 @@ These hold for this runbook and for every operator page linked from the S2 pilot
 
 | What                 | Form                                    | Example                                              | Mutable?                           |
 |----------------------|-----------------------------------------|------------------------------------------------------|------------------------------------|
-| Source release       | Git tag `vX.Y.Z[-suffix]`               | `v1.2.1-beta`                                        | no (tag rules, immutable releases) |
-| Image tag            | the release **without** its leading `v` | `ghcr.io/ufal/atrium-digital-convert-api:1.2.1-beta` | can be re-pushed                   |
-| Image identity       | the manifest digest                     | `…-api:1.2.1-beta@sha256:<64 hex>`                   | no                                 |
+| Source release       | Git tag `vX.Y.Z[-suffix]`               | `v1.4.1-beta`                                        | no (tag rules, immutable releases) |
+| Image tag            | the release **without** its leading `v` | `ghcr.io/ufal/atrium-digital-convert-api:1.4.1-beta` | can be re-pushed                   |
+| Image identity       | the manifest digest                     | `…-api:1.4.1-beta@sha256:<64 hex>`                   | no                                 |
 | Development channels | `test`, `latest`                        | `…-api:latest`                                       | yes, by design                     |
 
 `test` and `latest` move with every build and are never a pilot baseline. The S2 set is the six digests
@@ -88,7 +88,7 @@ order. `set -u` stops on a variable you forgot.
 ```bash
 set -u
 TOOL=digital-convert        # page-classification | ocr-postprocess | translator | nlp-enrich | keyword-extract | digital-convert
-VERSION=1.2.1-beta          # the approved release, without its leading v
+VERSION=1.4.1-beta          # the approved release, without its leading v
 DIGEST=                     # sha256:… of the approved image; empty pulls by tag
 IMAGE="ghcr.io/ufal/atrium-${TOOL}-api:${VERSION}${DIGEST:+@${DIGEST}}"
 DEPLOY="deployment/atrium-${TOOL}-api"
