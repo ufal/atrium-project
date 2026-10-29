@@ -1,0 +1,25 @@
+/* docs_site/assets/extra.css — ATRIUM site styling hook (DRAFT, round 2).
+   Deliberately thin: Material's own palette does the work. This file exists so
+   round 3 has somewhere to put the pipeline strip and the six-site switcher
+   without patching the theme. */
+
+:root {
+  --atrium-violet: #6b3fa0;
+}
+
+/* Pipeline strip — rendered on each tool section's index page. */
+.atrium-pipeline { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center;
+                   margin: 1rem 0; font-size: .8rem; }
+.atrium-pipeline a,
+.atrium-pipeline span.here { padding: .25rem .55rem; border-radius: 6px;
+                             border: 1px solid var(--md-default-fg-color--lightest);
+                             text-decoration: none; }
+.atrium-pipeline span.here { background: var(--atrium-violet); color: #fff; font-weight: 600; }
+
+/* Draft banner: make unfinished pages obvious while round 3 is in progress. */
+.md-content .admonition.warning > .admonition-title { font-variant-caps: all-small-caps;
+                                                      letter-spacing: .04em; }
+
+/* Release tables are transposed into one ### per version, but source tables that
+   survive elsewhere still need to not blow out the column. */
+.md-typeset table:not([class]) td { word-break: break-word; }
