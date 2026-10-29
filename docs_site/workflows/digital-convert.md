@@ -116,8 +116,8 @@ files in `tests/fixtures/digital/`.
 
 ## Sources
 
-Read from `ufal/atrium-digital-convert` at release **`v1.3.0-beta`** (2026-10-26). Earlier readings
-were at `v1.2.1-beta` (2026-10-19) and, before the move, `ufal/atrium-llm-enrich` at `v0.8.0`. This
+Read from `ufal/atrium-digital-convert` at release **`v1.4.0-beta`** (2026-10-29). Earlier readings
+were at `v1.3.0-beta` (2026-10-26), `v1.2.1-beta` (2026-10-19) and, before the move, `ufal/atrium-llm-enrich` at `v0.8.0`. This
 table records **provenance**, not a build instruction.
 
 | Source                                                                                                                                                       | What was taken from it                                                    |

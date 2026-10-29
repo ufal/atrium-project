@@ -102,10 +102,11 @@ Every column is described in
   cap.
 * **Truncated images.** The command-line tool classifies a truncated scan, its missing part
   filled grey; the HTTP service refuses it (422).
-* **The ensemble can answer with fewer models.** If one of the five models fails, the service
-  averages the others. Since `v1.9.10-beta` the answer's `models_used` lists the revisions that
-  answered (per page for a PDF); the service log names the failing model, once. Before
-  `v1.9.4-beta`, on a GPU node, every model fetched from the Hub failed this way.
+* **The ensemble can answer with fewer models.** If one of the five models fails, the others are
+  averaged: in the service, and since `v1.12.0-beta` in the command line's `--best` too, which stopped
+  before. Since `v1.9.10-beta` the answer's `models_used` lists the revisions that answered (per page for
+  a PDF); the service log names the failing model, once, and the command line the models that answered.
+  Before `v1.9.4-beta`, on a GPU node, every model fetched from the Hub failed this way.
 
 ## Provenance and licence
 
@@ -167,9 +168,9 @@ method in [arXiv:2507.21114](https://arxiv.org/abs/2507.21114).
 
 ## Sources
 
-Read from `ufal/atrium-page-classification` at release **`v1.10.5-beta`** (2026-10-27, branch
+Read from `ufal/atrium-page-classification` at release **`v1.12.0-beta`** (2026-10-29, branch
 `test`; the default branch **`vit`** catches up when `test` is merged into it) and from this site's
-page-classification section. An earlier reading was at `v1.9.5-beta` (2026-10-19). This table records
+page-classification section. Earlier readings were at `v1.10.5-beta` (2026-10-27) and `v1.9.5-beta` (2026-10-19). This table records
 **provenance**, not a build instruction.
 
 | Source                                                                                                                                                             | What was taken from it                                                                  |
@@ -177,7 +178,7 @@ page-classification section. An earlier reading was at `v1.9.5-beta` (2026-10-19
 | `README.md` §§ Versions, Model description, Categories, How to run, Data preparation, Paradata logging                                                             | purpose, the category criteria, the step order, the converters                          |
 | `run.py`, `page_inputs.py`, `model_registry.py`, `utils.py`, `setup/config.txt`                                                                                    | the classification steps, file naming, the ensemble, truncated scans                    |
 | `service/api.py`, `service/pdf_render.py`, `service/inference.py`, `service/requirements.txt`                                                                      | the PDF route, its rendering library and limits; a truncated upload; a reduced ensemble |
-| `service/README.md` (at `v1.10.5-beta`) §§ API Usage, Limits, Errors                                                                                               | the `pages` field, the limits and their settings, the call's `paradata`                 |
+| `service/README.md` (at `v1.12.0-beta`) §§ API Usage, Limits, Errors                                                                                               | the `pages` field, the limits and their settings, the call's `paradata`                 |
 | `classifier.py` (`load_from_hub`), `atrium_paradata.py`, `atrium_rocrate.py` (`create_action`)                                                                     | Hub-loaded models on the device; the paradata log and its service form                  |
 | `setup/para_config.txt`, `para_licenses.py`                                                                                                                        | the licence components and how they rank                                                |
 | `data_scripts/pdf_rasteriser_comparison.md`, `data_scripts/unix/pdf2png.sh`, `data_scripts/windows/pdf2png.bat`                                                    | the renderers and how far apart they are; the AMČR label run                            |

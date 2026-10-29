@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `test` = `0c3d3ed` (2026-10-25) = `v1` (the tools pinned to `18f0668`); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-26 (triage), at the end of the file (this file is not in date order): every open issue triaged against the repositories._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `test` = `9a08026` = `v1` (2026-10-28; the tools still pinned to `18f0668` until the sweep); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-29, at the end of the file (this file is not in date order): six pilot candidates after a case-by-case comparison of each tool's entry points._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -2781,3 +2781,25 @@ Against `test` `a38ae4d` and every `agent-skill` head of 12:29–12:53 (the roun
   per tool with the copies and the pins; `docs/document_schema.md` and `docs/release_trust.md` point to it.
 - **Hub pre-commit red on `d6b27f1`:** this file ended with a blank line (end-of-file-fixer); fixed. Every delivery now
   runs the repository's pre-commit hooks on the files it changes.
+
+## 2026-10-29 — #72/#77: each tool's two entry points compared case by case; six pilot candidates
+
+- **Method:** each tool's command line and service ran the same inputs over a matrix of input kinds and options, the
+  real code on both sides and only the model or remote call stubbed alike (scratch harnesses, not committed):
+  page-classification 50 cases, digital-convert 240, nlp-enrich 38, keyword-extract 90, translator 256;
+  ocr-postprocess by its 99 parity tests and the audit. What differed is fixed or documented in each tool's
+  `docs/usage.md` parity table; the per-tool list is in the #72 plan.
+- **Candidates (to tag):** page-classification `v1.12.0-beta` (one ensemble average, unrounded; a failing member left
+  out), ocr-postprocess `v1.15.0-beta` (ALTO without coordinates and an out-of-memory page kept, as the service does),
+  digital-convert `v1.4.0-beta` (an unopenable or invalid seed refused or accreted alike), nlp-enrich `v1.3.0-beta`
+  (the CLI's doc_id in the service, `include_record`), keyword-extract `v1.6.0-beta` (one licence list per method),
+  translator `v1.7.0-beta` (the same paradata keys from the service).
+- **Cross-tool:** a CLI run outside the checkout read `para_config.txt` from the working directory and recorded version
+  `unknown`; keyword-extract, the translator and nlp-enrich's TEITOK projection now pass the repository root.
+- **Docs:** each tool's README, usage, configuration and service README re-read against its source; the OpenAPI
+  descriptions corrected in the code and the specs regenerated.
+- **Hub:** the pilot page lists the candidates and links each runbook at its tag; the six workflow pages are read at
+  the new releases; `pipelines.md` says what keyword-extract reads. Found: `atrium_document.merge_block` raises
+  `AttributeError` on a baseline whose `pages` is not a list (left for after the tags).
+- **Order:** the pin sweep to `v1` = `9a08026` first (para-drift red in all six since 10-28), then the release
+  commits and the tags. Plans and digests 72 and 77 updated; a #77 comment drafted.

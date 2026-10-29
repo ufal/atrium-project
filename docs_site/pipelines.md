@@ -53,8 +53,9 @@ move differently:
   readers; no later stage reads it.
 * **nlp-enrich reads `DOC_LINE_CATEG/` and the original `ALTO/`**, and writes `TEITOK/`, a
   second end product.
-* **keyword-extract reads the record, not files.** It takes the record nlp-enrich left — or the
-  one digital-convert wrote, on the born-digital route — and adds keywords to it.
+* **keyword-extract reads the record.** It takes the record nlp-enrich left — or the one
+  digital-convert wrote, on the born-digital route — and adds keywords to it. Outside the pipeline it
+  also reads nlp-enrich's CoNLL-U or TEITOK files and line tables, from either entry point.
 
 So there are two file handoffs — `PAGE_ALTO/` and `DOC_LINE_CATEG/` — and one thing that does run
 through every stage in order: the **record**. This page draws both layers.

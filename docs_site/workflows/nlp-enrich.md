@@ -130,8 +130,8 @@ image and the outputs of every stage.
 
 ## Sources
 
-Read from `ufal/atrium-nlp-enrich` at release **`v1.2.0-beta`** (2026-10-26); an earlier reading was
-at `v1.1.2-beta` (2026-10-19). This table records **provenance**, not a build instruction.
+Read from `ufal/atrium-nlp-enrich` at release **`v1.3.0-beta`** (2026-10-29); earlier readings were
+at `v1.2.0-beta` (2026-10-26) and `v1.1.2-beta` (2026-10-19). This table records **provenance**, not a build instruction.
 
 | Source                                                                                                                                                                              | What was taken from it                                                                                                |
 |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|

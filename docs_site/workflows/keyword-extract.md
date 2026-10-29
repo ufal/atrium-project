@@ -127,8 +127,8 @@ output is still research output.
 
 ## Sources
 
-Read from `ufal/atrium-keyword-extract` at release **`v1.5.1-beta`** (2026-10-27); an earlier reading
-was at `v1.4.0-beta` (2026-10-19). The statistical methods of `atrium-nlp-enrich` and the controlled
+Read from `ufal/atrium-keyword-extract` at release **`v1.6.0-beta`** (2026-10-29); earlier readings
+were at `v1.5.1-beta` (2026-10-27) and `v1.4.0-beta` (2026-10-19). The statistical methods of `atrium-nlp-enrich` and the controlled
 kind and vocabulary build of `atrium-llm-enrich` have moved into it. This table records
 **provenance**, not a build instruction.
 

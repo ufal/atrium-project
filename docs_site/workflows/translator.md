@@ -100,7 +100,7 @@ refers to it.
 ## Provenance and licence
 
 Each run writes `<stamp>_translator.json`, the paradata log; the service returns the same
-provenance in its response instead of writing a file. The paradata lists the components the run
+provenance, with the same keys since v1.7.0-beta, in its response instead of writing a file. The paradata lists the components the run
 actually used, each with its licence or terms, as declared in the tool's `para_config.txt`:
 
 | Component                                                         | Licence                   | Used when                                                   |
@@ -166,9 +166,9 @@ seven above. Related records: LINDAT Translation, UDPipe.
 
 ## Sources
 
-Read from `ufal/atrium-translator` at release **`v1.6.1-beta`** (2026-10-28; its code is that of
-`v1.6.0-beta`, whose images were published without a release) and from this site's translator
-section; an earlier reading was at `v1.5.0-beta` (2026-10-19). The licence table follows the
+Read from `ufal/atrium-translator` at release **`v1.7.0-beta`** (2026-10-29) and from this site's
+translator section; earlier readings were at `v1.6.1-beta` (2026-10-28; the code of `v1.6.0-beta`, whose
+images were published without a release) and `v1.5.0-beta` (2026-10-19). The licence table follows the
 `para_config.txt` of that release. This table records **provenance**, not a build instruction.
 
 | Source                                                                                                                                                                                                                       | What was taken from it                                                                         |

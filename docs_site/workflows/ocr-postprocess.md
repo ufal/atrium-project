@@ -143,8 +143,8 @@ page texts and line tables of the ALTO samples — under CC BY-NC 4.0.
 
 ## Sources
 
-Read from `ufal/atrium-ocr-postprocess` at release **`v1.13.1-beta`** (2026-10-27); an earlier reading
-was at `v1.12.0-beta` (2026-10-16). The repository continues `ufal/atrium-alto-postprocess`, archived on
+Read from `ufal/atrium-ocr-postprocess` at release **`v1.15.0-beta`** (2026-10-29); earlier readings
+were at `v1.13.1-beta` (2026-10-27) and `v1.12.0-beta` (2026-10-16). The repository continues `ufal/atrium-alto-postprocess`, archived on
 2026-10-19. This table records **provenance**, not a build instruction.
 
 | Source                                                                                                                                                      | What was taken from it                                                                                               |
@@ -157,6 +157,6 @@ was at `v1.12.0-beta` (2026-10-16). The repository continues `ufal/atrium-alto-p
 | `setup/para_config.txt`, `para_licenses.py`, `setup/config.txt` § `[PIPELINE]`                                                                              | the licence components, their ranking, the default extraction method                                                 |
 | `Dockerfile`, `docker-compose.gpu.yml`                                                                                                                      | the images, their CPU build, the model inside them                                                                   |
 | `data_samples/README.md`, `data_samples/LICENSE`                                                                                                            | test data                                                                                                            |
-| `CITATION.cff`, `CONTRIBUTING.md` release rows v1.5.1-beta to v1.13.1-beta; `docs/usage.md` (what differs between the command line and the service)         | the release and its date, what changed since the last reading                                                        |
+| `CITATION.cff`, `CONTRIBUTING.md` release rows v1.5.1-beta to v1.15.0-beta; `docs/usage.md` (what differs between the command line and the service)         | the release and its date, what changed since the last reading                                                        |
 | SSH Open Marketplace `YParYU`                                                                                                                               | the record identifier                                                                                                |
 | `usegalaxy-eu/usegalaxy-eu-tools`; `galaxyproject/tools-iuc`; `bgruening/galaxytools`                                                                       | the Galaxy datatypes and analogues                                                                                   |
