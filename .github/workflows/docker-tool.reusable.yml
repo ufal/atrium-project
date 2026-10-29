@@ -778,6 +778,7 @@ jobs:
       # as scanning `:latest` from security.reusable.yml did (#18); that workflow keeps the weekly
       # `:latest` re-scan, for newly disclosed CVEs.
       - name: Trivy scan the published digest
+        id: scan
         # SHA-pinned (#18) — this is the action whose tags were force-pushed to
         # malware in 2026-03 (GHSA-69fq-xp46-6x23); see security.reusable.yml for
         # the full note. Dereferenced commit of the annotated tag v0.36.0.
@@ -790,6 +791,27 @@ jobs:
           ignore-unfixed: true
           # Report-only ON PURPOSE: the full CRITICAL+HIGH picture reaches code scanning on every
           # build, even for a blocked release; the blocking decision is the narrower step below.
+          exit-code: "0"
+        # Report-only, so a failure here is Trivy failing to run, in practice its DB download
+        # (mirror.gcr.io answered 404 on 2026-10-26). The next step retries once from ghcr.io and
+        # is not continue-on-error, so an outage of both still fails. The gate below reads the DB
+        # this step or the retry left on disk. History:
+        # docs/decisions/docker-tool-reusable.md#trivy-db-retry
+        # ci-optional: the next step retries once from ghcr.io, without continue-on-error
+        continue-on-error: true
+
+      - name: Trivy scan the published digest (retry from ghcr.io after a DB download failure)
+        if: steps.scan.outcome == 'failure'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
+        env:
+          TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db:2
+          TRIVY_JAVA_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-java-db:1
+        with:
+          image-ref: ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}@${{ steps.build.outputs.digest }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
           exit-code: "0"
 
       - name: Upload SARIF to code scanning

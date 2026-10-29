@@ -509,6 +509,25 @@ Above "Trivy scan the published digest" (#18, the 2026-07-29 audit), and on its 
 > decision is a separate, narrower step below. Keeping them apart means a
 > blocked release still records its findings.
 
+### Trivy DB retry
+
+Added 2026-10-29 ([#72](https://github.com/ufal/atrium-project/issues/72)), on "Trivy scan the published digest"
+here and on the weekly scan in `security.reusable.yml`.
+
+On 2026-10-26 the weekly scan failed in digital-convert and keyword-extract before it scanned anything: Trivy
+0.70 (the one `trivy-action` v0.36.0 installs) asked `mirror.gcr.io/aquasec/trivy-db:2` for its vulnerability
+DB and got `404 Not Found` on a layer. Trivy lists `ghcr.io/aquasecurity/trivy-db:2` as a second source, but it
+moves on only after an error it counts as temporary (a 429 or 5xx), and a 404 is not one, so the run stopped. The
+publishing job downloads the same DB, after the images are pushed: the same outage during a tag would fail the
+release.
+
+Both scans are report-only (`exit-code: "0"`), so their failure means Trivy did not run. Each is now
+`continue-on-error` and followed by one retry that names `ghcr.io` as the only source (`TRIVY_DB_REPOSITORY`,
+`TRIVY_JAVA_DB_REPOSITORY`), a different registry from the mirror. The retry is not `continue-on-error`, so an
+outage of both still fails the job, as the Buildx boot retry does. The CVE release gate needs no retry of its
+own: it reads the DB the scan or its retry left on disk, fresh, without a download.
+`tests/test_trivy_db_retry.py` holds both workflows to this shape.
+
 ### The CVE release gate
 
 Above "Fail the release on fixable CRITICAL vulnerabilities" (#18, 2026-07-31).

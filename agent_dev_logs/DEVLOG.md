@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `test` = `9a08026` = `v1` (2026-10-28; the tools still pinned to `18f0668` until the sweep); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-29, at the end of the file (this file is not in date order): six pilot candidates after a case-by-case comparison of each tool's entry points._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `v1` = `9a08026` (2026-10-28; the tools still pinned to `18f0668` until the sweep); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-29 (noon), at the end of the file (this file is not in date order): the six pilot tags, the para-drift cause and a Trivy DB retry._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -2803,3 +2803,20 @@ Against `test` `a38ae4d` and every `agent-skill` head of 12:29–12:53 (the roun
   `AttributeError` on a baseline whose `pages` is not a list (left for after the tags).
 - **Order:** the pin sweep to `v1` = `9a08026` first (para-drift red in all six since 10-28), then the release
   commits and the tags. Plans and digests 72 and 77 updated; a #77 comment drafted.
+
+## 2026-10-29 (noon) — The six pilot tags; para-drift and a Trivy DB retry
+
+- **Tagged 11:41–11:54 UTC**, the `test` heads equal to the prepared commits. Released: nlp-enrich `v1.3.0-beta`
+  (11:48), translator `v1.7.0-beta` (11:50), page-classification `v1.12.0-beta` (12:00), digital-convert
+  `v1.4.0-beta` (12:01), ocr-postprocess `v1.15.0-beta` (12:07), keyword-extract `v1.6.0-beta` last (its three
+  images). Each release carries `images.json` (two images each; keyword-extract three); `runbook_check.py --ref`
+  passes on all six tags. Nothing of the follow-up below needs a tag.
+- **Red on every push, in all six: Paradata Canonical Drift.** The pin sweep had not been run, so the callers still
+  pass `hub-ref: 18f0668` and para-drift compares the re-vendored `atrium_rocrate.py` and its test with that commit.
+  It does not block a release. The sweep moves the pins to the commit `v1` points to after this hub change.
+- **The weekly Security scans of 10-26 (digital-convert, keyword-extract) failed** on Trivy's DB download:
+  `mirror.gcr.io` answered 404, and Trivy tries its second source only after an error it counts as temporary. The
+  release job makes the same download after its images are pushed. Both report-only scans
+  (`docker-tool.reusable.yml`, `security.reusable.yml`) now retry once from `ghcr.io`; the retry is not
+  `continue-on-error`, and the CVE release gate reads the DB already on disk. Recorded in
+  `docs/decisions/docker-tool-reusable.md` ("Trivy DB retry"); `tests/test_trivy_db_retry.py` holds the shape.
