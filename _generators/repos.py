@@ -48,7 +48,7 @@ REPOS = [
         "docs_path": "workflows/ocr-postprocess/",
         "stage": 2,
         "default_branch": "master",
-        "title": "OCR Output Postprocessing Pipeline",
+        "title": "OCR text lines sorted into five quality categories",
         "subtitle": "split · stats · extract · classify · aggregate",
         "tagline": "Post-processing of OCR output — ALTO XML, and also PAGE XML, hOCR, PDF, office and "
         "text files — into extracted text and a scored line-quality table, plus per-page ALTO.",

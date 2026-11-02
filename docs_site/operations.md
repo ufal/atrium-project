@@ -200,11 +200,10 @@ classifier, or a large ALTO file through the translator's per-chunk LINDAT calls
 
     * **Memory.** Light — one FastText language-identification model. The work is remote.
     * **Egress.** The LINDAT translation API, **one retried call per text chunk** (4,000 characters);
-      `huggingface.co` once at start for FastText; LINDAT's UDPipe only when a vocabulary is loaded;
-      `LLM_BASE_URL` when the `openai_compatible` backend is selected. In an egress-restricted
-      cluster, expect `/ready` to answer 200 while `/health?deep=true` reports the FastText download
-      failure; `source_lang=auto` then falls back to each element's language label and the default
-      source language (`cs`) instead of detecting.
+      LINDAT's UDPipe only when a vocabulary is loaded; `LLM_BASE_URL` when the `openai_compatible`
+      backend is selected. The image carries the FastText model (`/opt/models/fasttext-lid.bin`,
+      checked by its SHA-256 at build time), so it never calls `huggingface.co`; only a checkout
+      downloads the model on first use.
     * **Limits.** `MAX_UPLOAD_MB` defaults to **50**, because ALTO goes in and ALTO comes out;
       set it explicitly when deploying from the shared template, whose example value is lower.
 

@@ -164,6 +164,12 @@ in the hub. The cross-service operator reference is the hub's `docs/k8s_deployme
 <2–6 sentences: what the endpoint drives internally, concurrency and timeout
 behaviour, provenance (paradata) if actually written>
 
+## Shutdown behaviour
+
+<optional: what SIGTERM does — `/ready` flips to 503, new work is refused with 503, uvicorn drains
+in-flight requests for `GRACEFUL_SHUTDOWN_S`, background jobs that are lost. Leave the section out if the
+service has nothing beyond the shared behaviour.>
+
 ## Frontend(s)
 
 <where mounted, what they demonstrate; every frontend carries the API footer

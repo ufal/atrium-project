@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `v1` = `b07090f` (2026-10-29); the six tools are pinned to it, and the `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-11-02, at the end of the file (this file is not in date order): #6, flexiconv MIT, the classifiers CC BY-NC 4.0, the calculated licence out of the docs._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `v1` = `b07090f` (2026-10-29); the six tools are pinned to it, and the `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-11-02 (evening), at the end of the file (this file is not in date order): #79 phase F's tool round prepared; the 11-02 CI failures read._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -2917,3 +2917,21 @@ Against `test` `a38ae4d` and every `agent-skill` head of 12:29–12:53 (the roun
   not in this round.
 - **#6 records:** the export takes the five comments of 10-29 to 10-30; digest and plan refreshed.
 - **Checks:** `mkdocs build --strict`; `docs_check` 7/7; `runbook_check` 6/6.
+
+## 2026-11-02 (evening) — #79 phase F's tool round; the 11-02 CI failures read
+
+- **#79, F3–F7 in the six tools** (prepared, not pushed): README openings of 70–79 words, "What you need", maps by
+  reader; runbooks in the template's order with "At a glance"; usage pages by task; "In short" on every evaluation
+  and decision page; one working-records pointer per tool. Map: `plans/79.F-relocation_map.md`.
+- **Hub:** the glossary takes 14 terms (59 in all); `development-history.md` links each tool's working-records
+  section; the runbook template's optional "Shutdown behaviour"; the ocr-postprocess landing title;
+  `operations.md`'s translator egress (the image carries FastText).
+- **CI on the 11-02 `test` heads:** ocr-postprocess, nlp-enrich, translator and the hub green. digital-convert's
+  para-drift red: `ADOPTED` still named nlp-enrich `477f68c` (fixed: `ba81709`, `v1.3.2-beta`). page-classification's
+  api smoke test: the service answers nothing until its five models are downloaded and warm, and a slow download
+  passed the 270 s health budget (re-run; a lasting fix needs `/health` during warm-up or a cached model volume).
+  keyword-extract's `llm` build-and-push hit the 45-minute job limit during Trivy (re-run; the `test` run of 10-29
+  took 31 minutes).
+- **Checks:** `docs_check` 7/7, `runbook_check` 6/6, `mkdocs build --strict`, the six suites unchanged, the anchored
+  links between the repositories (68) resolve.
+- Plans and digests 79 updated.

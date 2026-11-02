@@ -138,15 +138,15 @@ Each repository keeps the maintainers' working records in its `agent_dev_logs/` 
   register `digests/57.findings.md`: every finding round 6 removed from this site, by owning
   repository, with a status.
 
-| Repository                   | Working records                                                                                  |
-|------------------------------|--------------------------------------------------------------------------------------------------|
-| `atrium-project` (hub)       | [`agent_dev_logs/`](https://github.com/ufal/atrium-project/tree/test/agent_dev_logs)             |
-| `atrium-page-classification` | [`agent_dev_logs/`](https://github.com/ufal/atrium-page-classification/tree/test/agent_dev_logs) |
-| `atrium-ocr-postprocess`     | [`agent_dev_logs/`](https://github.com/ufal/atrium-ocr-postprocess/tree/test/agent_dev_logs)     |
-| `atrium-translator`          | [`agent_dev_logs/`](https://github.com/ufal/atrium-translator/tree/test/agent_dev_logs)          |
-| `atrium-nlp-enrich`          | [`agent_dev_logs/`](https://github.com/ufal/atrium-nlp-enrich/tree/test/agent_dev_logs)          |
-| `atrium-keyword-extract`     | [`agent_dev_logs/`](https://github.com/ufal/atrium-keyword-extract/tree/test/agent_dev_logs)     |
-| `atrium-digital-convert`     | [`agent_dev_logs/`](https://github.com/ufal/atrium-digital-convert/tree/test/agent_dev_logs)     |
+| Repository                   | Working records                                                                                  | Described in                                                                                                              |
+|------------------------------|--------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| `atrium-project` (hub)       | [`agent_dev_logs/`](https://github.com/ufal/atrium-project/tree/test/agent_dev_logs)             | this page                                                                                                                 |
+| `atrium-page-classification` | [`agent_dev_logs/`](https://github.com/ufal/atrium-page-classification/tree/test/agent_dev_logs) | [`docs/development.md`](https://github.com/ufal/atrium-page-classification/blob/test/docs/development.md#working-records) |
+| `atrium-ocr-postprocess`     | [`agent_dev_logs/`](https://github.com/ufal/atrium-ocr-postprocess/tree/test/agent_dev_logs)     | [`docs/development.md`](https://github.com/ufal/atrium-ocr-postprocess/blob/test/docs/development.md#working-records)     |
+| `atrium-translator`          | [`agent_dev_logs/`](https://github.com/ufal/atrium-translator/tree/test/agent_dev_logs)          | [`docs/development.md`](https://github.com/ufal/atrium-translator/blob/test/docs/development.md#working-records)          |
+| `atrium-nlp-enrich`          | [`agent_dev_logs/`](https://github.com/ufal/atrium-nlp-enrich/tree/test/agent_dev_logs)          | [`docs/development.md`](https://github.com/ufal/atrium-nlp-enrich/blob/test/docs/development.md#working-records)          |
+| `atrium-keyword-extract`     | [`agent_dev_logs/`](https://github.com/ufal/atrium-keyword-extract/tree/test/agent_dev_logs)     | [`docs/development.md`](https://github.com/ufal/atrium-keyword-extract/blob/test/docs/development.md#working-records)     |
+| `atrium-digital-convert`     | [`agent_dev_logs/`](https://github.com/ufal/atrium-digital-convert/tree/test/agent_dev_logs)     | [`docs/development.md`](https://github.com/ufal/atrium-digital-convert/blob/test/docs/development.md#working-records)     |
 
 **This is the hub's only page that points to them.** Every other hub page cites the issue instead,
 and in each tool `docs/development.md` plays the same part
