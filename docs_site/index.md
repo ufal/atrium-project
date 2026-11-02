@@ -151,7 +151,7 @@ text, the translation reference, the entities and the keywords. It also records 
 version and with which components, wrote each part. See [The document contract](ecosystem/document-contract.md).
 
 **One hub.** `atrium-project` holds the code every tool shares: the record, the paradata, the licence
-rules, the vocabulary and the service contract. It hands out identical copies of that code, runs the
+catalogue, the vocabulary and the service contract. It hands out identical copies of that code, runs the
 checks every tool calls, and runs the end-to-end test of all the tools together. See
 [Architecture](ecosystem/architecture.md).
 

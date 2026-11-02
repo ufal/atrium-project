@@ -230,9 +230,9 @@ fetched live from the API and composed as `<src>-<tgt>`; the endpoint is attacha
 
 **Licence.** CUBBITT's models are **CC BY-NC-SA 4.0**, and the service is offered under
 [LINDAT's terms of use](https://lindat.mff.cuni.cz/en/terms-of-use). A default translator run lists
-CUBBITT, so its computed licence label is CC BY-NC-SA 4.0 — see
-[translator → Licence](https://github.com/ufal/atrium-translator/blob/test/docs/reference/licences.md#what-a-run-records). The label is
-not the licence of the translation ([Licences and paradata](ecosystem/licences.md)).
+CUBBITT with both — see
+[translator → Licence](https://github.com/ufal/atrium-translator/blob/test/docs/reference/licences.md#what-a-run-records). Neither is
+the licence of the translation ([Licences and paradata](ecosystem/licences.md)).
 
 **Onward:** <https://lindat.mff.cuni.cz/services/translation/>
 
@@ -285,8 +285,7 @@ computes the evaluation reports.
 
 **Worth knowing.** Ultralytics distributes its package and base weights under AGPL-3.0.
 `para_config.txt` declares it as the conditional component `ultralytics`, and `run.py` logs it on
-every `--yolo` run, so a `--yolo` inference run's computed licence label is AGPL-3.0; with
-`--train`, the computation ranks the dataset's CC BY-NC 4.0 above it. The `transformers<5` pin lives in
+every `--yolo` run, so a `--yolo` run lists it with AGPL-3.0. The `transformers<5` pin lives in
 `setup/requirements.txt` only — `service/requirements.txt` deliberately leaves the model stack out,
 and the image installs both files.
 
@@ -310,7 +309,7 @@ different model.
 **Worth knowing.** CT2's default compute type is `int8`, which runs on every device; a compute
 type the device cannot run is refused before the model loads, with the list of valid ones. The model
 licence listed follows `CT2_MODEL_FAMILY`; NLLB's is non-commercial. An LLM run lists the
-provider's terms, which the label computation does not recognise; see [SPDX and Creative
+provider's terms of use, which are not a licence; see [SPDX and Creative
 Commons](#spdx-and-creative-commons).
 
 **Onward:** <https://opennmt.net/CTranslate2/> · <https://huggingface.co/utter-project> ·
@@ -570,31 +569,19 @@ passed. Both tools list `jsonschema` among their requirements.
 here; their building blocks are BY (attribution), NC (non-commercial) and SA (share-alike).
 
 **Where ATRIUM uses it.** The paradata lists every component a run used with its licence, as an
-SPDX identifier or a display name. From that list, `para_licenses.py`, vendored into every tool,
-computes one label, the most restrictive licence on this scale. The label is a warning, not the
-licence of the output ([Licences and paradata](ecosystem/licences.md)):
-
-| Rank | Licences                                 |
-|------|------------------------------------------|
-| 0    | Public Domain, CC0                       |
-| 1    | MIT, Apache-2.0, BSD-3-Clause, CC BY 4.0 |
-| 2    | MPL 2.0                                  |
-| 3    | LGPL-3.0, CC BY-SA 4.0                   |
-| 4    | GPL-3.0, AGPL-3.0                        |
-| 5    | CC BY-NC 4.0, glm-4                      |
-| 6    | CC BY-NC-SA 4.0                          |
+SPDX identifier or a display name; `para_licenses.py`, vendored into every tool, normalises the
+names. The module also still writes an older calculated field; it is not a licence and is not to be
+used ([an old field to ignore](ecosystem/licences.md#an-old-field-to-ignore)).
 
 **Worth knowing.**
 
 * The keys mix SPDX identifiers with display names. **SPDX spellings** resolve through the alias
   table (`CC0-1.0`, `CC-BY-SA-4.0`, the `-only` / `-or-later` GPL forms), and every catalogued key
   also resolves in any casing (`bsd-3-clause`, `lgpl-3.0`).
-* An unrecognised licence is treated as the most restrictive, and so **becomes the run's computed
-  label**: its raw string, an empty URL, **both** the non-commercial and share-alike flags set,
-  and a warning in the notes. The translator's `llm_api = LLM provider ToS` is unrecognised on
-  purpose, so a run on the LLM back-end gets that string as its label; a component missing from
-  `para_config.txt` is logged as `UNKNOWN` and resolves the same way.
-* A run that logs no component at all falls back conservatively to CC BY-NC 4.0.
+* A licence the module does not recognise is kept as its raw string, with an empty URL and a
+  warning in the notes. The translator's `llm_api = LLM provider ToS` is unrecognised on purpose:
+  a provider's terms of use are not a licence. A component missing from `para_config.txt` is logged
+  as `UNKNOWN`.
 
 **Onward:** <https://spdx.org/licenses/> · <https://creativecommons.org/licenses/>
 
@@ -761,8 +748,8 @@ every published image. It replaced a separate SBOM job that could race the image
 
 vLLM and Ollama (servers for running large language models locally) belong to keyword-extract (the controlled kind);
 alto-tools (ALTO utilities, vendored as `alto_tools.py`) to ocr-postprocess. flexiconv (UFAL's
-converter of PDF, DOCX, PAGE XML, hOCR, … into TEITOK; GPL-3.0-or-later, optional, pinned at
-v0.3.10) belongs to nlp-enrich, whose `api_flexiconv.sh` runs it on the command line only — no
+converter of PDF, DOCX, PAGE XML, hOCR, … into TEITOK; MIT, optional, pinned at
+v0.3.11) belongs to nlp-enrich, whose `api_flexiconv.sh` runs it on the command line only — no
 service image contains it; digital-convert vendors the same adapter.
 
 ## The ATRIUM project itself

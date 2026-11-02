@@ -80,7 +80,7 @@ flowchart LR
   `/ready`, drains in-flight requests on SIGTERM, and returns the updated record in the
   response when one is sent in.
 * **Paradata** — a JSON file per run: tool version, run id, configuration, statistics, and
-  the licence the run resolved to from the components it actually used.
+  the components it actually used, each with its licence.
 * **An Agent Skill** on a separate `agent-skill` branch wraps the service for coding agents;
   see [Agent skills](../agent-skills.md).
 
@@ -99,7 +99,7 @@ its destination in a tool repository, and whether it has a `--selftest` that CI 
 | `atrium_document.schema.json`               | `atrium_document.schema.json`               |          | its JSON Schema                                                                            |
 | `atrium_document.schema.doc-schema-v1.json` | `atrium_document.schema.doc-schema-v1.json` |          | the same schema frozen as tag `doc-schema-v1`; never edited                                |
 | `atrium_paradata.py`                        | `atrium_paradata.py`                        |          | the per-run paradata logger                                                                |
-| `para_licenses.py`                          | `para_licenses.py`                          |          | licence normalisation and most-restrictive merging                                         |
+| `para_licenses.py`                          | `para_licenses.py`                          |          | licence normalisation and merging of the component lists                                   |
 | `atrium_vocab.py`                           | `atrium_vocab.py`                           | ✓        | the SKOS controlled-label registry                                                         |
 | `atrium_vocab.schema.json`                  | `atrium_vocab.schema.json`                  |          | schema for the registry's JSON-LD export                                                   |
 | `atrium_rocrate.py`                         | `atrium_rocrate.py`                         | ✓        | the RO-Crate exporter                                                                      |

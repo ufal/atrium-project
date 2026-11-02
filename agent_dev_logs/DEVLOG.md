@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `v1` = `b07090f` (2026-10-29); the six tools are pinned to it, and the `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-10-29 (evening), at the end of the file (this file is not in date order): the shared fix for a record that cannot be added to, six patch releases prepared, #72 and #67 ready to close._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `v1` = `b07090f` (2026-10-29); the six tools are pinned to it, and the `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-11-02, at the end of the file (this file is not in date order): #6, flexiconv MIT, the classifiers CC BY-NC 4.0, the calculated licence out of the docs._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -2900,3 +2900,20 @@ Against `test` `a38ae4d` and every `agent-skill` head of 12:29–12:53 (the roun
     pre-commit on the changed files in all seven;
   - `revendor_shared.sh --check`: 145 copies in parity; the pins are stale until the move.
 - Plans and digests 4, 6, 17, 40, 67, 72, 77, 79 and 81 updated.
+
+## 2026-11-02 — #6: flexiconv is MIT; motyc's 10-29 answers applied in config and docs
+
+- **flexiconv:** its LICENSE is MIT (`1aed8ca`, 10-29), first tagged in v0.3.11 (`50937b9`, 10-31); its
+  `pyproject.toml` still says GPL-3.0-or-later (raised on ufal/flexiconv#1). nlp-enrich and digital-convert pin
+  v0.3.11 and declare it MIT; `external-tools.md` and `workflows/nlp-enrich.md` follow.
+- **page-classification:** `vit_models` is CC BY-NC 4.0 (motyc: "MIT is software licence … it needs to stay
+  CC BY-NC 4.0"); `workflows/page-classification.md` and the document contract's example follow.
+- **The calculated licence (motyc: "Even a warning can be missleading"):** `ecosystem/licences.md` replaces "The
+  licence the tools compute, and what it is not" with a short "An old field to ignore"; the field is named there
+  only. `document-contract.md`, `external-tools.md` (CUBBITT, Ultralytics, back-ends, SPDX: the rank table goes),
+  `pipelines.md`, `contracts/rocrate.md`, `architecture.md`, `index.md` and the seven workflow pages list
+  components instead. `#what-changes` and `#what-a-run-records` keep their headings.
+- **Proposal:** point 2 records option 1, chosen 10-29. The code (crate root, `license_basis`, paradata 3.0) is
+  not in this round.
+- **#6 records:** the export takes the five comments of 10-29 to 10-30; digest and plan refreshed.
+- **Checks:** `mkdocs build --strict`; `docs_check` 7/7; `runbook_check` 6/6.

@@ -117,14 +117,13 @@ actually used, each with its licence or terms, as declared in the tool's `para_c
 | Opus-MT (`opus_mt`)                                               | CC BY 4.0                 | a `ct2` Opus-MT model                                       |
 
 A hosted language-model API is recorded with its provider's terms of service (`LLM provider ToS`).
-The paradata's computed label, the most restrictive of the licences listed, treats terms it does not
-know as the most restrictive. The label is not the licence of the output: [Licences and paradata](../ecosystem/licences.md).
+None of these licences or terms is the licence of the output: [Licences and paradata](../ecosystem/licences.md).
 
 **A run with only permissive components** needs both: a self-hosted model under a permissive licence and the source
 language named explicitly. The recommended model is Qwen3.8-27B through `openai_compatible`,
 recorded with `LLM_LICENSE_COMPONENT=qwen3_8`; a `ct2` model of the EuroLLM, MADLAD-400 or
 Opus-MT family also qualifies. The AMČR and TEATER vocabularies are CC0 and do not stand in its
-way. How the label is computed is on
+way. What a run lists is on
 [Reference → Licence](https://github.com/ufal/atrium-translator/blob/test/docs/reference/licences.md#what-a-run-records).
 
 In the [document record](../ecosystem/document-contract.md) the tool owns the `translations`

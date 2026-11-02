@@ -44,8 +44,9 @@ A short explanation for readers outside the project is on the documentation site
    to meet both, put to motyc on #6: (a) the root's `license` names a contextual entity `#no-licence-asserted`
    ("No licence asserted"; its description says the rights depend on the source and on AMČR's permission),
    which asserts nothing and keeps the crate valid; (b) leave it out and accept the validator's error for
-   standalone crates. Until he answers, `atrium_rocrate` keeps writing the calculated label. A fragment,
-   which AMČR embeds under its own root, is not affected.
+   standalone crates. **Answered on #6, 2026-10-29: (a)**, by motyc and K4TEL; `atrium_rocrate` keeps writing
+   the calculated label until the change is made. A fragment, which AMČR embeds under its own root, is not
+   affected.
 3. **The policy:** AMČR defines it; ÚFAL provides the schema, the reference implementation and examples. External
    processing is also allowed or refused **per document** (aiscr-webamcr#2590), and a missing authorisation
    refuses it.

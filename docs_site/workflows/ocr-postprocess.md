@@ -17,7 +17,7 @@ under the new name, with its code, its pipeline and its categories unchanged.
 
 !!! info "Scope"
     This page gives the **stable core** of the workflow: its purpose, its steps, the formats
-    it reads and writes, and the licence floor of its output. The rules that decide a line's
+    it reads and writes, and the licences of the components it uses. The rules that decide a line's
     category, their thresholds and the options of each step are documented with the code —
     in the tool's [README](https://github.com/ufal/atrium-ocr-postprocess#readme) and
     [`docs/categorization_logic.md`](https://github.com/ufal/atrium-ocr-postprocess/blob/master/docs/categorization_logic.md) —
@@ -96,8 +96,8 @@ is used on every run. The layout-aware reading-order model (LayoutLMv3-based, CC
 the batch pipeline's default method for ALTO, and the service orders ALTO uploads with it unless
 a request asks for ALTO's own order (`reading_order=alto`, since v1.13.0-beta). The
 GLM method uses the GLM-4 model, whose licence is also non-commercial; the other models and
-readers are permissive. The computed label in the paradata, the most restrictive of these
-licences, is not the licence of the output: [Licences and paradata](../ecosystem/licences.md).
+readers are permissive. None of these licences is the licence of the output:
+[Licences and paradata](../ecosystem/licences.md).
 
 In the [document record](../ecosystem/document-contract.md) the tool originates the positional
 text layer of a scanned document: the `pages`, `content`, `lines` and `tables` blocks. Its
@@ -149,7 +149,7 @@ were at `v1.13.1-beta` (2026-10-27) and `v1.12.0-beta` (2026-10-16). The reposit
 
 | Source                                                                                                                                                      | What was taken from it                                                                                               |
 |-------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| `README.md` §§ intro, Setup, Workflow Stages, Steps 1–4, API Service Integration, Paradata logging, Output licensing, Document record schema, Vendored code | purpose, the step order, the categories, the outputs, the licence floor, the record blocks                           |
+| `README.md` §§ intro, Setup, Workflow Stages, Steps 1–4, API Service Integration, Paradata logging, Output licensing, Document record schema, Vendored code | purpose, the step order, the categories, the outputs, the component licences, the record blocks                      |
 | `docs/text_inputs.md`; `docs/categorization_logic.md` §§ Who runs it, CPU Pre-filter, Foreign-language lines                                                | the input formats; the pre-filter, what the service does differently, the known limits                               |
 | `service/README.md`, `service/text_api.py`, `service/text_inference.py`, `record_scoring.py`, `score_record.py`                                             | the HTTP service, its two endpoints, the OCR hand-off, the scoring of a record; the command line that scores records |
 | `text_util.py` (`calculate_perplexity_batch`), `tool_limits.py`                                                                                             | perplexity in batches, the out-of-memory retry, `PPL_BATCH_LINES`                                                    |

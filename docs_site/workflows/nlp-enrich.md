@@ -15,7 +15,7 @@ authored: true
 
 !!! info "Scope"
     This page gives the **stable core** of the workflow: its purpose, its steps, the formats
-    it reads and writes, and the licence floor of its output. The details of the TEITOK output,
+    it reads and writes, and the licences of the components it uses. The details of the TEITOK output,
     and the named-entity model in use are documented with the code — in
     the tool's [README](https://github.com/ufal/atrium-nlp-enrich#readme) and
     [`schemas/teitok/README.md`](https://github.com/ufal/atrium-nlp-enrich/blob/master/schemas/teitok/README.md) —
@@ -88,9 +88,8 @@ Over HTTP the run's provenance comes back with the answer, as a Process Run Crat
 (`paradata`). The paradata lists the components a run used, each with its licence, as declared
 in the tool's `para_config.txt`. Every core run uses the UDPipe 2 and NameTag 3 models
 (CC BY-NC-SA 4.0) through the LINDAT services, under LINDAT's terms of use; the optional stage
-declares its own component (the format converter, GPL-3.0). The paradata's computed label is
-therefore CC BY-NC-SA 4.0 for every core run. It is not the licence of the annotations: how the
-models' licence and the services' terms bear on the output is an open question
+declares its own component (the format converter flexiconv, MIT). None of these is the licence of
+the annotations: how the models' licence and the services' terms bear on the output is an open question
 ([#78](https://github.com/ufal/atrium-project/issues/78), [#6](https://github.com/ufal/atrium-project/issues/6));
 see [Licences and paradata](../ecosystem/licences.md).
 

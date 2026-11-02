@@ -18,7 +18,7 @@ its own name, and the keyword extraction that llm-enrich also did moved to
 
 !!! info "Scope"
     This page gives the **stable core** of the workflow: its purpose, its steps, the formats
-    it reads and writes, and the licence floor of its output. The converter's engines and
+    it reads and writes, and the licences of the components it uses. The converter's engines and
     options, the rules that route a page, and the service's limits and settings with their
     defaults are documented with the code — in the tool's
     [README](https://github.com/ufal/atrium-digital-convert#readme), whose documentation map leads to its usage, configuration
@@ -68,10 +68,10 @@ names the file it read, with its digest, the seed when one was sent, and the rec
 wrote; `/describe` adds each stage's own paradata. On the command line, `--paradata-dir` writes a
 paradata log (JSON). The paradata lists the components that ran, each with its licence, as
 declared in the tool's `para_config.txt`: with the default engine, permissively licensed libraries
-only, so the computed label is MIT, and the layout-model engine keeps it there. LibreOffice is
-declared but left out of the label: it changes the container of a text it does not author, and the
-conversion is reported beside the record instead. The label is not the licence of the output: the
-source document's own rights apply to its text ([Licences and paradata](../ecosystem/licences.md)).
+only, and the layout-model engine adds only permissive ones. LibreOffice is declared but not logged:
+it changes the container of a text it does not author, and the conversion is reported beside the
+record instead. None of these licences is the licence of the output: the source document's own
+rights apply to its text ([Licences and paradata](../ecosystem/licences.md)).
 
 In the [document record](../ecosystem/document-contract.md) the tool is one of the two
 originators of the positional layer — `pages`, `content`, `lines` and `tables` — for a

@@ -10,8 +10,8 @@ authored: true
 # Workflows
 
 One page per tool, telling its workflow from beginning to end: what it is for, each step with
-the formats that go in and come out, what the user ends up with, what licence that result
-carries, and where the same workflow is published on other platforms.
+the formats that go in and come out, what the user ends up with, the licences of the components
+it uses, and where the same workflow is published on other platforms.
 
 [Pipelines](../pipelines.md) shows how the tools connect to each other. These pages take one
 tool at a time and describe it the way a person using only that tool meets it.
@@ -40,8 +40,8 @@ next.
 
 1. **Purpose** — what the workflow is for, in one paragraph.
 2. **At a glance** — inputs and outputs with their formats, the ways the tool runs, the
-   hardware it needs, what it reaches over the network, the licence of the code and the rule
-   for the licence of the output.
+   hardware it needs, what it reaches over the network, the licence of the code and of the
+   components it uses.
 3. **Steps** — numbered. Each step says what happens, what goes in and what comes out (with
    formats), and the research activity it performs, named with the
    [TaDiRAH](../external-tools.md#tadirah) terms the SSH Open Marketplace uses.
@@ -49,8 +49,8 @@ next.
 5. **Limits** — what follows from how the tool works. Nothing here describes the state of
    work in progress.
 6. **Provenance and licence** — the paradata log every run writes, the block the tool owns in
-   the [document record](../ecosystem/document-contract.md), and how the licence of a run is
-   computed.
+   the [document record](../ecosystem/document-contract.md), and the components a run lists
+   with their licences.
 7. **Where it sits** — the cross-tool workflows on [Pipelines](../pipelines.md) the tool takes
    part in, and its step in the AMČR chain.
 8. **On other platforms** — its SSH Open Marketplace records and a Galaxy sheet: the Galaxy
@@ -65,7 +65,7 @@ settled: page-classification and the translator.
 
 **Stable-core** narratives are written for tools whose rules, defaults or inputs change from
 release to release: ocr-postprocess, nlp-enrich, keyword-extract and digital-convert. They give the purpose, the order of
-the steps, the formats, the licence floor and the records, and leave out thresholds, default
+the steps, the formats, the component licences and the records, and leave out thresholds, default
 models and options that are not part of a release. Each says so in a *Scope* box at the top,
 and links to the tool's README for the rest. A full narrative replaces the stable core once
 the workflow has settled.
@@ -111,7 +111,7 @@ Galaxy](../external-tools.md#galaxy) explains the Galaxy terms.
 * **When a step, a format or a licence component changes** — the narrative first, then the
   matching step of the SSH Open Marketplace record, then the Galaxy workflow's annotation.
 * **Licence rows** always come from the tool's `para_config.txt`, the machine-readable
-  declaration each run's licence is computed from.
+  declaration of the components each run lists.
 
 ## Sources
 

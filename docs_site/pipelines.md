@@ -84,8 +84,8 @@ flowchart LR
 
 Each stage takes `--document-json` in, writes **only the block it owns**, deep-copies
 everything else, and stamps `assembled.blocks[<block>]` with its `program`, `run_id` and
-`paradata_ref`. Licences are merged through `para_licenses`, so the record carries the
-resolved licence of the whole chain rather than of the last writer.
+`paradata_ref`. The component lists are merged through `para_licenses`, so the record lists
+what the whole chain used rather than what the last writer used.
 
 ```mermaid
 flowchart LR
@@ -320,10 +320,9 @@ which every protected term carries its agreed rendering.
 **What the user actually gets.** Consistent terminology across every translated document, with
 a count of protected terms per document in the paradata, and a glossary whose every row points
 back at the thesaurus concept it came from. Both vocabularies are **CC0** (the AMČR rights holder's
-statement of 28 September 2026, atrium-project#6), so they never raise the run's computed licence
-label: a LINDAT run's label is **CC BY-NC-SA 4.0**, set by CUBBITT and the UDPipe models, and a run
-on a permissively licensed self-hosted model with a named source language gets that model's licence
-as its label. The label is not the licence of the translation ([Licences and paradata](ecosystem/licences.md)).
+statement of 28 September 2026, atrium-project#6). A LINDAT run also lists CUBBITT and the UDPipe
+models, both **CC BY-NC-SA 4.0**; a run on a self-hosted model lists that model's licence instead of
+CUBBITT's. None of these is the licence of the translation ([Licences and paradata](ecosystem/licences.md)).
 
 **Worth knowing.** The same Czech label can recur across AMCR's keyword lists, so the number
 of pairs is smaller than the number of AMCR records. The glossary is written in the five-column
@@ -362,8 +361,7 @@ label list from the sorted sub-directory names. Optionally an explicit folds CSV
    published models' *probabilities* at inference time. These are different operations.
 
 **Outputs.** Model weights, `{stamp}_{rev}_FOLD_{n}_DATASETS.txt` recording the split
-actually used, evaluation CSVs, confusion matrices, and paradata whose resolved licence is
-**CC BY-NC 4.0** rather than MIT — because training logs the LINDAT dataset, which
+actually used, evaluation CSVs, confusion matrices, and paradata that lists the LINDAT dataset, which
 `setup/para_config.txt` declares as CC BY-NC 4.0.
 
 **What the user actually gets.** A reproducible model. The fold rule
@@ -449,8 +447,8 @@ sorted and byte-stable, written atomically. A run crate holds one sub-crate per 
 `--fragment` writes a record's entities without a root, for a crate someone else owns.
 
 **What the user actually gets.** A catalogue-readable description with a separate creator and date
-for every block, so "who classified the pages" and "who translated them" have separate answers,
-and the record's computed licence. Per-page detail — which page carries which category, the
+for every block, so "who classified the pages" and "who translated them" have separate answers.
+Per-page detail — which page carries which category, the
 language pair of a translation — stays in the record, which can travel inside the crate. The full
 mapping is under
 [RO-Crate export → What happens to these two tools' blocks](contracts/rocrate.md#what-happens-to-these-two-tools-blocks).

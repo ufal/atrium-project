@@ -28,7 +28,7 @@ every tool writes the record the same way; what differs is which calls each tool
 |--------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
 | `schema_version`, `record_type`, `doc_id`                                                                                                  | identity — `record_type` is `atrium-document`, or `atrium-document-merged` for a merge of parallel branches     |
 | `source`                                                                                                                                   | the original input: its identifier, checksum and how it was acquired (`source.origin`)                          |
-| `provenance`                                                                                                                               | `contributors[]` — every run that wrote to it — and a computed licence label (see below), not a licence         |
+| `provenance`                                                                                                                               | `contributors[]` — every run that wrote to it — and the components each run used, with their licences (below)   |
 | `assembled`                                                                                                                                | one **stamp** per block: who wrote it last, in which run                                                        |
 | `page_categories`, `pages`, `content`, `lines`, `tables`, `quality_summary`, `entities`, `translations`, `enrichment`, `keywords`, `forms` | the tool blocks — one authorised writer each, see [Repository map](repository-map.md#who-may-write-which-block) |
 | `derived_from`                                                                                                                             | references to **persistent** outputs a stage produced                                                           |
@@ -88,7 +88,7 @@ The rules are the hub's; the right-hand columns show how each tool applies them.
 | **2 · Own block only**              | `set_block("page_categories", …)` **merged with the baseline's categories** — page keys from an earlier run survive — plus a keyed `merge_block("pages", …)` restricted to `category` and `category_confidence` | `set_block("translations", …)` and `add_derived_from("translated_xml", …)`                                                                                                  |
 | **3 · No baseline → own part only** | derives `doc_id` from the filename: a trailing `-N` or `_N` is the page, the rest is the document (`scan_0007.png` → document `scan`, page `"7"`); no suffix means page `1`, with a warning                     | **inherits `doc_id` from the baseline** — its input is a page, `<doc>-1.alto.xml`, so deriving it would re-key the document — and derives it only when there is no baseline |
 | **4 · Per-block provenance**        | stamps `page_categories`, `pages`, and `derived_from` when it records a result table                                                                                                                            | stamps `translations` and `derived_from`                                                                                                                                    |
-| **5 · Licences accrete**            | contributes its paradata licence block; see below                                                                                                                                                               | contributes its paradata licence block; see below                                                                                                                           |
+| **5 · Licences accrete**            | contributes the components its run used; see below                                                                                                                                                              | contributes the components its run used; see below                                                                                                                          |
 | **6 · Unknown blocks preserved**    | ✓ through the shared module                                                                                                                                                                                     | ✓ through the shared module                                                                                                                                                 |
 
 <a id="how-the-records-licence-is-computed"></a>
@@ -96,21 +96,18 @@ The rules are the hub's; the right-hand columns show how each tool applies them.
 ### What the record says about licences
 
 Each run adds to the record the list of components it used (models, data, vocabularies, services),
-each with its own licence or terms of use, as its paradata recorded them. From all the lists so far,
-the shared `para_licenses` module computes one label, the most restrictive licence among them, and
-writes it as `provenance.license`. `provenance.license_detail` keeps the lists the label came from.
+each with its own licence or terms of use, as its paradata recorded them. `provenance.license_detail`
+keeps the lists. A component's licence does not become the licence of what the component produced,
+and the rights in a record depend first on the source document: [Licences and paradata](licences.md)
+explains this in plain words ([#6](https://github.com/ufal/atrium-project/issues/6)).
 
-**The label is not the licence of the record or of anything in it.** A component's licence does not
-become the licence of what the component produced, and the rights in a record depend first on the
-source document. [Licences and paradata](licences.md) explains this in plain words, and what is
-proposed instead ([#6](https://github.com/ufal/atrium-project/issues/6)). Until that changes, read
-`provenance.license` as "the most restrictive licence among the components used".
+`provenance.license` and `license_url` beside it are an older calculated field, not a licence; do not
+use them ([an old field to ignore](licences.md#an-old-field-to-ignore)).
 
-For the two tools of this page: a page-classification inference run lists `vit_models` (MIT) as its
-only always-used component (the training dataset counts only for `--train`, which writes no record).
-A translator run with the default backend and vocabulary lists CUBBITT, UDPipe, AMČR and TEATER; with
-the UDPipe models under CC BY-NC-SA 4.0, the label reads CC BY-NC-SA 4.0. A record with no component
-list at all gets the fallback label CC BY-NC 4.0, and `provenance.license_note` says so.
+For the two tools of this page: a page-classification inference run lists `vit_models` (CC BY-NC 4.0)
+as its only always-used component (the training dataset counts only for `--train`, which writes no
+record). A translator run with the default backend and vocabulary lists CUBBITT, UDPipe, AMČR and
+TEATER, with the UDPipe models under CC BY-NC-SA 4.0.
 
 ### What the references point at
 
@@ -150,12 +147,12 @@ baseline):
   "record_type": "atrium-document",
   "doc_id": "CTX000000003",
   "provenance": {
-    "license": "MIT",
-    "license_url": "https://opensource.org/license/mit/",
+    "license": "CC BY-NC 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-nc/4.0/",
     "license_detail": {
-      "effective_license": "MIT",
+      "effective_license": "CC BY-NC 4.0",
       "determined_by": ["vit_models"],
-      "components": [{"name": "vit_models", "license": "MIT", "rank": 1}],
+      "components": [{"name": "vit_models", "license": "CC BY-NC 4.0", "rank": 5}],
       "…": "…"
     },
     "contributors": [{
@@ -196,7 +193,7 @@ Then the **translator** takes that record as `--document-json` and writes:
 
 `page_categories` and `pages` pass through untouched (rule 2); the translator adds its
 blocks, its stamps and itself to `contributors[]`, and its component list joins
-page-classification's in the label `provenance.license` (rule 5). The values in
+page-classification's in `provenance.license_detail` (rule 5). The values in
 `page_categories` are the [eleven labels](https://github.com/ufal/atrium-page-classification/blob/test/docs/reference/categories.md#definitions).
 
 ## How paradata accumulates

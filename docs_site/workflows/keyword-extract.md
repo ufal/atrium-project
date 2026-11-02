@@ -18,7 +18,7 @@ keywords of [nlp-enrich](nlp-enrich.md) and the vocabulary-controlled keywords o
 
 !!! info "Scope"
     This page gives the **stable core** of the workflow: its purpose, its steps, the formats
-    it reads and writes, and the licence floor of its output. The methods' options, the
+    it reads and writes, and the licences of the components it uses. The methods' options, the
     models and the prompts are documented with the code — in the tool's
     [README](https://github.com/ufal/atrium-keyword-extract#readme), whose documentation map leads to its usage, how-it-works
     and reference pages, and its
@@ -84,8 +84,8 @@ vocabulary build they used. The statistical methods differ: the legacy method us
 standard library, KeyBERT is MIT and loads a sentence-transformers model (Apache-2.0), and YAKE
 is AGPL-3.0; a run that selects YAKE lists it. The vocabularies are CC0. The language model is not
 in that list: its own licence or its provider's terms apply to the controlled kind, and every
-controlled run records the model's id. The paradata's computed label, the most restrictive of the
-licences listed, is not the licence of the output: [Licences and paradata](../ecosystem/licences.md).
+controlled run records the model's id. None of these licences is the licence of the output:
+[Licences and paradata](../ecosystem/licences.md).
 
 In the [document record](../ecosystem/document-contract.md) the tool is the successor of
 llm-enrich as a writer: the contract lets it write the `enrichment` and `forms` blocks and
