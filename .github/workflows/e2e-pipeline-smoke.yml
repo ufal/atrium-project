@@ -327,6 +327,10 @@ jobs:
       # image is a warning, and an error on the scheduled run.
       - name: Keyword Extract (statistical kind)
         id: kw_statistical
+        env:
+          # The warm-up downloads the KeyBERT model from the Hub, as Stage 1 does its model: the
+          # optional token raises the anonymous rate limit there too.
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           IMAGE="ghcr.io/ufal/atrium-keyword-extract-api:${{ inputs.image-tag || 'latest' }}"
           if ! docker pull "$IMAGE"; then
@@ -338,7 +342,7 @@ jobs:
             echo "**Skipped:** $IMAGE is not published yet (keyword-extract's first release or first test push); the keyword step is skipped." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          CID=$(docker run -d -e PORT=8080 -p 8080:8080 "$IMAGE")
+          CID=$(docker run -d -e PORT=8080 -e HF_TOKEN -p 8080:8080 "$IMAGE")
           trap 'docker logs "$CID" | tail -40; docker rm -f "$CID" >/dev/null 2>&1' EXIT
           # /ready is 503 until the startup warm-up has loaded the KeyBERT model (a first-run download).
           for _ in $(seq 1 150); do

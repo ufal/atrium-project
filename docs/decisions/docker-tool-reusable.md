@@ -204,6 +204,22 @@ On the `load: true` of the "Smoke Build" step (issue #55; roadmap B9 and H8).
 > roadmap B9 recorded that no Dockerfile ENTRYPOINT was exercised anywhere in
 > CI. `load` is a no-op cost for targets not in probe-targets.
 
+### Build cache
+
+Added 2026-11-03, on the `cache-from`/`cache-to` of "Smoke Build" and "Build and push".
+
+Until then both builds used `type=gha` with no scope and `mode=max`. With no scope, Buildx keeps one cache entry
+(`buildkit`) per repository, and every target of both jobs wrote to it, each export replacing the last. A build
+therefore rarely found its own layers: the smoke build passes no build-args, the push passes the
+`ATRIUM_RUNNER_*` ones, and the Dockerfiles set those as `ENV` above `apt-get upgrade` on purpose (a release tag
+rebuilds from there). `mode=max` also exported every intermediate layer. On 2026-11-02 keyword-extract's `llm`
+build missed the cache and then spent 2182 s exporting it, and the job ran 44 minutes.
+
+Each build now has its own scope, `<target>-smoke` or `<target>-push`. The GitHub Actions cache belongs to one
+repository, so the target and the job are enough. A `test` push passes the same build-args every time and finds
+the previous push's layers. `mode=min` exports only the final image's layers. `ignore-error=true` keeps a slow
+or failed export from failing a build that succeeded.
+
 ### Shared model cache
 
 The step "Share one model cache across the probe containers", and the page-classification tag that
@@ -370,6 +386,11 @@ The step "Run container with LOG_LEVEL=WARNING and assert INFO is suppressed (is
 > Deliberately no request/SIGTERM battery here — that behaviour is not
 > LOG_LEVEL-dependent and is already covered by the step above. Reaching
 > `healthy` is enough exposure for startup/warmup logging to have run.
+
+On 2026-11-03 the check was widened to uvicorn's own format (`INFO:     …`). It had matched only the services'
+format, so it printed "confirmed: no INFO record" above uvicorn's start-up lines and the access log of the
+HEALTHCHECK's requests. No service passed `log_level` to `uvicorn.run()`; all six now pass the level the
+entrypoint configured.
 
 ## The build-and-push job
 

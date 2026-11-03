@@ -348,8 +348,15 @@ jobs:
           # start it. Single-platform, as every ATRIUM image is linux/amd64 (roadmap H8).
           load: true
           tags: atrium-smoke/${{ inputs.image-name }}:${{ matrix.target }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # One cache per target and leg. Unscoped, every target and both legs wrote one shared
+          # `buildkit` entry, each overwriting the last, so a build rarely found its own layers;
+          # `mode=max` also exported every intermediate layer (keyword-extract's `llm` target spent
+          # 2182 s on that export on 2026-11-02). The GitHub Actions cache is per repository, so
+          # the target and the leg are enough. `mode=min` exports the final image's layers;
+          # `ignore-error` keeps a failed export from failing the build. History:
+          # docs/decisions/docker-tool-reusable.md#build-cache
+          cache-from: type=gha,scope=${{ matrix.target }}-smoke
+          cache-to: type=gha,scope=${{ matrix.target }}-smoke,mode=min,ignore-error=true
 
       - name: The probed image carries no forbidden package (atrium-project#72)
         # "No production image depends on the undeclared AGPL dependency" (#72), checked in the
@@ -665,13 +672,16 @@ jobs:
           fi
           echo "container is healthy"
 
-          if docker logs "$cid" 2>&1 | grep -qE '^[0-9-]+ [0-9:,]+ INFO [^ ]+ '; then
-            echo "an INFO-level record reached stdout with LOG_LEVEL=WARNING set (issue #61)" >&2
-            echo "-- LOG_LEVEL is read but not honoured; startup/warmup logging is not" >&2
-            echo "routed through the level the entrypoint configured" >&2
+          # Two formats: the service's own records, and uvicorn's (`INFO:     …`: its start-up
+          # lines and the access log of the HEALTHCHECK's own requests). The first alone passed
+          # while uvicorn logged INFO, because uvicorn.run() was not given LOG_LEVEL.
+          if docker logs "$cid" 2>&1 | grep -E '^[0-9-]+ [0-9:,]+ INFO [^ ]+ |^INFO: '; then
+            echo "an INFO-level record (above) reached stdout with LOG_LEVEL=WARNING set (issue #61)" >&2
+            echo "-- LOG_LEVEL is read but not honoured: the service's logging or uvicorn.run(log_level=…)" >&2
+            echo "does not use the level the entrypoint configured" >&2
             exit 1
           fi
-          echo "confirmed: no INFO record reaches stdout with LOG_LEVEL=WARNING"
+          echo "confirmed: no INFO record, the service's or uvicorn's, reaches stdout with LOG_LEVEL=WARNING"
 
   build-and-push:
     needs: [test, docker-build-smoke]
@@ -766,8 +776,11 @@ jobs:
             ATRIUM_RUNNER_REPO=https://github.com/${{ github.repository }}
             ATRIUM_RUNNER_REF=${{ github.ref_name }}
             ATRIUM_RUNNER_IMAGE=ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}:${{ steps.meta-release.outputs.version || steps.meta-immutable.outputs.version }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Its own cache scope, apart from the smoke leg: this build passes the build-args above,
+          # which a `test` push keeps the same from push to push. A version tag changes
+          # ATRIUM_RUNNER_REF and so rebuilds from the apt-upgrade layer, as the Dockerfiles intend.
+          cache-from: type=gha,scope=${{ matrix.target }}-push
+          cache-to: type=gha,scope=${{ matrix.target }}-push,mode=min,ignore-error=true
           # SBOM and provenance attestations, pushed with the image to the registry, where
           # `docker buildx imagetools inspect`, cosign and syft read them (#18).
           sbom: true
@@ -784,6 +797,9 @@ jobs:
         # the full note. Dereferenced commit of the annotated tag v0.36.0.
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
+          # Trivy itself: the action installs 0.70.0 by default, and that Trivy logged "Version
+          # 0.76.1 of Trivy is now available" on every scan (2026-11-02).
+          version: v0.76.1
           image-ref: ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}@${{ steps.build.outputs.digest }}
           format: sarif
           output: trivy-results.sarif
@@ -807,12 +823,49 @@ jobs:
           TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db:2
           TRIVY_JAVA_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-java-db:1
         with:
+          version: v0.76.1   # as on the first scan
           image-ref: ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}@${{ steps.build.outputs.digest }}
           format: sarif
           output: trivy-results.sarif
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           exit-code: "0"
+
+      - name: Count CRITICAL and HIGH findings in the job summary (report-only)
+        # The scan's findings otherwise reach only code scanning. Trivy's SARIF holds every
+        # severity whatever `severity:` says ("Building SARIF report with all severities"), so this
+        # counts each result by its rule's severity tag. Never fails the job.
+        if: always() && hashFiles('trivy-results.sarif') != ''
+        env:
+          IMAGE_REF: ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}@${{ steps.build.outputs.digest }}
+        run: |
+          python3 - <<'PY'
+          import collections, json, os
+
+          counts = collections.Counter()
+          with open("trivy-results.sarif", encoding="utf-8") as fh:
+              sarif = json.load(fh)
+          for run in sarif.get("runs", []):
+              severity = {}
+              for rule in run.get("tool", {}).get("driver", {}).get("rules", []):
+                  tags = rule.get("properties", {}).get("tags", [])
+                  severity[rule.get("id")] = next((t for t in tags if t in ("CRITICAL", "HIGH")), "other")
+              for result in run.get("results", []):
+                  counts[severity.get(result.get("ruleId"), "other")] += 1
+          lines = [
+              f"### Trivy: `{os.environ['IMAGE_REF']}`",
+              "",
+              "| Severity | Fixable findings |",
+              "|----------|------------------|",
+              f"| CRITICAL | {counts['CRITICAL']} |",
+              f"| HIGH     | {counts['HIGH']} |",
+              "",
+              "Report-only; the list is in code scanning.",
+          ]
+          print("\n".join(lines))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
+              fh.write("\n".join(lines) + "\n")
+          PY
 
       - name: Upload SARIF to code scanning
         # Distinct category per matrix target, otherwise multi-target repos
@@ -831,6 +884,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
+          version: v0.76.1   # as on the first scan
           image-ref: ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}@${{ steps.build.outputs.digest }}
           format: table   # human-readable in the log, so the failure explains itself
           severity: CRITICAL

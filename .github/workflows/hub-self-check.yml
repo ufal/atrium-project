@@ -64,6 +64,24 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          # History and tags: tests/test_schema_freeze_records.py checks each frozen schema
+          # against its release tag, and skipped in the default shallow, tagless checkout.
+          fetch-depth: 0
+
+      # The tool repositories beside the hub, where every ÚFAL working copy has them: 21 tests
+      # check them (their hub-reusable callers and pins, image declarations, .env.example tables,
+      # the oasdiff version their release workflows install) and skipped without them. Their
+      # `test` heads: a hub change the tools have not followed yet fails here, which is the sign
+      # not to move `v1` yet.
+      - name: Check out the six tool repositories beside the hub (their test heads)
+        working-directory: ..
+        run: |
+          set -euo pipefail
+          for repo in atrium-page-classification atrium-ocr-postprocess atrium-digital-convert \
+                      atrium-nlp-enrich atrium-keyword-extract atrium-translator; do
+            git clone --quiet --depth 1 --branch test "https://github.com/ufal/${repo}.git" "${repo}"
+          done
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -84,7 +102,7 @@ jobs:
       # nothing to do with it never ran either. Landed red on 2026-08-06 (run
       # 31115978804) for exactly this.
       #
-      # fastapi, httpx and python-multipart: tests/test_atrium_service.py opens with
+      # fastapi, httpx2 and python-multipart: tests/test_atrium_service.py opens with
       # `pytest.importorskip("fastapi")`, so without them every test of the canonical
       # atrium_service.py -- the #55 lifecycle and, since #53, the harmonised error body
       # and the /info limits contract -- was SKIPPED here, green, testing nothing.
@@ -94,8 +112,15 @@ jobs:
       # (atrium-project#32 round 2): the gen-3 atrium_service.py tests assert the shape of the
       # OpenAPI document those two generate, and each repo's committed service/openapi.json is
       # a function of both. openapi-spec-validator validates the documents the tests build.
-      - name: Install pytest, jsonschema, PyYAML and the FastAPI test stack
-        run: pip install pytest jsonschema PyYAML fastapi==0.141.1 pydantic==2.13.5 httpx python-multipart openapi-spec-validator
+      # httpx2, not httpx: starlette's TestClient takes it when installed (httpx is deprecated
+      # there), and nothing here imports httpx itself.
+      #
+      # ruff, at the version the tools' pre-commit runs: tests/test_shared_manifest.py checks the
+      # shared ruff.toml with it and skipped its second half without it.
+      - name: Install pytest, jsonschema, PyYAML, ruff and the FastAPI test stack
+        run: >-
+          pip install pytest jsonschema PyYAML ruff==0.15.18 fastapi==0.141.1 pydantic==2.13.5 httpx2
+          python-multipart openapi-spec-validator
 
       # tests/test_atrium_openapi.py checks atrium_openapi.py's breaking-change rules against
       # the REAL oasdiff (the severity levels it raises, the anyOf-null normalisation) and
@@ -126,12 +151,13 @@ jobs:
       # test_document_originators.py, so this step is now what stops a
       # regression in _assert_origin_consistent() passing Hub Self-Check and
       # propagating to five repos on the next `v1` move — the hole G6 named.
+      # -rs: every skip, with its reason, so a test that stops running shows in the log.
       - name: Run release-gate tests
-        run: python -m pytest tests/ -v
+        run: python -m pytest tests/ -v -rs
 
       - name: Run canonical shared-module tests
         working-directory: docs/templates/shared
-        run: python -m pytest . -v
+        run: python -m pytest . -v -rs
 
   # atrium-project#71: the crates atrium_rocrate.py writes, checked by the RO-Crate validator
   # against the pair agreed with AMČR (RO-Crate 1.2, Process Run Crate 0.5), each profile in its

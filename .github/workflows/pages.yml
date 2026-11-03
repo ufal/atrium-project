@@ -126,17 +126,17 @@ jobs:
           mkdocs gh-deploy --force --no-history
 
       - name: Where the site went
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          DEPLOYED: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         run: |
           {
             echo "### Documentation site"
             echo
-            echo "Built from \`docs_site/\` and pushed to \`gh-pages\`."
-            echo
-            echo "It serves at <https://ufal.github.io/atrium-project/> once an owner"
-            echo "points Settings → Pages at \`gh-pages\` / \`/ (root)\`."
-            echo
-            echo "Until that Pages source change is made, the repository's existing"
-            echo "Pages configuration remains \`main\` / \`/docs\` with Jekyll."
-            echo "See \`PAGES_SETUP.md\`."
+            if [ "$DEPLOYED" = "true" ]; then
+              echo "Built from \`docs_site/\` with \`--strict\` and pushed to \`gh-pages\`, which serves"
+              echo "<https://ufal.github.io/atrium-project/>."
+            else
+              echo "Built from \`docs_site/\` with \`--strict\` and not deployed: only a push to"
+              echo "\`main\` deploys. This run checks that the site still builds."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"

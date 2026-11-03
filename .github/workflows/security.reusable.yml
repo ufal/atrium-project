@@ -109,6 +109,9 @@ jobs:
         # why workflow-lint.yml now checks it on every push rather than by hand.
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
+          # Trivy itself: the action installs 0.70.0 by default, and that Trivy logged "Version
+          # 0.76.1 of Trivy is now available" on every scan (2026-11-02).
+          version: v0.76.1
           image-ref: ${{ inputs.image-ref }}
           format: sarif
           output: trivy-results.sarif
@@ -129,12 +132,49 @@ jobs:
           TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db:2
           TRIVY_JAVA_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-java-db:1
         with:
+          version: v0.76.1   # as on the first scan
           image-ref: ${{ inputs.image-ref }}
           format: sarif
           output: trivy-results.sarif
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           exit-code: "0"
+
+      - name: Count CRITICAL and HIGH findings in the job summary (report-only)
+        # The scan's findings otherwise reach only code scanning. Trivy's SARIF holds every
+        # severity whatever `severity:` says ("Building SARIF report with all severities"), so this
+        # counts each result by its rule's severity tag. Never fails the job.
+        if: always() && hashFiles('trivy-results.sarif') != ''
+        env:
+          IMAGE_REF: ${{ inputs.image-ref }}
+        run: |
+          python3 - <<'PY'
+          import collections, json, os
+
+          counts = collections.Counter()
+          with open("trivy-results.sarif", encoding="utf-8") as fh:
+              sarif = json.load(fh)
+          for run in sarif.get("runs", []):
+              severity = {}
+              for rule in run.get("tool", {}).get("driver", {}).get("rules", []):
+                  tags = rule.get("properties", {}).get("tags", [])
+                  severity[rule.get("id")] = next((t for t in tags if t in ("CRITICAL", "HIGH")), "other")
+              for result in run.get("results", []):
+                  counts[severity.get(result.get("ruleId"), "other")] += 1
+          lines = [
+              f"### Trivy: `{os.environ['IMAGE_REF']}`",
+              "",
+              "| Severity | Fixable findings |",
+              "|----------|------------------|",
+              f"| CRITICAL | {counts['CRITICAL']} |",
+              f"| HIGH     | {counts['HIGH']} |",
+              "",
+              "Report-only; the list is in code scanning.",
+          ]
+          print("\n".join(lines))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
+              fh.write("\n".join(lines) + "\n")
+          PY
 
       - name: Upload SARIF to code scanning
         uses: github/codeql-action/upload-sarif@v4   # Node 24; v3 deprecates Dec 2026

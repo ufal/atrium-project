@@ -2935,3 +2935,47 @@ Against `test` `a38ae4d` and every `agent-skill` head of 12:29–12:53 (the roun
 - **Checks:** `docs_check` 7/7, `runbook_check` 6/6, `mkdocs build --strict`, the six suites unchanged, the anchored
   links between the repositories (68) resolve.
 - Plans and digests 79 updated.
+
+## 2026-11-03 — What the green runs on the 11-02 `test` heads hid; CI fixes in the hub and the six tools
+
+Every run on the seven `test` heads (hub `bd475e6`) was green. Their logs showed what the green hid. Prepared, not
+pushed.
+
+- **Hub workflows:**
+  - **`docker-tool.reusable.yml`, build cache:** each target and job has its own cache scope, `mode=min`,
+    `ignore-error`. Unscoped, every build overwrote one shared entry; keyword-extract's `llm` build missed it and
+    spent 2182 s exporting it (11-02).
+  - **The `LOG_LEVEL=WARNING` probe** also fails on uvicorn's `INFO:` lines. It printed "confirmed: no INFO record"
+    above them, in all six.
+  - **Trivy:** 0.76.1 instead of the action's 0.70.0, in both reusables. The CRITICAL and HIGH counts now reach the
+    job summary (report-only).
+  - **`hub-self-check.yml`:** full history with tags, the six tools' `test` heads cloned beside the hub, `ruff` and
+    `httpx2`, `-rs`. 21 release-gate tests had skipped on every run.
+  - **Smaller:**
+    - CodeQL extracts with Python 3.11;
+    - the E2E keyword step gets `HF_TOKEN`;
+    - `pages.yml` reports a build-only run as one, and its deployed text no longer says Pages is unset.
+  - **Records:** `ci_policy.md` rows; `decisions/docker-tool-reusable.md` § Build cache and § Log level suppression.
+- **Tools** (each one's DEVLOG has the detail):
+  - **All six:** uvicorn gets the configured log level.
+  - **page-classification:**
+    - the CLI checks an AMČR seed against the seed profile; the full schema had demoted its own output check on every pilot run;
+    - `/health` answers while the models load;
+    - `v4.3.1` resolves to RegNetY.
+  - **Tests that ran in no lane now run:**
+    - ocr-postprocess: 6, placeholder modules;
+    - nlp-enrich: 1, a module-level skip;
+    - keyword-extract: `llm_run`, gated on the optional pysqlite3.
+  - **Also:** `ruff-check`; `httpx2`; the weekly scans target `-api`; scheduled lanes install what their tests need.
+- **Checks:**
+  - **Suites:** the six suites pass (page-classification 830, +7; nlp-enrich +1; the rest unchanged without torch).
+    With torch: page-classification 921 passed (coverage 71.7 %), ocr-postprocess 2318, keyword-extract's LLM tests 68.
+  - **Hub:** 600 passed with the six beside it; with tags, the tag test passes too. `workflow_lint` OK.
+  - **Docs:** `docs_check` 7/7, `runbook_check` 6/6.
+  - **Log level:** dc, kw, nlp, translator and pc started with `LOG_LEVEL=WARNING` log no INFO line, in either format; ocr passes WARNING to uvicorn.
+  - **page-classification start-up:** `/health` 200 at 11 s, `/ready` 503 during warm-up, exit 1.25 s after SIGTERM.
+- **Yours:**
+  1. merge digital-convert `test` into `main` (its para-drift there still runs `055cc21`);
+  2. push the tools, then the hub; move `v1`; re-pin with `pin_hub_reusables.py --sha`. The probe's stricter grep needs the tools' uvicorn fix first;
+  3. `CODECOV_TOKEN` is empty in all six;
+  4. Dependabot has not run in digital-convert since 10-18, and never in ocr-postprocess.

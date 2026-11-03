@@ -27,7 +27,7 @@ on:
         type: string
         default: python
       python-version:
-        description: "Unused by build-mode:none; reserved so callers need not change shape if a build mode is ever added."
+        description: "The Python CodeQL extracts with (the tools' version), set up before CodeQL starts."
         required: false
         type: string
         default: "3.11"
@@ -44,6 +44,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+
+      # Without it CodeQL extracted with the runner's own Python (3.14) and warned "Failed to find
+      # dynload path"; the tools run on 3.11. No dependencies are installed: build-mode none.
+      - name: Set up Python
+        if: inputs.language == 'python'
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ inputs.python-version }}
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
