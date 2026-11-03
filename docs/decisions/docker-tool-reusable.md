@@ -220,6 +220,14 @@ repository, so the target and the job are enough. A `test` push passes the same 
 the previous push's layers. `mode=min` exports only the final image's layers. `ignore-error=true` keeps a slow
 or failed export from failing a build that succeeded.
 
+The first runs with these scopes (the six releases of 2026-11-03) showed that a tag build can never reuse one. A
+run restores caches only from its own ref and from the default branch, and the default branches build no image
+(their Docker runs stop after the test job). Each tag build still exported a cache that no run could read:
+keyword-extract's `llm` took 374 s, translator's api 295 s, ocr-postprocess's base 170 s. These exports also went
+into the repository's 10 GB, where they could evict the `test` caches that are reused. Since then both builds pass
+no cache on a tag (`startsWith(github.ref, 'refs/tags/')`; a release event's ref is its tag too).
+`tests/test_build_cache_and_scan_summary.py` holds both rules.
+
 ### Shared model cache
 
 The step "Share one model cache across the probe containers", and the page-classification tag that

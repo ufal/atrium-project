@@ -143,15 +143,22 @@ jobs:
       - name: Count CRITICAL and HIGH findings in the job summary (report-only)
         # The scan's findings otherwise reach only code scanning. Trivy's SARIF holds every
         # severity whatever `severity:` says ("Building SARIF report with all severities"), so this
-        # counts each result by its rule's severity tag. Never fails the job.
+        # counts each result by its rule's severity tag, then lists the CRITICAL and HIGH ones
+        # (ID, package, installed and fixed version; the first 20). Never fails the job.
         if: always() && hashFiles('trivy-results.sarif') != ''
         env:
           IMAGE_REF: ${{ inputs.image-ref }}
         run: |
           python3 - <<'PY'
-          import collections, json, os
+          import collections, json, os, re
+
+          def field(text, name):
+              # Trivy writes each finding's message as "Package: …", "Installed Version: …", … lines.
+              match = re.search(rf"^{name}: (.+)$", text, re.M)
+              return match.group(1).strip() if match else "?"
 
           counts = collections.Counter()
+          found = []
           with open("trivy-results.sarif", encoding="utf-8") as fh:
               sarif = json.load(fh)
           for run in sarif.get("runs", []):
@@ -160,7 +167,13 @@ jobs:
                   tags = rule.get("properties", {}).get("tags", [])
                   severity[rule.get("id")] = next((t for t in tags if t in ("CRITICAL", "HIGH")), "other")
               for result in run.get("results", []):
-                  counts[severity.get(result.get("ruleId"), "other")] += 1
+                  level = severity.get(result.get("ruleId"), "other")
+                  counts[level] += 1
+                  if level != "other":
+                      text = result.get("message", {}).get("text", "")
+                      found.append((level, result.get("ruleId", "?"), field(text, "Package"),
+                                    field(text, "Installed Version"), field(text, "Fixed Version")))
+          found.sort(key=lambda f: (f[0] != "CRITICAL", f[2], f[1]))
           lines = [
               f"### Trivy: `{os.environ['IMAGE_REF']}`",
               "",
@@ -168,9 +181,13 @@ jobs:
               "|----------|------------------|",
               f"| CRITICAL | {counts['CRITICAL']} |",
               f"| HIGH     | {counts['HIGH']} |",
-              "",
-              "Report-only; the list is in code scanning.",
           ]
+          if found:
+              lines += ["", "| Severity | ID | Package | Installed | Fixed in |", "|---|---|---|---|---|"]
+              lines += [f"| {s} | {i} | `{p}` | {v} | {fx} |" for s, i, p, v, fx in found[:20]]
+              if len(found) > 20:
+                  lines += ["", f"{len(found) - 20} more in code scanning."]
+          lines += ["", "Report-only; every finding is also in code scanning."]
           print("\n".join(lines))
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
               fh.write("\n".join(lines) + "\n")

@@ -2995,3 +2995,31 @@ pushed.
   - nlp-enrich v1.3.2-beta, the release digital-convert's `ADOPTED` names;
   - keyword-extract v1.6.2-beta;
   - translator v1.7.2-beta.
+
+## 2026-11-03 (evening) — The releases' runs read; no build cache on tags, and the scan summary lists findings
+
+The six releases and the pin move to `6a10787` landed as prepared. Every run since 15:30Z is green but one:
+- the stricter LOG_LEVEL probe passes in all six;
+- Trivy is 0.76.1;
+- CRITICAL is 0 everywhere;
+- digital-convert's `main` para-drift is green.
+
+- **keyword-extract `test`:** `build-and-push (llm)` failed on a read timeout from `download-r2.pytorch.org` (25.7
+  of 196.2 MB of the CPU torch wheel). The tag's release run succeeded. Fixed in the three Dockerfiles that download
+  torch there (keyword-extract, ocr-postprocess, page-classification): `PIP_DEFAULT_TIMEOUT=60` and
+  `PIP_RESUME_RETRIES=5`.
+- **Build cache, `docker-tool.reusable.yml`:** none on a tag. A tag run restores only its own ref's caches and the
+  default branch's, and neither holds these, so each tag build exported minutes of cache that no run could read
+  (keyword-extract `llm` 374 s). The `test` scopes are reused from the next push on.
+  History: `decisions/docker-tool-reusable.md` § Build cache.
+- **Scan summary:** the count step in both reusables also lists each CRITICAL and HIGH finding (ID, package,
+  installed, fixed; the first 20). The first runs counted HIGH 5 in page-classification and ocr-postprocess and 2
+  in the other four, without saying which.
+- **New test:** `tests/test_build_cache_and_scan_summary.py` checks both build caches (scoped, off on tags) and runs
+  the summary script, the same in both reusables, on a Trivy-shaped SARIF.
+- **nlp-enrich v1.3.2-beta** was tagged on `af74dea`, before its pin commit `17bbf81`, so it was built with the old
+  pin `439488bb`. Its CONTRIBUTING row says so now, and its release notes need the same edit.
+- **Yours after this commit:**
+  - move `v1` to it;
+  - run the pin sweep with its SHA;
+  - merge page-classification `test` → `master`.

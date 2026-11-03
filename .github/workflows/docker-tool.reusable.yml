@@ -353,10 +353,13 @@ jobs:
           # `mode=max` also exported every intermediate layer (keyword-extract's `llm` target spent
           # 2182 s on that export on 2026-11-02). The GitHub Actions cache is per repository, so
           # the target and the leg are enough. `mode=min` exports the final image's layers;
-          # `ignore-error` keeps a failed export from failing the build. History:
-          # docs/decisions/docker-tool-reusable.md#build-cache
-          cache-from: type=gha,scope=${{ matrix.target }}-smoke
-          cache-to: type=gha,scope=${{ matrix.target }}-smoke,mode=min,ignore-error=true
+          # `ignore-error` keeps a failed export from failing the build.
+          # No cache on a tag (a release event's ref is its tag too): a run restores caches only from
+          # its own ref and the default branch, and neither holds these, since default-branch runs
+          # build no image. A tag build would pay minutes exporting a cache no run can read, into
+          # the repository's 10 GB. History: docs/decisions/docker-tool-reusable.md#build-cache
+          cache-from: ${{ !startsWith(github.ref, 'refs/tags/') && format('type=gha,scope={0}-smoke', matrix.target) || '' }}
+          cache-to: ${{ !startsWith(github.ref, 'refs/tags/') && format('type=gha,scope={0}-smoke,mode=min,ignore-error=true', matrix.target) || '' }}
 
       - name: The probed image carries no forbidden package (atrium-project#72)
         # "No production image depends on the undeclared AGPL dependency" (#72), checked in the
@@ -777,10 +780,10 @@ jobs:
             ATRIUM_RUNNER_REF=${{ github.ref_name }}
             ATRIUM_RUNNER_IMAGE=ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}:${{ steps.meta-release.outputs.version || steps.meta-immutable.outputs.version }}
           # Its own cache scope, apart from the smoke leg: this build passes the build-args above,
-          # which a `test` push keeps the same from push to push. A version tag changes
-          # ATRIUM_RUNNER_REF and so rebuilds from the apt-upgrade layer, as the Dockerfiles intend.
-          cache-from: type=gha,scope=${{ matrix.target }}-push
-          cache-to: type=gha,scope=${{ matrix.target }}-push,mode=min,ignore-error=true
+          # which a `test` push keeps the same from push to push. None on a tag, as in the smoke
+          # build; a tag's ATRIUM_RUNNER_REF rebuilds from the apt-upgrade layer anyway.
+          cache-from: ${{ !startsWith(github.ref, 'refs/tags/') && format('type=gha,scope={0}-push', matrix.target) || '' }}
+          cache-to: ${{ !startsWith(github.ref, 'refs/tags/') && format('type=gha,scope={0}-push,mode=min,ignore-error=true', matrix.target) || '' }}
           # SBOM and provenance attestations, pushed with the image to the registry, where
           # `docker buildx imagetools inspect`, cosign and syft read them (#18).
           sbom: true
@@ -834,15 +837,22 @@ jobs:
       - name: Count CRITICAL and HIGH findings in the job summary (report-only)
         # The scan's findings otherwise reach only code scanning. Trivy's SARIF holds every
         # severity whatever `severity:` says ("Building SARIF report with all severities"), so this
-        # counts each result by its rule's severity tag. Never fails the job.
+        # counts each result by its rule's severity tag, then lists the CRITICAL and HIGH ones
+        # (ID, package, installed and fixed version; the first 20). Never fails the job.
         if: always() && hashFiles('trivy-results.sarif') != ''
         env:
           IMAGE_REF: ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}@${{ steps.build.outputs.digest }}
         run: |
           python3 - <<'PY'
-          import collections, json, os
+          import collections, json, os, re
+
+          def field(text, name):
+              # Trivy writes each finding's message as "Package: …", "Installed Version: …", … lines.
+              match = re.search(rf"^{name}: (.+)$", text, re.M)
+              return match.group(1).strip() if match else "?"
 
           counts = collections.Counter()
+          found = []
           with open("trivy-results.sarif", encoding="utf-8") as fh:
               sarif = json.load(fh)
           for run in sarif.get("runs", []):
@@ -851,7 +861,13 @@ jobs:
                   tags = rule.get("properties", {}).get("tags", [])
                   severity[rule.get("id")] = next((t for t in tags if t in ("CRITICAL", "HIGH")), "other")
               for result in run.get("results", []):
-                  counts[severity.get(result.get("ruleId"), "other")] += 1
+                  level = severity.get(result.get("ruleId"), "other")
+                  counts[level] += 1
+                  if level != "other":
+                      text = result.get("message", {}).get("text", "")
+                      found.append((level, result.get("ruleId", "?"), field(text, "Package"),
+                                    field(text, "Installed Version"), field(text, "Fixed Version")))
+          found.sort(key=lambda f: (f[0] != "CRITICAL", f[2], f[1]))
           lines = [
               f"### Trivy: `{os.environ['IMAGE_REF']}`",
               "",
@@ -859,9 +875,13 @@ jobs:
               "|----------|------------------|",
               f"| CRITICAL | {counts['CRITICAL']} |",
               f"| HIGH     | {counts['HIGH']} |",
-              "",
-              "Report-only; the list is in code scanning.",
           ]
+          if found:
+              lines += ["", "| Severity | ID | Package | Installed | Fixed in |", "|---|---|---|---|---|"]
+              lines += [f"| {s} | {i} | `{p}` | {v} | {fx} |" for s, i, p, v, fx in found[:20]]
+              if len(found) > 20:
+                  lines += ["", f"{len(found) - 20} more in code scanning."]
+          lines += ["", "Report-only; every finding is also in code scanning."]
           print("\n".join(lines))
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
               fh.write("\n".join(lines) + "\n")
