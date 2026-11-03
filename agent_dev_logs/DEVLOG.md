@@ -2979,3 +2979,19 @@ pushed.
   2. push the tools, then the hub; move `v1`; re-pin with `pin_hub_reusables.py --sha`. The probe's stricter grep needs the tools' uvicorn fix first;
   3. `CODECOV_TOKEN` is empty in all six;
   4. Dependabot has not run in digital-convert since 10-18, and never in ocr-postprocess.
+
+## 2026-11-03 (afternoon) — The tools' pins move to `6a10787`; six patch releases prepared
+
+- **`v1` = `6a10787`** (the CI-audit commit). No canonical shared file changed since the tools' pin `439488bb`, so the
+  sweep needs no re-vendoring: `scripts/pin_hub_reusables.py --sha 6a10787…` moves 48 callers and 10 action steps
+  in 58 files. Dry run on the six `test` heads: one ref per repo, and `workflow_lint --require-sha-pins` OK in all six.
+  The sweep itself runs on the maintainers' machine.
+- **`docs/ci_policy.md`:** the Workflow-policy row names the new pin (it still said `b07090f`, which `439488bb`
+  replaced on 10-29).
+- **Releases prepared** (version files, CONTRIBUTING rows, notes):
+  - page-classification v1.12.2-beta;
+  - ocr-postprocess v1.15.2-beta;
+  - digital-convert v1.4.2-beta;
+  - nlp-enrich v1.3.2-beta, the release digital-convert's `ADOPTED` names;
+  - keyword-extract v1.6.2-beta;
+  - translator v1.7.2-beta.
