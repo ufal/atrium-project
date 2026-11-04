@@ -1,6 +1,6 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). The six tools' `.3` releases (11-04) and `test` heads call the hub at `14110d7` (`v1`); the `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-11-04 (later), at the end of the file (this file is not in date order): `.4` for digital-convert, keyword-extract and translator; the CVE gate retried._
-> _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). The pilot set (final 11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Hub `v1` = `51aad6c`, which all six tools call (three after the 11-04 afternoon sweep). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-11-04 (afternoon), at the end of the file (this file is not in date order): the state after the pilot releases; records, pages and pins aligned._
+> _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0411.md` (prior: `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
 - **#4 SSH Open Marketplace records** — Opened by stranak: create SSHOMP records for every tool in our workflows (UDPipe ✅,
@@ -3294,4 +3294,45 @@ candidates are six `.3` releases carrying #6's step 1.
      then the comments.
 
   The three `.3` tags stay unreleased. An admin may delete them and `v1.6.3.-beta` (a logged bypass).
+- Not pushed: files delivered in chat.
+
+## 2026-11-04 (afternoon) — The state after the pilot releases; records, pages and pins aligned
+
+- **Read (11:20–13:10Z):** the seven repositories (heads, releases, runs, tags) and the tracked issues. A new
+  snapshot, [`digests/project_state_0411.md`](digests/project_state_0411.md), replaces 3009, from before the split.
+- **Live:**
+  - all six pilot releases are out, immutable, with `images.json`;
+  - translator shipped as `v1.7.5-beta` (`17e2832`): `v1.7.4-beta`'s tag push started no run, and the maintainer
+    bumped instead of re-tagging;
+  - all nine comment drafts are posted (11:22–12:38); ocr-postprocess#9 and page-classification#64 are closed;
+  - K4TEL's heads-up on #22 (12:04): handwriting becomes a script attribute; scoring checked against OmniDocBench
+    v1.7.
+- **Found:**
+  1. no E2E lane has run on the final set; the 10:29 pipeline smoke ran while translator's `:latest` was the
+     unreleased `1.7.3-beta` image;
+  2. page-classification, ocr-postprocess and nlp-enrich still called `14110d7`, without the gate's retry;
+  3. `pilot.md` named translator `1.7.4-beta`, and `status.md` the `.1` set;
+  4. the records predated the posts (draft, prepared, wrong counts); the #4 and #22 exports lagged by one comment
+     each; page-classification's #58 export was never pushed;
+  5. wording that called the calculated value an output licence was left in five tools;
+  6. translator's `.5` CONTRIBUTING row gave v1.7.4 the cause of v1.7.3;
+  7. tool DEVLOG headers named October SHAs and releases;
+  8. #79's acknowledgement question did not @-mention stranak.
+- **Prepared:**
+  - **pins:** page-classification, ocr-postprocess and nlp-enrich to `51aad6c` (28 workflow files), with
+    `workflow_lint --require-sha-pins` OK and `revendor_shared.sh --check` in parity;
+  - **pages:** `pilot.md` (translator 1.7.5; the set is final), `status.md` (the six pilot releases),
+    `release_trust.md` (§ State on 2026-11-04, the five tags without a release), the proposal's status (step 1
+    shipped);
+  - **tools:** translator's examples, CONTRIBUTING rows and a comment; the `.3` rows of digital-convert and
+    keyword-extract; the licence wording in digital-convert (3 files), keyword-extract, ocr-postprocess and
+    page-classification; the six DEVLOG headers, and an entry in each;
+  - **records:** the #4 and #22 exports to live; the #58 export again; afternoon status and sections in the pairs
+    of #4, #6, #22, #66, #72, #77, #79 and #81 (the morning status kept, marked "earlier").
+- **Yours:**
+  1. tick #6 box 1;
+  2. dispatch both E2E lanes on hub `main` and check that `e2e-manifest.json` names the six;
+  3. re-run translator CodeQL 41819773270;
+  4. post the #79 line for stranak;
+  5. optionally, as admin, delete the five unreleased tags.
 - Not pushed: files delivered in chat.

@@ -2,16 +2,19 @@
 
 > **Status:** draft on [#6](https://github.com/ufal/atrium-project/issues/6), 2026-10-20; the approach approved by
 > AMČR (motyc) on 2026-10-22, with three adjustments made here: `scope` and `basis` are mandatory, the per-document
-> policy is described, and the document schema's migration is kept apart from paradata versioning. Nothing here is
-> implemented yet. It is a class (c) change under [`shared_components.md`](../shared_components.md). Draft schema:
+> policy is described, and the document schema's migration is kept apart from paradata versioning. Step 1 shipped in
+> the pilot releases of 2026-11-04 ([#77](https://github.com/ufal/atrium-project/issues/77)): an RO-Crate root names
+> `#no-licence-asserted`, and a record marks the calculated value `provenance.license_basis: "calculated"`. The rest
+> is not implemented yet. It is a class (c) change under [`shared_components.md`](../shared_components.md). Draft schema:
 > [`atrium_rights.schema.json`](atrium_rights.schema.json).
 
 ## In plain words
 
-**Today.** Every run lists the components it used (models, datasets, vocabularies, web services), each with its
-licence. From that list it also computes one label, the most restrictive of those licences
-(`para_licenses.merge_effective_licenses()`). The label is written into the run's paradata, into the record as
-`provenance.license`, and into an RO-Crate export as the crate's licence (`atrium_rocrate._license_entity()`).
+**Before step 1.** Every run lists the components it used (models, datasets, vocabularies, web services), each with
+its licence. From that list it also computes one label, the most restrictive of those licences
+(`para_licenses.merge_effective_licenses()`). The label was written into the run's paradata, into the record as
+`provenance.license`, and into an RO-Crate export as the crate's licence. Since the 2026-11-04 releases the crate
+names `#no-licence-asserted` instead, and the record marks the label `license_basis: "calculated"`.
 
 **The problem.** That label reads as the licence of the output, and it is not one. A tool's or a model's licence
 does not become the licence of what it produces. Web services such as LINDAT's offer terms of use, not a licence

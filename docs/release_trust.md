@@ -38,6 +38,34 @@ workflow callers, not a source release, so no tag rule covers it. The tool repos
 following it when they call the hub's reusables by commit (step 7). The hub's genuinely fixed
 references, the `doc-schema-v*` freezes, have their own rule.
 
+## State on 2026-11-04
+
+Read on 11-04 with the public API (the pilot releases' `immutable` flag and assets) and the `test` trees (the
+callers). These are the six pilot releases, final on [#77](https://github.com/ufal/atrium-project/issues/77). The
+callers' column assumes the 11-04 pin sweep of page-classification, ocr-postprocess and nlp-enrich to `51aad6c`
+(`v1`); the other three were pinned there with their releases.
+
+| Repository          | Tag ruleset on `v*` | Pilot release, immutable, with `images.json` | Hub references by commit (`51aad6c`) |
+|---------------------|---------------------|----------------------------------------------|--------------------------------------|
+| page-classification | yes                 | yes (`v1.12.3-beta`)                         | 8 of 8 callers, 1 of 1 action steps  |
+| ocr-postprocess     | yes                 | yes (`v1.15.3-beta`)                         | 8 of 8, 1 of 1                       |
+| digital-convert     | yes                 | yes (`v1.4.4-beta`)                          | 8 of 8, 1 of 1                       |
+| nlp-enrich          | yes                 | yes (`v1.3.3-beta`)                          | 8 of 8, 2 of 2                       |
+| keyword-extract     | yes                 | yes (`v1.6.4-beta`)                          | 8 of 8, 3 of 3                       |
+| translator          | yes                 | yes (`v1.7.5-beta`)                          | 8 of 8, 2 of 2                       |
+
+**Tags without a release.** Five `v*` tags exist that no GitHub Release certifies, and by `ci_policy.md` they are
+not releases:
+- digital-convert `v1.4.3-beta`: its tag push started no workflow run;
+- keyword-extract `v1.6.3.-beta`: a mistyped tag, which started no run;
+- keyword-extract `v1.6.3-beta`: its CVE gate stopped on a registry error;
+- translator `v1.7.3-beta`: Trivy's own download failed;
+- translator `v1.7.4-beta`: its tag push started no workflow run.
+
+The next patch number shipped the same code each time. Some of their images were published before the failure
+(translator's `:latest` pointed at the `1.7.3-beta` image until `v1.7.5-beta` replaced it on 11-04). The tag rule
+refuses their deletion to everyone but an admin; a deletion is logged as a bypass.
+
 ## State on 2026-10-29
 
 Read with the public API and the `test` trees (no admin rights needed): the rulesets with

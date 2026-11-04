@@ -16,7 +16,8 @@ measured and what is experimental: [Status](status.md).
 
 ## The six services
 
-The versions below are the pilot candidates, one release per tool. Each tool's command line and service
+The versions below are the pilot set, one release per tool, final since 4 November
+([#77](https://github.com/ufal/atrium-project/issues/77)). Each tool's command line and service
 give the same results from the same input; what still differs, and why, is in one table in each tool's
 `docs/usage.md`.
 
@@ -31,7 +32,7 @@ and `latest` or `test` are never the baseline. Acceptance on AMČR's cluster fol
 | born-digital files → the record    | `ghcr.io/ufal/atrium-digital-convert-api`     | `1.4.4-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-digital-convert/blob/v1.4.4-beta/service/README.md)                                                                                   | [tracker](https://github.com/ufal/atrium-digital-convert/issues)     |
 | morphology, named entities, TEITOK | `ghcr.io/ufal/atrium-nlp-enrich-api`          | `1.3.3-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-nlp-enrich/blob/v1.3.3-beta/service/README.md)                                                                                        | [tracker](https://github.com/ufal/atrium-nlp-enrich/issues)          |
 | keywords                           | `ghcr.io/ufal/atrium-keyword-extract-api`     | `1.6.4-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-keyword-extract/blob/v1.6.4-beta/service/README.md)                                                                                   | [tracker](https://github.com/ufal/atrium-keyword-extract/issues)     |
-| English metadata                   | `ghcr.io/ufal/atrium-translator-api`          | `1.7.4-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-translator/blob/v1.7.4-beta/service/README.md)                                                                                        | [tracker](https://github.com/ufal/atrium-translator/issues)          |
+| English metadata                   | `ghcr.io/ufal/atrium-translator-api`          | `1.7.5-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-translator/blob/v1.7.5-beta/service/README.md)                                                                                        | [tracker](https://github.com/ufal/atrium-translator/issues)          |
 
 **For operators: finding a digest.**
 
