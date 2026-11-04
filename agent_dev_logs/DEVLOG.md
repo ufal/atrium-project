@@ -3336,3 +3336,46 @@ candidates are six `.3` releases carrying #6's step 1.
   4. post the #79 line for stranak;
   5. optionally, as admin, delete the five unreleased tags.
 - Not pushed: files delivered in chat.
+
+## 2026-11-04 (evening) — #13: the v33 candidate of the CAA paper
+
+- **Read:**
+  - the v32 manuscript (the Overleaf zip and its PDF, 15 pages);
+  - the seven repositories at their `test` heads of 11-04 (hub `aa404be`, the tools at the pilot releases);
+  - the hub pages (`docs_site/`) and the agent logs;
+  - the SSH OMP records as #4 and #17 track them.
+- **Found** (changes since the paper was written, 10-26 – 10-28):
+  1. #6 step 1 (hub `14110d7`): `provenance.license_basis: "calculated"` and the `#no-licence-asserted` crate root.
+     The permission and output-rights records are agreed but not implemented, so §3.2 and the abstract were behind;
+  2. no handwriting flag exists; handwriting is carried by the labels `TEXT_HW` and `LINE_HW`;
+  3. the keyword method counts lemmas without KER's tf-idf. The translator protects terms only when a vocabulary is
+     configured;
+  4. the scanned E2E lane:
+     - runs the synthetic page by default;
+     - skips line classification, which needs a GPU.
+
+     The born-digital lane covers a garbled text layer, a two-column PDF and DOCX layout;
+  5. the archaeological NER model is deferred until after the pilot. The page models are CC BY-NC 4.0, but their
+     Hugging Face card still says MIT;
+  6. Figure 1 was never referenced in the text, and v31 had dropped the 5,449-page limitation that motyc asked to
+     keep. The bibliography's title for `0xSpVP` differs from the record's.
+
+  Table 2 recomputes. "About 29,850 documents per fold" agrees with the previous generation's fold files
+  (29,855–29,863).
+- **Prepared** (delivered in chat):
+  - v33 as full `PCJ-sample.tex` and `PCJ-sample.bib`;
+  - the compiled PDF: 17 pages, 4,804 words by texcount (abstract, captions and tables included);
+  - a latexdiff PDF;
+  - a change log of 26 items, each with its source, and six checks for the co-authors;
+  - an outline of a JCAA article of about 9,000 words.
+
+  Built with TeX Live 2023, latexmk and biber: no warnings.
+- **Posted (K4TEL, 18:49):** the v33 notice on #13.
+- **Records:** evening sections in the #13 digest and plan; the earlier status is kept. The #13 export is not
+  refreshed here and lacks the 18:49 comment.
+- **Yours:**
+  1. refresh the #13 export;
+  2. apply v33 in Overleaf as tracked changes and check them by hand;
+  3. re-label Figure 3's lines with ocr-postprocess `v1.15.3-beta`;
+  4. set the Hugging Face card of `ufal/vit-historical-page` to CC BY-NC 4.0.
+- Not pushed: files delivered in chat.
