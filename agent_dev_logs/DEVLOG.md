@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). The six tools' `.2` releases (11-03) call the hub at `6a10787`, their `test` heads at `e11c882`; the `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-11-04 (fix round), at the end of the file (this file is not in date order): #6 step 1 built and re-vendored; six `.3` releases prepared as the pilot candidates; ocr-postprocess's scheduled lane fixed._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). The six tools' `.3` releases (11-04) and `test` heads call the hub at `14110d7` (`v1`); the `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-11-04 (after the `.3` push), at the end of the file (this file is not in date order): the CI read after the push; three of six `.3` releases out; a pause before the Trivy retry._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -3197,4 +3197,51 @@ candidates are six `.3` releases carrying #6's step 1.
   5. apply the after-tags archive;
   6. dispatch both E2E lanes and ocr-postprocess `scheduled-smoke`;
   7. post the comments, and close ocr-postprocess#9 and page-classification#64.
+- Not pushed: files delivered in chat.
+
+## 2026-11-04 (after the `.3` push) — CI read on the new commits; three releases out; a pause before the Trivy retry
+
+- **Read (10:08–10:30Z):** the pushed heads of the seven repositories and every run on them.
+  - hub `14110d7` (`v1`); page-classification `0a96bce`; ocr-postprocess `9ab887a`; digital-convert `c4587c1`;
+    nlp-enrich `b0e80ca`; keyword-extract `a137011`; translator `31cd016`.
+  - The pushed files equal the fix-round files byte for byte; the workflows pin `14110d7`.
+  - Every push run is green, para-drift included.
+- **The releases:**
+
+  | Tool                | `.3`             | State (11-04, 10:30Z)                                                                                                    |
+  |---------------------|------------------|--------------------------------------------------------------------------------------------------------------------------|
+  | page-classification | `v1.12.3-beta`   | released 10:13Z                                                                                                          |
+  | ocr-postprocess     | `v1.15.3-beta`   | released 10:00Z                                                                                                          |
+  | nlp-enrich          | `v1.3.3-beta`    | released 10:04Z                                                                                                          |
+  | keyword-extract     | `v1.6.3-beta`    | the first tag was `v1.6.3.-beta` (stray dot; no run). The right tag is pushed; its Release run 41813324882 is in progress |
+  | translator          | `v1.7.3-beta`    | Release Bundle 41809705322 failed: Trivy's own download exited 6 twice in the api job; no release yet                      |
+  | digital-convert     | `v1.4.3-beta`    | the tag exists at `c4587c1`, but no run was created; no release yet                                                       |
+
+- **Causes:**
+  - translator: an infra failure. Trivy's binary download exited 6 (host not resolved) on the scan and on its retry
+    a second later; the base job installed it 13 s after. Re-running the failed jobs publishes it.
+  - keyword-extract: a typo in the tag. It was pushed right at 10:18Z.
+  - digital-convert: unknown. The tag push, and the `test` push of the same commit, created no event; `main` ran.
+    A push carrying more than three tags creates no tag events. A dispatch of `release.yml` is only a dry run, so an
+    admin deletes the tag (a logged bypass of the `v*` ruleset) and pushes it again, alone.
+- **Hardening, hub (prepared):**
+  - a guarded `sleep 30` between the report-only Trivy scan and its retry, in `docker-tool.reusable.yml` and
+    `security.reusable.yml`; the comments and `ci-optional` markers say the scan can fail on Trivy's own download;
+  - `tests/test_trivy_db_retry.py` checks that the step between the two only pauses;
+  - `decisions/docker-tool-reusable.md` has the note.
+
+  A tool gets it at its next pin sweep; the pilot set is not re-pinned for it.
+- **Not yet run on `14110d7`:** the main-only E2E and cross-repo lanes (no `main` push run). The 11-05 schedule runs
+  them, or a dispatch once the six are out.
+- **Records:** the #77 and #81 plans; DEVLOG entries in translator, keyword-extract and digital-convert. The
+  page-classification #58 export, which the push left out, is re-delivered.
+- **Local trees:** each repository moved to its pushed `test` head; the stale fix-round working trees are in
+  `git stash`.
+- **Checks:**
+  - hub `tests/` 606 passed, 6 skipped (the Trivy tests 7 of 7);
+  - `workflow_lint.py --offline` OK;
+  - `mkdocs build --strict`;
+  - `docs_check` OK.
+- **Release notes** for the six `.3` releases are drafted in chat. Each is the part above the generated
+  "Images this release certifies" list.
 - Not pushed: files delivered in chat.

@@ -7,12 +7,15 @@ to its second source (`ghcr.io`) only after an error it counts as temporary. The
 during a tag would have failed the release.
 
 Each report-only scan that downloads the DB is therefore `continue-on-error` and followed by one
-retry from `ghcr.io` that is not. These tests hold, in both reusables:
+retry from `ghcr.io` that is not. On 2026-11-04 Trivy's own download failed twice in one second
+(exit 6, translator v1.7.3-beta), so a short pause now comes before the retry. These tests hold,
+in both reusables:
 
   1. the first scan has an `id`, `continue-on-error: true` and `exit-code: "0"` (a failure there
      can only be Trivy failing to run, never a finding);
-  2. the step right after it is the retry: guarded by `steps.<id>.outcome == 'failure'`, the same
-     pinned action and inputs, `ghcr.io` as the only DB source, and not `continue-on-error`;
+  2. right after it comes a pause guarded the same way, which runs only `sleep N`, and then the
+     retry: guarded by `steps.<id>.outcome == 'failure'`, the same pinned action and inputs,
+     `ghcr.io` as the only DB source, and not `continue-on-error`;
   3. the CVE release gate stays as it was: one blocking scan, no `continue-on-error`.
 
 Parsed, not grepped: the comments above these steps quote the incident.
@@ -23,6 +26,7 @@ Run: pytest tests/test_trivy_db_retry.py
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -64,12 +68,26 @@ def test_the_first_scan_may_fail_into_the_retry(workflow, job):
 
 
 @pytest.mark.parametrize(("workflow", "job"), _SCANS)
+def test_a_guarded_pause_comes_between_the_scan_and_its_retry(workflow, job):
+    steps = _steps(workflow, job)
+    index, first = _trivy_steps(workflow, job)[0]
+    pause = steps[index + 1]
+    assert pause.get("if") == f"steps.{first['id']}.outcome == 'failure'", (
+        f"{workflow}: the pause must run only when the scan failed, or every build waits"
+    )
+    assert re.fullmatch(r"sleep \d+", str(pause.get("run", "")).strip()), (
+        f"{workflow}: the step between the scan and its retry may only pause (`sleep N`)"
+    )
+    assert "uses" not in pause and not pause.get("continue-on-error")
+
+
+@pytest.mark.parametrize(("workflow", "job"), _SCANS)
 def test_the_retry_follows_from_ghcr_and_still_fails_loudly(workflow, job):
     steps = _steps(workflow, job)
     index, first = _trivy_steps(workflow, job)[0]
-    retry = steps[index + 1]
+    retry = steps[index + 2]
     assert retry.get("if") == f"steps.{first['id']}.outcome == 'failure'", (
-        f"{workflow}: the step after the scan must be its retry, guarded on the scan's outcome "
+        f"{workflow}: the step after the pause must be the scan's retry, guarded on the scan's outcome "
         "(outcome is the result before continue-on-error)"
     )
     assert retry["uses"] == first["uses"], f"{workflow}: the retry must run the same pinned action"

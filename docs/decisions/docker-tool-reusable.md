@@ -557,6 +557,13 @@ outage of both still fails the job, as the Buildx boot retry does. The CVE relea
 own: it reads the DB the scan or its retry left on disk, fresh, without a download.
 `tests/test_trivy_db_retry.py` holds both workflows to this shape.
 
+**2026-11-04: a pause before the retry.** translator's `v1.7.3-beta` release (run 41809705322) failed in
+`build-and-push (api)` before any DB: Trivy's own download exited 6 (the host was not resolved) on the scan, and
+again on the retry one second later. The image was pushed but not promoted, and no release was created. The base
+job installed the same Trivy 13 s later. A guarded `sleep 30` now sits between each report-only scan and its
+retry, in both reusables, so a transient DNS or network fault can pass; the test checks that the step between
+them only pauses. It reaches a tool at its next pin sweep.
+
 ### The CVE release gate
 
 Above "Fail the release on fixable CRITICAL vulnerabilities" (#18, 2026-07-31).

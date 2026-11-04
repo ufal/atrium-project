@@ -811,13 +811,22 @@ jobs:
           # Report-only ON PURPOSE: the full CRITICAL+HIGH picture reaches code scanning on every
           # build, even for a blocked release; the blocking decision is the narrower step below.
           exit-code: "0"
-        # Report-only, so a failure here is Trivy failing to run, in practice its DB download
-        # (mirror.gcr.io answered 404 on 2026-10-26). The next step retries once from ghcr.io and
-        # is not continue-on-error, so an outage of both still fails. The gate below reads the DB
-        # this step or the retry left on disk. History:
+        # Report-only, so a failure here is Trivy failing to run: its DB download (mirror.gcr.io
+        # answered 404 on 2026-10-26) or its own download (exit 6, 2026-11-04). After a pause, the
+        # retry runs once from ghcr.io and is not continue-on-error, so a lasting outage still
+        # fails. The gate below reads the DB this step or the retry left on disk. History:
         # docs/decisions/docker-tool-reusable.md#trivy-db-retry
-        # ci-optional: the next step retries once from ghcr.io, without continue-on-error
+        # ci-optional: after a 30 s pause, the retry runs once from ghcr.io, without continue-on-error
         continue-on-error: true
+
+      - name: Wait before retrying Trivy
+        # The first scan can also fail on Trivy's own download, before any DB: on 2026-11-04 the
+        # binary download exited 6 (host not resolved) on the scan and again on the retry one
+        # second later (translator v1.7.3-beta, run 41809705322); the next job installed the same
+        # Trivy 13 s after. A short pause lets a transient DNS or network fault pass. History:
+        # docs/decisions/docker-tool-reusable.md#trivy-db-retry
+        if: steps.scan.outcome == 'failure'
+        run: sleep 30
 
       - name: Trivy scan the published digest (retry from ghcr.io after a DB download failure)
         if: steps.scan.outcome == 'failure'
