@@ -105,7 +105,12 @@ _FLOOR: Dict[str, Any] = {
     "schema_version": "1.0",
     "record_type": "atrium-document",
     "doc_id": "CTX000000001",
-    "provenance": {"license": "CC BY-NC 4.0", "license_url": "https://x", "license_basis": "calculated", "contributors": []},
+    "provenance": {
+        "license": "CC BY-NC 4.0",
+        "license_url": "https://x",
+        "license_basis": "calculated",
+        "contributors": [],
+    },
 }
 
 
