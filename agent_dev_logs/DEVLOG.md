@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). `v1` = `b07090f` (2026-10-29); the six tools are pinned to it, and the `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-11-02 (evening), at the end of the file (this file is not in date order): #79 phase F's tool round prepared; the 11-02 CI failures read._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). The six tools' `.2` releases (11-03) call the hub at `6a10787`, their `test` heads at `e11c882`; the `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-11-04, at the end of the file (this file is not in date order): the week's comments read into the records; the next round's fixes, comment drafts and box ticks listed._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -3023,3 +3023,88 @@ The six releases and the pin move to `6a10787` landed as prepared. Every run sin
   - move `v1` to it;
   - run the pin sweep with its SHA;
   - merge page-classification `test` → `master`.
+
+## 2026-11-04 — The week's comments read into the records; the next round listed
+
+- **Why:** the digests and plans were written from the exports of 10-29 15:36. Comments and body edits since then
+  were missing from them.
+- **Read (GitHub, 11-04):**
+  - the 26 open issues of the seven repositories;
+  - every issue updated since 10-28 (none closed);
+  - every scheduled run of the seven repositories from 10-28 to 11-04.
+
+  Eleven tracked issues changed: hub #4, #6, #13, #22, #66, #67, #72, #77, #79, #81 and page-classification#58. The
+  others have no activity in the window (#10, #15, #16, #17, #24, #40, #56, #78; digital-convert#5,
+  keyword-extract#2, nlp-enrich#7 and #18, ocr-postprocess#4).
+- **Exports refreshed** (missing comments appended in the export's format; body edits; ticked boxes; footer dated):
+  - #4: the body rewritten 10-29 15:43, nine records, all ticked;
+  - #6, #66, #77: one comment each;
+  - #22: the body's UPD and one comment;
+  - #67 and #72: two comments each;
+  - #79: one comment, and one box ticked;
+  - #81: one comment, and two boxes ticked;
+  - page-classification#58: the body's UPD and one comment.
+
+  The #13 export was already complete.
+- **Pairs refreshed:** 4, 6, 13, 22, 66, 67, 72, 77, 79 and 81; page-classification 58 (with an entry in its
+  DEVLOG). Each gets a dated section and a "next round" list.
+- **Found:**
+  1. **#6, the code half is not built.** The 11-02 comment says "The code follows". The canonical
+     `docs/templates/shared/atrium_rocrate.py` still puts the calculated licence on the crate root (:885, :1155;
+     described at :355). `para_licenses.py` still writes the "most restrictive" sentence (:180). No repository has
+     `license_basis`.
+  2. **The CSV's `CATEGORY` column is missing from three summaries.** Mark's `planemo test` expected
+     `FILE,PAGE,CLASS-1,SCORE-1`; at `-tn 1` page-classification adds `CATEGORY` (`utils.py:176`). It is documented
+     only in `docs/reference/outputs.md:23`. The summaries that omit it: page-classification `README.md:16`,
+     `docs/how-it-works.md:187`, and the hub's `docs_site/workflows/page-classification.md:72`.
+  3. **#77, two candidate sets.** The thread and `docs_site/pilot.md` name the `.1` releases; the `.2` releases of
+     11-03 are newer and change what an operator sees (uvicorn's log level; page-classification's `/health` during
+     warm-up).
+  4. **#72, the 10-29 comment is overtaken.** Its "flexiconv still has no LICENSE" was overtaken that evening (MIT,
+     `1aed8ca`). motyc's 10-28 question, what a blank line is, was never answered on the thread.
+  5. **#13, the deadline is now 30 November** (motyc, 10-29), and the plan's October schedule is marked superseded. The
+     10-28 comment reports AI-assisted reference work; Pavel's 10-27 rule allows a spellchecker only.
+  6. **#79:** the "cross-links" box was ticked on 10-29; the 11-02 records still called it tickable.
+  7. **Scheduled lanes:** one red run in the window, ocr-postprocess `scheduled-smoke` (41764533125, 11-04). It failed
+     at install: `scipy>=1.18.1` (`setup/requirements-finetune.txt`, since `247b6ae`, 10-13) needs Python ≥ 3.12, and
+     the lane runs 3.11. The file joined the lane in the 11-03 audit (`0590568`), so this was its first run with it.
+     It opened ocr-postprocess#9, whose fixed text guesses an upstream model move.
+     - page-classification#64 is stale: the lane failed on 10-27 (`page_inputs` missing at `1191e20`) and is green
+       every day since 10-28.
+     - Before the window, `security.yml` failed on 10-26 in digital-convert, keyword-extract and nlp-enrich; it was
+       green on 11-02, the Trivy DB retry's first scheduled run.
+     - nlp-enrich's `gpu-inference.yml` no longer exists; its last scheduled run (07-27, cancelled) is history.
+- **Next round, to implement:**
+  1. **ocr-postprocess, the red lane:** `scipy>=1.17.1` (the last release for Python 3.11; scikit-learn 1.9.1 needs
+     ≥ 1.10.0), and a Dependabot `ignore` for `scipy >= 1.18` beside numpy's, with the same reason. Optionally, a
+     push-time check that each lane's `REQUIREMENTS` set resolves on the lane's Python. Then dispatch
+     `scheduled-smoke` and close #9 on green.
+  2. **page-classification#64:** close it, citing the green runs since 10-28.
+  3. **`CATEGORY`:**
+     - the three summaries above name it and link `docs/reference/outputs.md`;
+     - our copy of the Galaxy wrapper takes Mark's `,CATEGORY` line.
+  4. **#6 step 1** in `docs/templates/shared/`, then re-vendored to the six tools, with tests:
+     - `#no-licence-asserted` on the crate root;
+     - no "most restrictive" sentence;
+     - `provenance.license_basis: "calculated"`.
+  5. **#77:** the candidate decision (recommended `.2`). Then `runbook_check.py --ref`, `docs_site/pilot.md` and
+     `docs/k8s_acceptance_runbook.md` on the chosen tags, and both E2E lanes dispatched on that set.
+  6. **#4:** the SSHOMP version fields at the chosen releases.
+- **Next round, comment drafts for the maintainer to post** (raw Markdown, short, nothing the thread already says):
+  - **#4:** after the SSHOMP check: which records are public, the versions, and what remains.
+  - **#6:** after the code: what a record and a crate say now, with one example.
+  - **#13:** only a short notice before a revision round, then the submission links (motyc's rule: no change lists).
+  - **#66:** to Mark: thanks; why `CATEGORY` exists; our run once the tool is on the test instance.
+  - **#72:** the flexiconv and release corrections, and the blank-line answer.
+  - **#77:** the final candidate set with its six `-api` digests and the E2E runs.
+  - **#79:** to @david-spacil, the READMEs and runbooks changed; to @stranak, the acknowledgement wording.
+  - **#81:** the scheduled-lane fix; propose closing, with C as later work.
+  - **ocr-postprocess#9 and page-classification#64:** the cause and the green run, on closing.
+- **Next round, body boxes to tick:**
+  - **now:** #6 box 1 ("review and summarise"; the summary was posted 10-29);
+  - **after D (6 November):** the three open #79 boxes;
+  - **already all ticked:** #4, #67, #77, #81;
+  - **not ticked:** #6 box 2, which stays open for #78. The other changed issues have no checkboxes.
+- **Checks:** the comment counts in the exports match GitHub; every comment ID from 10-28 on appears in its export and
+  its digest; relative links in the changed files resolve; no trailing whitespace in the changed digests and plans.
+- Not pushed: files delivered in chat.
