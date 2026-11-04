@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). The six tools' `.3` releases (11-04) and `test` heads call the hub at `14110d7` (`v1`); the `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-11-04 (after the `.3` push), at the end of the file (this file is not in date order): the CI read after the push; three of six `.3` releases out; a pause before the Trivy retry._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). The six tools' `.3` releases (11-04) and `test` heads call the hub at `14110d7` (`v1`); the `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-11-04 (later), at the end of the file (this file is not in date order): `.4` for digital-convert, keyword-extract and translator; the CVE gate retried._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -3244,4 +3244,54 @@ candidates are six `.3` releases carrying #6's step 1.
   - `docs_check` OK.
 - **Release notes** for the six `.3` releases are drafted in chat. Each is the part above the generated
   "Images this release certifies" list.
+- Not pushed: files delivered in chat.
+
+## 2026-11-04 (later) — `.4` for three tools; the CVE gate runs once more after a failure
+
+- **Since the last entry:**
+  - the maintainer pushed hub `5c25d32` (the pause before the scan's retry; `v1`) and re-pinned digital-convert,
+    keyword-extract and translator to it;
+  - keyword-extract's corrected tag `v1.6.3-beta` ran: Release 41813324882 failed in `build-and-push (llm)`, step
+    "Fail the release on fixable CRITICAL vulnerabilities". Trivy stopped with `failed to extract the archive: stream
+    error: stream ID 5; PROTOCOL_ERROR; received from peer` while pulling a layer. There was no finding, and the
+    gate had no retry;
+  - translator's run 41809705322 was not re-run, and digital-convert's tag still had no run.
+- **The maintainer's decision:** the three ship as `.4` with the `.3` code, and the gate retries as well.
+- **Hub (prepared):**
+  - in `docker-tool.reusable.yml`, the gate has `id: gate` and is `continue-on-error`
+    (`ci-optional`: the retry below is blocking); it is followed by a guarded `sleep 30` and the same gate again,
+    blocking;
+  - `tests/test_trivy_db_retry.py`: `test_the_release_gate_stays_blocking` replaces "is unchanged";
+  - `docs/ci_policy.md`, `docs_site/operations.md` (the release gate, step 3) and
+    `decisions/docker-tool-reusable.md` § The CVE release gate.
+- **Tools (prepared, not tagged):**
+  - digital-convert `v1.4.4-beta`, keyword-extract `v1.6.4-beta`, translator `v1.7.4-beta`;
+  - version files, the spec's version, the examples, keyword-extract's sidecars, the CONTRIBUTING rows (each says why
+    `.3` was not released), and DEVLOG entries;
+  - no code change against `.3`.
+- **The pilot set:**
+
+  | Tool                | Release        | State (11-04, 10:50Z)                                                                     |
+  |---------------------|----------------|-------------------------------------------------------------------------------------------|
+  | page-classification | `v1.12.3-beta` | released                                                                                  |
+  | ocr-postprocess     | `v1.15.3-beta` | released                                                                                  |
+  | nlp-enrich          | `v1.3.3-beta`  | released                                                                                  |
+  | digital-convert     | `v1.4.4-beta`  | prepared; `v1.4.3-beta` was tagged, its push created no run                               |
+  | keyword-extract     | `v1.6.4-beta`  | prepared; `v1.6.3-beta` failed in the CVE gate on a registry error (run 41813324882)      |
+  | translator          | `v1.7.4-beta`  | prepared; `v1.7.3-beta` failed on Trivy's own download (run 41809705322)                  |
+
+- **After tags v2:** `docs_site/pilot.md` and `docs/k8s_acceptance_runbook.md` on this set, outside the tree. With
+  them, `mkdocs build --strict`, `test_k8s_handover.py` and `docs_check` pass.
+- **Checks:**
+  - hub `tests/` 606 passed, 6 skipped; `workflow_lint.py --offline` OK (8 write-scoped pins);
+  - digital-convert 980 passed, keyword-extract 1030, translator 1234;
+  - `check_version.py --tag` agrees for the three.
+- **Yours:**
+  1. push the hub and move `v1`;
+  2. in each of the three, the pin sweep with the copies, then push `test`;
+  3. push each `.4` tag on its own;
+  4. when the six are out: the release notes, after tags v2, both E2E lanes, ocr-postprocess `scheduled-smoke`,
+     then the comments.
+
+  The three `.3` tags stay unreleased. An admin may delete them and `v1.6.3.-beta` (a logged bypass).
 - Not pushed: files delivered in chat.

@@ -118,7 +118,8 @@ and promotes the version and `latest` tags afterwards — only if the scan allow
    (BuildKit's own; inspect them with `docker buildx imagetools inspect`).
 2. Trivy scans the pushed digest for fixable CRITICAL and HIGH vulnerabilities and uploads the
    result to GitHub code scanning. This scan reports; it does not fail.
-3. **On a tag only**, a second Trivy pass fails the job on any *fixable CRITICAL* vulnerability.
+3. **On a tag only**, a second Trivy pass fails the job on any *fixable CRITICAL* vulnerability. When that
+   pass fails, it runs once more after 30 s, because a network error fails it too; a real finding fails both.
 4. Only then are `<version>` and `latest` applied to the digest.
 
 **A release blocked at step 3 still exists** — as `sha-<short>`, by digest, with its attestations and

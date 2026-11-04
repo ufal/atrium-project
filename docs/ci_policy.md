@@ -117,7 +117,9 @@ prevent it. Since `b07090f` (10-29) both report-only scans, the release job's an
 download once from `ghcr.io` alone, and the CVE release gate reads the database already on disk
 ([Trivy DB retry](decisions/docker-tool-reusable.md#trivy-db-retry)). An outage of both registries still
 fails the job, and that run is re-run once. The weekly scans of 2 November are the retry's first scheduled
-run.
+run. On 2026-11-04 two release jobs failed the same way in other places: Trivy's own download (exit 6, translator)
+and the CVE gate's pull of an image layer (keyword-extract `llm`). Since then the scan's retry waits 30 s, and the
+gate runs once more after 30 s; the gate's retry is blocking, so a fixable CRITICAL fails both.
 
 ## Changing CI
 

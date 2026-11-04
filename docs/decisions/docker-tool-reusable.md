@@ -588,6 +588,13 @@ Above "Fail the release on fixable CRITICAL vulnerabilities" (#18, 2026-07-31).
 > To revert to report-only, set exit-code to "0". Trivy's DB is cached by the
 > step above, so this second scan costs a few seconds.
 
+**2026-11-04: the gate runs once more after a failure.** keyword-extract's `v1.6.3-beta` release (run 41813324882)
+failed in this gate on the `llm` image with no finding: Trivy stopped on `failed to extract the archive: stream
+error: stream ID 5; PROTOCOL_ERROR; received from peer` while pulling a layer. The image was pushed but not
+promoted, and no release was created. The gate now carries an `id`, is `continue-on-error`, and is followed by a
+30 s pause and the same gate again, which is not `continue-on-error`. A fixable CRITICAL fails both runs and stops
+the release as before; a transient registry error costs one retry. `tests/test_trivy_db_retry.py` holds this shape.
+
 ### Promotion
 
 Above "Promote release tags to the scanned digest" (W3).

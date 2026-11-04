@@ -16,7 +16,10 @@ in both reusables:
   2. right after it comes a pause guarded the same way, which runs only `sleep N`, and then the
      retry: guarded by `steps.<id>.outcome == 'failure'`, the same pinned action and inputs,
      `ghcr.io` as the only DB source, and not `continue-on-error`;
-  3. the CVE release gate stays as it was: one blocking scan, no `continue-on-error`.
+  3. the CVE release gate stays blocking. On 2026-11-04 it failed on a registry error, not a
+     finding (keyword-extract v1.6.3-beta, `llm`), so it runs once more after a pause: the first
+     gate is `continue-on-error`, the retry with the same inputs is not, and a fixable CRITICAL
+     fails both.
 
 Parsed, not grepped: the comments above these steps quote the incident.
 History: docs/decisions/docker-tool-reusable.md#trivy-db-retry
@@ -96,13 +99,29 @@ def test_the_retry_follows_from_ghcr_and_still_fails_loudly(workflow, job):
     assert not retry.get("continue-on-error"), f"{workflow}: an outage of both sources must still fail the job"
 
 
-def test_the_release_gate_is_unchanged():
-    gates = [
-        s
-        for _, s in _trivy_steps("docker-tool.reusable.yml", "build-and-push")
+def _gate_steps() -> list[tuple[int, dict]]:
+    return [
+        (i, s)
+        for i, s in _trivy_steps("docker-tool.reusable.yml", "build-and-push")
         if s.get("if", "").startswith("startsWith(github.ref, 'refs/tags/')")
     ]
-    assert len(gates) == 1, "exactly one blocking scan, on tags"
-    gate = gates[0]
-    assert str(gate["with"]["exit-code"]) == "1"
-    assert not gate.get("continue-on-error"), "the CVE release gate must stay blocking"
+
+
+def test_the_release_gate_stays_blocking():
+    gates = _gate_steps()
+    assert len(gates) == 1, "exactly one tag-guarded gate; its retry is guarded on the gate's outcome"
+    index, gate = gates[0]
+    assert str(gate["with"]["exit-code"]) == "1", "the gate fails on a fixable CRITICAL"
+    assert gate.get("id"), "the gate needs an id for its retry's guard"
+    steps = _steps("docker-tool.reusable.yml", "build-and-push")
+    pause, retry = steps[index + 1], steps[index + 2]
+    guard = f"steps.{gate['id']}.outcome == 'failure'"
+    assert pause.get("if") == guard and re.fullmatch(r"sleep \d+", str(pause.get("run", "")).strip()), (
+        "the step after the gate may only pause, and only after a failed gate"
+    )
+    assert retry.get("if") == guard, "the retry runs exactly when the gate failed"
+    assert retry["uses"] == gate["uses"] and retry["with"] == gate["with"], (
+        "the retry must be the same gate: same pinned action, same inputs, exit-code 1"
+    )
+    assert not retry.get("continue-on-error"), "the retry must block: a fixable CRITICAL fails both"
+    assert gate.get("continue-on-error") is True, "the first gate may fail into its retry"

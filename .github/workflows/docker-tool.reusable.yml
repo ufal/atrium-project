@@ -907,10 +907,32 @@ jobs:
       # The CVE release gate (#18): a version-tag build fails on a fixable CRITICAL vulnerability,
       # after the SARIF upload so its findings are in code scanning. Narrow on purpose: tags only;
       # CRITICAL only (HIGH is report-only); fixable only (an unpatchable CVE leaves nothing to do).
-      # exit-code "0" makes it report-only. History:
+      # exit-code "0" makes it report-only.
+      # A failure is a finding, or Trivy failing to run: on 2026-11-04 keyword-extract's v1.6.3-beta
+      # gate died pulling a layer of the llm image ("stream error … PROTOCOL_ERROR"), with no
+      # finding. So the gate runs once more after a pause; the retry is blocking, with the same
+      # inputs, so a fixable CRITICAL fails both and still stops the release. History:
       # docs/decisions/docker-tool-reusable.md#the-cve-release-gate
       - name: Fail the release on fixable CRITICAL vulnerabilities
+        id: gate
         if: startsWith(github.ref, 'refs/tags/')
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
+        with:
+          version: v0.76.1   # as on the first scan
+          image-ref: ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}@${{ steps.build.outputs.digest }}
+          format: table   # human-readable in the log, so the failure explains itself
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+        # ci-optional: the retry below is blocking, so a fixable CRITICAL still fails the release
+        continue-on-error: true
+
+      - name: Wait before re-running the CVE gate
+        if: steps.gate.outcome == 'failure'
+        run: sleep 30
+
+      - name: Fail the release on fixable CRITICAL vulnerabilities (retry)
+        if: steps.gate.outcome == 'failure'
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
           version: v0.76.1   # as on the first scan
