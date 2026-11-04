@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). The six tools' `.2` releases (11-03) call the hub at `6a10787`, their `test` heads at `e11c882`; the `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-11-04, at the end of the file (this file is not in date order): the week's comments read into the records; the next round's fixes, comment drafts and box ticks listed._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). The six tools' `.2` releases (11-03) call the hub at `6a10787`, their `test` heads at `e11c882`; the `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-11-04 (fix round), at the end of the file (this file is not in date order): #6 step 1 built and re-vendored; six `.3` releases prepared as the pilot candidates; ocr-postprocess's scheduled lane fixed._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_2609.md` (prior: `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -3107,4 +3107,94 @@ The six releases and the pin move to `6a10787` landed as prepared. Every run sin
   - **not ticked:** #6 box 2, which stays open for #78. The other changed issues have no checkboxes.
 - **Checks:** the comment counts in the exports match GitHub; every comment ID from 10-28 on appears in its export and
   its digest; relative links in the changed files resolve; no trailing whitespace in the changed digests and plans.
+- Not pushed: files delivered in chat.
+
+## 2026-11-04 (fix round) — #6 step 1 in the shared modules; six `.3` releases; the red lane fixed
+
+The round the entry above listed. Prepared, not pushed. **The maintainer's decision (11-04):** the pilot
+candidates are six `.3` releases carrying #6's step 1.
+
+- **#6, step 1 of the rights proposal** (`docs/templates/shared/`, then `scripts/revendor_shared.sh` into the six
+  tools, byte-identical):
+  - **`atrium_rocrate.py`:**
+    - a document or run crate's root `license` names `#no-licence-asserted`, a contextual entity that asserts
+      nothing; its description says the rights depend on the source and on AMČR's permission;
+    - the default root description says the rights are not established;
+    - the calculated value is not exported, and the "most restrictive" entity is gone;
+    - a fragment carries no licence entity;
+    - `wrap_fragment()` takes a licence only when the host asserts one, and its stub root names the same entity
+      otherwise (the CLI's `--wrap` and `tools/ci/rocrate_check.py` follow).
+  - **`atrium_document.py`:** `provenance.license_basis: "calculated"` (`LICENSE_BASIS_CALCULATED`), in
+    `_provenance()` and `merge_document_records()`, also on the conservative default. An older record gets it when
+    next written.
+  - **Schema:** `license_basis` declared (closed enum `calculated`). It is registered in `test_schema_freeze.py`'s
+    `POST_FREEZE_CHANGES`, with a changelog section and register row in `docs/document_schema.md`;
+    `tests/test_document_required.py`'s floor shape carries it. `doc-schema-v1` is untouched; a record with the
+    field still validates under it.
+  - **`para_licenses.py`:** the notes list the components and say no output licence is asserted, and name the
+    NON-COMMERCIAL and SHARE-ALIKE components. The "Effective output license … most restrictive" sentence is gone;
+    `effective_license` and the flags stay, as the calculated label.
+  - **Tests:** a `TestNoLicenceAsserted` class (7 tests) and a record/merge test in the canonical files; the
+    `--wrap` CLI test asserts the new root.
+  - **Hub:**
+    - `fixtures/atrium_document.example.json`;
+    - `docs/rocrate_export.md` (the mapping row, the example root, and the re-vendor paragraph, which pointed at
+      the pre-pin "one window" procedure and now points to `docker_gha.md`);
+    - the site's `ecosystem/licences.md` (what is done, what is next), `contracts/rocrate.md` and
+      `ecosystem/document-contract.md`.
+  - **Tools:**
+    - each `service/openapi.json` carries the new record schema (digest `13349c066d40`). It was rebuilt the way
+      `atrium_service._finish_openapi()` hoists the schema; the method reproduces the committed `.2` specs byte
+      for byte;
+    - ocr-postprocess `run_pipeline.py` prints the component count, not "Effective output license";
+    - the licence/paradata pages of translator, nlp-enrich and digital-convert.
+- **ocr-postprocess's red scheduled lane (#9):**
+  - `scipy>=1.17.1,<1.18`;
+  - `numpy>=2.4.6,<2.5` in its three requirement files;
+  - Dependabot ignores scipy >= 1.18.
+
+  59 floors in the seven repositories were checked against PyPI; no other one excludes Python 3.11.
+- **The `CATEGORY` column (#66):** page-classification's README and `docs/how-it-works.md`, and the hub's
+  `workflows/page-classification.md`. The wrapper zip on #66 answers 403 here, so Mark's copy is the reference.
+- **Six `.3` releases prepared:**
+  - page-classification `v1.12.3-beta`, ocr-postprocess `v1.15.3-beta`, digital-convert `v1.4.3-beta`,
+    nlp-enrich `v1.3.3-beta`, keyword-extract `v1.6.3-beta`, translator `v1.7.3-beta`;
+  - in each: `CITATION.cff`, `para_config.txt`, the spec, the version examples and the `CONTRIBUTING.md` row;
+  - keyword-extract's three vocabulary sidecars re-stamped by `vocab_build.py`.
+
+  digital-convert's `ADOPTED` is unchanged (no TEITOK file moved).
+- **After the tags** (a separate archive): `docs_site/pilot.md` and `docs/k8s_acceptance_runbook.md` on `.3`.
+  `docs/release_trust.md`'s table stays: it is the dated evidence of the 10-29 pin sweep.
+- **Records:** the 11-04 sections of the pairs 4, 6, 66, 72, 77 and 81 have a fix-round block. Comment drafts for
+  #4, #6, #66, #72, #77, #79, #81, ocr-postprocess#9 and page-classification#64 are in chat.
+- **Checks (Python 3.11):**
+
+  | Suite                  | Result                             |
+  |------------------------|------------------------------------|
+  | hub `tests/`           | 604 passed, 6 skipped              |
+  | canonical shared tests | 279 passed, 5 skipped              |
+  | page-classification    | 838 passed, 17 skipped             |
+  | ocr-postprocess        | 2320 passed, 14 skipped, 2 xfailed |
+  | digital-convert        | 980 passed, 4 skipped              |
+  | nlp-enrich             | 1128 passed, 11 skipped            |
+  | keyword-extract        | 1030 passed, 7 skipped             |
+  | translator             | 1234 passed, 1 skipped             |
+
+  - the six tool suites ran without torch;
+  - each tool's OpenAPI contract test: 12 of 12;
+  - `check_version.py --tag` agrees in all six;
+  - the 24 vendored selftests pass;
+  - `docs_check` 7/7, `runbook_check` 6/6, `mkdocs build --strict` (also with the after-tags pages);
+  - ruff clean.
+- **Not run here:** rocrate-validator, because this session cannot reach w3id.org; `hub-self-check` runs it on the
+  push.
+- **Yours, in order:**
+  1. push the hub and move `v1` to it;
+  2. in each tool, `python3 scripts/pin_hub_reusables.py --sha <v1>` from the hub, committed with the copies
+     (`revendor_shared.sh` now reports the pins STALE, as it should before that);
+  3. push the six;
+  4. tag `.3`;
+  5. apply the after-tags archive;
+  6. dispatch both E2E lanes and ocr-postprocess `scheduled-smoke`;
+  7. post the comments, and close ocr-postprocess#9 and page-classification#64.
 - Not pushed: files delivered in chat.

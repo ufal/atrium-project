@@ -164,7 +164,6 @@ def build_samples(out: Path) -> List[Path]:
             rc.document_crate(record, paradata=paradata, fragment=True),
             name="ATRIUM record fragment (stub root)",
             description="The sample record's fragment under a stub root.",
-            license=license_url,
             date_published="2026-07-24",
         ),
         str(fragment),
@@ -188,7 +187,6 @@ def build_samples(out: Path) -> List[Path]:
             rc.action_fragment(action),
             name="One service call (stub root)",
             description="A service's CreateAction, as AMČR embeds it.",
-            license=license_url,
             date_published="2026-07-24",
         ),
         str(service),
@@ -214,13 +212,11 @@ def _paradata_records(paths: Sequence[str]) -> List[dict]:
 def build_record(record_path: Path, paradata: Sequence[str], out: Path) -> Path:
     """The fragment of a real record, under a stub root."""
     record = json.loads(record_path.read_text(encoding="utf-8"))
-    provenance = record.get("provenance") or {}
     fragment = rc.document_crate(record, paradata=_paradata_records(paradata), fragment=True)
     crate = rc.wrap_fragment(
         fragment,
         name="ATRIUM record fragment {} (stub root)".format(record.get("doc_id") or ""),
         description="The fragment of the E2E's final record under a stub root, as AMČR's record crate embeds it.",
-        license=str(provenance.get("license_url") or provenance.get("license") or "unspecified"),
         date_published=rc._date_published(record),
     )
     rc.write_crate(crate, str(out))

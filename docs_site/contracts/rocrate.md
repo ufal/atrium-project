@@ -48,7 +48,7 @@ page-classification's `page_categories` and `pages`, then the translator's `tran
 | each `assembled.blocks` stamp                     | a `#block-<name>` `CreativeWork` with `recordBlock` and `dateModified`                                                                         | the block; the run that wrote it lists it as `result`                                                                                                                                                          |
 | each `provenance.contributors[]` entry            | a `CreateAction` with the run's `run_uuid` as `@id` (`#run-<program>-<run_id>` for a record written before it existed)                         | who ran, when (`startTime`/`endTime`), in which image, with what status, and what they produced                                                                                                                |
 | each program                                      | a `SoftwareApplication` whose `@id` is its release page, with `version`, the repository `url` and the authors as `creator`                     | the program, its version and its authors; without paradata the id is the repository and the version reads `unrecorded`                                                                                         |
-| `provenance.license`                              | the root's `license`                                                                                                                           | an older calculated field, written as the crate's licence today. It is not the licence of the crate's contents; a "no licence asserted" entity replaces it ([Licences and paradata](../ecosystem/licences.md)) |
+| `provenance.license`                              | not exported; the root's `license` names `#no-licence-asserted`                                                                                | an older calculated field (`license_basis: "calculated"`), not the licence of the crate's contents; the root names a "no licence asserted" entity instead ([Licences and paradata](../ecosystem/licences.md))  |
 
 The root declares the Process Run Crate profile; each tool's own authors (its `CITATION.cff`)
 appear as ORCID `Person` entities, the `creator` of that tool.
@@ -60,7 +60,7 @@ For page-classification's half of that record, the heart of the output reads:
   "name": "ATRIUM document record CTX000000003", "identifier": { "@id": "#doc_id" },
   "conformsTo": { "@id": "https://w3id.org/ro/wfrun/process/0.5" },
   "about": [ { "@id": "https://w3id.org/atrium/page-category/TEXT_P" } ],
-  "license": { "@id": "https://opensource.org/license/mit/" },
+  "license": { "@id": "#no-licence-asserted" },
   "datePublished": "2026-09-22",
   "mentions": [ { "@id": "#run-page-classification-260922-220516" }, "…" ] },
 { "@id": "#run-page-classification-260922-220516", "@type": "CreateAction",

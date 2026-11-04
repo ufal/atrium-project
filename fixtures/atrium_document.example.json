@@ -28,6 +28,7 @@
   "provenance": {
     "license": "CC BY-NC-SA 4.0",
     "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+    "license_basis": "calculated",
     "license_detail": {
       "effective_license": "CC BY-NC-SA 4.0",
       "effective_license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
@@ -70,7 +71,7 @@
         }
       ],
       "unknown_licenses": [],
-      "notes": "Effective output license is CC BY-NC-SA 4.0, the most restrictive among 5 component(s) used. Outputs are NON-COMMERCIAL: downstream commercial use is not permitted while this component is in the pipeline. SHARE-ALIKE applies: derivatives must be licensed under the same terms."
+      "notes": "5 component(s) used; each keeps its own licence or terms (see components). No output licence is asserted. Components under a NON-COMMERCIAL licence: fasttext, nametag3, udpipe2. Components under a SHARE-ALIKE licence: nametag3, udpipe2."
     },
     "contributors": [
       {

@@ -63,6 +63,8 @@ block changes), and needs no shared volume or orchestrator.
    most-restrictive union as paradata. `provenance.license` is that calculation, not the licence
    of the record or of any output: the rights in an output depend on the source document and are
    stated only by whoever holds them (#6, agreed 2026-10-22; the schema's descriptions say so).
+   Since 2026-11-04 the record says so too: `provenance.license_basis: "calculated"`, and an
+   RO-Crate export names `#no-licence-asserted` on its root instead of this value.
 6. **Unknown or newer blocks are preserved** verbatim; a newer MAJOR `schema_version` is refused
    with the same guard as `load_paradata()`. A baseline that does not validate is still accreted
    onto, except where a tool must add rows: a list block it merges into (`pages`, `lines`,
@@ -530,6 +532,7 @@ that repository's own copy.
 | `/properties/enrichment/properties/items/items/properties/teater_category_ids`     | added: optional `[{source, id}]`, the AMČR and TEATER records of the label    | ufal/atrium-project#51    | [2026-10-13](#changelog--2026-10-13-51-teater_category_ids-declared-the-crate-stops-minting-theme-uris) |
 | `/allOf/12`                                                                        | added: a stamped `keywords` must be present                                   | ufal/atrium-project#73    | [2026-10-09](#changelog--2026-10-09-73-keywords-and-quality_summary-upstream_unavailable)               |
 | `/allOf/13`                                                                        | added: a stamped `quality_summary` must be present                            | ufal/atrium-project#73    | [2026-10-09](#changelog--2026-10-09-73-keywords-and-quality_summary-upstream_unavailable)               |
+| `/properties/provenance/properties/license_basis`                                  | added: optional, closed enum `calculated`                                     | ufal/atrium-project#6     | [2026-11-04](#changelog--2026-11-04-6-license_basis-the-crate-root-asserts-no-licence)                  |
 
 Not registered, because it does not constrain: the `lines[].style` description correction of the
 same pass.
@@ -962,7 +965,7 @@ already carries, and a field that does not exist is omitted rather than guessed:
 
 | RO-Crate                 | ATRIUM source                                                                                                                              |
 |--------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| root `license`           | `provenance.license_url` / `license` — the calculated most-restrictive union, not a rights assertion; held until #6 settles the crate root |
+| root `license`           | `#no-licence-asserted`, which asserts nothing (#6, 2026-11-04); the calculated `provenance.license` is not exported                        |
 | tool `creator`           | the ORCID `Person`s of every `CITATION.cff` (`atrium_rocrate.AUTHORS`; root `author` until #71)                                            |
 | root `hasPart`           | `derived_from` values, and **only** those                                                                                                  |
 | root `isBasedOn`         | `source`, as a contextual entity: no path, because originals are archive-managed                                                           |
@@ -1365,3 +1368,25 @@ No schema change. motyc decided V-5 (`skos_strategy.md`): `enrichment.items[].te
 AMČR/TEATER label (or the meta-text sentinel) and `teater_category_ids` its source identities, as the schema
 already describes them. The registry's theme scheme names no record field any more (`atrium_vocab.py`); a theme
 is a derived classification, and persisting one would be a new optional field, not added now.
+
+## Changelog — 2026-11-04 (#6: `license_basis`; the crate root asserts no licence)
+
+Step 1 of the rights proposal ([`proposals/rights-and-policy.md`](proposals/rights-and-policy.md)), option (a)
+as motyc chose it on #6 (2026-10-29).
+
+- **`provenance.license_basis`** (added, optional, closed enum `calculated`). Every record a tool writes from this
+  release on carries it next to `license` and `license_url`. It says the value is calculated: the most restrictive
+  component licence (`para_licenses`), or the conservative default when no component is recorded. It is never the
+  licence of the record's content. A record written earlier has the same calculated value without the mark;
+  `DocumentRecord` adds the mark when it next writes one. Registered under the freeze above. A record that
+  carries it is still valid under `doc-schema-v1`, whose `provenance` allows further properties.
+- **`license_detail.notes`** describes the components, not the output: "N component(s) used; each keeps its own
+  licence or terms (see components). No output licence is asserted." It no longer says "Effective output license
+  is X, the most restrictive among N component(s) used". The NON-COMMERCIAL and SHARE-ALIKE notes name the
+  components that carry those licences. `effective_license` and the two flags stay, as the calculated label.
+- **RO-Crate export** (`atrium_rocrate.py`, not the record): a document or run crate's root `license` names
+  `#no-licence-asserted`, a contextual entity that asserts nothing and says the rights depend on the source and on
+  AMČR's permission. The calculated value is no longer exported as the crate's licence. A fragment carries no
+  licence entity: the host's root decides its own. `--wrap` gives its stub root `#no-licence-asserted` unless a
+  licence is passed.
+- Not in this change: the paradata `license` fields (paradata 3.0) and moving the calculated value out of the record.

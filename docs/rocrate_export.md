@@ -176,7 +176,7 @@ makes a MUST: without paradata it reads `"unrecorded"`, which states the gap ins
 | root `identifier`            | `doc_id`, as a `PropertyValue` (`#doc_id`)                                               | the form RO-Crate 1.2 recommends                                                                                                                 |
 | root `name`                  | `doc_id`                                                                                 |                                                                                                                                                  |
 | root `datePublished`         | the record's **newest `assembled.blocks[*].updated_at`**                                 | never the clock — see §7.3                                                                                                                       |
-| root `license`               | `provenance.license_url` / `license`                                                     | the calculated most-restrictive union (`para_licenses.merge_effective_licenses()`), not a rights assertion; held until #6 settles the crate root |
+| root `license`               | `#no-licence-asserted`, a contextual entity                                              | asserts nothing: rights depend on the source and AMČR's permission (#6, 2026-11-04); the calculated `provenance.license` is not exported         |
 | root `conformsTo`            | the Process Run Crate 0.5 `Profile`                                                      | the descriptor names RO-Crate 1.2                                                                                                                |
 | root `hasPart` → `File`      | `derived_from` values, **and only those**                                                | persistent step outputs; `contentSize` when the files are present (`data_dir`)                                                                   |
 | root `isBasedOn` → `#source` | `source`                                                                                 | contextual, not a part — §4.2; carries the archive's `sha512`, or else `sha256`                                                                  |
@@ -375,7 +375,7 @@ and its tools read `"version": "unrecorded"`; pass `--paradata` for each run to 
   "datePublished": "2026-07-25",
   "schemaVersion": "1.0",
   "conformsTo": { "@id": "https://w3id.org/ro/wfrun/process/0.5" },
-  "license":   { "@id": "https://creativecommons.org/licenses/by-nc-sa/4.0/" },
+  "license":   { "@id": "#no-licence-asserted" },
   "isBasedOn": { "@id": "#source" },
   "hasPart":   [ { "@id": "DOC_LINE_CATEG/CTX000000001.csv" },
                  { "@id": "KW_PER_DOC_LLM/CTX000000001_enriched.json" }, … 2 more … ],
@@ -625,10 +625,11 @@ It is registered once, as a row in [`templates/shared/MANIFEST.json`](templates/
 all read that row. Without the exclusion `ruff format` would reflow the vendored copy to the
 local `line-length`, and para-drift would go red on the next commit.
 
-**To change the crate's shape**, edit only the hub copy, run `scripts/revendor_shared.sh --check`
-then without `--check`, commit the hub edit and the five vendored copies in **one window**, and
-only then move `v1`. `para-drift` reads the hub at `hub-ref` (default `v1`), so any other order
-turns five repositories red.
+**To change the crate's shape**, edit only the hub copy and follow the re-vendor procedure in
+[`docker_gha.md`](docker_gha.md): the hub commit first, then `v1` on it, then one commit per tool
+repository with its copies (`scripts/revendor_shared.sh`) and its pins
+(`scripts/pin_hub_reusables.py --sha …`) together. `para-drift` reads the hub at each caller's
+pinned `hub-ref`, so copies newer than the pin fail it.
 
 **Bumping `ROCRATE_VERSION`** is a compatibility statement about every crate already written,
 exactly like `SCHEMA_VERSION` in `atrium_document.py`. `conformsTo` is what a consumer reads to

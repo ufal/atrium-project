@@ -69,8 +69,9 @@ and turning PDFs into a labelled training set and corrections back into it
 
 ## What you get
 
-* **A routing decision per page** — the Top-N table (`FILE, PAGE, CLASS-1…N, SCORE-1…N`), one row
-  per page, best guess first. The HTTP service gives the same per page in JSON.
+* **A routing decision per page** — the Top-N table (`FILE, PAGE, CLASS-1…N, SCORE-1…N`; at `-tn 1`
+  also `CATEGORY`, a copy of `CLASS-1`), one row per page, best guess first. The HTTP service gives
+  the same per page in JSON.
 * **Evidence for review** — the all-scores table, and, with the command-line ensemble, each
   model's own vote.
 * **A provenance record** — the paradata log of the run, or the `paradata` of a service answer,

@@ -102,7 +102,8 @@ and the rights in a record depend first on the source document: [Licences and pa
 explains this in plain words ([#6](https://github.com/ufal/atrium-project/issues/6)).
 
 `provenance.license` and `license_url` beside it are an older calculated field, not a licence; do not
-use them ([an old field to ignore](licences.md#an-old-field-to-ignore)).
+use them ([an old field to ignore](licences.md#an-old-field-to-ignore)). The record says so in
+`provenance.license_basis: "calculated"`.
 
 For the two tools of this page: a page-classification inference run lists `vit_models` (CC BY-NC 4.0)
 as its only always-used component (the training dataset counts only for `--train`, which writes no

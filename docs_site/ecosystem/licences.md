@@ -37,9 +37,10 @@ licence.
 ## An old field to ignore
 
 Records and paradata still carry one older field: `provenance.license` in the record, `license` in the paradata.
-An RO-Crate export also writes it as the licence of the crate. It was calculated by a rule the project has
-dropped: the most restrictive licence among the components. It is not a licence, a summary or a warning, and
-nothing should be read from it. Use the list of components instead. The shared modules change it next (below).
+It was calculated by a rule the project has dropped: the most restrictive licence among the components. It is
+not a licence, a summary or a warning, and nothing should be read from it. Use the list of components instead.
+From the `.3` releases (November 2026) the record marks it `provenance.license_basis: "calculated"`, and an
+RO-Crate export no longer writes it as the licence of the crate (below).
 
 ## What changes
 
@@ -55,13 +56,14 @@ what is useful and drops the calculated field:
    are unknown, and the record says nothing.
 
 AMČR agreed to this on 22 October 2026: AMČR states the rights of the outputs it publishes, and no tool makes
-an automatic or default licence assertion. The shared modules change next:
+an automatic or default licence assertion. In the shared modules:
 
-- an RO-Crate export without an asserted licence points its `license` to a "no licence asserted" entity, as
-  agreed on [#6](https://github.com/ufal/atrium-project/issues/6) on 29 October 2026;
-- the record marks the calculated field as such, and its next schema version moves it to
-  `provenance.calculated_license`;
-- the paradata's next version stops writing it.
+- **done in the `.3` releases:** an RO-Crate export points its `license` to a "no licence asserted" entity
+  (`#no-licence-asserted`), as agreed on [#6](https://github.com/ufal/atrium-project/issues/6) on 29 October
+  2026; the record marks the calculated field `provenance.license_basis: "calculated"`; the paradata's notes
+  list the components and say that no output licence is asserted;
+- **next:** the record's next schema version moves the calculated field to `provenance.calculated_license`, and
+  the paradata's next version stops writing it.
 
 Records and paradata written before stay as they are.
 
