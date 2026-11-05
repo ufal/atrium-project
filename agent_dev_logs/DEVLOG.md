@@ -3379,3 +3379,38 @@ candidates are six `.3` releases carrying #6's step 1.
   3. re-label Figure 3's lines with ocr-postprocess `v1.15.3-beta`;
   4. set the Hugging Face card of `ufal/vit-historical-page` to CC BY-NC 4.0.
 - Not pushed: files delivered in chat.
+
+## 2026-11-05 — #13: work after the conference, the versions to cite, PCI's rules
+
+- **Read:**
+  - #13's comments 43–46 (stranak 10:16 and 10:31, K4TEL 10:22 and 10:34);
+  - PCI Archaeology's guide for authors and submission page (Kate's saved copies, then the live pages);
+  - the CAA 2026 proceedings page;
+  - JCAA's submission guidelines and editorial policies;
+  - the talk's record and slides (Zenodo 19500212, 44 pages) and the CAA paper booklet;
+  - the tools' releases up to the talk, including `atrium-alto-postprocess` (read through the git proxy);
+  - the AMČR OAI-PMH record of C-TX-192100040, and the Hugging Face card of `ufal/vit-historical-page`.
+
+  The external sites became reachable in the afternoon, once the session's network was opened.
+- **Found:**
+  1. CAA invites presenters to submit a written paper and names the session chairs as recommenders; it says nothing
+     on post-conference content. PCI ties no preprint to a talk. Both require open code and data; PCI wants a
+     versioned deposit with a DOI or SWHID ("Git URLs are not permanent"), its own conflict-of-interest sentence, no
+     AI-generated illustrations, a stated research question and 5–10 suggested recommenders;
+  2. the talk was on Friday 3 April 2026 in S11 (booklet, p. 144), with four repositories at page-classification
+     `v1.0.3-beta`, alto-postprocess `v0.13.0`, nlp-enrich `v0.7.0` and translator `v0.4.0`;
+  3. the record, RO-Crate, digital-convert, keyword-extract, the services, the Qwen2.5 scorer, the 12 October
+     snapshot and Table 2 came later, and v31 already reported them;
+  4. the abstract calls NameTag3 fine-tuning "promising", while nlp-enrich has run no training;
+  5. C-TX-192100040 is the correspondence of Josef Choc and Josef Antonín Jíra (1921): DOI
+     `10.60585/C-TX-192100040` (resolves to the Digital Archive), CC BY-NC 4.0, access level "badatel";
+  6. the Hugging Face card still says `license: mit`.
+- **Prepared** (delivered in chat):
+  - the #13 digest and plan for 11-05, with Decision D: cut to the talk, or the current state with the talk date;
+  - a #13 comment draft.
+- **Yours:**
+  1. post the comment;
+  2. Decision D with Pavel and motyc;
+  3. the deposits for the versions cited;
+  4. the Hugging Face card.
+- Not pushed: files delivered in chat.
