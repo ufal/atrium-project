@@ -3414,3 +3414,39 @@ candidates are six `.3` releases carrying #6's step 1.
   3. the deposits for the versions cited;
   4. the Hugging Face card.
 - Not pushed: files delivered in chat.
+
+## 2026-11-05 (afternoon) — #66: Galaxy wrappers and workflows for the page classifier and the translator
+
+- **Read:** #66's 10 comments; DARIAH's test Galaxy at <https://galaxy.acdh-dev.oeaw.ac.at/galaxy/> through its
+  public API: Galaxy 26.1.1; its ATRIUM section (DARIAH's own tools, no ATRIUM-UFAL tool yet); IUC Tesseract
+  5.5.3+galaxy0 (ALTO as `xml`); `__FILTER_FROM_FILE__`; datatypes (`xml`, `pdf`, `png`, `jpg`, `tiff`, `csv`,
+  `json`; no `conllu`); Mark's six published workflows (format 0.1).
+- **K4TEL (11-05):** has an account there and can push to `DARIAH-ERIC/atrium-galaxy-tools`. This round: the page
+  classifier and the translator; sources in the hub's `galaxy/`; the page-classification wrapper rebuilt from
+  `v1.12.3-beta` (the 10-28 zip answers 403 here).
+- **Built:**
+  1. `galaxy/tools/atrium_page_classification/` (`1.12.3-beta+galaxy0`): page images or a PDF; one model or the
+     ensemble; weights downloaded in the job or staged; outputs Top-N, all scores, votes, paradata, record(s), and the
+     element identifiers of the pages to route (for `__FILTER_FROM_FILE__`). Three tests, with the `CATEGORY` header.
+  2. `galaxy/data_managers/data_manager_atrium_page_models/`: stages the models into the `atrium_page_models` table.
+  3. `galaxy/tools/atrium_translator/` (`1.7.6-beta+galaxy0`): one ALTO page or metadata record per job, LINDAT
+     only, an empty `--config` with every setting on the command line. Three tests (cs→en record, ALTO append,
+     the refused pair de→pl).
+  4. `galaxy/workflows/`: page images; PDFs; XML records; and *classify → keep the text pages → Tesseract (ces,
+     ALTO) → translate*. Each with a planemo `-tests.yml`; README, CHANGELOG, `.dockstore.yml`.
+  5. `tests/test_galaxy_wrappers.py` (19 tests); the Galaxy sheets of `docs_site/workflows/page-classification.md`
+     and `translator.md`; a row in `README.md`.
+  6. atrium-translator `v1.7.6-beta` (prepared): `entrypoint.py`, so Galaxy's `/bin/sh tool_script.sh` runs.
+- **Checked:** `planemo lint` (both tools, the data manager), `planemo workflow_lint --iwc` (the ToolShed lookup of
+  Tesseract's latest version is unreachable from here); the hub's tests; the translator's suite (1235 passed). The
+  rendered job scripts ran as Galaxy starts them (`docker run --user 1234 -w <job>/working IMAGE /bin/sh
+  tool_script.sh`) against the real `entrypoint.py` files and stand-in programs: 9 classifier scenarios and the data
+  manager, 4 translator scenarios, all passing. On the host, the same translator scripts ran the real `main.py`
+  against the repository's stub LINDAT, and the routing script ran the real `utils.doc_id_and_page`.
+  **Not run here:** `planemo test` and the real images (ghcr.io blobs, the Hub's weight CDN and LINDAT answer 403).
+- **Yours:**
+  1. push the translator's `test` and tag `v1.7.6-beta`;
+  2. copy `galaxy/` into `DARIAH-ERIC/atrium-galaxy-tools`;
+  3. `planemo test` there; import the workflows on the instance;
+  4. ask Mark to run the data manager and mount its path.
+- Not pushed: files delivered as per-repo zips.

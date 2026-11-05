@@ -1,0 +1,126 @@
+{
+    "a_galaxy_workflow": "true",
+    "annotation": "Translates the free-text fields of AMČR metadata records (or, with 'Kind of document' set to ALTO, the lines of ALTO pages) into English with the LINDAT translation service, keeping each document's structure. One job per document; each gets its translation log, paradata and document record.",
+    "comments": [],
+    "creator": [
+        {
+            "class": "Organization",
+            "name": "ATRIUM project",
+            "url": "https://ufal.github.io/atrium-project/"
+        },
+        {
+            "class": "Person",
+            "name": "Kateryna Lutsai",
+            "identifier": "https://orcid.org/0009-0002-4773-2797"
+        }
+    ],
+    "format-version": "0.1",
+    "license": "MIT",
+    "name": "ATRIUM translation of XML records",
+    "release": "0.1.0",
+    "report": {
+        "markdown": "\n# Workflow Execution Report\n\n## Workflow Inputs\n```galaxy\ninvocation_inputs()\n```\n\n## Workflow Outputs\n```galaxy\ninvocation_outputs()\n```\n\n## Workflow\n```galaxy\nworkflow_display()\n```\n"
+    },
+    "steps": {
+        "0": {
+            "annotation": "A list of AMČR metadata records (OAI-PMH XML) or other XML records.",
+            "content_id": null,
+            "errors": null,
+            "id": 0,
+            "input_connections": {},
+            "inputs": [
+                {
+                    "description": "A list of AMČR metadata records (OAI-PMH XML) or other XML records.",
+                    "name": "XML documents"
+                }
+            ],
+            "label": "XML documents",
+            "name": "Input dataset collection",
+            "outputs": [],
+            "position": {
+                "left": 40,
+                "top": 120
+            },
+            "tool_id": null,
+            "tool_state": "{\"optional\": false, \"format\": [\"xml\"], \"tag\": null, \"collection_type\": \"list\"}",
+            "tool_version": null,
+            "type": "data_collection_input",
+            "uuid": "7bef160b-2308-552d-8da6-8c86a5103c10",
+            "when": null,
+            "workflow_outputs": []
+        },
+        "1": {
+            "annotation": "Source language detected per field (Czech when detection cannot be trusted); English target; the bundled AMČR fields and vocabulary.",
+            "content_id": "atrium_translator",
+            "errors": null,
+            "id": 1,
+            "input_connections": {
+                "document": {
+                    "id": 0,
+                    "output_name": "output"
+                }
+            },
+            "inputs": [],
+            "label": "Translate",
+            "name": "ATRIUM XML translator",
+            "outputs": [
+                {
+                    "name": "translated",
+                    "type": "xml"
+                },
+                {
+                    "name": "log",
+                    "type": "csv"
+                },
+                {
+                    "name": "paradata",
+                    "type": "json"
+                },
+                {
+                    "name": "record",
+                    "type": "json"
+                }
+            ],
+            "position": {
+                "left": 340,
+                "top": 180
+            },
+            "tool_id": "atrium_translator",
+            "tool_state": "{\"document\": {\"__class__\": \"ConnectedValue\"}, \"mode\": {\"kind\": \"metadata\", \"__current_case__\": 0, \"fields\": {\"source\": \"amcr\", \"__current_case__\": 0}, \"xsd\": null, \"xsd_strict\": false}, \"source\": {\"source_lang\": \"auto\", \"__current_case__\": 0, \"default_source_lang\": \"cs\"}, \"target_lang\": \"en\", \"output_mode\": \"replace\", \"vocabulary\": {\"source\": \"bundled\", \"__current_case__\": 0}, \"baseline\": null, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "1.7.6-beta+galaxy0",
+            "type": "tool",
+            "uuid": "627c761d-887a-5bf5-b0d4-a6dfbe28b499",
+            "when": null,
+            "workflow_outputs": [
+                {
+                    "label": "Translated documents",
+                    "output_name": "translated",
+                    "uuid": "d836d8c4-dbe5-558e-9292-9d7c9faf2bc0"
+                },
+                {
+                    "label": "Translation logs",
+                    "output_name": "log",
+                    "uuid": "c393ec77-0666-545f-86e2-ca1ce601c7bd"
+                },
+                {
+                    "label": "Document records",
+                    "output_name": "record",
+                    "uuid": "d49d3548-0f96-5c00-853f-67174be9da0b"
+                },
+                {
+                    "label": "Paradata",
+                    "output_name": "paradata",
+                    "uuid": "959ad275-d796-592d-bbba-0a2e418999b3"
+                }
+            ],
+            "post_job_actions": {}
+        }
+    },
+    "tags": [
+        "ATRIUM",
+        "translation",
+        "digital-humanities"
+    ],
+    "uuid": "977ce61e-74ed-5e0b-8ab1-4e867e73c180",
+    "version": 1
+}

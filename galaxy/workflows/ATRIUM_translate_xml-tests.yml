@@ -1,0 +1,22 @@
+- doc: One AMČR metadata record, Czech to English.
+  job:
+    XML documents:
+      class: Collection
+      collection_type: list
+      elements:
+        - class: File
+          identifier: sample_amcr
+          path: ../tools/atrium_translator/test-data/sample_amcr.xml
+  outputs:
+    Translated documents:
+      element_tests:
+        sample_amcr:
+          asserts:
+            has_text:
+              text: amcr:popis
+    Translation logs:
+      element_tests:
+        sample_amcr:
+          asserts:
+            has_text:
+              text: //amcr:amcr/amcr:dokument/amcr:popis

@@ -1,0 +1,38 @@
+version: 1.2
+workflows:
+  - name: ATRIUM_page_classification_images
+    subclass: Galaxy
+    publish: true
+    primaryDescriptorPath: /ATRIUM_page_classification_images.ga
+    testParameterFiles:
+      - /ATRIUM_page_classification_images-tests.yml
+    authors:
+      - name: Kateryna Lutsai
+        orcid: 0009-0002-4773-2797
+  - name: ATRIUM_page_classification_pdfs
+    subclass: Galaxy
+    publish: true
+    primaryDescriptorPath: /ATRIUM_page_classification_pdfs.ga
+    testParameterFiles:
+      - /ATRIUM_page_classification_pdfs-tests.yml
+    authors:
+      - name: Kateryna Lutsai
+        orcid: 0009-0002-4773-2797
+  - name: ATRIUM_translate_xml
+    subclass: Galaxy
+    publish: true
+    primaryDescriptorPath: /ATRIUM_translate_xml.ga
+    testParameterFiles:
+      - /ATRIUM_translate_xml-tests.yml
+    authors:
+      - name: Kateryna Lutsai
+        orcid: 0009-0002-4773-2797
+  - name: ATRIUM_classify_ocr_translate
+    subclass: Galaxy
+    publish: true
+    primaryDescriptorPath: /ATRIUM_classify_ocr_translate.ga
+    testParameterFiles:
+      - /ATRIUM_classify_ocr_translate-tests.yml
+    authors:
+      - name: Kateryna Lutsai
+        orcid: 0009-0002-4773-2797

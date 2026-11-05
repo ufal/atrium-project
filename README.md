@@ -34,6 +34,7 @@ since 2026-10-19.
 | see what is ready, measured or experimental         | [Status](docs_site/status.md)                                                                                                                            |
 | look up an unfamiliar term                          | [Glossary](docs_site/glossary.md)                                                                                                                        |
 | deploy the services and accept them on Kubernetes   | [docs/k8s_deployment.md](docs/k8s_deployment.md), [docs/k8s_acceptance_runbook.md](docs/k8s_acceptance_runbook.md)                                       |
+| run the tools in Galaxy, or install their wrappers  | [galaxy/README.md](galaxy/README.md)                                                                                                                     |
 | change code shared by the tools                     | [docs/shared_components.md](docs/shared_components.md)                                                                                                   |
 | add or change a CI check                            | [docs/ci_policy.md](docs/ci_policy.md)                                                                                                                   |
 | write or restructure a tool's documentation         | [docs/documentation-style.md](docs/documentation-style.md)                                                                                               |

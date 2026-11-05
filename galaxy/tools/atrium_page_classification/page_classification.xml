@@ -1,0 +1,374 @@
+<tool id="atrium_page_classification" name="ATRIUM page classification" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.0">
+    <description>sorts scanned archive pages into eleven categories</description>
+    <macros>
+        <!-- The release of ufal/atrium-page-classification whose batch image this wrapper runs. -->
+        <token name="@TOOL_VERSION@">1.12.3-beta</token>
+        <token name="@VERSION_SUFFIX@">0</token>
+        <!-- The five fine-tuned revisions of ufal/vit-historical-page that form the ensemble. -->
+        <token name="@ENSEMBLE@">v1.4 v2.4 v3.4 v4.4 v5.4</token>
+    </macros>
+    <creator>
+        <person givenName="Kateryna" familyName="Lutsai" identifier="https://orcid.org/0009-0002-4773-2797"/>
+        <person givenName="Dana" familyName="Křivánková" identifier="https://orcid.org/0000-0001-5718-9447"/>
+        <person givenName="David" familyName="Novák" identifier="https://orcid.org/0000-0001-6592-6291"/>
+        <person givenName="Pavel" familyName="Straňák" identifier="https://orcid.org/0000-0002-6895-8536"/>
+        <organization name="ATRIUM project" url="https://ufal.github.io/atrium-project/"/>
+    </creator>
+    <requirements>
+        <container type="docker">ghcr.io/ufal/atrium-page-classification:@TOOL_VERSION@</container>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+#import re
+## The pages keep their collection names: run.py reads the document and page number from
+## `<document>-<page>.<ext>` (the number after the last `-` or `_`).
+export MPLCONFIGDIR="\$PWD/.matplotlib" &&
+mkdir -p pages document records &&
+#if $input.kind == 'images':
+    #for $page in $input.pages:
+        #set $name = re.sub(r'\.(png|jpe?g|tiff?)$', '', str($page.element_identifier), flags=re.IGNORECASE)
+        #set $name = re.sub(r'[^\w.\-]', '_', $name)
+        ln -s '$page' 'pages/${name}.${page.ext}' &&
+    #end for
+#else:
+    #set $doc = re.sub(r'\.pdf$', '', str($input.pdf.element_identifier), flags=re.IGNORECASE)
+    #set $doc = re.sub(r'[^\w.\-]', '_', $doc)
+    ln -s '$input.pdf' 'document/${doc}.pdf' &&
+#end if
+
+## Where the weights come from: a folder staged once by the data manager (read offline), or a
+## fresh folder in the job's temporary directory, filled from the Hugging Face Hub.
+#if $models.source == 'staged':
+    MODELS='$models.model_set.fields.path' &&
+#else:
+    MODELS="\${_GALAXY_JOB_TMP_DIR:-\$PWD/tmp}/atrium_page_models" &&
+    #if $model.mode == 'ensemble':
+        ## Download-only runs, in their own folder so that their paradata stays out of result/.
+        mkdir -p download && cd download &&
+        for revision in @ENSEMBLE@; do
+            python3 /app/run.py --hf -rev "\$revision" --models-dir "\$MODELS" || exit 1;
+        done &&
+        cd .. &&
+    #end if
+#end if
+
+python3 /app/run.py
+    --models-dir "\$MODELS"
+    #if $model.mode == 'single':
+        -rev '$model.revision'
+        #if $models.source == 'download':
+            --hf
+        #end if
+    #else:
+        --best
+    #end if
+    #if $input.kind == 'images':
+        -d pages -ff png,jpg,jpeg,tif,tiff
+    #else:
+        -f 'document/${doc}.pdf'
+        #if $input.page_selection and str($input.page_selection).strip():
+            --pages '$input.page_selection'
+        #end if
+    #end if
+    -tn $top_n
+    $raw
+    #if $write_record:
+        #if $input.kind == 'images':
+            --document-json-out-dir records
+        #else:
+            --document-json-out record.json
+            #if $input.baseline:
+                --document-json '$input.baseline'
+            #end if
+        #end if
+    #end if
+&&
+
+## The result tables carry the run's time stamp in their names; each pattern matches one file.
+#if $model.mode == 'single':
+    #set $tag = 'model_' + str($model.revision).replace('.', '')
+    mv result/tables/*_${tag}_TOP-${top_n}.csv '$top_table' &&
+    #if $raw:
+        mv result/tables/*_${tag}_RAW.csv '$raw_table' &&
+    #end if
+#else:
+    mv result/tables/*_BEST_5_models_AVG_TOP-${top_n}.csv '$top_table' &&
+    mv result/tables/*_BEST_5_models_TOP-1.csv '$votes' &&
+#end if
+mv result/paradata/*_page-classification.json '$paradata'
+#if $write_record and $input.kind == 'pdf':
+    && mv record.json '$record'
+#end if
+#if $input.kind == 'images':
+    && python3 '$route_script' '$top_table' '$page_list' '$input.route_categories' '$route_ids'
+#end if
+    ]]></command>
+    <configfiles>
+        <!-- One line per page: the file name it was linked under, then its element identifier. -->
+        <configfile name="page_list"><![CDATA[#import re
+#if $input.kind == 'images':
+#for $page in $input.pages:
+#set $name = re.sub(r'\.(png|jpe?g|tiff?)$', '', str($page.element_identifier), flags=re.IGNORECASE)
+#set $name = re.sub(r'[^\w.\-]', '_', $name)
+${name}.${page.ext}	${page.element_identifier}
+#end for
+#end if
+]]></configfile>
+        <!-- The element identifiers whose best category is one of the chosen ones, for
+             Galaxy's "Filter collection" (__FILTER_FROM_FILE__). FILE and PAGE are split from
+             the file names by run.py's own helper, so both sides agree. -->
+        <configfile name="route_script"><![CDATA[
+import csv
+import sys
+
+sys.path.insert(0, "/app")
+from utils import doc_id_and_page  # noqa: E402
+
+table, page_list, categories, out = sys.argv[1:5]
+wanted = {c for c in categories.split(",") if c}
+by_page = {}
+with open(page_list, encoding="utf-8") as handle:
+    for line in handle:
+        if not line.strip():
+            continue
+        name, identifier = line.rstrip("\n").split("\t", 1)
+        doc_id, page = doc_id_and_page(name)
+        by_page[(doc_id, str(page if page is not None else 1))] = identifier
+kept = []
+with open(table, encoding="utf-8", newline="") as handle:
+    for row in csv.DictReader(handle):
+        key = (row["FILE"], str(int(float(row["PAGE"]))))
+        if row.get("CLASS-1") in wanted and key in by_page:
+            kept.append(by_page[key])
+with open(out, "w", encoding="utf-8") as handle:
+    handle.write("".join(identifier + "\n" for identifier in kept))
+print(f"{len(kept)} of {len(by_page)} page(s) routed: {sorted(wanted)}")
+]]></configfile>
+    </configfiles>
+    <inputs>
+        <conditional name="input">
+            <param name="kind" type="select" label="Input">
+                <option value="images" selected="true">Page images (one image per page)</option>
+                <option value="pdf">A PDF document (its pages are rendered at 300 dpi)</option>
+            </param>
+            <when value="images">
+                <param name="pages" type="data" format="png,jpg,tiff" multiple="true" label="Page images"
+                    help="A collection is best: its element names become the document and page numbers, as &lt;document&gt;-&lt;page&gt;, for example report-0007."/>
+                <param name="route_categories" type="select" multiple="true" optional="false"
+                    label="Pages to route onward"
+                    help="The 'Pages to route' output lists the pages whose best category is one of these, for the 'Filter collection' tool (for example, the pages to send to OCR).">
+                    <option value="TEXT_P" selected="true">TEXT_P: printed text</option>
+                    <option value="TEXT_T" selected="true">TEXT_T: typewritten text</option>
+                    <option value="TEXT" selected="true">TEXT: mixed printed, typed and handwritten text</option>
+                    <option value="TEXT_HW">TEXT_HW: handwritten text</option>
+                    <option value="LINE_P">LINE_P: printed table or form</option>
+                    <option value="LINE_T">LINE_T: typewritten table or form</option>
+                    <option value="LINE_HW">LINE_HW: handwritten table or form</option>
+                    <option value="DRAW">DRAW: drawing, map or plan</option>
+                    <option value="DRAW_L">DRAW_L: drawing with a legend or table</option>
+                    <option value="PHOTO">PHOTO: photograph</option>
+                    <option value="PHOTO_L">PHOTO_L: photograph with a legend or table</option>
+                </param>
+            </when>
+            <when value="pdf">
+                <param name="pdf" type="data" format="pdf" label="PDF document"/>
+                <param name="page_selection" type="text" value="" optional="true" label="Pages to classify"
+                    help="For example 1,3,5-7. Empty: every page.">
+                    <validator type="regex" message="Page numbers and ranges, separated by commas, for example 1,3,5-7">^\s*$|^\s*\d+(\s*-\s*\d+)?(\s*,\s*\d+(\s*-\s*\d+)?)*\s*$</validator>
+                </param>
+                <param name="baseline" type="data" format="json" optional="true" label="Document record to add to"
+                    help="An ATRIUM document record from an earlier stage; the result is added to it."/>
+            </when>
+        </conditional>
+        <conditional name="model">
+            <param name="mode" type="select" label="Model">
+                <option value="single" selected="true">One fine-tuned model</option>
+                <option value="ensemble">The five-model ensemble (slower; each model's vote as an extra table)</option>
+            </param>
+            <when value="single">
+                <param name="revision" type="select" label="Revision of ufal/vit-historical-page"
+                    help="Naming the revision keeps results reproducible.">
+                    <option value="v4.4" selected="true">v4.4 (RegNetY-16GF)</option>
+                    <option value="v1.4">v1.4 (EfficientNetV2-M)</option>
+                    <option value="v2.4">v2.4 (ViT-B/16, 224 px)</option>
+                    <option value="v3.4">v3.4 (ViT-B/16, 384 px)</option>
+                    <option value="v5.4">v5.4 (ViT-L/16, 384 px)</option>
+                </param>
+            </when>
+            <when value="ensemble"/>
+        </conditional>
+        <conditional name="models">
+            <param name="source" type="select" label="Model weights"
+                help="Staged weights are downloaded once by an administrator (data manager 'ATRIUM page-classification models'); downloading fetches them from the Hugging Face Hub in every job.">
+                <option value="download" selected="true">Download from the Hugging Face Hub</option>
+                <option value="staged">Staged on this server</option>
+            </param>
+            <when value="download"/>
+            <when value="staged">
+                <param name="model_set" type="select" label="Staged model set">
+                    <options from_data_table="atrium_page_models">
+                        <filter type="sort_by" column="name"/>
+                        <validator type="no_options" message="No model set is staged on this server: choose 'Download from the Hugging Face Hub', or ask an administrator to run the data manager."/>
+                    </options>
+                </param>
+            </when>
+        </conditional>
+        <param name="top_n" type="integer" min="1" max="11" value="3" label="Categories to keep per page"
+            help="With 1, the table also has a CATEGORY column, a copy of CLASS-1."/>
+        <param name="raw" type="boolean" truevalue="--raw" falsevalue="" checked="false"
+            label="Also write the scores of all eleven categories" help="One model only."/>
+        <param name="write_record" type="boolean" checked="true" label="Write the ATRIUM document record"/>
+    </inputs>
+    <outputs>
+        <data name="top_table" format="csv" label="${tool.name} on ${on_string}: Top-N table"/>
+        <data name="raw_table" format="csv" label="${tool.name} on ${on_string}: all scores">
+            <filter>raw and model['mode'] == 'single'</filter>
+        </data>
+        <data name="votes" format="csv" label="${tool.name} on ${on_string}: votes per model">
+            <filter>model['mode'] == 'ensemble'</filter>
+        </data>
+        <data name="paradata" format="json" label="${tool.name} on ${on_string}: paradata"/>
+        <data name="record" format="json" label="${tool.name} on ${on_string}: document record">
+            <filter>write_record and input['kind'] == 'pdf'</filter>
+        </data>
+        <collection name="records" type="list" label="${tool.name} on ${on_string}: document records">
+            <discover_datasets pattern="(?P&lt;designation&gt;.+)\.document\.json$" directory="records" format="json"/>
+            <filter>write_record and input['kind'] == 'images'</filter>
+        </collection>
+        <data name="route_ids" format="txt" label="${tool.name} on ${on_string}: pages to route">
+            <filter>input['kind'] == 'images'</filter>
+        </data>
+    </outputs>
+    <tests>
+        <!-- One model, a single category per page: the CATEGORY column appears (Mark's fix, 11-03). -->
+        <test expect_num_outputs="4">
+            <conditional name="input">
+                <param name="kind" value="images"/>
+                <param name="pages" value="pages_online_14.png,pages_online_54.png,atrium-34.png" ftype="png"/>
+                <param name="route_categories" value="TEXT_HW,TEXT_P,TEXT_T,TEXT"/>
+            </conditional>
+            <conditional name="model">
+                <param name="mode" value="single"/>
+                <param name="revision" value="v4.4"/>
+            </conditional>
+            <param name="top_n" value="1"/>
+            <output name="top_table" ftype="csv">
+                <assert_contents>
+                    <has_line line="FILE,PAGE,CLASS-1,SCORE-1,CATEGORY"/>
+                    <has_n_lines n="4"/>
+                    <has_text text="pages_online,14,"/>
+                    <has_text text="atrium,34,"/>
+                </assert_contents>
+            </output>
+            <output name="paradata" ftype="json">
+                <assert_contents>
+                    <has_text text="page-classification"/>
+                    <has_text text="@TOOL_VERSION@"/>
+                </assert_contents>
+            </output>
+            <output_collection name="records" type="list" count="2"/>
+            <!-- Which pages are routed depends on the model's answer; at most the three given. -->
+            <output name="route_ids" ftype="txt">
+                <assert_contents>
+                    <has_n_lines min="0" max="3"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- A PDF, two of its pages, three categories each, added to no record. -->
+        <test expect_num_outputs="3">
+            <conditional name="input">
+                <param name="kind" value="pdf"/>
+                <param name="pdf" value="two_pages.pdf" ftype="pdf"/>
+                <param name="page_selection" value="1-2"/>
+            </conditional>
+            <param name="top_n" value="3"/>
+            <output name="top_table" ftype="csv">
+                <assert_contents>
+                    <has_line line="FILE,PAGE,CLASS-1,CLASS-2,CLASS-3,SCORE-1,SCORE-2,SCORE-3"/>
+                    <has_n_lines n="3"/>
+                    <has_text text="two_pages,1,"/>
+                    <has_text text="two_pages,2,"/>
+                </assert_contents>
+            </output>
+            <output name="record" ftype="json">
+                <assert_contents>
+                    <has_text text="page_categories"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- A page past the end of the PDF is refused before anything is classified: exit 2. -->
+        <test expect_exit_code="2" expect_failure="true">
+            <conditional name="input">
+                <param name="kind" value="pdf"/>
+                <param name="pdf" value="two_pages.pdf" ftype="pdf"/>
+                <param name="page_selection" value="9"/>
+            </conditional>
+            <assert_stderr>
+                <has_text text="--pages"/>
+            </assert_stderr>
+        </test>
+    </tests>
+    <help><![CDATA[
+**What it does**
+
+Sorts the page images of scanned archival documents into eleven page types, so that each page can be
+sent to the processing it needs: OCR, handwritten text recognition, table extraction or image
+extraction. It runs the ATRIUM page classifier (`ufal/atrium-page-classification`_), release
+@TOOL_VERSION@, with fine-tuned models from the Hugging Face Hub (`ufal/vit-historical-page`_).
+
+**Input**
+
+- *Page images* (PNG, JPEG, TIFF), best as a collection. Each element's name gives the document and
+  the page number, ``<document>-<page>``: ``report-0007`` is page 7 of ``report``.
+- *A PDF document*. Its pages are rendered at 300 dpi; *Pages to classify* selects some of them.
+
+**Categories**
+
+============ ======================================================= =========================================
+Category     The page holds                                          Typical next step
+============ ======================================================= =========================================
+TEXT_P       printed text                                            OCR
+TEXT_T       typewritten text                                        OCR
+TEXT_HW      handwritten text                                        handwritten text recognition
+TEXT         a mix of printed, typed and handwritten text            OCR and handwritten text recognition
+LINE_P       a printed table or form                                 table extraction, OCR for the cells
+LINE_T       a typewritten table or form                             table extraction, OCR for the cells
+LINE_HW      a handwritten table or form                             table extraction, HTR for the cells
+DRAW         a drawing, map or plan                                  image extraction
+DRAW_L       a drawing with a legend or table around it              image and table extraction
+PHOTO        a photograph                                            image extraction
+PHOTO_L      a photograph with a legend or table around it           image and table extraction
+============ ======================================================= =========================================
+
+**Outputs**
+
+- *Top-N table* (CSV): ``FILE, PAGE, CLASS-1…N, SCORE-1…N``, one row per page, best guess first. With
+  one category per page it also has ``CATEGORY``, a copy of ``CLASS-1``. With the ensemble, the five
+  models' votes come first (``V1.4 … V5.4``).
+- *All scores* (CSV, optional, one model): the probability of each of the eleven categories.
+- *Votes per model* (CSV, ensemble): each model's top category.
+- *Paradata* (JSON): the run's provenance (tool version, configuration, components and their licences).
+- *Document record(s)* (JSON): the ATRIUM document record, with ``page_categories`` and each page's
+  category and confidence, for the next ATRIUM stage.
+- *Pages to route* (text, page images only): the element names whose best category is one of the
+  chosen ones. Give it to *Filter collection* to keep, for example, only the text pages for OCR.
+
+A low top score with a close second marks a page worth a human look. An unreadable image gets no row;
+the paradata lists it as skipped.
+
+**Licences**
+
+The code is MIT. The fine-tuned models are CC BY-NC 4.0, like the dataset they were trained on.
+
+.. _`ufal/atrium-page-classification`: https://github.com/ufal/atrium-page-classification
+.. _`ufal/vit-historical-page`: https://huggingface.co/ufal/vit-historical-page
+    ]]></help>
+    <citations>
+        <citation type="bibtex">@software{atrium_page_classification,
+  author = {Lutsai, Kateryna and Křivánková, Dana and Novák, David and Straňák, Pavel},
+  title = {{ATRIUM's page classifier: Classification of historical page images using fine-tuned ViT, RegNetY, and EfficientNetV2 models}},
+  version = {@TOOL_VERSION@},
+  year = {2026},
+  url = {https://github.com/ufal/atrium-page-classification}
+}</citation>
+    </citations>
+</tool>

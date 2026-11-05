@@ -1,0 +1,8 @@
+<tables>
+    <!-- Model sets of ufal/vit-historical-page staged by the data manager "ATRIUM page-classification models".
+         path: the folder that run.py reads as its models folder (model/, checkpoint/, hf/). -->
+    <table name="atrium_page_models" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, name, revisions, path</columns>
+        <file path="tool-data/atrium_page_models.loc"/>
+    </table>
+</tables>

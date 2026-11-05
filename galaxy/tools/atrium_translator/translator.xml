@@ -1,0 +1,292 @@
+<tool id="atrium_translator" name="ATRIUM XML translator" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.0">
+    <description>translates the text inside ALTO pages and AMČR metadata records, keeping their structure</description>
+    <macros>
+        <!-- The release of ufal/atrium-translator whose batch image this wrapper runs: the first whose
+             entry point runs Galaxy's job script (v1.7.6-beta). -->
+        <token name="@TOOL_VERSION@">1.7.6-beta</token>
+        <token name="@VERSION_SUFFIX@">0</token>
+        <xml name="languages">
+            <option value="cs">Czech (cs)</option>
+            <option value="en">English (en)</option>
+            <option value="de">German (de)</option>
+            <option value="fr">French (fr)</option>
+            <option value="pl">Polish (pl)</option>
+            <option value="ru">Russian (ru)</option>
+            <option value="uk">Ukrainian (uk)</option>
+        </xml>
+    </macros>
+    <creator>
+        <person givenName="Kateryna" familyName="Lutsai" identifier="https://orcid.org/0009-0002-4773-2797"/>
+        <person givenName="David" familyName="Novák" identifier="https://orcid.org/0000-0001-6592-6291"/>
+        <person givenName="Pavel" familyName="Straňák" identifier="https://orcid.org/0000-0002-6895-8536"/>
+        <organization name="ATRIUM project" url="https://ufal.github.io/atrium-project/"/>
+    </creator>
+    <requirements>
+        <container type="docker">ghcr.io/ufal/atrium-translator:@TOOL_VERSION@</container>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+#import re
+## The document keeps its collection name: the translated file, the log and the record are named
+## after it. Known extensions are dropped (a page from OCR keeps the image's name).
+#set $stem = re.sub(r'(\.alto)?\.xml$|\.(png|jpe?g|tiff?)$', '', str($document.element_identifier), flags=re.IGNORECASE)
+#set $stem = re.sub(r'[^\w.\-]', '_', $stem) or 'document'
+#if $mode.kind == 'alto':
+    #set $suffix = '.alto.xml'
+#else:
+    #set $suffix = '.xml'
+#end if
+export HF_HOME="\${_GALAXY_JOB_TMP_DIR:-\$PWD/tmp}/hf" &&
+mkdir -p input out &&
+ln -s '$document' 'input/${stem}${suffix}' &&
+
+## Every setting is on the command line. The image's config.txt names paths relative to /app,
+## which is not the job's working directory, so the run reads an empty one instead.
+python3 /app/main.py 'input/${stem}${suffix}'
+    --config '$empty_config'
+    -o out
+    --backend lindat
+    --source_lang '$source.source_lang'
+    #if $source.source_lang == 'auto':
+        --default-source-lang '$source.default_source_lang'
+    #end if
+    --target_lang '$target_lang'
+    --output-mode '$output_mode'
+    #if $mode.kind == 'alto':
+        --alto --formats alto.xml
+        $mode.fast_align
+    #else:
+        --formats xml
+        #if $mode.fields.source == 'amcr':
+            --xpaths /app/amcr-fields.txt
+        #else:
+            --xpaths '$mode.fields.xpaths'
+        #end if
+        #if $mode.xsd:
+            --xsd '$mode.xsd'
+            $mode.xsd_strict
+        #end if
+    #end if
+    #if $vocabulary.source == 'bundled':
+        --vocabulary /app/data_samples/vocabulary.csv
+    #elif $vocabulary.source == 'own':
+        --vocabulary '$vocabulary.vocabulary_csv'
+    #end if
+    #if $baseline:
+        --document-json '$baseline'
+    #end if
+    --document-json-out record.json
+&&
+## One document per job, so each pattern matches one file. The log is named after the document's
+## canonical id, which can be shorter than the file name.
+mv out/*_${target_lang}${suffix} '$translated' &&
+mv out/*_log.csv '$log' &&
+mv out/paradata/*_translator.json '$paradata' &&
+mv record.json '$record'
+    ]]></command>
+    <configfiles>
+        <configfile name="empty_config"><![CDATA[# No settings: the Galaxy tool passes them all on the command line.
+]]></configfile>
+    </configfiles>
+    <inputs>
+        <param name="document" type="data" format="xml" label="Document"
+            help="An ALTO page or an XML metadata record, such as an AMČR OAI-PMH record. For a collection, the tool runs once per document."/>
+        <conditional name="mode">
+            <param name="kind" type="select" label="Kind of document">
+                <option value="metadata" selected="true">Metadata record: translate the fields an XPath list names</option>
+                <option value="alto">ALTO page: translate every text line</option>
+            </param>
+            <when value="metadata">
+                <conditional name="fields">
+                    <param name="source" type="select" label="Fields to translate">
+                        <option value="amcr" selected="true">The AMČR free-text fields (bundled list)</option>
+                        <option value="own">My own XPath list</option>
+                    </param>
+                    <when value="amcr"/>
+                    <when value="own">
+                        <param name="xpaths" type="data" format="txt" label="XPath list"
+                            help="One XPath per line, with the record's namespace prefixes."/>
+                    </when>
+                </conditional>
+                <param name="xsd" type="data" format="xml" optional="true" label="XML schema to validate the result against"/>
+                <param name="xsd_strict" type="boolean" truevalue="--xsd-strict" falsevalue="" checked="false"
+                    label="Fail when the result does not validate" help="Otherwise a warning only; the translation is still written."/>
+            </when>
+            <when value="alto">
+                <param name="fast_align" type="boolean" truevalue="--fast-align" falsevalue="" checked="false"
+                    label="Fast alignment" help="Fewer calls to the translation service: words are spread over a block's lines by source word count."/>
+            </when>
+        </conditional>
+        <conditional name="source">
+            <param name="source_lang" type="select" label="Source language">
+                <option value="auto" selected="true">Detect per line or field (fastText)</option>
+                <expand macro="languages"/>
+            </param>
+            <when value="auto">
+                <param name="default_source_lang" type="select" label="Language when detection cannot be trusted"
+                    help="Text too short, low confidence, or a language the service cannot translate.">
+                    <expand macro="languages"/>
+                </param>
+            </when>
+            <when value="cs"/>
+            <when value="en"/>
+            <when value="de"/>
+            <when value="fr"/>
+            <when value="pl"/>
+            <when value="ru"/>
+            <when value="uk"/>
+        </conditional>
+        <param name="target_lang" type="select" label="Target language"
+            help="The LINDAT translation service decides which pairs exist; a pair it lacks stops the job before anything is translated.">
+            <option value="en" selected="true">English (en)</option>
+            <option value="cs">Czech (cs)</option>
+            <option value="de">German (de)</option>
+            <option value="fr">French (fr)</option>
+            <option value="pl">Polish (pl)</option>
+            <option value="ru">Russian (ru)</option>
+            <option value="uk">Ukrainian (uk)</option>
+        </param>
+        <param name="output_mode" type="select" label="How the translation is written">
+            <option value="replace" selected="true">Replace the source text</option>
+            <option value="append">Keep the source text and add the translation beside it</option>
+        </param>
+        <conditional name="vocabulary">
+            <param name="source" type="select" label="Vocabulary"
+                help="Terms of the vocabulary are matched by lemma (LINDAT UDPipe) and translated as the vocabulary says.">
+                <option value="bundled" selected="true">The AMČR and TEATER vocabulary in the image</option>
+                <option value="own">My own vocabulary</option>
+                <option value="none">None</option>
+            </param>
+            <when value="bundled"/>
+            <when value="own">
+                <param name="vocabulary_csv" type="data" format="csv" label="Vocabulary"
+                    help="A CSV with the columns source_lemma,target_translation."/>
+            </when>
+            <when value="none"/>
+        </conditional>
+        <param name="baseline" type="data" format="json" optional="true" label="Document record to add to"
+            help="An ATRIUM document record from an earlier stage; the translation's blocks are added to it."/>
+    </inputs>
+    <outputs>
+        <data name="translated" format="xml" label="${tool.name} on ${on_string}: translated (${target_lang})"/>
+        <data name="log" format="csv" label="${tool.name} on ${on_string}: translation log"/>
+        <data name="paradata" format="json" label="${tool.name} on ${on_string}: paradata"/>
+        <data name="record" format="json" label="${tool.name} on ${on_string}: document record"/>
+    </outputs>
+    <tests>
+        <!-- An AMČR metadata record, Czech to English, with the bundled field list and vocabulary. -->
+        <test expect_num_outputs="4">
+            <param name="document" value="sample_amcr.xml" ftype="xml"/>
+            <conditional name="source">
+                <param name="source_lang" value="cs"/>
+            </conditional>
+            <param name="target_lang" value="en"/>
+            <output name="translated" ftype="xml">
+                <assert_contents>
+                    <has_text text="amcr:popis"/>
+                    <not_has_text text="testovací popis"/>
+                </assert_contents>
+            </output>
+            <output name="log" ftype="csv">
+                <assert_contents>
+                    <has_line line="file,page_num,line_num,text_cs,text_en,status"/>
+                    <has_text text="//amcr:amcr/amcr:dokument/amcr:popis"/>
+                </assert_contents>
+            </output>
+            <output name="paradata" ftype="json">
+                <assert_contents>
+                    <has_text text="&quot;program&quot;: &quot;translator&quot;"/>
+                </assert_contents>
+            </output>
+            <output name="record" ftype="json">
+                <assert_contents>
+                    <has_text text="translations"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- An ALTO page, language detected, the translation added beside the source text. -->
+        <test expect_num_outputs="4">
+            <param name="document" value="sample.alto.xml" ftype="xml"/>
+            <conditional name="mode">
+                <param name="kind" value="alto"/>
+            </conditional>
+            <param name="output_mode" value="append"/>
+            <conditional name="vocabulary">
+                <param name="source" value="none"/>
+            </conditional>
+            <output name="translated" ftype="xml">
+                <assert_contents>
+                    <has_text text="CONTENT=&quot;Dobrý&quot;"/>
+                    <has_text text="translation:en"/>
+                </assert_contents>
+            </output>
+            <output name="log" ftype="csv">
+                <assert_contents>
+                    <has_text text="text_en"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- A pair the service has no model for is refused before anything is translated: exit 1. -->
+        <test expect_exit_code="1" expect_failure="true">
+            <param name="document" value="sample_amcr.xml" ftype="xml"/>
+            <conditional name="source">
+                <param name="source_lang" value="de"/>
+            </conditional>
+            <param name="target_lang" value="pl"/>
+            <assert_stdout>
+                <has_text text="Cannot translate de → pl"/>
+            </assert_stdout>
+        </test>
+    </tests>
+    <help><![CDATA[
+**What it does**
+
+Translates the text inside XML documents and writes it back without changing their structure: the
+tags, attributes and coordinates stay. It runs the ATRIUM translator (`ufal/atrium-translator`_),
+release @TOOL_VERSION@, with the LINDAT translation service (CUBBITT) of ÚFAL, Charles University.
+
+**Input**
+
+- *A metadata record*, such as an AMČR OAI-PMH record: the fields an XPath list names are translated.
+  The bundled list holds AMČR's free-text fields.
+- *An ALTO page*, for example from OCR: every text line is translated, and the translated words are
+  spread back over the lines of each block.
+
+**Languages**
+
+With *Detect*, each line or field is identified by fastText and translated from its own language. The
+LINDAT service decides which pairs exist (Czech to and from English, and several languages to
+English); a pair it lacks stops the job before anything is translated.
+
+**Vocabulary**
+
+With a vocabulary, its terms are found by lemma (LINDAT UDPipe), protected during translation, and
+written as the vocabulary translates them. The bundled one holds the AMČR and TEATER terms.
+
+**Outputs**
+
+- *Translated document* (XML): named ``<document>_<target>.xml`` or ``.alto.xml`` in the history.
+  With *Keep the source text*, a metadata field gets an ``xml:lang``-marked sibling and an ALTO line an
+  ``<ALTERNATIVE PURPOSE="translation:<target>">``.
+- *Translation log* (CSV): one row per ALTO line or metadata field, with the source text, the
+  translation and a status (``ok``, ``rerun``, ``approx_alignment``, ``untranslated``,
+  ``unsupported_lang``). Review the rows that are not ``ok``.
+- *Paradata* (JSON): the run's provenance, with the components and their licences.
+- *Document record* (JSON): the ATRIUM document record with the translation's blocks.
+
+**Network and licences**
+
+The job calls the LINDAT translation and UDPipe services over the internet. The code is MIT; the
+fastText language-identification model is CC BY-NC 4.0; the paradata lists each component's licence.
+
+.. _`ufal/atrium-translator`: https://github.com/ufal/atrium-translator
+    ]]></help>
+    <citations>
+        <citation type="bibtex">@software{atrium_translator,
+  author = {Lutsai, Kateryna and Novák, David and Straňák, Pavel},
+  title = {{ATRIUM's XMLs translator: in-place translation of ALTO XMLs text contents and AMCR XMLs metadata fields}},
+  version = {@TOOL_VERSION@},
+  year = {2026},
+  url = {https://github.com/ufal/atrium-translator}
+}</citation>
+    </citations>
+</tool>

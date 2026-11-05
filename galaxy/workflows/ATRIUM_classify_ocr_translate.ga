@@ -1,0 +1,283 @@
+{
+    "a_galaxy_workflow": "true",
+    "annotation": "Sorts scanned pages into eleven categories, sends only the text pages (TEXT_P, TEXT_T, TEXT) to Tesseract OCR (Czech, ALTO output), and translates the ALTO pages into English, keeping the Czech text beside the translation. Name the elements <document>-<page>, for example report-0007.",
+    "comments": [],
+    "creator": [
+        {
+            "class": "Organization",
+            "name": "ATRIUM project",
+            "url": "https://ufal.github.io/atrium-project/"
+        },
+        {
+            "class": "Person",
+            "name": "Kateryna Lutsai",
+            "identifier": "https://orcid.org/0009-0002-4773-2797"
+        }
+    ],
+    "format-version": "0.1",
+    "license": "MIT",
+    "name": "ATRIUM scanned pages: classify, OCR, translate",
+    "release": "0.1.0",
+    "report": {
+        "markdown": "\n# Workflow Execution Report\n\n## Workflow Inputs\n```galaxy\ninvocation_inputs()\n```\n\n## Workflow Outputs\n```galaxy\ninvocation_outputs()\n```\n\n## Workflow\n```galaxy\nworkflow_display()\n```\n"
+    },
+    "steps": {
+        "0": {
+            "annotation": "A list of page images (png, jpg, tiff), one per page, named <document>-<page>.",
+            "content_id": null,
+            "errors": null,
+            "id": 0,
+            "input_connections": {},
+            "inputs": [
+                {
+                    "description": "A list of page images (png, jpg, tiff), one per page, named <document>-<page>.",
+                    "name": "Page images"
+                }
+            ],
+            "label": "Page images",
+            "name": "Input dataset collection",
+            "outputs": [],
+            "position": {
+                "left": 40,
+                "top": 120
+            },
+            "tool_id": null,
+            "tool_state": "{\"optional\": false, \"format\": [\"png\", \"jpg\", \"tiff\"], \"tag\": null, \"collection_type\": \"list\"}",
+            "tool_version": null,
+            "type": "data_collection_input",
+            "uuid": "4c7f071f-1c7c-5187-89d3-78607f438922",
+            "when": null,
+            "workflow_outputs": []
+        },
+        "1": {
+            "annotation": "Sorts each page into one of eleven categories with ufal/vit-historical-page (model v4.4 by default; the five-model ensemble on request).",
+            "content_id": "atrium_page_classification",
+            "errors": null,
+            "id": 1,
+            "input_connections": {
+                "input|pages": {
+                    "id": 0,
+                    "output_name": "output"
+                }
+            },
+            "inputs": [],
+            "label": "Classify the pages",
+            "name": "ATRIUM page classification",
+            "outputs": [
+                {
+                    "name": "top_table",
+                    "type": "csv"
+                },
+                {
+                    "name": "raw_table",
+                    "type": "csv"
+                },
+                {
+                    "name": "votes",
+                    "type": "csv"
+                },
+                {
+                    "name": "paradata",
+                    "type": "json"
+                },
+                {
+                    "name": "record",
+                    "type": "json"
+                },
+                {
+                    "name": "records",
+                    "type": "input"
+                },
+                {
+                    "name": "route_ids",
+                    "type": "txt"
+                }
+            ],
+            "position": {
+                "left": 340,
+                "top": 180
+            },
+            "tool_id": "atrium_page_classification",
+            "tool_state": "{\"input\": {\"kind\": \"images\", \"__current_case__\": 0, \"pages\": {\"__class__\": \"ConnectedValue\"}, \"route_categories\": [\"TEXT_P\", \"TEXT_T\", \"TEXT\"]}, \"model\": {\"mode\": \"single\", \"__current_case__\": 0, \"revision\": \"v4.4\"}, \"models\": {\"source\": \"download\", \"__current_case__\": 0}, \"top_n\": \"3\", \"raw\": false, \"write_record\": true, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "1.12.3-beta+galaxy0",
+            "type": "tool",
+            "uuid": "1b78d9a0-f6b7-57c7-b41c-28c4f7e78613",
+            "when": null,
+            "workflow_outputs": [
+                {
+                    "label": "Top-N table",
+                    "output_name": "top_table",
+                    "uuid": "b21d575c-9bf0-5c76-9828-46c2933ced47"
+                },
+                {
+                    "label": "Page-classification records",
+                    "output_name": "records",
+                    "uuid": "98a62a61-e530-5680-a05a-d256889ecd5e"
+                },
+                {
+                    "label": "Text pages",
+                    "output_name": "route_ids",
+                    "uuid": "f6c7ea1f-efb0-5dca-b0dd-f3e5c78ed17b"
+                }
+            ],
+            "post_job_actions": {}
+        },
+        "2": {
+            "annotation": "Keeps the pages whose best category is TEXT_P, TEXT_T or TEXT (the classifier's 'pages to route').",
+            "content_id": "__FILTER_FROM_FILE__",
+            "errors": null,
+            "id": 2,
+            "input_connections": {
+                "input": {
+                    "id": 0,
+                    "output_name": "output"
+                },
+                "how|filter_source": {
+                    "id": 1,
+                    "output_name": "route_ids"
+                }
+            },
+            "inputs": [],
+            "label": "Keep the text pages",
+            "name": "Filter collection",
+            "outputs": [
+                {
+                    "name": "output_filtered",
+                    "type": "input"
+                },
+                {
+                    "name": "output_discarded",
+                    "type": "input"
+                }
+            ],
+            "position": {
+                "left": 640,
+                "top": 120
+            },
+            "tool_id": "__FILTER_FROM_FILE__",
+            "tool_state": "{\"input\": {\"__class__\": \"ConnectedValue\"}, \"how\": {\"how_filter\": \"remove_if_absent\", \"__current_case__\": 0, \"filter_source\": {\"__class__\": \"ConnectedValue\"}}, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "1.0.0",
+            "type": "tool",
+            "uuid": "f3ad305a-353e-598c-9a9f-d3dc2965545b",
+            "when": null,
+            "workflow_outputs": [
+                {
+                    "label": "Text page images",
+                    "output_name": "output_filtered",
+                    "uuid": "1c6270a6-e6f1-55f0-9c61-d1b80d7d63fb"
+                }
+            ],
+            "post_job_actions": {}
+        },
+        "3": {
+            "annotation": "Tesseract 5 with the tessdata_best Czech model; ALTO output.",
+            "content_id": "toolshed.g2.bx.psu.edu/repos/iuc/tesseract/tesseract/5.5.3+galaxy0",
+            "errors": null,
+            "id": 3,
+            "input_connections": {
+                "input_file": {
+                    "id": 2,
+                    "output_name": "output_filtered"
+                }
+            },
+            "inputs": [],
+            "label": "OCR (Tesseract, Czech)",
+            "name": "Tesseract",
+            "outputs": [
+                {
+                    "name": "output_alto",
+                    "type": "xml"
+                }
+            ],
+            "position": {
+                "left": 940,
+                "top": 180
+            },
+            "tool_id": "toolshed.g2.bx.psu.edu/repos/iuc/tesseract/tesseract/5.5.3+galaxy0",
+            "tool_state": "{\"dpi\": null, \"input_file\": {\"__class__\": \"ConnectedValue\"}, \"models\": {\"models_select\": \"official\", \"__current_case__\": 0, \"tessdata\": \"tessdata_best\", \"language\": [\"ces\"]}, \"output_formats\": [\"tessedit_create_alto\"], \"psm\": \"3\", \"user_patterns\": null, \"user_words\": null, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "5.5.3+galaxy0",
+            "type": "tool",
+            "uuid": "b8394c70-2481-5f07-b18b-d88e26bfe0cd",
+            "when": null,
+            "workflow_outputs": [
+                {
+                    "label": "ALTO pages",
+                    "output_name": "output_alto",
+                    "uuid": "b8c41c69-cd5a-5be8-91f2-c1023d05fefc"
+                }
+            ],
+            "post_job_actions": {},
+            "tool_shed_repository": {
+                "changeset_revision": "5c9cb302c242",
+                "name": "tesseract",
+                "owner": "iuc",
+                "tool_shed": "toolshed.g2.bx.psu.edu"
+            }
+        },
+        "4": {
+            "annotation": "ALTO mode; source language detected per line (Czech when detection cannot be trusted); English kept beside the Czech.",
+            "content_id": "atrium_translator",
+            "errors": null,
+            "id": 4,
+            "input_connections": {
+                "document": {
+                    "id": 3,
+                    "output_name": "output_alto"
+                }
+            },
+            "inputs": [],
+            "label": "Translate the ALTO pages",
+            "name": "ATRIUM XML translator",
+            "outputs": [
+                {
+                    "name": "translated",
+                    "type": "xml"
+                },
+                {
+                    "name": "log",
+                    "type": "csv"
+                },
+                {
+                    "name": "paradata",
+                    "type": "json"
+                },
+                {
+                    "name": "record",
+                    "type": "json"
+                }
+            ],
+            "position": {
+                "left": 1240,
+                "top": 120
+            },
+            "tool_id": "atrium_translator",
+            "tool_state": "{\"document\": {\"__class__\": \"ConnectedValue\"}, \"mode\": {\"kind\": \"alto\", \"__current_case__\": 1, \"fast_align\": false}, \"source\": {\"source_lang\": \"auto\", \"__current_case__\": 0, \"default_source_lang\": \"cs\"}, \"target_lang\": \"en\", \"output_mode\": \"append\", \"vocabulary\": {\"source\": \"bundled\", \"__current_case__\": 0}, \"baseline\": null, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "1.7.6-beta+galaxy0",
+            "type": "tool",
+            "uuid": "df6f9021-51f4-58ef-a9dd-51f97324c322",
+            "when": null,
+            "workflow_outputs": [
+                {
+                    "label": "Translated ALTO pages",
+                    "output_name": "translated",
+                    "uuid": "8c1a3676-eaee-51ad-a39e-c216b47b2350"
+                },
+                {
+                    "label": "Translation logs",
+                    "output_name": "log",
+                    "uuid": "3d899e2d-e4d1-57cd-926b-8a5280b40320"
+                }
+            ],
+            "post_job_actions": {}
+        }
+    },
+    "tags": [
+        "ATRIUM",
+        "page-classification",
+        "ocr",
+        "translation",
+        "digital-humanities"
+    ],
+    "uuid": "c96d95bb-d86a-5cc6-8e49-52b49e5fe96c",
+    "version": 1
+}

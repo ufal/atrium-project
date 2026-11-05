@@ -1,0 +1,133 @@
+{
+    "a_galaxy_workflow": "true",
+    "annotation": "Renders each PDF's pages at 300 dpi and sorts them into eleven categories (printed, typed or handwritten text, tables and forms, drawings, photographs). One job per PDF; one table and one document record each.",
+    "comments": [],
+    "creator": [
+        {
+            "class": "Organization",
+            "name": "ATRIUM project",
+            "url": "https://ufal.github.io/atrium-project/"
+        },
+        {
+            "class": "Person",
+            "name": "Kateryna Lutsai",
+            "identifier": "https://orcid.org/0009-0002-4773-2797"
+        }
+    ],
+    "format-version": "0.1",
+    "license": "MIT",
+    "name": "ATRIUM page classification (PDF documents)",
+    "release": "0.1.0",
+    "report": {
+        "markdown": "\n# Workflow Execution Report\n\n## Workflow Inputs\n```galaxy\ninvocation_inputs()\n```\n\n## Workflow Outputs\n```galaxy\ninvocation_outputs()\n```\n\n## Workflow\n```galaxy\nworkflow_display()\n```\n"
+    },
+    "steps": {
+        "0": {
+            "annotation": "A list of PDF documents; each is classified page by page.",
+            "content_id": null,
+            "errors": null,
+            "id": 0,
+            "input_connections": {},
+            "inputs": [
+                {
+                    "description": "A list of PDF documents; each is classified page by page.",
+                    "name": "PDF documents"
+                }
+            ],
+            "label": "PDF documents",
+            "name": "Input dataset collection",
+            "outputs": [],
+            "position": {
+                "left": 40,
+                "top": 120
+            },
+            "tool_id": null,
+            "tool_state": "{\"optional\": false, \"format\": [\"pdf\"], \"tag\": null, \"collection_type\": \"list\"}",
+            "tool_version": null,
+            "type": "data_collection_input",
+            "uuid": "30dce9dd-0130-5e55-b94e-fe54d61f2668",
+            "when": null,
+            "workflow_outputs": []
+        },
+        "1": {
+            "annotation": "Sorts each page into one of eleven categories with ufal/vit-historical-page (model v4.4 by default; the five-model ensemble on request).",
+            "content_id": "atrium_page_classification",
+            "errors": null,
+            "id": 1,
+            "input_connections": {
+                "input|pdf": {
+                    "id": 0,
+                    "output_name": "output"
+                }
+            },
+            "inputs": [],
+            "label": "Classify the pages",
+            "name": "ATRIUM page classification",
+            "outputs": [
+                {
+                    "name": "top_table",
+                    "type": "csv"
+                },
+                {
+                    "name": "raw_table",
+                    "type": "csv"
+                },
+                {
+                    "name": "votes",
+                    "type": "csv"
+                },
+                {
+                    "name": "paradata",
+                    "type": "json"
+                },
+                {
+                    "name": "record",
+                    "type": "json"
+                },
+                {
+                    "name": "records",
+                    "type": "input"
+                },
+                {
+                    "name": "route_ids",
+                    "type": "txt"
+                }
+            ],
+            "position": {
+                "left": 340,
+                "top": 180
+            },
+            "tool_id": "atrium_page_classification",
+            "tool_state": "{\"input\": {\"kind\": \"pdf\", \"__current_case__\": 1, \"pdf\": {\"__class__\": \"ConnectedValue\"}, \"page_selection\": \"\", \"baseline\": null}, \"model\": {\"mode\": \"single\", \"__current_case__\": 0, \"revision\": \"v4.4\"}, \"models\": {\"source\": \"download\", \"__current_case__\": 0}, \"top_n\": \"3\", \"raw\": false, \"write_record\": true, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "1.12.3-beta+galaxy0",
+            "type": "tool",
+            "uuid": "cb42c949-3295-517f-9ae8-1409ec6cbf88",
+            "when": null,
+            "workflow_outputs": [
+                {
+                    "label": "Top-N tables",
+                    "output_name": "top_table",
+                    "uuid": "8f8fe495-39e5-51b8-9da6-dc02b85f1747"
+                },
+                {
+                    "label": "Document records",
+                    "output_name": "record",
+                    "uuid": "23556d18-bb0c-57fc-a67b-5b92b430faab"
+                },
+                {
+                    "label": "Paradata",
+                    "output_name": "paradata",
+                    "uuid": "1a7e2878-6ee2-5eae-8f3b-ba19434092a5"
+                }
+            ],
+            "post_job_actions": {}
+        }
+    },
+    "tags": [
+        "ATRIUM",
+        "page-classification",
+        "digital-humanities"
+    ],
+    "uuid": "e9edd0d9-ecb7-58bb-a2bf-e557c554d80d",
+    "version": 1
+}

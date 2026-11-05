@@ -1,0 +1,96 @@
+<tool id="data_manager_atrium_page_models" name="ATRIUM page-classification models" tool_type="manage_data" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.0">
+    <description>stages fine-tuned models of ufal/vit-historical-page on the server</description>
+    <macros>
+        <!-- The release of ufal/atrium-page-classification that downloads the models; the same as the tool's. -->
+        <token name="@TOOL_VERSION@">1.12.3-beta</token>
+        <token name="@VERSION_SUFFIX@">0</token>
+    </macros>
+    <requirements>
+        <container type="docker">ghcr.io/ufal/atrium-page-classification:@TOOL_VERSION@</container>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+export MPLCONFIGDIR="\$PWD/.matplotlib" &&
+mkdir -p work '$out_file.extra_files_path/models' &&
+## run.py --hf downloads one revision, its base model and its processor into the folder, and
+## classifies nothing. The runs' own paradata stays in work/.
+cd work &&
+#for $revision in str($revisions).split(','):
+    python3 /app/run.py --hf -rev '$revision' --models-dir '$out_file.extra_files_path/models' &&
+#end for
+cd .. &&
+python3 '$write_entry' '$out_file' '$revisions' '$value' '$name'
+    ]]></command>
+    <configfiles>
+        <configfile name="write_entry"><![CDATA[
+import json
+import re
+import sys
+
+out_file, revisions, value, name = sys.argv[1:5]
+revisions = [r for r in revisions.split(",") if r]
+ensemble = {"v1.4", "v2.4", "v3.4", "v4.4", "v5.4"}
+if not value.strip():
+    value = "vX.4-ensemble" if set(revisions) == ensemble else "-".join(revisions)
+value = re.sub(r"[^\w.\-]", "_", value.strip())
+if not name.strip():
+    label = "ensemble" if set(revisions) >= ensemble else ", ".join(revisions)
+    name = f"ufal/vit-historical-page {label}"
+entry = {"value": value, "name": name.strip(), "revisions": ",".join(revisions), "path": "models"}
+with open(out_file, "w", encoding="utf-8") as handle:
+    json.dump({"data_tables": {"atrium_page_models": [entry]}}, handle)
+print(json.dumps(entry))
+]]></configfile>
+    </configfiles>
+    <inputs>
+        <param name="revisions" type="select" multiple="true" optional="false" label="Revisions to stage"
+            help="All five for the ensemble (about 2.5 GB); the tool's single-model mode needs only the one it runs.">
+            <option value="v1.4" selected="true">v1.4 (EfficientNetV2-M)</option>
+            <option value="v2.4" selected="true">v2.4 (ViT-B/16, 224 px)</option>
+            <option value="v3.4" selected="true">v3.4 (ViT-B/16, 384 px)</option>
+            <option value="v4.4" selected="true">v4.4 (RegNetY-16GF)</option>
+            <option value="v5.4" selected="true">v5.4 (ViT-L/16, 384 px)</option>
+        </param>
+        <param name="value" type="text" value="" label="Id of the entry"
+            help="Empty: vX.4-ensemble for all five revisions, otherwise the revisions joined by '-'."/>
+        <param name="name" type="text" value="" label="Name shown in the tool"/>
+    </inputs>
+    <outputs>
+        <data name="out_file" format="data_manager_json"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="revisions" value="v4.4"/>
+            <output name="out_file">
+                <assert_contents>
+                    <has_text text="atrium_page_models"/>
+                    <has_text text="&quot;value&quot;: &quot;v4.4&quot;"/>
+                    <has_text text="&quot;path&quot;: &quot;models&quot;"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+Downloads fine-tuned models of `ufal/vit-historical-page`_ once, with their base models and image
+processors, into a folder that the *ATRIUM page classification* tool reads offline
+(``run.py --models-dir``). Without it, every job of the tool downloads its model again.
+
+Each entry of the ``atrium_page_models`` data table is one folder. Stage all five revisions for the
+ensemble; one revision is enough for the tool's single-model mode.
+
+The tool runs in a container: the destination that runs it must mount the data manager's data path
+(``galaxy_data_manager_data_path``) into the container, read-only.
+
+The models are CC BY-NC 4.0.
+
+.. _`ufal/vit-historical-page`: https://huggingface.co/ufal/vit-historical-page
+    ]]></help>
+    <citations>
+        <citation type="bibtex">@software{atrium_page_classification,
+  author = {Lutsai, Kateryna and Křivánková, Dana and Novák, David and Straňák, Pavel},
+  title = {{ATRIUM's page classifier: Classification of historical page images using fine-tuned ViT, RegNetY, and EfficientNetV2 models}},
+  version = {@TOOL_VERSION@},
+  year = {2026},
+  url = {https://github.com/ufal/atrium-page-classification}
+}</citation>
+    </citations>
+</tool>

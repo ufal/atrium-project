@@ -1,0 +1,18 @@
+# Model sets of ufal/vit-historical-page for the ATRIUM page-classification tool, one per line,
+# tab-separated:
+#
+#   <value>	<name>	<revisions>	<path>
+#
+# value      a unique id, for example vX.4-ensemble
+# name       what the tool's "Staged model set" menu shows
+# revisions  the revisions in the folder, comma-separated
+# path       the folder run.py reads with --models-dir (its model/, checkpoint/ and hf/ subfolders)
+#
+# The data manager "ATRIUM page-classification models" writes these lines. By hand:
+#
+#   for r in v1.4 v2.4 v3.4 v4.4 v5.4; do
+#     docker run --rm --user "$(id -u):0" -v /srv/atrium-page-models:/models ghcr.io/ufal/atrium-page-classification:1.12.3-beta \
+#       --hf -rev "$r" --models-dir /models
+#   done
+#
+#vX.4-ensemble	ufal/vit-historical-page v1.4–v5.4 (ensemble)	v1.4,v2.4,v3.4,v4.4,v5.4	/srv/atrium-page-models
