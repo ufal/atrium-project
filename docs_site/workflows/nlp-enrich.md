@@ -115,7 +115,7 @@ other outputs are complete, and the record sent is unchanged.
 ## On other platforms
 
 **SSH Open Marketplace.** Tool record [`EMhu3X`](https://marketplace.sshopencloud.eu/tool-or-service/EMhu3X).
-The LINDAT services it calls have their own records: UDPipe and NameTag.
+The LINDAT services it calls have their own records: [UDPipe](https://marketplace.sshopencloud.eu/tool-or-service/i6piia) and [NameTag](https://marketplace.sshopencloud.eu/tool-or-service/nMF4rm).
 
 **Galaxy sheet.**
 

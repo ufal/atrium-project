@@ -23,7 +23,7 @@ galaxy/
 Each wrapper runs the release's **batch** image, one command per job. Galaxy starts the container as `docker run …
 IMAGE /bin/sh tool_script.sh`; both images' entry points run that script as given (page-classification since
 `v1.10.5-beta`, the translator since `v1.7.8-beta`), so no destination needs an entry-point override. Both run on
-CPU. The other four ATRIUM tools have the same entry point from their next releases: [Ready to wrap](#ready-to-wrap).
+CPU. The other four ATRIUM tools have the same entry point since their releases of 2026-11-06: [Ready to wrap](#ready-to-wrap).
 
 The workflows: page images, PDFs, XML records, and the scanned-pages chain *classify → keep the text pages →
 Tesseract (IUC, on the instance) → translate*. Details: [workflows/README.md](workflows/README.md).
@@ -44,7 +44,7 @@ container, network and test data.
 
 ## Getting it onto the DARIAH instance
 
-1. The translator's tag `v1.7.8-beta` is pushed and its images are published (its wrapper needs that image).
+1. ~~The translator's tag `v1.7.8-beta` is pushed and its images are published~~: done 2026-11-06 (its wrapper needs that image).
 2. Copy `tools/`, `data_managers/` and `workflows/` into `DARIAH-ERIC/atrium-galaxy-tools`; the instance picks
    up changes to that repository.
 3. An administrator runs the data manager *ATRIUM page-classification models* and mounts its data path into the

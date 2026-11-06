@@ -13,8 +13,8 @@ mechanisms give it, each with a tool in this repository.
 | Mechanism                                                | What it guarantees                                                                                                                                           | Tool                                                        |
 |----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
 | **Immutable releases** (six tool repos)                  | a published release, its tag and its assets never change                                                                                                     | `scripts/release_trust.py immutable`                        |
-| **Tag ruleset** (six tool repos; the hub's freezes)      | a release tag `v*`, or a hub `doc-schema-v*` freeze, cannot be moved or deleted, except by a repository admin, and GitHub logs that bypass                   | `scripts/release_trust.py tag-rules`                        |
-| **Branch ruleset** (all seven)                           | the default branch and `test` cannot be deleted or force-pushed; changes arrive by pull request, optionally with required checks; admins may bypass (logged) | `scripts/release_trust.py branch-rules`                     |
+| **Tag ruleset** (six tool repos; hub: planned)           | a release tag `v*`, or a hub `doc-schema-v*` freeze, cannot be moved or deleted, except by a repository admin, and GitHub logs that bypass                   | `scripts/release_trust.py tag-rules`                        |
+| **Branch ruleset** (all seven; planned, #40)             | the default branch and `test` cannot be deleted or force-pushed; changes arrive by pull request, optionally with required checks; admins may bypass (logged) | `scripts/release_trust.py branch-rules`                     |
 | **Reusable workflows pinned by commit** (six tool repos) | a moving `v1` cannot change what a repository's CI runs                                                                                                      | `scripts/pin_hub_reusables.py`, `tools/ci/workflow_lint.py` |
 
 ## Tag identity
@@ -26,7 +26,7 @@ mechanisms give it, each with a tool in this repository.
 | Image identity        | the image digest, `…-api@sha256:<64 hex>`                                     | yes                                    |
 | Development channels  | images `test` and `latest`                                                    | no, by design                          |
 | Hub workflow pointer  | `v1`                                                                          | no: it moves with every hub change     |
-| Hub schema freezes    | `doc-schema-v*`                                                               | yes: tag ruleset                       |
+| Hub schema freezes    | `doc-schema-v*`                                                               | not yet: no hub ruleset (step 4)       |
 
 Protecting a Git tag does not make an image tag immutable. A release is identified by its source
 tag and commit and by the digest of each image built from it, so release evidence records all three,
@@ -36,7 +36,27 @@ and the S2 pilot names its six images by digest (`k8s_acceptance_runbook.md` §"
 **The hub is the exception.** Its `v1` is a compatibility pointer for the tool repositories'
 workflow callers, not a source release, so no tag rule covers it. The tool repositories stop
 following it when they call the hub's reusables by commit (step 7). The hub's genuinely fixed
-references, the `doc-schema-v*` freezes, have their own rule.
+references, the `doc-schema-v*` freezes, are to get their own rule (step 4); on 2026-11-06 the hub has no
+ruleset, so `doc-schema-v1` is fixed by convention only.
+
+## State on 2026-11-06
+
+The five releases of 11-06 (#66) change only the batch image's entry point (the hub-canonical
+`container_entrypoint.py`) and the version stamps; page-classification stays at `v1.12.3-beta`. Every caller and
+`hub-ref` in the six tool repositories is pinned to `da7a066` (`v1`). No repository has a branch ruleset or branch
+protection, and the hub has no ruleset at all (`GET /repos/ufal/atrium-project/rulesets` returns `[]`).
+
+| Repository          | Tag ruleset on `v*` | Latest release, immutable, with `images.json` | Hub references by commit (`da7a066`) |
+|---------------------|---------------------|-----------------------------------------------|--------------------------------------|
+| page-classification | yes                 | yes (`v1.12.3-beta`, 11-04)                   | all callers and action steps         |
+| ocr-postprocess     | yes                 | yes (`v1.15.4-beta`)                          | all                                  |
+| digital-convert     | yes                 | yes (`v1.4.5-beta`)                           | all                                  |
+| nlp-enrich          | yes                 | yes (`v1.3.4-beta`)                           | all                                  |
+| keyword-extract     | yes                 | yes (`v1.6.5-beta`)                           | all                                  |
+| translator          | yes                 | yes (`v1.7.8-beta`)                           | all                                  |
+| hub                 | `doc-schema-v*`: no | —                                             | —                                    |
+
+The pilot set on [#77](https://github.com/ufal/atrium-project/issues/77) is the 11-04 one below.
 
 ## State on 2026-11-04
 
@@ -54,8 +74,9 @@ callers' column assumes the 11-04 pin sweep of page-classification, ocr-postproc
 | keyword-extract     | yes                 | yes (`v1.6.4-beta`)                          | 8 of 8, 3 of 3                       |
 | translator          | yes                 | yes (`v1.7.5-beta`)                          | 8 of 8, 2 of 2                       |
 
-**Tags without a release.** Seven `v*` tags exist that no GitHub Release certifies, and by `ci_policy.md` they are
-not releases:
+**Tags without a release.** Seven `v*` tags of the pilot round exist that no GitHub Release certifies, and by
+`ci_policy.md` they are not releases (older tags without a release, such as page-classification
+`v1.10.0-beta`–`v1.10.4-beta` or the `v0.*` history, predate immutable releases and are not listed):
 - digital-convert `v1.4.3-beta`: its tag push started no workflow run;
 - keyword-extract `v1.6.3.-beta`: a mistyped tag, which started no run;
 - keyword-extract `v1.6.3-beta`: its CVE gate stopped on a registry error;
@@ -125,12 +146,13 @@ by the next version, never by moving its tag or replacing an asset.
 
 ## Tagging a release
 
-A tag that misses is a version lost: the tag rule keeps it, and the fix is the next version. Two ways a tag
+A tag that misses is a version lost: the tag rule keeps it, and the fix is the next version. Three ways a tag
 missed in November 2026:
 
 | What happened                                | Example                                                                                                     | What stops it                                 |
 |----------------------------------------------|-------------------------------------------------------------------------------------------------------------|-----------------------------------------------|
 | The tag on a commit without the version bump | translator `v1.7.6-beta`: tagged before the bump was committed, pushed with it                              | the version gate, which then fails the run    |
+| The tag on a commit whose CI is red          | translator `v1.7.7-beta`: tagged three minutes after Docker Build & Push failed on that commit              | the release's test job, which then fails      |
 | A tag push that starts no run                | translator `v1.7.4-beta`, digital-convert `v1.4.3-beta`, keyword-extract `v1.6.3.-beta`; cause not recorded | nothing: the release silently does not happen |
 
 GitHub creates no push event for tags when more than three are pushed at once, which `git push --tags` from a

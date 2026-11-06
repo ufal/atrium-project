@@ -39,7 +39,7 @@ licence.
 Records and paradata still carry one older field: `provenance.license` in the record, `license` in the paradata.
 It was calculated by a rule the project has dropped: the most restrictive licence among the components. It is
 not a licence, a summary or a warning, and nothing should be read from it. Use the list of components instead.
-From the `.3` releases (November 2026) the record marks it `provenance.license_basis: "calculated"`, and an
+From the pilot releases of 4 November 2026 the record marks it `provenance.license_basis: "calculated"`, and an
 RO-Crate export no longer writes it as the licence of the crate (below).
 
 ## What changes
@@ -58,7 +58,7 @@ what is useful and drops the calculated field:
 AMČR agreed to this on 22 October 2026: AMČR states the rights of the outputs it publishes, and no tool makes
 an automatic or default licence assertion. In the shared modules:
 
-- **done in the `.3` releases:** an RO-Crate export points its `license` to a "no licence asserted" entity
+- **done in the pilot releases of 4 November:** an RO-Crate export points its `license` to a "no licence asserted" entity
   (`#no-licence-asserted`), as agreed on [#6](https://github.com/ufal/atrium-project/issues/6) on 29 October
   2026; the record marks the calculated field `provenance.license_basis: "calculated"`; the paradata's notes
   list the components and say that no output licence is asserted;

@@ -28,7 +28,9 @@ A new check, or a changed one, states in its workflow header or in the map below
 - **Tier and trigger.**
 - **Inputs:** secrets, images, network hosts, runners.
 - **Status:** blocking, advisory or optional. A blocking check is a required status in the branch ruleset
-  or a `needs:` of a publishing job; advisory and optional checks say so in their job name or summary.
+  or a `needs:` of a publishing job; advisory and optional checks say so in their job name or summary. No
+  repository has a branch ruleset yet (#40), so until it lands only the `needs:` of a publishing job blocks
+  anything: on a push or a pull request every check is in practice advisory.
 
 ## What a green result means
 

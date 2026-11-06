@@ -29,6 +29,12 @@ fails the build otherwise. The API service reports this same value (see Code
 Conventions → *Single source of truth for the version*). Update `date-released:` in
 `CITATION.cff` to the actual release date on every version bump.
 
+**Tagging.** Tag a release only once its version bump is pushed, with the hub's helper, which refuses a tag the
+release gate would fail and pushes that one tag alone: `python3 ../atrium-project/scripts/tag_release.py
+vX.Y.Z-beta` (hub `docs/release_trust.md`, Tagging a release). If a tag push starts no run of `release.yml`, run
+that workflow on the tag (*Actions → «release workflow name» → Run workflow*, the tag as the ref): on a tag, that
+run is the release; on a branch, it is the dry run.
+
 ---
 
 ## Branches & Environments

@@ -42,7 +42,7 @@ channel (§3.2), so CI can exercise an image built from the integration branch b
 service handles `SIGTERM` with a bounded, in-flight-aware drain. `probe-targets` opts a Dockerfile stage
 into a real `docker run` + healthcheck-wait + `/health`/`/ready` + `SIGTERM` smoke on every PR. See §3.4.
 * **Version Syncing:** `CITATION.cff` files are synced with internal `para_config` versions across the board.
-* **Paradata Drift Guard:** Every repo calls `para-drift.reusable.yml@v1` to diff its local canonical shared
+* **Paradata Drift Guard:** Every repo calls `para-drift.reusable.yml` (pinned by commit) to diff its local canonical shared
 files against the hub copies. Parity currently holds byte-identically in all six repos. Note this enforces
 that the copies are *identical*, not that they are *correct* — the largest canonicals have no tests
 (roadmap **E9**).
@@ -94,7 +94,7 @@ default-branch callers.
 >
 > | Channel     | Who uses it                                                  | Mutability                                       |
 > |-------------|--------------------------------------------------------------|--------------------------------------------------|
-> | **`@v1`**   | every caller in every tool repo                              | moving **major tag**; only a maintainer moves it |
+> | **`@v1`**   | every caller in every tool repo until the 10-25 commit pins  | moving **major tag**; only a maintainer moves it |
 > | **`@test`** | pre-release validation of a hub change, before `v1` is moved | branch — moves on every merge                    |
 >
 > Callers previously pinned `@test` directly, so **every merge to the hub's integration branch changed
@@ -455,12 +455,12 @@ All ready-to-commit templates live in `docs/templates/workflows/`.
 
 | Workflow                 | What it does                                                                                                                              | Deployment state                                                                                                | Lives as        |
 |--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|-----------------|
-| **Docker Tool**          | Test + coverage + multi-target GHCR publish + scan + opt-in container health/`SIGTERM` smoke (issue #55) + forbidden-package probe (#72). | ✅ All 6 repos (→ `docker-tool.reusable.yml@v1`).                                                                | Reusable Bundle |
-| **Security**             | Version check + periodic Trivy re-scan.                                                                                                   | ✅ All 6 repos (→ `security.reusable.yml@v1`). ⚠️ No dispatch in TR/PC.                                          | Reusable Bundle |
+| **Docker Tool**          | Test + coverage + multi-target GHCR publish + scan + opt-in container health/`SIGTERM` smoke (issue #55) + forbidden-package probe (#72). | ✅ All 6 repos (→ `docker-tool.reusable.yml@sha`).                                                               | Reusable Bundle |
+| **Security**             | Version check + periodic Trivy re-scan.                                                                                                   | ✅ All 6 repos (→ `security.reusable.yml@sha`). ⚠️ No dispatch in TR/PC.                                         | Reusable Bundle |
 | **Paradata Drift**       | Canonical shared-file parity diff vs hub; `vendored-parity` vs the owning tool repo (#72).                                                | ✅ All 6 repos; digital-convert also against nlp-enrich and ocr-postprocess, keyword-extract against nlp-enrich. | Reusable Bundle |
-| **CodeQL**               | Static security/quality analysis for Python.                                                                                              | ✅ All 6 repos (→ `codeql.reusable.yml@v1`).                                                                     | Reusable Bundle |
-| **pre-commit**           | Ruff + ShellCheck + whitespace, **blocking**.                                                                                             | ✅ All 6 repos (→ `pre-commit.reusable.yml@v1`).                                                                 | Reusable Bundle |
-| **API Meta-Contract**    | §4.1 service contract test; the committed spec (#32 r2).                                                                                  | ✅ All 6 repos (→ `api-contract.reusable.yml@v1`); `openapi-compat` job vs the latest release.                   | Reusable Bundle |
+| **CodeQL**               | Static security/quality analysis for Python.                                                                                              | ✅ All 6 repos (→ `codeql.reusable.yml@sha`).                                                                    | Reusable Bundle |
+| **pre-commit**           | Ruff + ShellCheck + whitespace, **blocking**.                                                                                             | ✅ All 6 repos (→ `pre-commit.reusable.yml@sha`).                                                                | Reusable Bundle |
+| **API Meta-Contract**    | §4.1 service contract test; the committed spec (#32 r2).                                                                                  | ✅ All 6 repos (→ `api-contract.reusable.yml@sha`); `openapi-compat` job vs the latest release.                  | Reusable Bundle |
 | **Workflow Policy Lint** | Pins, `secrets:`, permissions, caller shape, action floor, compose names/`./data` (§3.5), release assets, production-image closure (#72). | ✅ All 6 repos + hub. ⚠️ No caller example published.                                                            | Reusable Bundle |
 | **Skill Validation**     | `agent-skill` branch contract checks.                                                                                                     | ✅ On the five `agent-skill` branches only.                                                                      | Reusable Bundle |
 | **E2E Pipeline Smoke**   | Threads one document JSON through the stages, seeded as AMČR does.                                                                        | ✅ Hub, every 3rd day. `image-tag` (`latest` / `test`) and `e2e-doc` (five fixtures) inputs.                     | Hub workflow    |
@@ -470,6 +470,9 @@ All ready-to-commit templates live in `docs/templates/workflows/`.
 | **Release**              | Version guard + release bundle/notes + `openapi.json` asset and breaking-change gate (#32 r2).                                            | ✅ All 6 repos; every bundle that ships is closure-checked.                                                      | Standalone      |
 | **Shellcheck**           | Lints `*.sh`.                                                                                                                             | nlp-enrich's workflow; every repo's pre-commit hook covers its scripts.                                         | Standalone      |
 | **Secret Scanning**      | Push protection + history sweep.                                                                                                          | ⛔ Dropped 2026-07-30 — unadopted; GitHub-native scanning covers it.                                             | —               |
+
+`@sha`: the tool repositories call each reusable at the commit `v1` points to (`@<sha>  # v1`, with
+`require-sha-pins`; since the sweep of 2026-10-25, [`release_trust.md`](release_trust.md) step 7).
 
 ### Secret scanning — why it was dropped
 

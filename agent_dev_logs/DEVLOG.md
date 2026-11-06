@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). The pilot set (final 11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Hub `v1` = `51aad6c`, which all six tools call (three after the 11-04 afternoon sweep). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54). Latest entry: 2026-11-04 (afternoon), at the end of the file (this file is not in date order): the state after the pilot releases; records, pages and pins aligned._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). The pilot set (final 11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the pilot set is unchanged). Hub `v1` = `da7a066` = `main` (`test` two commits ahead), which all six tools call by commit. The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-06 (evening), at the end of the file (this file is not in date order): the triage of every open issue._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0411.md` (prior: `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -3488,3 +3488,22 @@ candidates are six `.3` releases carrying #6's step 1.
     `--no-ci-check`), and says a local-only tag is unused (`git tag -d`); 21 tests.
   - The Galaxy wrapper and the workflows (0.1.2) pin translator `1.7.8-beta`; `release_trust.md` updated.
 - **Yours:** push the translator `test`; when its runs are green, `tag_release.py v1.7.8-beta`; push the hub.
+
+## 2026-11-06 (evening) — triage of every open issue; docs aligned with the 11-06 state
+
+- **Read:** all 24 open issues and PR page-classification#65 (live, with comments), the seven repositories at
+  `test`, rulesets and branches (`gh api`), and the SSH Open Marketplace records (API).
+- **Done since the afternoon entry:** the translator's `test` pushed, `v1.7.8-beta` released (11:06Z), the hub
+  pushed (`6812903`) and the #66 comment posted (11:18Z). `main` and `v1` are still `da7a066`, so the published
+  pages and `tree/main/galaxy` show the translator wrapper at `1.7.7-beta`.
+- **Prepared (hub):** `release_trust.md` (no hub ruleset and no branch ruleset anywhere; a State on 2026-11-06;
+  the third way a tag missed), `ci_policy.md` (only `needs:` blocks until #40), `docker_gha.md` (commit pins),
+  the Tagging section of the CONTRIBUTING template, `galaxy/README.md`, the licence wording in the docs site (#6),
+  `status.md` (#78), the LINDAT records linked.
+- **Prepared (tools):** `python-multipart>=0.0.33` in the four services still at 0.0.32; `release.yml` headers
+  (branch dispatch = dry run, tag dispatch = release, `tag_release.py`); CONTRIBUTING names each repo's release
+  workflow; stale references in digital-convert, nlp-enrich and ocr-postprocess docs.
+- **Yours:** merge `test` into `main` and move `v1` (force-push, not delete-and-recreate); re-run Cross-Repo
+  Fast-Lane 42199323734; `@dependabot rebase` on page-classification#65; the comments drafted for the open
+  issues; the SSHOMP corrections; the stale branches and malformed tags (admin).
+- Not pushed: files delivered as per-repo zips.

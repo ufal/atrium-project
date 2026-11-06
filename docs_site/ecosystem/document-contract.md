@@ -139,6 +139,10 @@ against `atrium_document.schema.json`. ocr-postprocess, which runs between them 
 chain, is left out so that only these two tools' writes are visible; in the real chain its blocks
 and licence components would be here too.
 
+The example was generated on 2026-09-22. `provenance.license` and `license_detail` are the
+[old calculated field](licences.md#an-old-field-to-ignore): records written since the pilot releases of
+4 November also carry `"license_basis": "calculated"` beside it, as in `fixtures/atrium_document.example.json`.
+
 After **page-classification** (`-f CTX000000003-1.png --document-json-out 1_pc.json`, no
 baseline):
 

@@ -146,7 +146,7 @@ the segments in a language the backend cannot translate (`unsupported_source_lan
 
 **SSH Open Marketplace.** Tool record [`CizIUW`](https://marketplace.sshopencloud.eu/tool-or-service/CizIUW);
 workflow record [`13eHAZ`](https://marketplace.sshopencloud.eu/workflow/13eHAZ), to be rebuilt with the
-seven steps above (#4). Related records: LINDAT Translation, UDPipe.
+seven steps above (#4). Related records: [LINDAT Translation](https://marketplace.sshopencloud.eu/tool-or-service/1wLXFh), [UDPipe](https://marketplace.sshopencloud.eu/tool-or-service/i6piia).
 
 **Galaxy sheet.**
 

@@ -52,7 +52,8 @@ The handover, the runbooks and the contacts: [S2 pilot handover](pilot.md).
 
 - **Per-document permission** to send text to an external service: agreed with AMČR, not yet in the tools
   ([Licences and paradata](ecosystem/licences.md#what-changes)).
-- **The terms of LINDAT's output** for the translator's default backend are still open
+- **LINDAT for the pilot**: CU's written permission for AMČR's use, and the terms of the output of the services
+  the translator (its default backend) and nlp-enrich (UDPipe, NameTag) call, are still open
   ([#78](https://github.com/ufal/atrium-project/issues/78)).
 - **The document-understanding benchmark**, which compares off-the-shelf models with these tools, is deferred
   until after the pilot ([#22](https://github.com/ufal/atrium-project/issues/22)).
