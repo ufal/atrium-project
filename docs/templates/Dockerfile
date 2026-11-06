@@ -124,7 +124,11 @@ ENV HOME=/home/atrium
 USER atrium
 
 # Batch entrypoint — the one-off/admin surface (12-factor XII). The API stage overrides it.
-ENTRYPOINT ["python", "run_pipeline.py"]
+# container_entrypoint.py (hub-canonical, vendored at the repo root) runs the program it is given,
+# named by its absolute path, with the arguments `docker run` passes; a first argument that names a
+# shell or Python (`/bin/sh tool_script.sh`) runs as given, which is how Galaxy starts a tool's
+# container in the job's own working directory (atrium-project#66).
+ENTRYPOINT ["python", "/app/container_entrypoint.py", "/app/run_pipeline.py"]
 CMD []
 
 

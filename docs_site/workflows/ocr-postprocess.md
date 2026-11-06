@@ -131,21 +131,27 @@ with no band or threshold, and nothing in the pipeline routes on it.
 
 **SSH Open Marketplace.** Tool record [`YParYU`](https://marketplace.sshopencloud.eu/tool-or-service/YParYU).
 
-**Galaxy.** Inputs map to the `alto` and `json` datatypes (plus `txt`, `pdf`, `docx` and others
-for the text-bearing formats); outputs to `alto`, `txt`, `tabular` and `json`. The closest
-tools already in Galaxy are the OCR tools that produce ALTO — `tesseract`, and the Kraken tools
-in the Digital Humanities section — which would sit directly before this workflow; no Galaxy
-tool classifies OCR quality line by line. The container is the service image
-`ghcr.io/ufal/atrium-ocr-postprocess-api:<version>` (`POST /process`, `POST /score_record`),
-where `<version>` is the release without its leading `v`; it is a CPU build. Test data: the
-synthetic `data_samples/` — ALTO, OCR JSON and one file of each text-lines format, with the
-page texts and line tables of the ALTO samples — under CC BY-NC 4.0.
+**Galaxy sheet.**
+
+|                               |                                                                                                                                                                                                                                                                                                                                                                                               |
+|-------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Workflow inputs**           | a collection of OCR pages — ALTO as `xml` (DARIAH's Galaxy has `alto` only as an alias of `xml`), or text-bearing files: `txt`, `pdf`, `docx`, `html` (hOCR), `xml` (PAGE), `tsv` (Tesseract TSV); optionally a document record — `json`                                                                                                                                                      |
+| **Parameters**                | the method (`alto-tools` for ALTO, `text-lines` for the other formats, `json-keys` for OCR JSON); the expected languages (`ces,deu,eng`); the stages to run                                                                                                                                                                                                                                   |
+| **Workflow outputs**          | the per-line table — `csv` (a category per line); page texts — `txt`; per-page ALTO — `xml`; statistics — `csv`; paradata — `json`; document record — `json`                                                                                                                                                                                                                                  |
+| **Container**                 | `ghcr.io/ufal/atrium-ocr-postprocess:<version>` — the batch image (`run_pipeline.py`); since `v1.15.4-beta` it runs the job script Galaxy hands it (the hub-canonical `container_entrypoint.py`). The pipeline starts its stages by name from `/app`, so a job script runs it there, with a config of absolute paths. The service image `-api` (`POST /process`, `/score_record`) is not used |
+| **Galaxy tool**               | not wrapped yet; the batch image is ready from `v1.15.4-beta` ([`galaxy/README.md` → Ready to wrap](https://github.com/ufal/atrium-project/blob/test/galaxy/README.md#ready-to-wrap))                                                                                                                                                                                                         |
+| **Compute**                   | CPU for splitting, statistics and text extraction. The batch line classifier (Qwen2.5-0.5B) needs a CUDA GPU; on CPU, `score_record.py` scores records with the service's models                                                                                                                                                                                                              |
+| **Network or reference data** | the fastText language-identification model is in the image; Qwen2.5-0.5B and LayoutReader come from the Hugging Face Hub, or are staged once                                                                                                                                                                                                                                                  |
+| **Test data**                 | the synthetic `data_samples/` — ALTO, OCR JSON and one file of each text-lines format, with the page texts and line tables of the ALTO samples — under CC BY-NC 4.0                                                                                                                                                                                                                           |
+| **Credit**                    | the authors in the tool's `CITATION.cff`, with their ORCIDs; licence MIT                                                                                                                                                                                                                                                                                                                      |
+| **Closest Galaxy tools**      | the OCR tools that write ALTO and come before this step: Tesseract (IUC, installed on DARIAH's instance, ALTO as `xml`) and Kraken; none classifies OCR quality line by line                                                                                                                                                                                                                  |
 
 ## Sources
 
 Read from `ufal/atrium-ocr-postprocess` at release **`v1.15.0-beta`** (2026-10-29); earlier readings
 were at `v1.13.1-beta` (2026-10-27) and `v1.12.0-beta` (2026-10-16). The repository continues `ufal/atrium-alto-postprocess`, archived on
 2026-10-19. This table records **provenance**, not a build instruction.
+The Galaxy sheet (2026-11-06) follows `v1.15.4-beta` and the hub's `galaxy/` folder (#66).
 
 | Source                                                                                                                                                      | What was taken from it                                                                                               |
 |-------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|

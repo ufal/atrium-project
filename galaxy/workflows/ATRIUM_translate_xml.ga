@@ -17,7 +17,7 @@
     "format-version": "0.1",
     "license": "MIT",
     "name": "ATRIUM translation of XML records",
-    "release": "0.1.0",
+    "release": "0.1.1",
     "report": {
         "markdown": "\n# Workflow Execution Report\n\n## Workflow Inputs\n```galaxy\ninvocation_inputs()\n```\n\n## Workflow Outputs\n```galaxy\ninvocation_outputs()\n```\n\n## Workflow\n```galaxy\nworkflow_display()\n```\n"
     },
@@ -87,7 +87,7 @@
             },
             "tool_id": "atrium_translator",
             "tool_state": "{\"document\": {\"__class__\": \"ConnectedValue\"}, \"mode\": {\"kind\": \"metadata\", \"__current_case__\": 0, \"fields\": {\"source\": \"amcr\", \"__current_case__\": 0}, \"xsd\": null, \"xsd_strict\": false}, \"source\": {\"source_lang\": \"auto\", \"__current_case__\": 0, \"default_source_lang\": \"cs\"}, \"target_lang\": \"en\", \"output_mode\": \"replace\", \"vocabulary\": {\"source\": \"bundled\", \"__current_case__\": 0}, \"baseline\": null, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
-            "tool_version": "1.7.6-beta+galaxy0",
+            "tool_version": "1.7.7-beta+galaxy0",
             "type": "tool",
             "uuid": "627c761d-887a-5bf5-b0d4-a6dfbe28b499",
             "when": null,

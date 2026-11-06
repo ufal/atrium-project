@@ -67,6 +67,9 @@ regress)").
 and the bundles) **and** its production image `ghcr.io/ufal/atrium-<tool>-api`, by digest. A failed
 required build, probe or security gate means no release.
 
+- **Tagging.** A release tag is created with `scripts/tag_release.py` on the pushed release commit, and pushed
+  alone; a tag that started no run is released by dispatching Release Bundle on the tag
+  ([release_trust.md](release_trust.md#tagging-a-release)).
 - **One tag run per repository.** `release.yml` calls `docker-tool.reusable.yml` as its `image` job with
   `release-gate: true`, and the release job `needs` it; `docker.yml` no longer runs on tags.
 - **Promotion waits for the probe.** `build-and-push` needs `docker-build-smoke`; with `release-gate` a failed

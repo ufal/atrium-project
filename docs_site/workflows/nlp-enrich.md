@@ -117,20 +117,27 @@ other outputs are complete, and the record sent is unchanged.
 **SSH Open Marketplace.** Tool record [`EMhu3X`](https://marketplace.sshopencloud.eu/tool-or-service/EMhu3X).
 The LINDAT services it calls have their own records: UDPipe and NameTag.
 
-**Galaxy.** Inputs map to `tabular` (or `csv`), `alto`, `png`, `tei` for a converted TEITOK
-file and `json` for a record; outputs to `tei` for TEITOK, `tabular` for the tables and for
-CoNLL-U (Galaxy has no CoNLL-U datatype), and `json`. The closest tool already in Galaxy is
-`stanza_nlp`, which tokenises, tags, parses and finds named entities with local models; UDPipe
-and NameTag themselves have been wrapped for Galaxy before, as tools calling LINDAT's services.
-The container is the CPU-only service image `ghcr.io/ufal/atrium-nlp-enrich-api:<version>`
-(`POST /enrich`, `/enrich_text`, or `/jobs` for a long document); it needs outbound HTTPS to
-LINDAT. Test data: the three synthetic documents in `data_samples/` — line tables, ALTO, a page
-image and the outputs of every stage.
+**Galaxy sheet.**
+
+|                          |                                                                                                                                                                                                                                                                                                                          |
+|--------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Workflow inputs**      | line tables — `csv` or `tabular` (ocr-postprocess's per-line table); optionally their ALTO — `xml` — and page images — `png`; a document record — `json`                                                                                                                                                                 |
+| **Parameters**           | the stages to run (manifest, UDPipe, NameTag, statistics); TEITOK output; whether lines marked untrustworthy are skipped                                                                                                                                                                                                 |
+| **Workflow outputs**     | CoNLL-U — `tabular` (no `conllu` datatype on DARIAH's Galaxy); named entities — `tabular`; TEITOK — `tei`; the entity summary — `csv`; paradata — `json`; document record — `json`                                                                                                                                       |
+| **Container**            | `ghcr.io/ufal/atrium-nlp-enrich:<version>` — the batch image (`run_pipeline.py`); since `v1.3.4-beta` it runs the job script Galaxy hands it (the hub-canonical `container_entrypoint.py`). Its paths come only from a config file, so a job script writes one with absolute paths. The service image `-api` is not used |
+| **Galaxy tool**          | not wrapped yet; the batch image is ready from `v1.3.4-beta` ([`galaxy/README.md` → Ready to wrap](https://github.com/ufal/atrium-project/blob/test/galaxy/README.md#ready-to-wrap))                                                                                                                                     |
+| **Compute**              | CPU                                                                                                                                                                                                                                                                                                                      |
+| **Network**              | outbound HTTPS to LINDAT UDPipe (`czech-pdt-ud-2.15-241121`) and NameTag 3 (`nametag3-multilingual-onto-260521`); Czech only                                                                                                                                                                                             |
+| **Credentials**          | none                                                                                                                                                                                                                                                                                                                     |
+| **Test data**            | the three synthetic documents in `data_samples/` — line tables, ALTO, a page image and the outputs of every stage                                                                                                                                                                                                        |
+| **Credit**               | the authors in the tool's `CITATION.cff`, with their ORCIDs; licence MIT                                                                                                                                                                                                                                                 |
+| **Closest Galaxy tools** | `stanza_nlp`, which tokenises, tags, parses and finds named entities with local models; UDPipe and NameTag themselves have been wrapped for Galaxy before, as tools calling LINDAT's services                                                                                                                            |
 
 ## Sources
 
 Read from `ufal/atrium-nlp-enrich` at release **`v1.3.0-beta`** (2026-10-29); earlier readings were
 at `v1.2.0-beta` (2026-10-26) and `v1.1.2-beta` (2026-10-19). This table records **provenance**, not a build instruction.
+The Galaxy sheet (2026-11-06) follows `v1.3.4-beta` and the hub's `galaxy/` folder (#66).
 
 | Source                                                                                                                                                                              | What was taken from it                                                                                                |
 |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|

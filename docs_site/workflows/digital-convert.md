@@ -109,18 +109,27 @@ when its own part of the record comes back unchanged. The program id in the reco
 **SSH Open Marketplace.** Tool record [`jGxgQI`](https://marketplace.sshopencloud.eu/tool-or-service/jGxgQI), "Born-digital document converter: PDF and
 office files into structured text without OCR" (created 24 October 2026).
 
-**Galaxy.** PDF and DOCX inputs map to `pdf` and `docx`; the record to `json`. Galaxy's own
-`grobid` and `markitdown` tools convert born-digital documents but do not write the ATRIUM
-record. The container is the service image `ghcr.io/ufal/atrium-digital-convert-api:<version>`
-(`POST /reformat`), released since `v1.1.0-beta` and tagged with the release without its leading
-`v`; the command line is published as `-digital`. Test data: the small generated PDF and DOCX
-files in `tests/fixtures/digital/`.
+**Galaxy sheet.**
+
+|                          |                                                                                                                                                                                                                                                                                                                                                  |
+|--------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Workflow inputs**      | one born-digital file per job — `pdf`, `docx` or `xlsx` (ODT, ODS, RTF, DOC and XLS have no datatype on DARIAH's Galaxy); optionally the record to add to — `json`                                                                                                                                                                               |
+| **Parameters**           | page breaks in DOCX (`auto`, `explicit`, `none`); which pages to classify for OCR (`needs_ocr`, `all`); Markdown output                                                                                                                                                                                                                          |
+| **Workflow outputs**     | the document record — `json`, with the pages that need OCR flagged; Markdown — `markdown`; paradata — `json`                                                                                                                                                                                                                                     |
+| **Container**            | `ghcr.io/ufal/atrium-digital-convert-digital:<version>` — the command-line image (`api_util/digital_to_json.py`), light engine and headless LibreOffice; since `v1.4.5-beta` it runs the job script Galaxy hands it (the hub-canonical `container_entrypoint.py`). The Docling image is built locally only; the service image `-api` is not used |
+| **Galaxy tool**          | not wrapped yet; the command-line image is ready from `v1.4.5-beta` ([`galaxy/README.md` → Ready to wrap](https://github.com/ufal/atrium-project/blob/test/galaxy/README.md#ready-to-wrap))                                                                                                                                                      |
+| **Compute**              | CPU                                                                                                                                                                                                                                                                                                                                              |
+| **Network**              | none: no models, and the `--describe` stage URLs stay unset                                                                                                                                                                                                                                                                                      |
+| **Test data**            | the small PDF and DOCX files `tests/fixtures/digital/make_fixtures.py` generates with the standard library, MIT                                                                                                                                                                                                                                  |
+| **Credit**               | the authors in the tool's `CITATION.cff`, with their ORCIDs; licence MIT                                                                                                                                                                                                                                                                         |
+| **Closest Galaxy tools** | Galaxy's `markitdown` and `grobid` convert born-digital documents but write no ATRIUM record; DARIAH's `atrium_pdf_text_extraction`, on the instance, writes a PDF's text as page-based JSON                                                                                                                                                     |
 
 ## Sources
 
 Read from `ufal/atrium-digital-convert` at release **`v1.4.0-beta`** (2026-10-29). Earlier readings
 were at `v1.3.0-beta` (2026-10-26), `v1.2.1-beta` (2026-10-19) and, before the move, `ufal/atrium-llm-enrich` at `v0.8.0`. This
 table records **provenance**, not a build instruction.
+The Galaxy sheet (2026-11-06) follows `v1.4.5-beta` and the hub's `galaxy/` folder (#66).
 
 | Source                                                                                                                                                       | What was taken from it                                                    |
 |--------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|

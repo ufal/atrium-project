@@ -1,12 +1,13 @@
 # ATRIUM XML translator: Galaxy tool
 
 `translator.xml` runs the batch image of [ufal/atrium-translator](https://github.com/ufal/atrium-translator) at
-release `1.7.6-beta` (`ghcr.io/ufal/atrium-translator:1.7.6-beta`). It translates one XML document per job, an
+release `1.7.7-beta` (`ghcr.io/ufal/atrium-translator:1.7.7-beta`). It translates one XML document per job, an
 AMČR metadata record or an ALTO page, and writes it back with its structure unchanged. A collection maps over the
 tool, one job per document.
 
-`1.7.6-beta` is the first release whose entry point runs Galaxy's job script (`docker run IMAGE /bin/sh
-tool_script.sh`); earlier images fail with exit 2. **The tag must be pushed and its images published before this
+`1.7.7-beta` is the first release whose entry point runs Galaxy's job script (`docker run IMAGE /bin/sh
+tool_script.sh`), through the hub-canonical `container_entrypoint.py`; earlier images fail with exit 2. (`v1.7.6-beta`
+was tagged on the commit before its version bump and never released.) **The tag must be pushed and its images published before this
 wrapper can run.**
 
 ## Inputs, parameters, outputs

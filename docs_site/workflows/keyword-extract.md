@@ -118,12 +118,21 @@ list, and a re-run replaces each block whole. Records already written keep the p
 "Keyword extraction from archival documents (statistical and vocabulary-controlled)". It described the
 llm-enrich stage until 24 October 2026, when it was re-pointed to this repository.
 
-**Galaxy.** Inputs map to `json` (the record) and `txt`; outputs to `json`. Inside ATRIUM,
-DARIAH's Galaxy tools already chain PDF text extraction with vocabulary-driven information
-extraction (task 4.2.1). The container is the service image
-`ghcr.io/ufal/atrium-keyword-extract-api:<version>` (`POST /extract_keywords`); for Galaxy the statistical
-kind is the capability to wrap. The controlled kind needs a language-model service, and its
-output is still research output.
+**Galaxy sheet.**
+
+|                               |                                                                                                                                                                                                                                                                                        |
+|-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Workflow inputs**           | a collection of CoNLL-U — `tabular`; TEITOK — `tei` or `xml`; document records — `json`; line tables — `csv`; text — `txt`                                                                                                                                                             |
+| **Parameters**                | the method (`keybert`, `yake`, `legacy`); how many keywords; the language; per page or per document                                                                                                                                                                                    |
+| **Workflow outputs**          | the keyword table — `csv` (`document_id, kw-1, score-1, …`); one table per document — `csv`; document records — `json`; paradata — `json`                                                                                                                                              |
+| **Container**                 | `ghcr.io/ufal/atrium-keyword-extract:<version>` — the batch image (`keywords.py`); since `v1.6.5-beta` it runs the job script Galaxy hands it (the hub-canonical `container_entrypoint.py`). The `llm` image (the controlled kind, on a GPU) and the service image `-api` are not used |
+| **Galaxy tool**               | not wrapped yet, and then the statistical kind only; the batch image is ready from `v1.6.5-beta` ([`galaxy/README.md` → Ready to wrap](https://github.com/ufal/atrium-project/blob/test/galaxy/README.md#ready-to-wrap))                                                               |
+| **Compute**                   | CPU; KeyBERT uses a GPU when the destination has one                                                                                                                                                                                                                                   |
+| **Network or reference data** | `yake` and `legacy` need none; `keybert` downloads `paraphrase-multilingual-MiniLM-L12-v2` from the Hugging Face Hub, so a server stages it once                                                                                                                                       |
+| **Credentials**               | none for the statistical kind; the controlled kind needs a language-model API key, and its output is still research output, so it is not offered                                                                                                                                       |
+| **Test data**                 | `data_samples/UDP/*.conllu`, the line tables in `data_samples/DOC_LINE_CATEG/` and `tests/fixtures/sample.conllu`                                                                                                                                                                      |
+| **Credit**                    | the authors in the tool's `CITATION.cff`, with their ORCIDs; licence MIT; YAKE, one of the statistical methods, is AGPL-3.0                                                                                                                                                            |
+| **Closest Galaxy tools**      | none extracts keywords; DARIAH's ATRIUM tools on the instance chain PDF text extraction with vocabulary-driven information extraction (task 4.2.1)                                                                                                                                     |
 
 ## Sources
 
@@ -131,6 +140,7 @@ Read from `ufal/atrium-keyword-extract` at release **`v1.6.0-beta`** (2026-10-29
 were at `v1.5.1-beta` (2026-10-27) and `v1.4.0-beta` (2026-10-19). The statistical methods of `atrium-nlp-enrich` and the controlled
 kind and vocabulary build of `atrium-llm-enrich` have moved into it. This table records
 **provenance**, not a build instruction.
+The Galaxy sheet (2026-11-06) follows `v1.6.5-beta` and the hub's `galaxy/` folder (#66).
 
 | Source                                                                                             | What was taken from it                                                                                              |
 |----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|

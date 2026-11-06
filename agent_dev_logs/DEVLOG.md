@@ -3450,3 +3450,28 @@ candidates are six `.3` releases carrying #6's step 1.
   3. `planemo test` there; import the workflows on the instance;
   4. ask Mark to run the data manager and mount its path.
 - Not pushed: files delivered as per-repo zips.
+
+## 2026-11-06 — #66: one shared entry point for every batch image; the translator's tag release
+
+- **Read:** the 11-05 pushes (hub `28a22eb`, translator `cb68c39`, the callers re-pinned); Release Bundle 42103826703
+  (translator, tag `v1.7.6-beta` at `5b25f83`: failed at the version gate) and Hub Self-Check 42103441461 (`28a22eb`:
+  `test_galaxy_wrappers.py` read the translator before it was pushed); the earlier "no run" tags (`v1.7.4-beta`,
+  digital-convert `v1.4.3-beta`, keyword-extract `v1.6.3.-beta`): every repo filters `tags: ['v*']` and the pinned hub
+  commit was pushed first, so the cause stays unrecorded.
+- **K4TEL (11-06):** a hub-shared module for the four tools and the translator; release the translator as `v1.7.7-beta`.
+- **Prepared:**
+  1. `docs/templates/shared/container_entrypoint.py` (+ `test_container_entrypoint_shared.py`, `--selftest`): the
+     Dockerfile names the program by its absolute path; a first argument naming `sh`, `bash`, `dash`, `python` or
+     `python3` runs as given; everything else goes to the program. MANIFEST (26 files), the ruff template, the
+     template Dockerfile, `shared_components.md`. Vendored into all six by `revendor_shared.sh` (pins STALE, as
+     expected until the sweep).
+  2. ocr-postprocess `1.15.4-beta`, nlp-enrich `1.3.4-beta`, keyword-extract `1.6.5-beta`, digital-convert `1.4.5-beta`,
+     translator `1.7.7-beta` (its own `entrypoint.py` removed): ENTRYPOINT, `tests/test_batch_entrypoint.py`,
+     versions, `docs/usage.md`, CONTRIBUTING (a Tagging paragraph in all six), DEVLOG.
+  3. `scripts/tag_release.py` + `tests/test_tag_release.py`; `release_trust.md` § Tagging a release; `ci_policy.md`.
+  4. Galaxy sheets for the four; `galaxy/README.md` § Ready to wrap and the push order; translator wrapper and
+     workflows on `1.7.7-beta`.
+- **Yours:** push the hub, move `v1`; per tool, `python3 ../atrium-project/scripts/pin_hub_reusables.py --sha <v1>`
+  committed with the zip's files, push `test`, `python3 ../atrium-project/scripts/tag_release.py <tag>`; then the
+  #66 comment.
+- Not pushed: files delivered as per-repo zips.
