@@ -3,7 +3,7 @@
 
 Run from a tool repository checkout (or pass --repo):
 
-    python3 ../atrium-project/scripts/tag_release.py v1.7.7-beta
+    python3 ../atrium-project/scripts/tag_release.py v1.7.8-beta
 
 WHY THIS EXISTS (atrium-project#66, the translator, 2026-11-05). A release tag is protected and
 never moved (docs/release_trust.md), so a tag that misses is a version lost. Two ways it missed:
@@ -17,15 +17,21 @@ never moved (docs/release_trust.md), so a tag that misses is a version lost. Two
      cause is not recorded. GitHub creates no push event for tags when more than three are pushed
      at once, which `git push --tags` from a checkout with stale local tags does without a word.
 
+  3. **A tag on a commit whose CI was red.** translator `v1.7.7-beta` (11-06) was tagged three
+     minutes after Docker Build & Push had failed on its commit; its release stopped in the same test
+     job. The version gate passes on such a commit, so the script also reads the commit's runs.
+
 So this script tags only what the remote branch already has, only when the release gate would
-pass, and pushes exactly one ref:
+pass and the commit's push runs passed, and pushes exactly one ref:
 
   * the tag is `vX.Y.Z` or `vX.Y.Z-suffix` (no stray dot);
   * the working tree has no uncommitted change to tracked files;
   * HEAD is `<remote>/<branch>` after a fetch: the version bump is committed AND pushed;
   * the repository's own vendored `check_version.py --tag … --require-tag` passes — the same
     check `release.yml`'s version-guard runs, so a refusal here is a failed run avoided;
-  * the tag exists neither locally nor on the remote.
+  * with `gh`, every push run of HEAD has finished and passed (`--no-ci-check` skips this; without
+    `gh` it is reported as not done);
+  * the tag exists neither on the remote nor, unpushed, locally (delete a local-only tag first).
 
 Then it creates an annotated tag on HEAD and pushes `refs/tags/<tag>` alone. With the `gh` CLI it
 waits for the Release Bundle run of that tag and prints its URL. When none appears, the recovery
@@ -82,7 +88,7 @@ def para_config(repo: Path) -> Path:
 def preflight(repo: Path, tag: str, remote: str, branch: str) -> str:
     """Every check before tagging; returns the commit to tag."""
     if not TAG_RE.match(tag):
-        raise Refusal(f"{tag!r} is not a release tag: vX.Y.Z or vX.Y.Z-suffix, e.g. v1.7.7-beta")
+        raise Refusal(f"{tag!r} is not a release tag: vX.Y.Z or vX.Y.Z-suffix, e.g. v1.7.8-beta")
     for name in ("CITATION.cff", "check_version.py"):
         if not (repo / name).is_file():
             raise Refusal(f"{repo} has no {name}: run this from a tool repository")
@@ -127,11 +133,63 @@ def preflight(repo: Path, tag: str, remote: str, branch: str) -> str:
             f"bump CITATION.cff and {pc.relative_to(repo)} to {tag} in a commit, push it, then tag"
         )
 
-    if git(repo, "rev-parse", "-q", "--verify", f"refs/tags/{tag}", check=False):
-        raise Refusal(f"the tag {tag} already exists locally; a used version is not reused: release the next one")
     if git(repo, "ls-remote", "--tags", remote, f"refs/tags/{tag}"):
         raise Refusal(f"the tag {tag} already exists on {remote}; release tags are never moved: release the next one")
+    if git(repo, "rev-parse", "-q", "--verify", f"refs/tags/{tag}", check=False):
+        raise Refusal(
+            f"the tag {tag} exists only locally (it was never pushed, so the version is unused): "
+            f"delete it with `git tag -d {tag}`, then run this again"
+        )
     return head
+
+
+#: Conclusions of a push run that make its commit unfit to release.
+BAD_CONCLUSIONS = {"failure", "timed_out", "startup_failure", "action_required", "cancelled"}
+
+
+def check_ci(gh: Optional[str], slug: Optional[str], sha: str) -> str:
+    """Refuse a commit whose push runs failed or are still running; return what was checked.
+
+    `v1.7.7-beta` (translator, 11-06) was tagged three minutes after Docker Build & Push had failed on
+    its commit, and its Release Bundle stopped in the same test job. The release gate cannot see
+    that; the commit's own runs can.
+    """
+    if not gh or not slug:
+        return "CI not checked (gh is not installed, or the remote is not on GitHub): look at the commit's runs first"
+    proc = subprocess.run(
+        [
+            gh,
+            "run",
+            "list",
+            "--repo",
+            slug,
+            "--commit",
+            sha,
+            "--json",
+            "name,status,conclusion,event,url",
+            "--limit",
+            "100",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0:
+        return f"CI not checked (`gh run list` failed: {(proc.stderr or proc.stdout).strip()[:200]})"
+    try:
+        runs = [run for run in json.loads(proc.stdout or "[]") if run.get("event") == "push"]
+    except json.JSONDecodeError:
+        return "CI not checked (`gh run list` printed no JSON)"
+    if not runs:
+        return f"CI not checked: no push run of {sha[:12]} was found"
+    failed = [run for run in runs if run.get("status") == "completed" and run.get("conclusion") in BAD_CONCLUSIONS]
+    running = [run for run in runs if run.get("status") != "completed"]
+    if failed:
+        listed = "\n".join(f"  {run.get('name')}: {run.get('conclusion')} {run.get('url', '')}" for run in failed)
+        raise Refusal(f"the commit {sha[:12]} has push runs that did not pass:\n{listed}\nfix them, push, then tag")
+    if running:
+        listed = "\n".join(f"  {run.get('name')}: {run.get('status')}" for run in running)
+        raise Refusal(f"the commit {sha[:12]} still has push runs going:\n{listed}\nwait until they pass, then tag")
+    return f"CI green: {len(runs)} push run(s) of {sha[:12]} passed"
 
 
 def wait_for_run(gh: Optional[str], slug: Optional[str], tag: str, seconds: int) -> Optional[str]:
@@ -173,12 +231,13 @@ def wait_for_run(gh: Optional[str], slug: Optional[str], tag: str, seconds: int)
 
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("tag", help="the release tag, e.g. v1.7.7-beta")
+    parser.add_argument("tag", help="the release tag, e.g. v1.7.8-beta")
     parser.add_argument("--repo", type=Path, default=Path.cwd(), help="the tool repository (default: here)")
     parser.add_argument("--remote", default="origin")
     parser.add_argument("--branch", default="test", help="the branch the release commit is on (default: test)")
     parser.add_argument("--dry-run", action="store_true", help="check everything, tag nothing")
     parser.add_argument("--wait", type=int, default=90, help="seconds to wait for the Release Bundle run (gh)")
+    parser.add_argument("--no-ci-check", action="store_true", help="tag without checking the commit's push runs")
     parser.add_argument("--gh", default=shutil.which("gh"), help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
 
@@ -190,6 +249,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 1
 
     slug = repo_slug(git(repo, "remote", "get-url", args.remote, check=False))
+    if args.no_ci_check:
+        print("tag_release: CI not checked (--no-ci-check)")
+    else:
+        try:
+            print(f"tag_release: {check_ci(args.gh, slug, head)}")
+        except Refusal as exc:
+            print(f"tag_release: refused: {exc}", file=sys.stderr)
+            return 1
     if args.dry_run:
         print(f"tag_release: would tag {head[:12]} as {args.tag} and push refs/tags/{args.tag} to {args.remote}")
         return 0

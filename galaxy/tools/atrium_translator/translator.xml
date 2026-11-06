@@ -2,8 +2,8 @@
     <description>translates the text inside ALTO pages and AMČR metadata records, keeping their structure</description>
     <macros>
         <!-- The release of ufal/atrium-translator whose batch image this wrapper runs: the first whose
-             entry point runs Galaxy's job script (v1.7.7-beta). -->
-        <token name="@TOOL_VERSION@">1.7.7-beta</token>
+             entry point runs Galaxy's job script (v1.7.8-beta). -->
+        <token name="@TOOL_VERSION@">1.7.8-beta</token>
         <token name="@VERSION_SUFFIX@">0</token>
         <xml name="languages">
             <option value="cs">Czech (cs)</option>

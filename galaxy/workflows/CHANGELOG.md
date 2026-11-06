@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.2] - 2026-11-06
+
+The translator steps run `1.7.8-beta+galaxy0`: `v1.7.7-beta` was tagged before the commit that removed the
+translator's old entry point, and its release stopped in the test job.
+
 ## [0.1.1] - 2026-11-06
 
 The translator steps run `1.7.7-beta+galaxy0`: `v1.7.6-beta` was tagged on the commit before its version bump

@@ -153,3 +153,86 @@ def test_the_para_config_under_setup_is_found(tool):
 )
 def test_the_repository_slug_comes_from_the_remote(url, slug):
     assert tr.repo_slug(url) == slug
+
+
+# ── The commit's own CI (`check_ci`): v1.7.7-beta was tagged on a commit whose Docker Build had failed ──
+
+
+def _fake_gh(tmp_path: Path, monkeypatch, runs: list[dict]) -> str:
+    """A `gh` stand-in: `run list --commit` prints `runs`; every other call prints an empty list."""
+    import json
+
+    monkeypatch.setenv("FAKE_GH_RUNS", json.dumps(runs))
+    script = tmp_path / "gh"
+    script.write_text(
+        "#!/usr/bin/env python3\n"
+        "import os, sys\n"
+        "print(os.environ['FAKE_GH_RUNS'] if '--commit' in sys.argv else '[]')\n",
+        encoding="utf-8",
+    )
+    script.chmod(0o755)
+    return str(script)
+
+
+def _push_run(name: str, conclusion: str | None, status: str = "completed") -> dict:
+    return {"name": name, "status": status, "conclusion": conclusion, "event": "push", "url": f"https://x/{name}"}
+
+
+def test_a_commit_with_a_failed_push_run_is_refused(tool, tmp_path, monkeypatch, capsys):
+    repo, origin = tool
+    gh = _fake_gh(
+        tmp_path, monkeypatch, [_push_run("pre-commit", "success"), _push_run("Docker Build & Push", "failure")]
+    )
+    monkeypatch.setattr(tr, "repo_slug", lambda url: "ufal/demo")
+    assert tr.main(["v1.0.0-beta", "--repo", str(repo), "--gh", gh, "--wait", "0"]) == 1
+    err = capsys.readouterr().err
+    assert "did not pass" in err and "Docker Build & Push: failure" in err
+    assert "refs/tags/v1.0.0-beta" not in _remote_refs(origin)
+
+
+def test_a_commit_with_a_running_push_run_is_refused(tool, tmp_path, monkeypatch, capsys):
+    repo, _ = tool
+    gh = _fake_gh(tmp_path, monkeypatch, [_push_run("Docker Build & Push", None, status="in_progress")])
+    monkeypatch.setattr(tr, "repo_slug", lambda url: "ufal/demo")
+    assert tr.main(["v1.0.0-beta", "--repo", str(repo), "--gh", gh, "--wait", "0"]) == 1
+    assert "still has push runs going" in capsys.readouterr().err
+
+
+def test_a_commit_whose_push_runs_passed_is_tagged(tool, tmp_path, monkeypatch, capsys):
+    repo, origin = tool
+    runs = [
+        _push_run("pre-commit", "success"),
+        _push_run("Docker Build & Push", "success"),
+        _push_run("Lint", "skipped"),
+    ]
+    gh = _fake_gh(tmp_path, monkeypatch, runs)
+    monkeypatch.setattr(tr, "repo_slug", lambda url: "ufal/demo")
+    assert tr.main(["v1.0.0-beta", "--repo", str(repo), "--gh", gh, "--wait", "0"]) == 0
+    assert "CI green: 3 push run(s)" in capsys.readouterr().out
+    assert "refs/tags/v1.0.0-beta" in _remote_refs(origin)
+
+
+def test_no_ci_check_tags_despite_a_red_run(tool, tmp_path, monkeypatch, capsys):
+    repo, origin = tool
+    gh = _fake_gh(tmp_path, monkeypatch, [_push_run("Docker Build & Push", "failure")])
+    monkeypatch.setattr(tr, "repo_slug", lambda url: "ufal/demo")
+    assert tr.main(["v1.0.0-beta", "--repo", str(repo), "--gh", gh, "--wait", "0", "--no-ci-check"]) == 0
+    assert "CI not checked (--no-ci-check)" in capsys.readouterr().out
+    assert "refs/tags/v1.0.0-beta" in _remote_refs(origin)
+
+
+def test_without_gh_the_ci_check_is_reported_as_not_done(tool, capsys):
+    repo, _ = tool
+    assert _run(repo, "v1.0.0-beta", "--dry-run") == 0
+    assert "CI not checked" in capsys.readouterr().out
+
+
+def test_a_tag_that_exists_only_locally_is_explained(tool, capsys):
+    """A version tagged locally and never pushed is unused: delete the tag, not the version."""
+    repo, origin = tool
+    _git(repo, "tag", "v1.0.0-beta")
+    assert _run(repo, "v1.0.0-beta") == 1
+    err = capsys.readouterr().err
+    assert "exists only locally" in err and "git tag -d v1.0.0-beta" in err
+    _git(repo, "tag", "-d", "v1.0.0-beta")
+    assert _run(repo, "v1.0.0-beta") == 0

@@ -3475,3 +3475,16 @@ candidates are six `.3` releases carrying #6's step 1.
   committed with the zip's files, push `test`, `python3 ../atrium-project/scripts/tag_release.py <tag>`; then the
   #66 comment.
 - Not pushed: files delivered as per-repo zips.
+
+## 2026-11-06 (afternoon) — #66: three releases out; the translator's v1.7.7-beta tagged before its fix
+
+- **Released (11-06):** nlp-enrich `v1.3.4-beta` (10:12Z), digital-convert `v1.4.5-beta` (10:15Z), keyword-extract
+  `v1.6.5-beta` (10:33Z). ocr-postprocess `v1.15.4-beta`: tagged later the same day (the dry run on `6635a97` passed).
+- **Translator:** `v1.7.7-beta` (10:08Z) is on `ec694d3`, where Docker Build & Push 42200410246 had failed at 10:05 on
+  the leftover `tests/test_container_entrypoint.py`; Release Bundle 42200410454 stopped in `image / test`. The fix
+  `5097da9` is green. `v1.7.8-beta` prepared on it.
+- **Hub:**
+  - `scripts/tag_release.py` refuses a commit whose push runs failed or are still going (`gh run list --commit`;
+    `--no-ci-check`), and says a local-only tag is unused (`git tag -d`); 21 tests.
+  - The Galaxy wrapper and the workflows (0.1.2) pin translator `1.7.8-beta`; `release_trust.md` updated.
+- **Yours:** push the translator `test`; when its runs are green, `tag_release.py v1.7.8-beta`; push the hub.

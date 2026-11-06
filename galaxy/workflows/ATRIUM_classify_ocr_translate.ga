@@ -17,7 +17,7 @@
     "format-version": "0.1",
     "license": "MIT",
     "name": "ATRIUM scanned pages: classify, OCR, translate",
-    "release": "0.1.1",
+    "release": "0.1.2",
     "report": {
         "markdown": "\n# Workflow Execution Report\n\n## Workflow Inputs\n```galaxy\ninvocation_inputs()\n```\n\n## Workflow Outputs\n```galaxy\ninvocation_outputs()\n```\n\n## Workflow\n```galaxy\nworkflow_display()\n```\n"
     },
@@ -252,7 +252,7 @@
             },
             "tool_id": "atrium_translator",
             "tool_state": "{\"document\": {\"__class__\": \"ConnectedValue\"}, \"mode\": {\"kind\": \"alto\", \"__current_case__\": 1, \"fast_align\": false}, \"source\": {\"source_lang\": \"auto\", \"__current_case__\": 0, \"default_source_lang\": \"cs\"}, \"target_lang\": \"en\", \"output_mode\": \"append\", \"vocabulary\": {\"source\": \"bundled\", \"__current_case__\": 0}, \"baseline\": null, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
-            "tool_version": "1.7.7-beta+galaxy0",
+            "tool_version": "1.7.8-beta+galaxy0",
             "type": "tool",
             "uuid": "df6f9021-51f4-58ef-a9dd-51f97324c322",
             "when": null,

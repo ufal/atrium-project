@@ -54,7 +54,7 @@ callers' column assumes the 11-04 pin sweep of page-classification, ocr-postproc
 | keyword-extract     | yes                 | yes (`v1.6.4-beta`)                          | 8 of 8, 3 of 3                       |
 | translator          | yes                 | yes (`v1.7.5-beta`)                          | 8 of 8, 2 of 2                       |
 
-**Tags without a release.** Six `v*` tags exist that no GitHub Release certifies, and by `ci_policy.md` they are
+**Tags without a release.** Seven `v*` tags exist that no GitHub Release certifies, and by `ci_policy.md` they are
 not releases:
 - digital-convert `v1.4.3-beta`: its tag push started no workflow run;
 - keyword-extract `v1.6.3.-beta`: a mistyped tag, which started no run;
@@ -63,7 +63,9 @@ not releases:
 - translator `v1.7.4-beta`: its tag push started no workflow run.
 - translator `v1.7.6-beta` (11-05): created on `5b25f83`, the commit before its version bump, and pushed
   with that commit; Release Bundle 42103826703 stopped at the version gate (tag 1.7.6, CITATION 1.7.5).
-  `v1.7.7-beta` carries it ([Tagging a release](#tagging-a-release)).
+  `v1.7.8-beta` carries it ([Tagging a release](#tagging-a-release)).
+- translator `v1.7.7-beta` (11-06): tagged on `ec694d3`, three minutes after Docker Build & Push had failed there
+  on a leftover test; Release Bundle 42200410454 stopped in the same test job. `v1.7.8-beta` carries it.
 
 The next patch number shipped the same code each time. Some of their images were published before the failure
 (translator's `:latest` pointed at the `1.7.3-beta` image until `v1.7.5-beta` replaced it on 11-04). The tag rule
@@ -139,13 +141,15 @@ commits were not the cause.
 commit is pushed:
 
 ```bash
-python3 ../atrium-project/scripts/tag_release.py v1.7.7-beta            # --dry-run to only check
+python3 ../atrium-project/scripts/tag_release.py v1.7.8-beta            # --dry-run to only check
 ```
 
 It refuses a malformed tag (`v1.6.3.-beta`), uncommitted changes, a HEAD that is not `origin/test`, a tag the
-version gate would fail (the repository's own `check_version.py --require-tag`), and a tag that exists. It then
-creates an annotated tag on HEAD and pushes that one ref. With `gh` it waits for the Release Bundle run of the tag
-and prints its URL.
+version gate would fail (the repository's own `check_version.py --require-tag`), a tag that exists on the remote,
+and, with `gh`, a commit whose push runs failed or are still going (`v1.7.7-beta`; `--no-ci-check` skips that). A
+tag that exists only locally was never pushed, so its version is unused: delete it with `git tag -d` and run again.
+It then creates an annotated tag on HEAD and pushes that one ref. With `gh` it waits for the Release Bundle run of
+the tag and prints its URL.
 
 **When a tag started no run**, dispatch the release on the tag: *Actions → Release Bundle → Run workflow*, with the
 tag chosen under "Use workflow from", or `gh workflow run release.yml --ref <tag>`. On a tag ref that run **is** the
