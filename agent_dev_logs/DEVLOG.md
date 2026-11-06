@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81). The pilot set (final 11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the pilot set is unchanged). Hub `v1` = `da7a066` = `main` (`test` two commits ahead), which all six tools call by commit. The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-06 (evening), at the end of the file (this file is not in date order): the triage of every open issue._
+> _Hub/planning repo. 19 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81, #83). The pilot set (final 11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the pilot set is unchanged). Hub `v1` = `da7a066` = `main` (`test` two commits ahead), which all six tools call by commit. The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-06 (late evening), at the end of the file (this file is not in date order): #83, the decision-model umbrella, and the first code of its four children._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0411.md` (prior: `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -3506,4 +3506,37 @@ candidates are six `.3` releases carrying #6's step 1.
 - **Yours:** merge `test` into `main` and move `v1` (force-push, not delete-and-recreate); re-run Cross-Repo
   Fast-Lane 42199323734; `@dependabot rebase` on page-classification#65; the comments drafted for the open
   issues; the SSHOMP corrections; the stale branches and malformed tags (admin).
+- Not pushed: files delivered as per-repo zips.
+
+## 2026-11-06 (late evening) — #83: the decision-model umbrella opened; the first code of its four children
+
+- **Read:**
+  - the five pushes of 16:49–16:55 (hub `f9ea18b`: `83.plan.md`, `83.digest.md`), all CI green;
+  - #83 and its four sub-issues (page-classification#58, ocr-postprocess#10, digital-convert#8, keyword-extract#3),
+    with their bodies and metadata;
+  - the Clef model card and its `joint_schema_model.py` (the `/v1/systemone` wire format).
+- **Found:**
+  - the renamed plan and digest pairs still said "to be opened" and linked `decision_models.*`, which now 404s;
+  - the children's bodies say `ufal/atrium-project#NN`;
+  - all four bodies repeat the draft title as a first heading;
+  - #58 and digital-convert#8 share one title (kept);
+  - no assignees.
+- **Prepared (hub):** `83.plan.md` (numbers, links, a "Prepared 11-06" section with what each child's code was
+  checked against), `83.digest.md`, and the export `issues/2026-11-06.83.issue.open.md`.
+- **Prepared (tools, not pushed):**
+  - page-classification: `decision_client.py` and `decide_pages.py`;
+  - ocr-postprocess: `tools/decide_lines.py`;
+  - digital-convert: `tools/build_document_types.py` with `decisions/document_type.v0.json`;
+  - keyword-extract: `dm_run.py --dump-tree`.
+
+  The tests run here: 72, 31, 7 and 10 new ones.
+- **Not run here:** the probe of the internal endpoint, which is not reachable from this container.
+- **Delivered in chat:**
+  - the four fixed bodies;
+  - comment drafts for @DanaKriv (#10, #8), @david-spacil (#3, #58) and motyc (#83).
+- **Yours:**
+  - paste the bodies and post the comments;
+  - push the five repositories;
+  - a page-classification release before the three consumers pin the client;
+  - the probe.
 - Not pushed: files delivered as per-repo zips.
