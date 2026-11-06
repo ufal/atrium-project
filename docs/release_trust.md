@@ -7,26 +7,42 @@
 AMČR builds its production images from ÚFAL release tags, after its own checks: contract tests,
 security and licence scans, and a diff review against the last trusted tag (report item 7,
 aiscr-docs-pipeline#8). That only works if a tag means one thing, permanently. #72 states it as
-an acceptance criterion: *"production release tags cannot be silently retargeted."* Three
-mechanisms give it, each with a tool in this repository.
+an acceptance criterion: *"production release tags cannot be silently retargeted."* The
+mechanisms below give it, each with a tool in this repository.
 
-| Mechanism                                                | What it guarantees                                                                                                                                           | Tool                                                        |
-|----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
-| **Immutable releases** (six tool repos)                  | a published release, its tag and its assets never change                                                                                                     | `scripts/release_trust.py immutable`                        |
-| **Tag ruleset** (six tool repos; hub: planned)           | a release tag `v*`, or a hub `doc-schema-v*` freeze, cannot be moved or deleted, except by a repository admin, and GitHub logs that bypass                   | `scripts/release_trust.py tag-rules`                        |
-| **Branch ruleset** (all seven; planned, #40)             | the default branch and `test` cannot be deleted or force-pushed; changes arrive by pull request, optionally with required checks; admins may bypass (logged) | `scripts/release_trust.py branch-rules`                     |
-| **Reusable workflows pinned by commit** (six tool repos) | a moving `v1` cannot change what a repository's CI runs                                                                                                      | `scripts/pin_hub_reusables.py`, `tools/ci/workflow_lint.py` |
+| Mechanism                                                | What it guarantees                                                                                                                         | Tool                                                        |
+|----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
+| **Immutable releases** (six tool repos)                  | a published release, its tag and its assets never change                                                                                   | `scripts/release_trust.py immutable`                        |
+| **Release-tag ruleset** (six tool repos; hub: planned)   | a release tag `v*`, or a hub `doc-schema-v*` freeze, cannot be moved or deleted by anyone; the bypass list is empty                        | `scripts/release_trust.py tag-rules`                        |
+| **Tagger ruleset** (all seven; planned, #40)             | only maintainers create, move or delete a tool's `v*` tag or the hub's `v1` and `doc-schema-v*`                                            | `scripts/release_trust.py tag-rules`                        |
+| **Branch-history ruleset** (all seven; planned, #40)     | the default branch and `test` cannot be deleted or force-pushed, by anyone                                                                 | `scripts/release_trust.py branch-rules`                     |
+| **Pull-request ruleset** (all seven; planned, #40)       | everyone but the maintainers changes the default branch and `test` by a pull request with one approval and the required checks             | `scripts/release_trust.py branch-rules`                     |
+| **Reusable workflows pinned by commit** (six tool repos) | a moving `v1` cannot change what a repository's CI runs                                                                                    | `scripts/pin_hub_reusables.py`, `tools/ci/workflow_lint.py` |
+
+"Maintainers" are the repository roles Maintain and Admin: a bypass list can name roles, teams, apps and deploy
+keys, but no single user. Admin alone would not do: the maintainer who pushes and tags the releases holds Maintain
+in the hub, nlp-enrich, page-classification and translator (read on 2026-11-06). What that means per person, once
+the planned rulesets are on:
+
+| Who                                     | Push to the default branch or `test`                        | Push a `v*` tag, move the hub's `v1` | Delete or force-push those branches, move a release tag |
+|-----------------------------------------|-------------------------------------------------------------|--------------------------------------|---------------------------------------------------------|
+| A maintainer (Maintain or Admin)        | directly; GitHub reports it as a bypass in the push output  | yes                                  | no                                                      |
+| A collaborator with Write               | by a pull request, after one approval and the checks        | no                                   | no                                                      |
+| Dependabot, `vocab-refresh` (their PRs) | by a pull request, merged by a maintainer or after approval | —                                    | no                                                      |
+
+A rule with an empty bypass list holds for admins too: one who has to break it disables the ruleset first, which
+the organisation's audit log records.
 
 ## Tag identity
 
-| Name                  | Form                                                                          | Fixed?                                 |
-|-----------------------|-------------------------------------------------------------------------------|----------------------------------------|
-| Source release (tool) | Git tag `vX.Y.Z[-suffix]`, e.g. `v1.2.0-beta`                                 | yes: tag ruleset and immutable release |
-| Image tag             | the same version without the `v`: `ghcr.io/ufal/atrium-<tool>-api:1.2.0-beta` | no: a registry tag can be pushed again |
-| Image identity        | the image digest, `…-api@sha256:<64 hex>`                                     | yes                                    |
-| Development channels  | images `test` and `latest`                                                    | no, by design                          |
-| Hub workflow pointer  | `v1`                                                                          | no: it moves with every hub change     |
-| Hub schema freezes    | `doc-schema-v*`                                                               | not yet: no hub ruleset (step 4)       |
+| Name                  | Form                                                                          | Fixed?                                                                       |
+|-----------------------|-------------------------------------------------------------------------------|------------------------------------------------------------------------------|
+| Source release (tool) | Git tag `vX.Y.Z[-suffix]`, e.g. `v1.2.0-beta`                                 | yes: tag ruleset and immutable release                                       |
+| Image tag             | the same version without the `v`: `ghcr.io/ufal/atrium-<tool>-api:1.2.0-beta` | no: a registry tag can be pushed again                                       |
+| Image identity        | the image digest, `…-api@sha256:<64 hex>`                                     | yes                                                                          |
+| Development channels  | images `test` and `latest`                                                    | no, by design                                                                |
+| Hub workflow pointer  | `v1`                                                                          | no: it moves with every hub change; only maintainers are to move it (step 4) |
+| Hub schema freezes    | `doc-schema-v*`                                                               | not yet: no hub ruleset (step 4)                                             |
 
 Protecting a Git tag does not make an image tag immutable. A release is identified by its source
 tag and commit and by the digest of each image built from it, so release evidence records all three,
@@ -34,7 +50,8 @@ and the S2 pilot names its six images by digest (`k8s_acceptance_runbook.md` §"
 `test` and `latest` are never a reproducible baseline.
 
 **The hub is the exception.** Its `v1` is a compatibility pointer for the tool repositories'
-workflow callers, not a source release, so no tag rule covers it. The tool repositories stop
+workflow callers, not a source release, so it is in no fixed-tag rule, only in the rule that leaves moving it to
+maintainers (step 4). The tool repositories stop
 following it when they call the hub's reusables by commit (step 7). The hub's genuinely fixed
 references, the `doc-schema-v*` freezes, are to get their own rule (step 4); on 2026-11-06 the hub has no
 ruleset, so `doc-schema-v1` is fixed by convention only.
@@ -90,7 +107,8 @@ callers' column assumes the 11-04 pin sweep of page-classification, ocr-postproc
 
 The next patch number shipped the same code each time. Some of their images were published before the failure
 (translator's `:latest` pointed at the `1.7.3-beta` image until `v1.7.5-beta` replaced it on 11-04). The tag rule
-refuses their deletion to everyone but an admin; a deletion is logged as a bypass.
+refuses their deletion to everyone: its bypass list is empty, so an admin would have to disable it first, which the
+organisation's audit log records.
 
 ## State on 2026-10-29
 
@@ -196,28 +214,39 @@ jobs test `startsWith(github.ref, 'refs/tags/v')`. A dry run is a dispatch on a 
    python3 scripts/release_trust.py immutable
    ```
 
-4. **Tag rules** (`v*` in the tool repositories; `doc-schema-v*` in the hub):
+4. **Tag rules.** Two rulesets per repository: the release tags fixed for everyone (`v*` in the tool
+   repositories, where the hand-made `Protect v* Tags` is updated in place and keeps its name; `doc-schema-v*` in
+   the hub), and the tags only maintainers push (`v*`; in the hub `v1` and `doc-schema-v*`):
 
    ```bash
+   python3 scripts/release_trust.py tag-rules --dry-run   # read what will be sent
    python3 scripts/release_trust.py tag-rules
    ```
 
-   The hub's `v1` is not covered and keeps moving with each hub change (§"Tag identity").
+   The hub's `v1` keeps moving with each hub change (§"Tag identity"), but only a maintainer moves it.
 
 5. **Branch rules.** First read the names of the checks that run on `test`, then choose which to
-   require (the #40 plan names the `docker`, `para-drift`, `api-contract`, `pre-commit` and
-   `security` callers in the tool repos; `hub-self-check`, `all-repos-smoke`, `codeql` and
-   `pre-commit` in the hub). A check name must match exactly, including the caller's job name:
+   require. Require only checks that run on `pull_request` and need no secret, or a pull request from a fork
+   never merges: in the tool repositories `pre-commit / Lint`, `workflow-lint / Verify Workflow and Caller
+   Policy`, `check-drift / Verify Canonical Paradata Integration` and `build-and-push / test`; in the hub
+   `pre-commit / Lint`, `workflow-lint / Verify Workflow and Caller Policy`, `Test canonical shared modules` and
+   `Build the aggregate site`. Not the hub's fast lanes (`all-repos-smoke` runs on push only). A check name must
+   match exactly, including the caller's job name:
 
    ```bash
    python3 scripts/release_trust.py checks --repo atrium-translator
-   python3 scripts/release_trust.py branch-rules --repo atrium-translator \
+   python3 scripts/release_trust.py branch-rules --repo atrium-translator --dry-run \
        --checks "check-drift / Verify Canonical Paradata Integration,workflow-lint / Verify Workflow and Caller Policy"
    ```
 
-   Without `--checks` the ruleset still refuses deletion and force pushes and asks for a pull
-   request. Admins can bypass it, so direct pushes by the maintainers keep working and are
-   logged as bypasses.
+   This writes two rulesets: no deletion and no force push for anyone, and changes by a pull request with one
+   approval and the named checks for everyone but the maintainers. Without `--checks` the second still asks for a
+   reviewed pull request.
+
+   **Check the bypass on one repository first**, one where the maintainer who releases holds Maintain only
+   (nlp-enrich): after the run, `status` read with that maintainer's `gh` login must show `you: always` on
+   the two maintainers' rulesets, and the web UI must name the roles Maintain and Repository admin. Then the other
+   six.
 
 6. **Tag the releases.** The first immutable ones.
 7. **Pin the reusable workflows** to the commit `v1` points to, in one sweep, and commit the
@@ -251,12 +280,15 @@ jobs test `startsWith(github.ref, 'refs/tags/v')`. A dry run is a dispatch on a 
 ## Reading the result
 
 `status` prints, per repository, whether immutable releases are on and every ruleset with its
-target, enforcement, refs and rules, e.g.:
+target, enforcement, refs, rules and bypass, e.g. (read by a maintainer with Maintain; GitHub shows the bypass
+list itself only to admins):
 
 ```text
 ufal/atrium-translator: immutable releases on
-  ruleset 'ATRIUM release tags (atrium-project#72)' [tag, active] on refs/tags/v*: update, deletion
-  ruleset 'ATRIUM integration branches (atrium-project#40)' [branch, active] on ~DEFAULT_BRANCH, refs/heads/test: deletion, non_fast_forward, pull_request
+  ruleset 'Protect v* Tags' [tag, active] on refs/tags/v*: deletion, non_fast_forward, update; bypass: not shown; you: never
+  ruleset 'ATRIUM tags only maintainers push (atrium-project#40)' [tag, active] on refs/tags/v*: creation, update, deletion, non_fast_forward; bypass: not shown; you: always
+  ruleset 'ATRIUM branch history (atrium-project#40)' [branch, active] on ~DEFAULT_BRANCH, refs/heads/test: deletion, non_fast_forward; bypass: not shown; you: never
+  ruleset 'ATRIUM changes by pull request (atrium-project#40)' [branch, active] on ~DEFAULT_BRANCH, refs/heads/test: pull_request; bypass: not shown; you: always
 ```
 
 The script is idempotent: a ruleset is found by its name and updated in place, so re-running a

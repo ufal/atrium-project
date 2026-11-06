@@ -7,26 +7,32 @@ repository settings, not of code, and this script applies them through the GitHu
 authenticated as a repository admin) so that they are the same in every repository and can be
 read back as evidence:
 
-    status        read-only: immutable releases and rulesets, per repository
+    status        read-only: immutable releases and rulesets (with their bypass), per repository
     checks        read-only: the check-run names on a branch head, to choose required checks
     immutable     turn immutable releases on (the six tool repositories)
-    tag-rules     release tags: no update, no deletion (tool repos `v*`; hub `doc-schema-v*` only:
-                  the hub's `v1` is a moving workflow-compatibility pointer, not a release)
-    branch-rules  default branch and `test`: no deletion, no force push, changes through a pull
-                  request; `--checks` adds required status checks
+    tag-rules     two tag rulesets: release tags can never be moved or deleted, by anyone (tool
+                  repos `v*`; hub `doc-schema-v*`); and only maintainers create, move or delete
+                  them (tool repos `v*`; hub `v1` and `doc-schema-v*`)
+    branch-rules  two branch rulesets on the default branch and `test`: nobody deletes or
+                  force-pushes them; and everyone but the maintainers changes them through a pull
+                  request with one approval, plus the status checks named in `--checks`
 
 Every changing command takes `--dry-run` (print each API call and its body, change nothing) and
 `--repo NAME` (repeatable; default: all seven — the hub and the six tool repositories — or the six
 tool repositories for `immutable`).
 Re-running is safe: a ruleset is found by its name and updated in place.
 
-Repository admins may bypass the rulesets (logged by GitHub as a bypass, so not silent), which
-keeps the maintainers' direct pushes to `test` possible. The hub's `v1` is in no tag ruleset: it
-moves with every hub change until the tool repositories call the reusables by commit (#40), and
-`pin_hub_reusables.py` makes that move irrelevant to them. An
-immutable release cannot be changed by anyone; softprops/action-gh-release v3 in the six
-`release.yml` already attaches the assets while the release is a draft, which is what an
-immutable release requires (`tools/ci/workflow_lint.py` keeps it that way).
+"Maintainers" are the repository roles Maintain and Admin. A ruleset's bypass list can name roles,
+teams, apps or deploy keys, but no single user, and the maintainer who pushes and tags the releases
+holds Maintain, not Admin, in four of the seven repositories, so an Admin-only bypass would stop
+the releases there. Their direct pushes stay possible, and GitHub reports each one as a bypass in
+the push output. The no-bypass rulesets hold for admins too: an admin who has to break one disables
+the ruleset first, which the organisation's audit log records. The hub's `v1` moves with every hub
+change, so it is in the maintainers-only ruleset, not the no-bypass one; the tool repositories call
+the reusables by commit (`pin_hub_reusables.py`), so a move does not reach them. An immutable
+release cannot be changed by anyone; softprops/action-gh-release v3 in the six `release.yml`
+already attaches the assets while the release is a draft, which is what an immutable release
+requires (`tools/ci/workflow_lint.py` keeps it that way).
 
 The order, and what to post as evidence, are in docs/release_trust.md.
 
@@ -59,15 +65,33 @@ TOOLS = (
 )
 ALL = (HUB, *TOOLS)
 
-#: The built-in repository role "Admin" as a ruleset bypass actor.
-ADMIN_BYPASS = [{"actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always"}]
+#: The built-in repository roles Maintain and Admin as ruleset bypass actors. GitHub's web UI names
+#: the role behind each id; check it, and `current_user_can_bypass`, with `status` after the first run.
+MAINTAIN_ROLE_ID = 2
+ADMIN_ROLE_ID = 5
+MAINTAINER_BYPASS = [
+    {"actor_id": MAINTAIN_ROLE_ID, "actor_type": "RepositoryRole", "bypass_mode": "always"},
+    {"actor_id": ADMIN_ROLE_ID, "actor_type": "RepositoryRole", "bypass_mode": "always"},
+]
+#: The bypass list of a rule nobody may break, as in the tag rulesets created by hand in 2026-10.
+NO_BYPASS: List[Dict[str, Any]] = []
+
+#: Rules for a ref nobody may delete or rewrite.
+FIXED_REF_RULES = [{"type": "update"}, {"type": "deletion"}, {"type": "non_fast_forward"}]
+#: Rules for a ref only the bypass actors may create, move or delete.
+MAINTAINER_REF_RULES = [{"type": "creation"}, {"type": "update"}, {"type": "deletion"}, {"type": "non_fast_forward"}]
+#: Approvals a pull request needs from someone other than its author before it merges.
+REQUIRED_APPROVALS = 1
 
 TAG_RULESET = "ATRIUM release tags (atrium-project#72)"
-# Tag rulesets created by hand before this script was run (page-classification and nlp-enrich,
-# 2026-10-19). `tag-rules` updates such a ruleset in place, under its own name, rather than adding
-# a second one beside it.
+# Tag rulesets created by hand before this script was run (page-classification and nlp-enrich on
+# 2026-10-19, the other four on 2026-10-29). `tag-rules` updates such a ruleset in place, under its
+# own name, rather than adding a second one beside it.
 TAG_RULESET_ALIASES = ("Protect v* Tags",)
-BRANCH_RULESET = "ATRIUM integration branches (atrium-project#40)"
+TAGGER_RULESET = "ATRIUM tags only maintainers push (atrium-project#40)"
+HISTORY_RULESET = "ATRIUM branch history (atrium-project#40)"
+BRANCH_RULESET = "ATRIUM changes by pull request (atrium-project#40)"
+BRANCHES = ["~DEFAULT_BRANCH", "refs/heads/test"]
 
 Gh = Callable[[List[str], Optional[str]], subprocess.CompletedProcess]
 
@@ -87,28 +111,52 @@ def tag_patterns(repo: str) -> List[str]:
     return ["refs/tags/v*"]
 
 
-def tag_ruleset(repo: str) -> Dict[str, Any]:
+def tagger_patterns(repo: str) -> List[str]:
+    """The tags only maintainers push: a tool's release tags; the hub's `v1` and schema freezes.
+
+    A pushed `v*` tag starts a release, and an immutable release cannot be withdrawn.
+    """
+    if repo == HUB:
+        return ["refs/tags/v1", "refs/tags/doc-schema-v*"]
+    return ["refs/tags/v*"]
+
+
+def ruleset(
+    name: str, target: str, include: List[str], rules: List[Dict[str, Any]], bypass: List[Dict[str, Any]]
+) -> Dict[str, Any]:
     return {
-        "name": TAG_RULESET,
-        "target": "tag",
+        "name": name,
+        "target": target,
         "enforcement": "active",
-        "bypass_actors": ADMIN_BYPASS,
-        "conditions": {"ref_name": {"include": tag_patterns(repo), "exclude": []}},
-        # Creation stays open: a release starts with a pushed tag. Moving (retargeting) or
-        # deleting one is refused to everyone but the bypass actors.
-        "rules": [{"type": "update"}, {"type": "deletion"}],
+        "bypass_actors": bypass,
+        "conditions": {"ref_name": {"include": include, "exclude": []}},
+        "rules": rules,
     }
 
 
+def tag_ruleset(repo: str) -> Dict[str, Any]:
+    """A release tag (or a hub schema freeze) is never moved or deleted, by anyone."""
+    return ruleset(TAG_RULESET, "tag", tag_patterns(repo), FIXED_REF_RULES, NO_BYPASS)
+
+
+def tagger_ruleset(repo: str) -> Dict[str, Any]:
+    """Only the maintainers create, move or delete these tags; rules in other rulesets still apply."""
+    return ruleset(TAGGER_RULESET, "tag", tagger_patterns(repo), MAINTAINER_REF_RULES, MAINTAINER_BYPASS)
+
+
+def history_ruleset() -> Dict[str, Any]:
+    """Nobody deletes or force-pushes the default branch or `test`: pinned commits stay reachable."""
+    return ruleset(HISTORY_RULESET, "branch", BRANCHES, [{"type": "deletion"}, {"type": "non_fast_forward"}], NO_BYPASS)
+
+
 def branch_ruleset(checks: List[str]) -> Dict[str, Any]:
+    """Everyone but the maintainers changes the two branches by a reviewed pull request."""
     rules: List[Dict[str, Any]] = [
-        {"type": "deletion"},
-        {"type": "non_fast_forward"},
         {
             "type": "pull_request",
             "parameters": {
-                "required_approving_review_count": 0,
-                "dismiss_stale_reviews_on_push": False,
+                "required_approving_review_count": REQUIRED_APPROVALS,
+                "dismiss_stale_reviews_on_push": True,
                 "require_code_owner_review": False,
                 "require_last_push_approval": False,
                 "required_review_thread_resolution": False,
@@ -126,14 +174,7 @@ def branch_ruleset(checks: List[str]) -> Dict[str, Any]:
                 },
             }
         )
-    return {
-        "name": BRANCH_RULESET,
-        "target": "branch",
-        "enforcement": "active",
-        "bypass_actors": ADMIN_BYPASS,
-        "conditions": {"ref_name": {"include": ["~DEFAULT_BRANCH", "refs/heads/test"], "exclude": []}},
-        "rules": rules,
-    }
+    return ruleset(BRANCH_RULESET, "branch", BRANCHES, rules, MAINTAINER_BYPASS)
 
 
 class Client:
@@ -187,9 +228,28 @@ def status(client: Client, repos: List[str]) -> None:
             rules = ", ".join(rule["type"] for rule in detail.get("rules") or [])
             print(
                 f"  ruleset {detail.get('name')!r} [{detail.get('target')}, {detail.get('enforcement')}] "
-                f"on {', '.join(refs) or '-'}: {rules or '-'}",
+                f"on {', '.join(refs) or '-'}: {rules or '-'}; bypass: {describe_bypass(detail)}",
                 file=client.out,
             )
+
+
+def describe_bypass(detail: Dict[str, Any]) -> str:
+    """The bypass list as GitHub returns it, and whether the caller may bypass.
+
+    GitHub returns `bypass_actors` only to someone who may edit the ruleset (an admin), so a
+    maintainer reads "not shown" but still learns from `current_user_can_bypass` whether the
+    bypass reaches them: `always` is what a maintainer must read on the maintainers' rulesets.
+    """
+    actors = detail.get("bypass_actors")
+    if actors is None:
+        listed = "not shown"
+    elif not actors:
+        listed = "nobody"
+    else:
+        listed = ", ".join(
+            f"{actor.get('actor_type')} {actor.get('actor_id')} ({actor.get('bypass_mode')})" for actor in actors
+        )
+    return f"{listed}; you: {detail.get('current_user_can_bypass', '-')}"
 
 
 def checks(client: Client, repo: str, branch: str) -> None:
@@ -224,9 +284,11 @@ def main(argv: Optional[List[str]] = None, gh: Gh = run_gh, out=sys.stdout) -> i
         elif args.command == "tag-rules":
             for repo in args.repo or list(ALL):
                 upsert_ruleset(client, repo, tag_ruleset(repo), TAG_RULESET_ALIASES)
+                upsert_ruleset(client, repo, tagger_ruleset(repo))
         elif args.command == "branch-rules":
             required = [name.strip() for name in args.checks.split(",") if name.strip()]
             for repo in args.repo or list(ALL):
+                upsert_ruleset(client, repo, history_ruleset())
                 upsert_ruleset(client, repo, branch_ruleset(required))
     except (RuntimeError, FileNotFoundError) as exc:
         print(f"release_trust: {exc}", file=sys.stderr)

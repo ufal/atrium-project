@@ -54,47 +54,91 @@ def test_immutable_releases_go_on_in_the_six_tool_repositories_only():
     ]
 
 
-def test_release_tags_are_protected_from_update_and_deletion_but_not_creation():
+MAINTAINERS = [
+    {"actor_id": rt.MAINTAIN_ROLE_ID, "actor_type": "RepositoryRole", "bypass_mode": "always"},
+    {"actor_id": rt.ADMIN_ROLE_ID, "actor_type": "RepositoryRole", "bypass_mode": "always"},
+]
+
+
+def test_release_tags_are_fixed_for_everyone_and_pushed_only_by_maintainers():
     gh = FakeGh()
     run(["tag-rules", "--repo", "atrium-translator", "--repo", "atrium-project"], gh)
-    (_, tool_path, tool), (_, hub_path, hub) = gh.writes()
-    assert tool_path == "repos/ufal/atrium-translator/rulesets"
-    assert tool["target"] == "tag" and tool["conditions"]["ref_name"]["include"] == ["refs/tags/v*"]
-    assert {rule["type"] for rule in tool["rules"]} == {"update", "deletion"}
-    # The hub's `v1` moves with every hub change (#72, 10-20); only the schema freezes are fixed.
-    assert hub["conditions"]["ref_name"]["include"] == ["refs/tags/doc-schema-v*"]
-    assert tool["bypass_actors"] == [{"actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always"}]
+    writes = gh.writes()
+    assert [(m, p) for m, p, _ in writes] == [
+        ("POST", "repos/ufal/atrium-translator/rulesets"),
+        ("POST", "repos/ufal/atrium-translator/rulesets"),
+        ("POST", "repos/ufal/atrium-project/rulesets"),
+        ("POST", "repos/ufal/atrium-project/rulesets"),
+    ]
+    (_, _, fixed), (_, _, taggers), (_, _, hub_fixed), (_, _, hub_taggers) = writes
+    # Nobody, an admin included, moves or deletes a release tag (as the hand-made rulesets of 2026-10).
+    assert fixed["target"] == "tag" and fixed["conditions"]["ref_name"]["include"] == ["refs/tags/v*"]
+    assert {rule["type"] for rule in fixed["rules"]} == {"update", "deletion", "non_fast_forward"}
+    assert fixed["bypass_actors"] == []
+    # Only the maintainers push one: a pushed `v*` tag starts a release that cannot be withdrawn.
+    assert taggers["conditions"]["ref_name"]["include"] == ["refs/tags/v*"]
+    assert "creation" in {rule["type"] for rule in taggers["rules"]}
+    assert taggers["bypass_actors"] == MAINTAINERS
+    # The hub's `v1` moves with every hub change (#72, 10-20): maintainers only, never fixed.
+    assert hub_fixed["conditions"]["ref_name"]["include"] == ["refs/tags/doc-schema-v*"]
+    assert hub_taggers["conditions"]["ref_name"]["include"] == ["refs/tags/v1", "refs/tags/doc-schema-v*"]
+
+
+def test_the_maintainers_are_the_maintain_and_admin_roles():
+    # The releases are pushed by someone with Maintain in four of the seven repositories, and a
+    # bypass list cannot name a single user, so an Admin-only bypass would block them there.
+    assert {actor["actor_id"] for actor in rt.MAINTAINER_BYPASS} == {rt.MAINTAIN_ROLE_ID, rt.ADMIN_ROLE_ID}
+    assert rt.MAINTAIN_ROLE_ID != rt.ADMIN_ROLE_ID
 
 
 def test_a_ruleset_is_updated_in_place_when_its_name_exists():
     gh = FakeGh({"repos/ufal/atrium-translator/rulesets": [{"id": 42, "name": rt.TAG_RULESET}]})
     run(["tag-rules", "--repo", "atrium-translator"], gh)
-    assert [(m, p) for m, p, _ in gh.writes()] == [("PUT", "repos/ufal/atrium-translator/rulesets/42")]
+    assert [(m, p) for m, p, _ in gh.writes()] == [
+        ("PUT", "repos/ufal/atrium-translator/rulesets/42"),
+        ("POST", "repos/ufal/atrium-translator/rulesets"),
+    ]
 
 
-def test_a_hand_made_tag_ruleset_is_updated_in_place_under_its_own_name():
+def test_a_hand_made_tag_ruleset_is_updated_in_place_under_its_own_name_and_not_weakened():
     gh = FakeGh({"repos/ufal/atrium-nlp-enrich/rulesets": [{"id": 9, "name": "Protect v* Tags"}]})
     run(["tag-rules", "--repo", "atrium-nlp-enrich"], gh)
-    ((method, path, body),) = gh.writes()
+    (method, path, body), (_, _, taggers) = gh.writes()
     assert (method, path) == ("PUT", "repos/ufal/atrium-nlp-enrich/rulesets/9")
     assert body["name"] == "Protect v* Tags"
+    # The live rulesets refuse update, deletion and non-fast-forward with no bypass; so does the PUT.
+    assert {rule["type"] for rule in body["rules"]} == {"update", "deletion", "non_fast_forward"}
+    assert body["bypass_actors"] == []
+    assert taggers["name"] == rt.TAGGER_RULESET
 
 
-def test_branch_rules_require_pull_requests_and_the_named_checks():
+def test_branch_history_is_fixed_for_everyone():
+    gh = FakeGh()
+    run(["branch-rules", "--repo", "atrium-translator"], gh)
+    (_, _, history), _ = gh.writes()
+    assert history["name"] == rt.HISTORY_RULESET
+    assert history["conditions"]["ref_name"]["include"] == ["~DEFAULT_BRANCH", "refs/heads/test"]
+    assert {rule["type"] for rule in history["rules"]} == {"deletion", "non_fast_forward"}
+    assert history["bypass_actors"] == []
+
+
+def test_branch_changes_need_a_reviewed_pull_request_and_the_named_checks_except_for_maintainers():
     gh = FakeGh()
     run(["branch-rules", "--repo", "atrium-translator", "--checks", "a / b, c"], gh)
-    ((_, _, body),) = gh.writes()
+    _, (_, _, body) = gh.writes()
     assert body["conditions"]["ref_name"]["include"] == ["~DEFAULT_BRANCH", "refs/heads/test"]
     by_type = {rule["type"]: rule for rule in body["rules"]}
-    assert {"deletion", "non_fast_forward", "pull_request", "required_status_checks"} == set(by_type)
+    assert {"pull_request", "required_status_checks"} == set(by_type)
+    assert by_type["pull_request"]["parameters"]["required_approving_review_count"] == 1
     contexts = by_type["required_status_checks"]["parameters"]["required_status_checks"]
     assert contexts == [{"context": "a / b"}, {"context": "c"}]
+    assert body["bypass_actors"] == MAINTAINERS
 
 
 def test_branch_rules_without_checks_require_none():
     gh = FakeGh()
     run(["branch-rules", "--repo", "atrium-translator"], gh)
-    ((_, _, body),) = gh.writes()
+    _, (_, _, body) = gh.writes()
     assert "required_status_checks" not in {rule["type"] for rule in body["rules"]}
 
 
@@ -117,8 +161,15 @@ def test_status_reads_immutability_and_rulesets():
     code, out = run(["status", "--repo", "atrium-translator", "--repo", "atrium-project"], gh)
     assert code == 0 and gh.writes() == []
     assert "ufal/atrium-translator: immutable releases on" in out
-    assert "[tag, active] on refs/tags/v*: update, deletion" in out
+    assert "[tag, active] on refs/tags/v*: update, deletion, non_fast_forward; bypass: nobody; you: -" in out
     assert "ufal/atrium-project: immutable releases off" in out
+
+
+def test_status_names_a_hidden_bypass_list_and_the_callers_own_bypass():
+    hidden = dict(rt.tagger_ruleset("atrium-translator"), bypass_actors=None, current_user_can_bypass="always")
+    assert rt.describe_bypass(hidden) == "not shown; you: always"
+    listed = rt.describe_bypass(rt.tagger_ruleset("atrium-translator"))
+    assert listed.startswith(f"RepositoryRole {rt.MAINTAIN_ROLE_ID} (always), RepositoryRole {rt.ADMIN_ROLE_ID}")
 
 
 def test_a_failing_call_is_exit_1():
