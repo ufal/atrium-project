@@ -69,9 +69,10 @@ that each workflow step names a wrapper of this folder at its version, or a tool
 
 ## Moving to a new release
 
-1. **The tool repository first.** Its `test` carries the release, and its tag is pushed, before the hub
-   commit that pins it: `tests/test_galaxy_wrappers.py` reads the tool's release history, and Hub Self-Check went red
-   on 2026-11-05 when the hub was pushed three minutes before the translator.
+1. **The tool repository first, where you can.** Its `test` carries the release before the hub commit that pins
+   it. `tests/test_galaxy_wrappers.py` reads the tool's release history at its `test` head: while the tool is still
+   at an older version, the check is skipped with that reason (the hub often goes first, because the tools' pin
+   sweep needs it on GitHub); once the tool is at the pinned version or later, its history must name it.
 2. In the tool XML, set `@TOOL_VERSION@` to the release without its `v`, and `@VERSION_SUFFIX@` back to `0`; a
    change to the wrapper alone raises `@VERSION_SUFFIX@`.
 3. Update `tool_version` of that tool's steps in `workflows/*.ga`, and the `CHANGELOG.md` there.

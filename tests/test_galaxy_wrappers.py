@@ -85,15 +85,41 @@ def test_the_container_is_the_pinned_release(rel):
     assert re.fullmatch(re.escape(wrapper["tool_version"]) + r"\+galaxy\d+", wrapper["version"]), wrapper["version"]
 
 
+def _version_key(version: str) -> tuple[int, ...]:
+    """`1.7.7-beta` -> (1, 7, 7): the numeric part, which orders the releases of one repository."""
+    return tuple(int(part) for part in re.findall(r"\d+", version.split("-", 1)[0]))
+
+
+def _citation_version(repo: Path) -> str | None:
+    match = re.search(r'^version:\s*["\']?v?([^"\'\s]+)', (repo / "CITATION.cff").read_text(encoding="utf-8"), re.M)
+    return match.group(1) if match else None
+
+
 @pytest.mark.parametrize("rel", sorted(_WRAPPERS))
 def test_the_pinned_release_is_in_the_tool_repository(rel):
-    """Checked where the tool repository is checked out beside the hub (as tools/docs_check.py expects)."""
-    contributing = _HUB_ROOT.parent / _WRAPPERS[rel] / "CONTRIBUTING.md"
+    """Checked where the tool repository is checked out beside the hub (as tools/docs_check.py expects).
+
+    Hub Self-Check checks the tool repositories out at their `test` heads. The hub commit that moves a
+    pin is often pushed first, because the tools' pin sweep needs it on GitHub; on 2026-11-05 and
+    11-06 the check went red for that alone. So a tool repository still at an OLDER version than the
+    pin is reported as a skip, with the reason; at the pinned version or later, the release history
+    must name the pin (a typo, or a version that was never prepared, still fails).
+    """
+    repo = _HUB_ROOT.parent / _WRAPPERS[rel]
+    contributing = repo / "CONTRIBUTING.md"
     if not contributing.is_file():
         pytest.skip(f"{_WRAPPERS[rel]} is not checked out beside the hub")
     version = _wrapper(rel)["tool_version"]
     rows = re.findall(r"^\|\s*\*\*v([^*]+)\*\*", contributing.read_text(encoding="utf-8"), flags=re.M)
-    assert version in rows, f"{rel} pins {version}; {_WRAPPERS[rel]}'s release history has no v{version}"
+    if version in rows:
+        return
+    current = _citation_version(repo) if (repo / "CITATION.cff").is_file() else None
+    if current and _version_key(current) < _version_key(version):
+        pytest.skip(
+            f"{_WRAPPERS[rel]} is at {current}, older than the pinned {version}: the hub was pushed before the "
+            f"tool repository; re-run once its test branch carries v{version}"
+        )
+    pytest.fail(f"{rel} pins {version}; {_WRAPPERS[rel]}'s release history has no v{version} (it is at {current})")
 
 
 def test_the_data_manager_downloads_with_the_tools_release():
