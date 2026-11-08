@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 19 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81, #83). The pilot set (final 11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the pilot set is unchanged). Hub `v1` = `da7a066`, which all six tools call by commit; `main` = `test` = `f42018e` (11-06). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-08, at the end of the file (this file is not in date order): #83, the children's decision-model questions redefined._
+> _Hub/planning repo. 19 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81, #83). The pilot set (final 11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the pilot set is unchanged). Hub `v1` = `da7a066`, which all six tools call by commit; `main` = `test` = `f42018e` (11-06). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-08 (round 2), at the end of the file (this file is not in date order): #83, CI on the pushed round, the inputs, two releases prepared._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0411.md` (prior: `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -3624,3 +3624,38 @@ candidates are six `.3` releases carrying #6's step 1.
   ocr-postprocess `--decide`; digital-convert's list v1; keyword-extract `--doc-type`. Each tool's suite passed.
 * **Yours:** unpack the per-repo archives and push; tag page-classification `v1.14.0-beta`; the comments for #83 and
   the four children, delivered in chat.
+
+## 2026-11-08 (round 2) — #83: CI on the pushed round; the inputs settled; two releases prepared
+
+* **Read:** the `test` heads after K4TEL's pushes:
+  * page-classification `db01c12` (tag `v1.14.0-beta`);
+  * ocr-postprocess `1aa48f2`;
+  * digital-convert `2bb3f3c`;
+  * keyword-extract `810e7b7`;
+  * the hub `fa420a3`.
+* **CI:**
+  * **API Meta-Contract (four tools) and page-classification's release:** red on one GitHub outage. Every
+    `github.com/…/releases/download/…` answered 504, reproduced from here, while the API's asset endpoint answered
+    200. The release could not install Trivy; the contract job could not fetch the baseline `openapi.json`. The
+    decision (K4TEL): re-run after recovery, no tooling change.
+  * **keyword-extract's Paradata Drift:** one pin file nested two owners, and `tools/ci/vendored_pins.py` reads one
+    flat `ADOPTED` per file. It is now split, with the owners in `vendored-from`.
+  * **ocr-postprocess's pre-commit and the hub's Self-Check:** fixed by K4TEL (`1aa48f2`, `fa420a3`).
+* **Decided:** keyword-extract asks a text-only view (the written types); digital-convert reads the page image by
+  default and gets an offline CLI; digital-convert `v1.4.6-beta` is prepared for keyword-extract's pin.
+* **Written here (not pushed):**
+  * `docs/shared_components.md`: the client row (three consumers, three CLIs); the list row (`v<N>`, the text view,
+    the doctype pin file);
+  * `plans/83.plan.md` and `digests/83.digest.md`.
+* **In the tools (not pushed):**
+  * digital-convert: the list v2, `tools/decide_documents.py`, the client pin, `v1.4.6-beta`;
+  * keyword-extract: the two pin files and the text view;
+  * ocr-postprocess: `vendored-from`;
+  * page-classification: `v1.14.1-beta`.
+
+  Each tool's suite passed. The drift job's steps passed locally in the three consumers, with no skips.
+* **Yours:**
+  1. push digital-convert first, then the others;
+  2. re-run the red API Meta-Contract runs once GitHub's release downloads work;
+  3. tag digital-convert `v1.4.6-beta` and page-classification `v1.14.1-beta`;
+  4. then keyword-extract re-vendors the list v2.
