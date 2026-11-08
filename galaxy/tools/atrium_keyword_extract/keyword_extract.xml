@@ -1,0 +1,266 @@
+<tool id="atrium_keyword_extract" name="ATRIUM keyword extraction" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.0">
+    <description>finds the keywords of documents and their pages with KeyBERT, YAKE or lemma frequency</description>
+    <macros>
+        <!-- The release of ufal/atrium-keyword-extract whose batch image this wrapper runs: the first
+             whose entry point runs Galaxy's job script (v1.6.5-beta). -->
+        <token name="@TOOL_VERSION@">1.6.5-beta</token>
+        <token name="@VERSION_SUFFIX@">0</token>
+        <!-- KeyBERT's sentence-embedding model, as the atrium_hf_models table names it. -->
+        <token name="@KEYBERT_MODEL@">sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2</token>
+    </macros>
+    <creator>
+        <person givenName="Kateryna" familyName="Lutsai" identifier="https://orcid.org/0009-0002-4773-2797"/>
+        <person givenName="David" familyName="Spáčil" identifier="https://orcid.org/0009-0002-8856-2501"/>
+        <person givenName="David" familyName="Novák" identifier="https://orcid.org/0000-0001-6592-6291"/>
+        <person givenName="Pavel" familyName="Straňák" identifier="https://orcid.org/0000-0002-6895-8536"/>
+        <organization name="ATRIUM project" url="https://ufal.github.io/atrium-project/"/>
+    </creator>
+    <requirements>
+        <container type="docker">ghcr.io/ufal/atrium-keyword-extract:@TOOL_VERSION@</container>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+#import re
+## Each document is linked under its collection name, with the suffix that tells the tool its kind;
+## the document id (the first column of the table) is that name.
+#set $suffixes = {'tabular': '.conllu', 'tei': '.teitok.xml', 'xml': '.xml', 'json': '.document.json', 'csv': '.csv', 'txt': '.txt'}
+#set $known = r'(\.teitok)?\.xml$|\.document\.json$|\.(conllu|json|csv|txt|tsv|tabular)$'
+export TMPDIR="\${_GALAXY_JOB_TMP_DIR:-\$PWD/tmp}" &&
+#if $method.kind == 'keybert':
+    #if $method.model_source.source == 'staged':
+        export HF_HUB_OFFLINE=1 &&
+    #else:
+        export HF_HOME="\${_GALAXY_JOB_TMP_DIR:-\$PWD/tmp}/hf" &&
+    #end if
+#end if
+mkdir -p input baselines out/docs out/pages out/records out/paradata "\$TMPDIR" &&
+#set $used = set()
+#for $i, $doc in enumerate($documents):
+    #set $name = re.sub(r'[^\w.\-]', '_', re.sub($known, '', str($doc.element_identifier), flags=re.IGNORECASE)) or 'document'
+    #if $name in $used:
+        #set $name = $name + '_' + str($i + 1)
+    #end if
+    #silent $used.add($name)
+    ln -s '$doc' 'input/${name}${suffixes.get(str($doc.ext), ".txt")}' &&
+#end for
+#for $record in $baselines:
+    #set $name = re.sub(r'[^\w.\-]', '_', re.sub($known, '', str($record.element_identifier), flags=re.IGNORECASE)) or 'document'
+    ln -s '$record' 'baselines/${name}.document.json' &&
+#end for
+
+## Failed documents are reported on stderr and skipped, and the run still exits 0: the job fails
+## only when no document at all could be read.
+python3 /app/keywords.py
+    -i input
+    -o out/keywords.csv
+    -d out/docs
+    -p out/pages
+    $per_page
+    --document-json-dir baselines
+    --document-json-out-dir out/records
+    --paradata-dir out/paradata
+    -m '$method.kind'
+    -n $num_keywords
+    -w $max_words
+    -l '$lang'
+    --workers "\${GALAXY_SLOTS:-1}"
+    #if $method.kind == 'keybert':
+        #if $method.model_source.source == 'staged':
+            --keybert-model '$method.model_source.model.fields.path'
+        #else:
+            --keybert-model '@KEYBERT_MODEL@'
+        #end if
+        $method.no_mmr
+        --diversity $method.diversity
+    #end if
+    > keywords.log;
+status=\$?;
+cat keywords.log;
+[ "\$status" -eq 0 ] || exit "\$status";
+grep -q 'Done\. [1-9][0-9]*/' keywords.log || { echo 'No document yielded keywords: see the messages above.' >&2; exit 1; };
+mv out/keywords.csv '$keywords' &&
+mv out/paradata/*_keyword-extract.json '$paradata'
+    ]]></command>
+    <inputs>
+        <param name="documents" type="data" format="tabular,tei,xml,json,csv,txt" multiple="true" label="Documents"
+            help="One job for all of them. CoNLL-U (tabular), TEITOK (tei or xml), ATRIUM document records (json), line tables (csv with a text column) or plain text (txt); a collection's element names become the document ids."/>
+        <conditional name="method">
+            <param name="kind" type="select" label="Method">
+                <option value="yake" selected="true">YAKE: statistical, from the text alone, no model</option>
+                <option value="keybert">KeyBERT: closest to the document's meaning, with a multilingual sentence-embedding model</option>
+                <option value="legacy">Lemma frequency: the most frequent content lemmas (CoNLL-U, TEITOK or records with lemmas)</option>
+            </param>
+            <when value="yake"/>
+            <when value="legacy"/>
+            <when value="keybert">
+                <conditional name="model_source">
+                    <param name="source" type="select" label="Sentence-embedding model (paraphrase-multilingual-MiniLM-L12-v2)">
+                        <option value="download" selected="true">Download it from the Hugging Face Hub in the job (about 0.5 GB)</option>
+                        <option value="staged">Use the copy staged on this server</option>
+                    </param>
+                    <when value="download"/>
+                    <when value="staged">
+                        <param name="model" type="select" label="Staged model"
+                            help="Staged by an administrator with the data manager 'ATRIUM Hugging Face models'.">
+                            <options from_data_table="atrium_hf_models">
+                                <filter type="static_value" column="repo_id" value="@KEYBERT_MODEL@"/>
+                                <validator type="no_options" message="No copy of paraphrase-multilingual-MiniLM-L12-v2 is staged on this server."/>
+                            </options>
+                        </param>
+                    </when>
+                </conditional>
+                <param name="no_mmr" type="boolean" truevalue="--no-mmr" falsevalue="" checked="false" label="Do not diversify"
+                    help="By default, Maximal Marginal Relevance keeps near-duplicate keywords apart."/>
+                <param name="diversity" type="float" value="0.5" min="0" max="1" label="Diversity" help="0: the closest keywords; 1: the most varied."/>
+            </when>
+        </conditional>
+        <param name="num_keywords" type="integer" value="20" min="1" max="100" label="Keywords per document"/>
+        <param name="max_words" type="integer" value="3" min="1" max="5" label="Longest keyword, in words"/>
+        <param name="lang" type="select" label="Language" help="YAKE's stop words. KeyBERT's model is multilingual; lemma frequency uses the lemmas.">
+            <option value="cs" selected="true">Czech</option>
+            <option value="en">English</option>
+            <option value="de">German</option>
+            <option value="fr">French</option>
+            <option value="pl">Polish</option>
+            <option value="sk">Slovak</option>
+        </param>
+        <param name="per_page" type="boolean" truevalue="--per-page" falsevalue="" checked="false" label="Also per page"
+            help="For inputs that have pages: TEITOK, records, line tables, text with form feeds. CoNLL-U has none."/>
+        <param name="baselines" type="data" format="json" multiple="true" optional="true" label="Document records to add to"
+            help="ATRIUM document records from an earlier stage, matched to the documents by name; the keywords are added to them. Not needed when the documents are records themselves."/>
+    </inputs>
+    <outputs>
+        <data name="keywords" format="csv" label="${tool.name} on ${on_string}: keywords"/>
+        <collection name="document_keywords" type="list" label="${tool.name} on ${on_string}: keywords per document">
+            <discover_datasets pattern="(?P&lt;designation&gt;.+)_keywords\.csv" directory="out/docs" format="csv"/>
+        </collection>
+        <collection name="page_keywords" type="list" label="${tool.name} on ${on_string}: keywords per page">
+            <discover_datasets pattern="(?P&lt;designation&gt;.+)_keywords\.csv" directory="out/pages" format="csv"/>
+            <filter>per_page</filter>
+        </collection>
+        <collection name="records" type="list" label="${tool.name} on ${on_string}: document records">
+            <discover_datasets pattern="(?P&lt;designation&gt;.+)\.document\.json" directory="out/records" format="json"/>
+        </collection>
+        <data name="paradata" format="json" label="${tool.name} on ${on_string}: paradata"/>
+    </outputs>
+    <tests>
+        <!-- Lemma frequency on CoNLL-U: deterministic. -->
+        <test expect_num_outputs="4">
+            <param name="documents" value="CTX000000003.conllu" ftype="tabular"/>
+            <conditional name="method">
+                <param name="kind" value="legacy"/>
+            </conditional>
+            <param name="num_keywords" value="3"/>
+            <output name="keywords" ftype="csv">
+                <assert_contents>
+                    <has_text text="document_id,kw-1,score-1,kw-2,score-2,kw-3,score-3"/>
+                    <has_text text="CTX000000003,náčrt,1.0,sonda,1.0,,"/>
+                </assert_contents>
+            </output>
+            <output_collection name="document_keywords" type="list" count="1">
+                <element name="CTX000000003" ftype="csv">
+                    <assert_contents>
+                        <has_text text="keyword,score"/>
+                        <has_text text="náčrt,1.0"/>
+                    </assert_contents>
+                </element>
+            </output_collection>
+            <output_collection name="records" type="list" count="1">
+                <element name="CTX000000003" ftype="json">
+                    <assert_contents>
+                        <has_text text="&quot;keywords&quot;"/>
+                        <has_text text="&quot;method&quot;: &quot;legacy&quot;"/>
+                    </assert_contents>
+                </element>
+            </output_collection>
+            <output name="paradata" ftype="json">
+                <assert_contents>
+                    <has_text text="keyword-extract"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- YAKE on a TEITOK file and on a record of ATRIUM born-digital conversion, per page too. -->
+        <test expect_num_outputs="5">
+            <param name="documents">
+                <collection type="list">
+                    <element name="CTX000000001" value="CTX000000001.teitok.xml" ftype="tei"/>
+                    <element name="rich" value="rich.document.json" ftype="json"/>
+                </collection>
+            </param>
+            <param name="num_keywords" value="5"/>
+            <param name="max_words" value="2"/>
+            <param name="per_page" value="true"/>
+            <output name="keywords" ftype="csv">
+                <assert_contents>
+                    <has_text text="CTX000000001,Výzkumná zpráva,"/>
+                    <has_text text="rich,"/>
+                </assert_contents>
+            </output>
+            <output_collection name="page_keywords" type="list" count="2"/>
+            <output_collection name="records" type="list" count="2">
+                <element name="rich" ftype="json">
+                    <assert_contents>
+                        <has_text text="&quot;method&quot;: &quot;yake&quot;"/>
+                        <has_text text="digital-convert"/>
+                    </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+        <!-- No document can be read: exit 1. -->
+        <test expect_exit_code="1" expect_failure="true">
+            <param name="documents" value="no_text_column.csv" ftype="csv"/>
+            <assert_stderr>
+                <has_text text="A CSV input needs a 'text' column."/>
+                <has_text text="No document yielded keywords"/>
+            </assert_stderr>
+        </test>
+    </tests>
+    <help><![CDATA[
+**What it does**
+
+Finds the keywords of each document, and optionally of each page, with one of three statistical
+methods. It runs the ATRIUM keyword extractor (`ufal/atrium-keyword-extract`_), release
+@TOOL_VERSION@, on all the documents in one job.
+
+**Methods**
+
+- *YAKE* scores candidate phrases by their position, frequency and spread in the text. No model.
+- *KeyBERT* picks the phrases whose sentence embeddings are closest to the document's
+  (``paraphrase-multilingual-MiniLM-L12-v2``), with Maximal Marginal Relevance against
+  near-duplicates. The model is downloaded in the job, or read from a copy an administrator has
+  staged with the data manager *ATRIUM Hugging Face models*.
+- *Lemma frequency* ranks the content lemmas; it needs inputs with lemmas (CoNLL-U, TEITOK, or
+  records whose lines carry them), such as the outputs of *ATRIUM NLP enrichment*.
+
+The controlled-vocabulary keywords of the same tool need a language-model service and are not
+offered here.
+
+**Inputs**
+
+CoNLL-U, TEITOK, ATRIUM document records (for example from *ATRIUM born-digital converter*), line
+tables with a ``text`` column (lines marked Trash, Garbage, Inverted or Empty are left out), and plain
+text. A document that cannot be read is reported and skipped; the job fails only if none can.
+
+**Outputs**
+
+- *Keywords* (CSV): one row per document, ``document_id,kw-1,score-1,…``.
+- *Keywords per document* and, optionally, *per page*: a collection of ``keyword,score`` tables.
+- *Document records* (JSON): a collection, each record with the ``keywords`` block.
+- *Paradata* (JSON): the run's provenance, with the components and their licences.
+
+**Licences**
+
+The code is MIT; YAKE is AGPL-3.0; the KeyBERT model is Apache-2.0. The paradata lists each
+component's licence.
+
+.. _`ufal/atrium-keyword-extract`: https://github.com/ufal/atrium-keyword-extract
+    ]]></help>
+    <citations>
+        <citation type="bibtex">@software{atrium_keyword_extract,
+  author = {Lutsai, Kateryna and Spáčil, David and Novák, David and Straňák, Pavel},
+  title = {{ATRIUM's keyword extractor: statistical (KeyBERT, YAKE, KER) and vocabulary-controlled keywords from text-containing documents}},
+  version = {@TOOL_VERSION@},
+  year = {2026},
+  url = {https://github.com/ufal/atrium-keyword-extract}
+}</citation>
+    </citations>
+</tool>

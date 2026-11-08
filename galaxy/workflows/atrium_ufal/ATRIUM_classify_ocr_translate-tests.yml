@@ -6,13 +6,13 @@
       elements:
         - class: File
           identifier: atrium-03
-          path: ../tools/atrium_page_classification/test-data/atrium-03.png
+          path: ../../tools/atrium_page_classification/test-data/atrium-03.png
         - class: File
           identifier: pages_online_14
-          path: ../tools/atrium_page_classification/test-data/pages_online_14.png
+          path: ../../tools/atrium_page_classification/test-data/pages_online_14.png
         - class: File
           identifier: atrium-34
-          path: ../tools/atrium_page_classification/test-data/atrium-34.png
+          path: ../../tools/atrium_page_classification/test-data/atrium-34.png
   outputs:
     Top-N table:
       asserts:

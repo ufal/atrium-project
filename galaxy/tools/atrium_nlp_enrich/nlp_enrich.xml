@@ -1,0 +1,216 @@
+<tool id="atrium_nlp_enrich" name="ATRIUM NLP enrichment" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.0">
+    <description>lemmatises, tags and parses Czech text lines and finds their named entities (LINDAT UDPipe and NameTag)</description>
+    <macros>
+        <!-- The release of ufal/atrium-nlp-enrich whose batch image this wrapper runs: the first whose
+             entry point runs Galaxy's job script (v1.3.4-beta). -->
+        <token name="@TOOL_VERSION@">1.3.4-beta</token>
+        <token name="@VERSION_SUFFIX@">0</token>
+    </macros>
+    <creator>
+        <person givenName="Kateryna" familyName="Lutsai" identifier="https://orcid.org/0009-0002-4773-2797"/>
+        <person givenName="David" familyName="Novák" identifier="https://orcid.org/0000-0001-6592-6291"/>
+        <person givenName="Pavel" familyName="Straňák" identifier="https://orcid.org/0000-0002-6895-8536"/>
+        <organization name="ATRIUM project" url="https://ufal.github.io/atrium-project/"/>
+    </creator>
+    <requirements>
+        <container type="docker">ghcr.io/ufal/atrium-nlp-enrich:@TOOL_VERSION@</container>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+#import re
+## The document id is the line table's file name: the table is linked under its collection name,
+## and its ALTO beside it under the same id.
+#set $stem = re.sub(r'(\.lines)?\.(csv|txt|xlsx)$', '', str($lines.element_identifier), flags=re.IGNORECASE)
+#set $stem = re.sub(r'[^\w.\-]', '_', $stem) or 'document'
+#set $ext = {'csv': 'csv', 'txt': 'txt', 'xlsx': 'xlsx'}.get(str($lines.ext), 'csv')
+#set $layout = 'alto' if $alto else 'none'
+JOB="\$PWD" &&
+mkdir -p in out tmp layout/alto &&
+ln -s '$lines' 'in/${stem}.${ext}' &&
+#if $alto:
+    ln -s '$alto' 'layout/alto/${stem}.alto.xml' &&
+#end if
+## Every path of the config points into the job directory; the stages run from /app and read it.
+python3 '$write_config' /app/config_api.txt "\$JOB" '$layout' &&
+python3 /app/run_pipeline.py
+    --config "\$JOB/config_api.txt"
+    --strict-empty
+    --lang cs
+    $skip_untrustworthy
+    --merged-out "\$JOB/out/paradata.json"
+    #if $baseline:
+        --document-json '$baseline'
+    #end if
+    --document-json-out "\$JOB/out/record.json"
+&&
+test -s "\$JOB/out/record.json" &&
+mv 'out/UDP_NE/${stem}/${stem}.conllu' '$conllu' &&
+mv 'out/UDP_NE/${stem}/${stem}.csv' '$tokens' &&
+## A document without entities has no summary table: its dataset stays empty.
+if [ -f out/summary_ne_counts.csv ]; then mv out/summary_ne_counts.csv '$entities'; else : > '$entities'; fi &&
+mv 'out/TEITOK/${stem}.teitok.xml' '$teitok' &&
+mv out/paradata.json '$paradata' &&
+mv out/record.json '$record'
+    ]]></command>
+    <configfiles>
+        <!-- The image's config_api.txt with its paths moved into the job directory: the keys
+             service/enrichment.py (_derive_config) relocates for each request, nothing else. -->
+        <configfile name="write_config"><![CDATA[
+import re
+import sys
+
+template, job, layout = sys.argv[1:4]
+overrides = {
+    "OUTPUT_DIR": f'"{job}/out"',
+    "INPUT_TABLES_DIR": f'"{job}/in"',
+    "WORK_DIR": f'"{job}/tmp"',
+    "TEMP_TXT_DIR": f'"{job}/tmp/TXT_EXTRACT"',
+    "CHUNK_DIR": f'"{job}/tmp/CHUNKS"',
+    "PARADATA_DIR": f'"{job}/out/paradata"',
+    "LOG_FILE": f'"{job}/out/processing.log"',
+    "CONLLU_INPUT_DIR": f'"{job}/out/UDP"',
+    "TSV_INPUT_DIR": f'"{job}/out/NE"',
+    "SUMMARY_OUTPUT_DIR": f'"{job}/out/UDP_NE"',
+    "TEITOK_OUTPUT_DIR": f'"{job}/out/TEITOK"',
+    "INPUT_ALTO_DIR": f'"{job}/layout/alto"' if layout == "alto" else '""',
+    "INPUT_PAGES_DIR": '""',
+    "TEITOK_FLEXICONV_DIR": f'"{job}/layout/flexiconv"',
+    "FLEXICONV_ANNOTATE": '"false"',
+    "TEITOK_ENRICHMENT": '"false"',
+    "SKIP_UNTRUSTWORTHY_LINES": '"false"',
+}
+assign = re.compile(r"^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=")
+seen = set()
+lines = []
+with open(template, encoding="utf-8") as handle:
+    for raw in handle:
+        match = assign.match(raw)
+        if match and match.group(1) in overrides:
+            lines.append(f"{match.group(1)}={overrides[match.group(1)]}\n")
+            seen.add(match.group(1))
+        else:
+            lines.append(raw)
+lines += [f"{key}={value}\n" for key, value in overrides.items() if key not in seen]
+with open(f"{job}/config_api.txt", "w", encoding="utf-8") as handle:
+    handle.writelines(lines)
+]]></configfile>
+    </configfiles>
+    <inputs>
+        <param name="lines" type="data" format="csv,txt,xlsx" label="Line table"
+            help="The text lines of one document, in reading order: a CSV with a 'text' column (and page_num, line_num, categ when it has them), such as the line table of ATRIUM OCR post-processing; or plain text, a form feed starting a new page. For a collection, the tool runs once per document; the element name becomes the document id."/>
+        <param name="alto" type="data" format="xml" optional="true" label="ALTO of the same document"
+            help="Gives the TEITOK file and the entities their positions on the page. For collections, the ALTO collection must list the documents in the same order."/>
+        <param name="skip_untrustworthy" type="boolean" truevalue="--skip-untrustworthy-lines" falsevalue="" checked="false"
+            label="Leave out lines marked Trash, Garbage, Inverted or Empty"
+            help="Uses the line table's categ column (ATRIUM OCR line quality)."/>
+        <param name="baseline" type="data" format="json" optional="true" label="Document record to add to"
+            help="An ATRIUM document record from an earlier stage; the entities are added to it."/>
+    </inputs>
+    <outputs>
+        <data name="conllu" format="tabular" label="${tool.name} on ${on_string}: CoNLL-U with entities"/>
+        <data name="tokens" format="csv" label="${tool.name} on ${on_string}: tokens"/>
+        <data name="entities" format="csv" label="${tool.name} on ${on_string}: entities per page"/>
+        <data name="teitok" format="tei" label="${tool.name} on ${on_string}: TEITOK"/>
+        <data name="paradata" format="json" label="${tool.name} on ${on_string}: paradata"/>
+        <data name="record" format="json" label="${tool.name} on ${on_string}: document record"/>
+    </outputs>
+    <tests>
+        <!-- A line table with its ALTO: UDPipe, NameTag, TEITOK with positions. -->
+        <test expect_num_outputs="6">
+            <param name="lines" value="CTX000000003.csv" ftype="csv"/>
+            <param name="alto" value="CTX000000003.alto.xml" ftype="xml"/>
+            <output name="conllu" ftype="tabular">
+                <assert_contents>
+                    <has_text text="# udpipe_model = czech-pdt-ud-2.15-241121"/>
+                    <has_text_matching expression="sondy\tsonda\tNOUN"/>
+                </assert_contents>
+            </output>
+            <output name="tokens" ftype="csv">
+                <assert_contents>
+                    <has_text text="&quot;page_id&quot;,&quot;token&quot;,&quot;lemma&quot;,&quot;position&quot;,&quot;nameTag&quot;,&quot;NE&quot;"/>
+                </assert_contents>
+            </output>
+            <output name="entities" ftype="csv">
+                <assert_contents>
+                    <has_text text="&quot;file&quot;,&quot;page&quot;,&quot;ne1&quot;,&quot;type1&quot;,&quot;cnt-1&quot;"/>
+                </assert_contents>
+            </output>
+            <output name="teitok" ftype="tei">
+                <assert_contents>
+                    <has_text text="version=&quot;teitok-2&quot;"/>
+                    <has_text text="bbox=&quot;220 160 340 194&quot;"/>
+                </assert_contents>
+            </output>
+            <output name="record" ftype="json">
+                <assert_contents>
+                    <has_text text="&quot;doc_id&quot;: &quot;CTX000000003&quot;"/>
+                    <has_text text="nlp-enrich"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- The line table of ATRIUM OCR post-processing (CRLF line ends), without ALTO. -->
+        <test expect_num_outputs="6">
+            <param name="lines" value="CTX000000006.lines.csv" ftype="csv"/>
+            <output name="conllu" ftype="tabular">
+                <assert_contents>
+                    <has_text text="# text = Foto 3: západní profil sondy II"/>
+                </assert_contents>
+            </output>
+            <output name="teitok" ftype="tei">
+                <assert_contents>
+                    <has_text text="version=&quot;teitok-2&quot;"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- A table without a text column: exit 1, nothing sent to LINDAT. -->
+        <test expect_exit_code="1" expect_failure="true">
+            <param name="lines" value="no_text_column.csv" ftype="csv"/>
+            <assert_stderr>
+                <has_text text="CSV input must contain a 'text' column."/>
+            </assert_stderr>
+        </test>
+    </tests>
+    <help><![CDATA[
+**What it does**
+
+Annotates the text lines of one Czech document with the LINDAT services of ÚFAL, Charles
+University: UDPipe 2 (``czech-pdt-ud-2.15-241121``) tokenises, lemmatises, tags and parses it, and
+NameTag 3 (``nametag3-multilingual-onto-260521``) finds its named entities. With the document's
+ALTO, the result is also written as a TEITOK file in which each word keeps its position on the page.
+It runs the ATRIUM NLP enrichment (`ufal/atrium-nlp-enrich`_), release @TOOL_VERSION@.
+
+**Input**
+
+- *Line table*: the lines in reading order, as a CSV with a ``text`` column (``page_num``,
+  ``line_num`` and ``categ`` are used when present). The line table of *ATRIUM OCR post-processing*
+  is one. Plain text works too; a form feed starts a new page.
+- *ALTO* (optional): the same document's OCR, for positions in TEITOK and in the entities.
+
+Czech only.
+
+**Outputs**
+
+- *CoNLL-U with entities* (tabular): UDPipe's CoNLL-U, each word's entity in ``NER=`` of the last
+  column.
+- *Tokens* (CSV): one row per word, with its page, lemma, entity and UDPipe's features.
+- *Entities per page* (CSV): the most frequent entities of each page, with their types and counts.
+- *TEITOK* (TEI XML): the text, its annotation and, with ALTO, each word's bounding box.
+- *Document record* (JSON): the ATRIUM document record with the ``entities`` block.
+- *Paradata* (JSON): the run's provenance, with the components and their licences.
+
+**Network and licences**
+
+Every job calls LINDAT UDPipe and NameTag over the internet (no key). The code is MIT; the UDPipe
+and NameTag models are CC BY-NC-SA; the paradata lists each component's licence.
+
+.. _`ufal/atrium-nlp-enrich`: https://github.com/ufal/atrium-nlp-enrich
+    ]]></help>
+    <citations>
+        <citation type="bibtex">@software{atrium_nlp_enrich,
+  author = {Lutsai, Kateryna and Novák, David and Straňák, Pavel},
+  title = {{ATRIUM's NLP enricher: a tool to apply remote NameTag and UDPipe LINDAT services}},
+  version = {@TOOL_VERSION@},
+  year = {2026},
+  url = {https://github.com/ufal/atrium-nlp-enrich}
+}</citation>
+    </citations>
+</tool>

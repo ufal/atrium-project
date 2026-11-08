@@ -1,6 +1,6 @@
 {
     "a_galaxy_workflow": "true",
-    "annotation": "Renders each PDF's pages at 300 dpi and sorts them into eleven categories (printed, typed or handwritten text, tables and forms, drawings, photographs). One job per PDF; one table and one document record each.",
+    "annotation": "Sorts the page images of scanned archival documents into eleven categories (printed, typed or handwritten text, tables and forms, drawings, photographs), so that each page can be sent to the processing it needs. Name the elements <document>-<page>, for example report-0007.",
     "comments": [],
     "creator": [
         {
@@ -16,25 +16,25 @@
     ],
     "format-version": "0.1",
     "license": "MIT",
-    "name": "ATRIUM page classification (PDF documents)",
-    "release": "0.1.2",
+    "name": "ATRIUM page classification (page images)",
+    "release": "0.2.0",
     "report": {
         "markdown": "\n# Workflow Execution Report\n\n## Workflow Inputs\n```galaxy\ninvocation_inputs()\n```\n\n## Workflow Outputs\n```galaxy\ninvocation_outputs()\n```\n\n## Workflow\n```galaxy\nworkflow_display()\n```\n"
     },
     "steps": {
         "0": {
-            "annotation": "A list of PDF documents; each is classified page by page.",
+            "annotation": "A list of page images (png, jpg, tiff), one per page, named <document>-<page>.",
             "content_id": null,
             "errors": null,
             "id": 0,
             "input_connections": {},
             "inputs": [
                 {
-                    "description": "A list of PDF documents; each is classified page by page.",
-                    "name": "PDF documents"
+                    "description": "A list of page images (png, jpg, tiff), one per page, named <document>-<page>.",
+                    "name": "Page images"
                 }
             ],
-            "label": "PDF documents",
+            "label": "Page images",
             "name": "Input dataset collection",
             "outputs": [],
             "position": {
@@ -42,10 +42,10 @@
                 "top": 120
             },
             "tool_id": null,
-            "tool_state": "{\"optional\": false, \"format\": [\"pdf\"], \"tag\": null, \"collection_type\": \"list\"}",
+            "tool_state": "{\"optional\": false, \"format\": [\"png\", \"jpg\", \"tiff\"], \"tag\": null, \"collection_type\": \"list\"}",
             "tool_version": null,
             "type": "data_collection_input",
-            "uuid": "30dce9dd-0130-5e55-b94e-fe54d61f2668",
+            "uuid": "1bcb737b-aaeb-58bf-9023-9b038441c11b",
             "when": null,
             "workflow_outputs": []
         },
@@ -55,7 +55,7 @@
             "errors": null,
             "id": 1,
             "input_connections": {
-                "input|pdf": {
+                "input|pages": {
                     "id": 0,
                     "output_name": "output"
                 }
@@ -98,26 +98,31 @@
                 "top": 180
             },
             "tool_id": "atrium_page_classification",
-            "tool_state": "{\"input\": {\"kind\": \"pdf\", \"__current_case__\": 1, \"pdf\": {\"__class__\": \"ConnectedValue\"}, \"page_selection\": \"\", \"baseline\": null}, \"model\": {\"mode\": \"single\", \"__current_case__\": 0, \"revision\": \"v4.4\"}, \"models\": {\"source\": \"download\", \"__current_case__\": 0}, \"top_n\": \"3\", \"raw\": false, \"write_record\": true, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
+            "tool_state": "{\"input\": {\"kind\": \"images\", \"__current_case__\": 0, \"pages\": {\"__class__\": \"ConnectedValue\"}, \"route_categories\": [\"TEXT_P\", \"TEXT_T\", \"TEXT\"]}, \"model\": {\"mode\": \"single\", \"__current_case__\": 0, \"revision\": \"v4.4\"}, \"models\": {\"source\": \"download\", \"__current_case__\": 0}, \"top_n\": \"3\", \"raw\": false, \"write_record\": true, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
             "tool_version": "1.12.3-beta+galaxy0",
             "type": "tool",
-            "uuid": "cb42c949-3295-517f-9ae8-1409ec6cbf88",
+            "uuid": "8b668300-c2cc-5622-ae77-280c6a42002e",
             "when": null,
             "workflow_outputs": [
                 {
-                    "label": "Top-N tables",
+                    "label": "Top-N table",
                     "output_name": "top_table",
-                    "uuid": "8f8fe495-39e5-51b8-9da6-dc02b85f1747"
+                    "uuid": "befdcc1e-a2de-5f9b-b037-679a4f59b742"
                 },
                 {
                     "label": "Document records",
-                    "output_name": "record",
-                    "uuid": "23556d18-bb0c-57fc-a67b-5b92b430faab"
+                    "output_name": "records",
+                    "uuid": "df35d626-19ce-58a8-bb7c-b724b7fb8554"
                 },
                 {
                     "label": "Paradata",
                     "output_name": "paradata",
-                    "uuid": "1a7e2878-6ee2-5eae-8f3b-ba19434092a5"
+                    "uuid": "34cc5741-1490-57fd-82a5-8de2e7505d0b"
+                },
+                {
+                    "label": "Text pages",
+                    "output_name": "route_ids",
+                    "uuid": "1755de5a-3c7c-5a32-b901-c3371b385b81"
                 }
             ],
             "post_job_actions": {}
@@ -128,6 +133,6 @@
         "page-classification",
         "digital-humanities"
     ],
-    "uuid": "e9edd0d9-ecb7-58bb-a2bf-e557c554d80d",
+    "uuid": "6a4fae73-ceaf-513e-9920-e61740e3ecc0",
     "version": 1
 }

@@ -36,3 +36,21 @@ workflows:
     authors:
       - name: Kateryna Lutsai
         orcid: 0009-0002-4773-2797
+  - name: ATRIUM_ocr_nlp_keywords
+    subclass: Galaxy
+    publish: true
+    primaryDescriptorPath: /ATRIUM_ocr_nlp_keywords.ga
+    testParameterFiles:
+      - /ATRIUM_ocr_nlp_keywords-tests.yml
+    authors:
+      - name: Kateryna Lutsai
+        orcid: 0009-0002-4773-2797
+  - name: ATRIUM_born_digital_keywords
+    subclass: Galaxy
+    publish: true
+    primaryDescriptorPath: /ATRIUM_born_digital_keywords.ga
+    testParameterFiles:
+      - /ATRIUM_born_digital_keywords-tests.yml
+    authors:
+      - name: Kateryna Lutsai
+        orcid: 0009-0002-4773-2797

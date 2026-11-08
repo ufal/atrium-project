@@ -1,0 +1,38 @@
+- doc: One ALTO document; its line table, CoNLL-U, TEITOK with positions and keywords. Needs LINDAT.
+  job:
+    ALTO documents:
+      class: Collection
+      collection_type: list
+      elements:
+        - class: File
+          identifier: CTX000000003
+          path: ../../tools/atrium_ocr_postprocess/test-data/CTX000000003.alto.xml
+  outputs:
+    Line tables:
+      element_tests:
+        CTX000000003:
+          asserts:
+            has_text:
+              text: CTX000000003,1,1,Náčrt sondy.,1
+    CoNLL-U:
+      element_tests:
+        CTX000000003:
+          asserts:
+            has_text:
+              text: "# udpipe_model = czech-pdt-ud-2.15-241121"
+    TEITOK:
+      element_tests:
+        CTX000000003:
+          asserts:
+            has_text:
+              text: bbox="220 160 340 194"
+    Keywords:
+      asserts:
+        has_text:
+          text: CTX000000003,
+    Document records:
+      element_tests:
+        CTX000000003:
+          asserts:
+            has_text:
+              text: '"keywords"'

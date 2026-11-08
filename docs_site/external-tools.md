@@ -443,7 +443,10 @@ Marketplace and can also be run — in ATRIUM, as a Galaxy workflow. DARIAH keep
 tool wrappers and workflows in the
 [`atrium-galaxy-tools`](https://github.com/DARIAH-ERIC/atrium-galaxy-tools) repository. Each
 [workflow narrative](workflows/index.md) carries a Galaxy sheet for its tool: the datatypes of
-its inputs and outputs, its container, compute and network needs, and its test data.
+its inputs and outputs, its container, compute and network needs, and its test data. The wrappers
+of the six ÚFAL tools, two data managers and six workflows are prepared for that repository in the
+hub's [`galaxy/`](https://github.com/ufal/atrium-project/tree/test/galaxy) folder, laid out as it
+is (#66).
 
 **Onward:** <https://galaxyproject.org/> · <https://planemo.readthedocs.io/>
 

@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 19 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81, #83). The pilot set (final 11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the pilot set is unchanged). Hub `v1` = `da7a066` = `main` (`test` two commits ahead), which all six tools call by commit. The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-06 (late evening), at the end of the file (this file is not in date order): #83, the decision-model umbrella, and the first code of its four children._
+> _Hub/planning repo. 19 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81, #83). The pilot set (final 11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the pilot set is unchanged). Hub `v1` = `da7a066`, which all six tools call by commit; `main` = `test` = `f42018e` (11-06). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-07, at the end of the file (this file is not in date order): #66, the Galaxy hand-off for all six tools._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0411.md` (prior: `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -3539,4 +3539,69 @@ candidates are six `.3` releases carrying #6's step 1.
   - push the five repositories;
   - a page-classification release before the three consumers pin the client;
   - the probe.
+- Not pushed: files delivered as per-repo zips.
+
+## 2026-11-07 — #66: the Galaxy hand-off completed for all six tools
+
+- **Read:**
+  - #66's 11 comments; K4TEL's last (11-06 11:18) asks Mark who uploads. K4TEL (11-07): Mark uploads, so the
+    folder must be complete.
+  - Every repository's commits since 11-04. The decision-model commits after the 11-06 releases (#83's children)
+    touch no batch program, Dockerfile or entry point.
+  - page-classification `v1.13.0-beta` (11-06 20:24Z): its batch program, flags and outputs are byte-identical to
+    `1.12.3-beta`, and it is still on `entrypoint.py`. The wrapper keeps `1.12.3-beta`, the release Mark tested.
+  - DARIAH-ERIC/atrium-galaxy-tools: `main` is `fbfd3b7` (10-08), with nothing of ours in it. The toolbox is
+    `tools/atrium_tools.xml`; the instance runs on Kubernetes with TPV and a shared `atrium-runtime` image. Its
+    `workflows/README.md` would have been overwritten by ours.
+  - The instance's datatypes (live API): `markdown`, `tei`, `docx` and `xlsx` are there; `conllu` is not.
+- **K4TEL (11-07):** wrap ocr-postprocess's GPU classifier as a tool of its own; offer KeyBERT, with a data manager.
+- **Prepared (hub `galaxy/`):**
+  1. `tools/atrium_ocr_postprocess/` (`1.15.4-beta+galaxy0`, `macros.xml`):
+     - `atrium_ocr_postprocess` (CPU: split, statistics, extract; text lines, alto-tools, OCR JSON; the line table);
+     - `atrium_ocr_line_quality` (GPU: plus classify and aggregate; Qwen2.5-0.5B downloaded or staged;
+       `cuda_device_count_min`).
+     - The job runs the pipeline from a folder of links to `/app` with its own `paradata/`, and from a copy of
+       `setup/config.txt` with the job's paths, because the stages are started by bare name and write `paradata/`
+       relative to the working directory.
+  2. `tools/atrium_nlp_enrich/` (`1.3.4-beta+galaxy0`):
+     - a line table (+ ALTO) → CoNLL-U, tokens, entities, TEITOK, record;
+     - the config is written as the image's service writes it (`_derive_config`);
+     - a document without entities gets an empty summary dataset.
+  3. `tools/atrium_keyword_extract/` (`1.6.5-beta+galaxy0`):
+     - YAKE (default), KeyBERT (downloaded or staged) and lemma frequency, many documents per job;
+     - the job fails when no document was processed, because the tool exits 0.
+  4. `tools/atrium_digital_convert/` (`1.4.5-beta+galaxy0`, the `-digital` image): PDF, DOCX, XLSX → record, Markdown.
+     `--classify-pages` is dropped, since it does nothing without `--describe`.
+  5. `data_managers/data_manager_atrium_hf_models/`: `atrium_hf_models` with MiniLM (`e8f8c21`) and Qwen2.5-0.5B
+     (`060db64`), pinned. Each data manager now also ships `tool_data_table_conf.xml`, as DARIAH's spaCy one does.
+  6. `workflows/` moved to `workflows/atrium_ufal/`; added `ATRIUM_ocr_nlp_keywords` and
+     `ATRIUM_born_digital_keywords`; release `0.2.0`.
+  7. `README.md` rewritten as the upload steps for Mark: the folders, the toolbox lines, the data-manager
+     registration, the destinations (container over the TPV default, LINDAT and Hub egress, the data path, a GPU for
+     line quality only), staging, import.
+- **Prepared (hub, other):**
+  - `tests/test_galaxy_wrappers.py`: the repository and image names are separate (for `-digital`); macro imports are
+    read; checks per data manager; the toolbox list; the workflow CHANGELOG and Dockstore;
+  - the four Galaxy sheets in `docs_site/workflows/`; `external-tools.md`; #66's digest and plan.
+- **Prepared (DARIAH-ERIC/atrium-galaxy-tools):** the same folders, and `tools/atrium_tools.xml` with the seven
+  tools added, as the archive for Mark.
+- **Checked:**
+  - `planemo lint` (7 tools, 2 data managers) and `planemo workflow_lint --iwc` pass; the only error left is the
+    ToolShed lookup, which is unreachable from here;
+  - workflow tool states against the wrappers' inputs (10 steps);
+  - the hub's suite: 634 passed;
+  - each test of the four new tools run as Galaxy runs it. The command and config files are rendered from the
+    wrapper (Cheetah), the lines joined, and `/bin/sh tool_script.sh` run as uid 1234 in a job directory against
+    the tools' code at a read-only `/app`, with Galaxy's assertion code. Results: digital-convert 5/5,
+    ocr-postprocess 5/5, nlp-enrich 3/3 (a stand-in LINDAT), keyword-extract 3/3 (without pandas, as in the image);
+  - the chain *line table → NLP → keywords*: one record carrying all three stages' blocks;
+  - the data manager's entry logic, with its config files only.
+- **Not run here:** the images (ghcr.io blobs), the Hub's weight CDN, KeyBERT, the GPU tool's classify stage (no
+  CUDA). Their first run is Mark's `planemo test`.
+- **Found, for the tools' next releases:**
+  - ocr-postprocess: stages started by bare name, `paradata/` relative to the working directory, `text_split.py`
+    skipping symlinks;
+  - keyword-extract: exit 0 when no document was processed;
+  - page-classification: the batch image still on `entrypoint.py`.
+- **Yours:** push the hub; attach the DARIAH archive to #66 with the comment drafted in chat.
 - Not pushed: files delivered as per-repo zips.

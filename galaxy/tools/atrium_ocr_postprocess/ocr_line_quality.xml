@@ -1,0 +1,143 @@
+<tool id="atrium_ocr_line_quality" name="ATRIUM OCR line quality" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.0">
+    <description>sorts OCR text lines into Clear, Noisy, Trash, Non-text and Empty (needs a GPU)</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="creator"/>
+    <requirements>
+        <expand macro="container"/>
+        <!-- The classifier scores each line's perplexity with Qwen2.5-0.5B on CUDA and stops on a
+             runner without one: the destination must give the container a GPU (Galaxy itself does not
+             act on this yet; route the tool to a GPU destination, for example with TPV's gpus: 1). -->
+        <resource type="cuda_device_count_min">1</resource>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+#if $models.source == 'staged':
+    export HF_HUB_OFFLINE=1 &&
+    export TRANSFORMERS_OFFLINE=1 &&
+    #set $model_name = str($models.model.fields.path)
+#else:
+    export HF_HOME="\${_GALAXY_JOB_TMP_DIR:-\$PWD/tmp}/hf" &&
+    #set $model_name = '@QWEN@'
+#end if
+@PREPARE@
+    "CLASSIFY.MODEL_NAME=$model_name"
+    "CLASSIFY.EXPECTED_LANGS=$expected_langs"
+    "CLASSIFY.WORKERS_MAX=\${GALAXY_SLOTS:-1}"
+    "CLASSIFY.INPUT_CSV=\$JOB/out/page_stats.csv"
+    "CLASSIFY.TEXT_DIR=\$JOB/out/PAGE_TXT"
+    "CLASSIFY.OUTPUT_LINES_LOG=\$JOB/out/LINE_CATEG"
+    "AGGREGATE.RAW_LINES_CSV=\$JOB/out/LINE_CATEG"
+    "AGGREGATE.OUTPUT_DOC_DIR=\$JOB/out/LINE_STATS"
+    "AGGREGATE.OUTPUT_STATS=\$JOB/out/page_quality.csv"
+&&
+@RUN@
+&&
+@COLLECT@
+&& mv out/LINE_CATEG/*.csv '$line_quality'
+&& mv out/page_quality.csv '$page_quality'
+#if $method.kind == 'text-lines':
+    && mv out/LINES/*.csv '$lines'
+#end if
+    ]]></command>
+    <configfiles>
+        <expand macro="write_config"/>
+    </configfiles>
+    <inputs>
+        <expand macro="inputs"/>
+        <param name="expected_langs" type="text" value="ces,deu,eng" label="Expected languages"
+            help="ISO 639-3 codes, comma-separated, the first the main one. A line identified as another language is checked against these before it counts as noise.">
+            <validator type="regex" message="Three-letter codes separated by commas, for example ces,deu,eng">^[a-z]{3}(,[a-z]{3})*$</validator>
+        </param>
+        <conditional name="models">
+            <param name="source" type="select" label="Perplexity model (Qwen2.5-0.5B)">
+                <option value="download" selected="true">Download it from the Hugging Face Hub in the job (about 1 GB)</option>
+                <option value="staged">Use the copy staged on this server</option>
+            </param>
+            <when value="download"/>
+            <when value="staged">
+                <param name="model" type="select" label="Staged model"
+                    help="Staged by an administrator with the data manager 'ATRIUM Hugging Face models'.">
+                    <options from_data_table="atrium_hf_models">
+                        <filter type="static_value" column="repo_id" value="@QWEN@"/>
+                        <validator type="no_options" message="No copy of Qwen2.5-0.5B is staged on this server."/>
+                    </options>
+                </param>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <expand macro="common_outputs"/>
+        <data name="line_quality" format="csv" label="${tool.name} on ${on_string}: lines with their category"/>
+        <data name="page_quality" format="csv" label="${tool.name} on ${on_string}: categories per page"/>
+        <data name="lines" format="csv" label="${tool.name} on ${on_string}: line table">
+            <filter>method['kind'] == 'text-lines'</filter>
+        </data>
+    </outputs>
+    <tests>
+        <!-- Needs a GPU destination: on a runner without CUDA the classifier stops with exit 1. -->
+        <test expect_num_outputs="7">
+            <param name="document" value="CTX000000003.alto.xml" ftype="xml"/>
+            <output name="line_quality" ftype="csv">
+                <assert_contents>
+                    <has_text text="categ,quality_score,file,page_num,line_num,text"/>
+                    <has_text_matching expression="^Clear,[^,]*,CTX000000003,1,1,Náčrt sondy\."/>
+                    <has_text_matching expression="^Non-text,[^,]*,CTX000000003,1,2,1998"/>
+                </assert_contents>
+            </output>
+            <output name="page_quality" ftype="csv">
+                <assert_contents>
+                    <has_text text="file,page_num,num_lines,Clear,Noisy,Trash,Non-text,Empty"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+**What it does**
+
+Sorts every text line of an OCR document by how usable it is, so that the noise of a bad scan
+does not reach later stages. It runs all five stages of the ATRIUM OCR post-processor
+(`ufal/atrium-ocr-postprocess`_), release @TOOL_VERSION@: split, statistics, extract, then
+**classify** and **aggregate**.
+
+**Needs a GPU.** The classifier measures each line's perplexity with the language model
+Qwen2.5-0.5B on CUDA, and stops (exit 1) on a runner without a GPU. For the CPU stages alone, use
+*ATRIUM OCR post-processing*.
+
+**Categories**
+
+- *Clear*: readable text in an expected language.
+- *Noisy*: readable, with OCR errors.
+- *Trash*: OCR garbage.
+- *Non-text*: numbers, symbols, page furniture.
+- *Empty*: nothing to read.
+
+Each line is also identified by language (fastText) and checked against the *expected languages*.
+
+**Inputs and reading methods**
+
+As in *ATRIUM OCR post-processing*: one document per job, read as text lines (most formats, ALTO
+included), as ALTO with alto-tools, or as OCR JSON.
+
+**Model**
+
+Qwen2.5-0.5B (Apache-2.0) is downloaded in the job, or read from a copy an administrator has
+staged with the data manager *ATRIUM Hugging Face models*. The fastText language-identification
+model is in the image.
+
+**Outputs**
+
+- *Lines with their category* (CSV): one row per line, with ``categ``, ``quality_score``, the
+  language and the measures behind the decision.
+- *Categories per page* (CSV): the number and share of lines of each category per page.
+- *Line table* (CSV, text lines only), *page texts*, *page statistics*, the *document record* and
+  the *paradata*, as in *ATRIUM OCR post-processing*.
+
+**Licence**
+
+The code is MIT; the paradata lists each component's licence.
+
+.. _`ufal/atrium-ocr-postprocess`: https://github.com/ufal/atrium-ocr-postprocess
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

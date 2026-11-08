@@ -1,0 +1,272 @@
+{
+    "a_galaxy_workflow": "true",
+    "annotation": "From ALTO OCR output to annotated text and keywords: the text lines of each document (ATRIUM OCR post-processing, CPU), their lemmas, syntax and named entities from LINDAT UDPipe and NameTag with a TEITOK file that keeps each word's position (ATRIUM NLP enrichment, Czech), and the keywords of every document and page (ATRIUM keyword extraction, YAKE). One document record per document collects the stages' blocks.",
+    "comments": [],
+    "creator": [
+        {
+            "class": "Organization",
+            "name": "ATRIUM project",
+            "url": "https://ufal.github.io/atrium-project/"
+        },
+        {
+            "class": "Person",
+            "name": "Kateryna Lutsai",
+            "identifier": "https://orcid.org/0009-0002-4773-2797"
+        }
+    ],
+    "format-version": "0.1",
+    "license": "MIT",
+    "name": "ATRIUM OCR to keywords",
+    "release": "0.2.0",
+    "report": {
+        "markdown": "\n# Workflow Execution Report\n\n## Workflow Inputs\n```galaxy\ninvocation_inputs()\n```\n\n## Workflow Outputs\n```galaxy\ninvocation_outputs()\n```\n\n## Workflow\n```galaxy\nworkflow_display()\n```\n"
+    },
+    "steps": {
+        "0": {
+            "annotation": "A list of ALTO files, one per document (one or many pages each), for example from Tesseract. The element names become the document ids.",
+            "content_id": null,
+            "errors": null,
+            "id": 0,
+            "input_connections": {},
+            "inputs": [
+                {
+                    "description": "A list of ALTO files, one per document (one or many pages each), for example from Tesseract. The element names become the document ids.",
+                    "name": "ALTO documents"
+                }
+            ],
+            "label": "ALTO documents",
+            "name": "Input dataset collection",
+            "outputs": [],
+            "position": {
+                "left": 40,
+                "top": 120
+            },
+            "tool_id": null,
+            "tool_state": "{\"optional\": false, \"format\": [\"xml\"], \"tag\": null, \"collection_type\": \"list\"}",
+            "tool_version": null,
+            "type": "data_collection_input",
+            "uuid": "a18cf659-23ff-5bf2-949b-08552671a5f3",
+            "when": null,
+            "workflow_outputs": []
+        },
+        "1": {
+            "annotation": "Text lines of each ALTO document, in reading order: the line table. CPU only.",
+            "content_id": "atrium_ocr_postprocess",
+            "errors": null,
+            "id": 1,
+            "input_connections": {
+                "document": {
+                    "id": 0,
+                    "output_name": "output"
+                }
+            },
+            "inputs": [],
+            "label": "Read the text lines",
+            "name": "ATRIUM OCR post-processing",
+            "outputs": [
+                {
+                    "name": "record",
+                    "type": "json"
+                },
+                {
+                    "name": "paradata",
+                    "type": "json"
+                },
+                {
+                    "name": "page_stats",
+                    "type": "csv"
+                },
+                {
+                    "name": "page_texts",
+                    "type": "input"
+                },
+                {
+                    "name": "lines",
+                    "type": "csv"
+                },
+                {
+                    "name": "pages_report",
+                    "type": "csv"
+                }
+            ],
+            "position": {
+                "left": 340,
+                "top": 180
+            },
+            "post_job_actions": {},
+            "tool_id": "atrium_ocr_postprocess",
+            "tool_state": "{\"document\": {\"__class__\": \"ConnectedValue\"}, \"method\": {\"kind\": \"text-lines\", \"__current_case__\": 0, \"strict\": true}, \"baseline\": null, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "1.15.4-beta+galaxy0",
+            "type": "tool",
+            "uuid": "d5b9d4e5-782d-5292-b56b-92a70c4f4e27",
+            "when": null,
+            "workflow_outputs": [
+                {
+                    "label": "Line tables",
+                    "output_name": "lines",
+                    "uuid": "44ec17cc-c4a6-5f1f-969f-8151b3238cb9"
+                },
+                {
+                    "label": "Page texts",
+                    "output_name": "page_texts",
+                    "uuid": "af9474e0-934c-5da6-97a5-a56f5b4114c7"
+                }
+            ]
+        },
+        "2": {
+            "annotation": "LINDAT UDPipe and NameTag on each line table; the ALTO gives TEITOK its positions; the record of the previous step is carried on.",
+            "content_id": "atrium_nlp_enrich",
+            "errors": null,
+            "id": 2,
+            "input_connections": {
+                "lines": {
+                    "id": 1,
+                    "output_name": "lines"
+                },
+                "alto": {
+                    "id": 0,
+                    "output_name": "output"
+                },
+                "baseline": {
+                    "id": 1,
+                    "output_name": "record"
+                }
+            },
+            "inputs": [],
+            "label": "Annotate (UDPipe, NameTag)",
+            "name": "ATRIUM NLP enrichment",
+            "outputs": [
+                {
+                    "name": "conllu",
+                    "type": "tabular"
+                },
+                {
+                    "name": "tokens",
+                    "type": "csv"
+                },
+                {
+                    "name": "entities",
+                    "type": "csv"
+                },
+                {
+                    "name": "teitok",
+                    "type": "tei"
+                },
+                {
+                    "name": "paradata",
+                    "type": "json"
+                },
+                {
+                    "name": "record",
+                    "type": "json"
+                }
+            ],
+            "position": {
+                "left": 640,
+                "top": 120
+            },
+            "post_job_actions": {},
+            "tool_id": "atrium_nlp_enrich",
+            "tool_state": "{\"lines\": {\"__class__\": \"ConnectedValue\"}, \"alto\": {\"__class__\": \"ConnectedValue\"}, \"skip_untrustworthy\": false, \"baseline\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "1.3.4-beta+galaxy0",
+            "type": "tool",
+            "uuid": "dec47e1c-319f-5715-be1c-05212dd46630",
+            "when": null,
+            "workflow_outputs": [
+                {
+                    "label": "CoNLL-U",
+                    "output_name": "conllu",
+                    "uuid": "91817255-92c1-5d22-bf77-617b3e90daff"
+                },
+                {
+                    "label": "TEITOK",
+                    "output_name": "teitok",
+                    "uuid": "8a6f13da-0208-5baf-bc5c-2b794a9b7fc4"
+                },
+                {
+                    "label": "Entities per page",
+                    "output_name": "entities",
+                    "uuid": "0980c594-dc2e-56b1-9618-911a56f02f99"
+                }
+            ]
+        },
+        "3": {
+            "annotation": "YAKE on the TEITOK files of all documents in one job, per document and per page; the keywords are added to each document's record.",
+            "content_id": "atrium_keyword_extract",
+            "errors": null,
+            "id": 3,
+            "input_connections": {
+                "documents": {
+                    "id": 2,
+                    "output_name": "teitok"
+                },
+                "baselines": {
+                    "id": 2,
+                    "output_name": "record"
+                }
+            },
+            "inputs": [],
+            "label": "Find the keywords",
+            "name": "ATRIUM keyword extraction",
+            "outputs": [
+                {
+                    "name": "keywords",
+                    "type": "csv"
+                },
+                {
+                    "name": "document_keywords",
+                    "type": "input"
+                },
+                {
+                    "name": "page_keywords",
+                    "type": "input"
+                },
+                {
+                    "name": "records",
+                    "type": "input"
+                },
+                {
+                    "name": "paradata",
+                    "type": "json"
+                }
+            ],
+            "position": {
+                "left": 940,
+                "top": 180
+            },
+            "post_job_actions": {},
+            "tool_id": "atrium_keyword_extract",
+            "tool_state": "{\"documents\": {\"__class__\": \"ConnectedValue\"}, \"method\": {\"kind\": \"yake\", \"__current_case__\": 0}, \"num_keywords\": \"20\", \"max_words\": \"3\", \"lang\": \"cs\", \"per_page\": true, \"baselines\": {\"__class__\": \"ConnectedValue\"}, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "1.6.5-beta+galaxy0",
+            "type": "tool",
+            "uuid": "1d228d43-27ec-5cba-9489-5c4ec27e8a48",
+            "when": null,
+            "workflow_outputs": [
+                {
+                    "label": "Keywords",
+                    "output_name": "keywords",
+                    "uuid": "fcf73025-9e16-5960-a585-c7ffc5c3d42f"
+                },
+                {
+                    "label": "Keywords per page",
+                    "output_name": "page_keywords",
+                    "uuid": "72de08f3-0004-52d4-b8e5-5db961eca24d"
+                },
+                {
+                    "label": "Document records",
+                    "output_name": "records",
+                    "uuid": "0e8892bb-64cb-5ad5-abc2-0ee44e019a15"
+                }
+            ]
+        }
+    },
+    "tags": [
+        "ATRIUM",
+        "OCR",
+        "NLP",
+        "keywords",
+        "digital-humanities"
+    ],
+    "uuid": "3a5aa63c-1cbe-5183-9377-33b44eca2eea",
+    "version": 1
+}

@@ -1,0 +1,171 @@
+<tool id="atrium_ocr_postprocess" name="ATRIUM OCR post-processing" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.0">
+    <description>splits OCR output into pages and lines, and extracts their text</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="creator"/>
+    <requirements>
+        <expand macro="container"/>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+@PREPARE@
+&&
+@RUN@
+    ## Line classification needs a GPU: it is the "ATRIUM OCR line quality" tool.
+    --skip-classify
+    --skip-aggregate
+&&
+@COLLECT@
+#if $method.kind == 'text-lines':
+    && mv out/LINES/*.csv '$lines'
+    && mv out/PAGE_TEXT/pages_report.csv '$pages_report'
+#end if
+    ]]></command>
+    <configfiles>
+        <expand macro="write_config"/>
+    </configfiles>
+    <inputs>
+        <expand macro="inputs"/>
+    </inputs>
+    <outputs>
+        <expand macro="common_outputs"/>
+        <data name="lines" format="csv" label="${tool.name} on ${on_string}: line table">
+            <filter>method['kind'] == 'text-lines'</filter>
+        </data>
+        <data name="pages_report" format="csv" label="${tool.name} on ${on_string}: pages report">
+            <filter>method['kind'] == 'text-lines'</filter>
+        </data>
+        <collection name="pages_alto" type="list" format="xml" label="${tool.name} on ${on_string}: ALTO pages">
+            <discover_datasets pattern="(?P&lt;designation&gt;.+)\.alto\.xml" directory="out/PAGE_ALTO" recurse="true" format="xml"/>
+            <filter>method['kind'] == 'alto-tools'</filter>
+        </collection>
+    </outputs>
+    <tests>
+        <!-- An ALTO page with alto-tools: one ALTO file and one text per page. -->
+        <test expect_num_outputs="5">
+            <param name="document" value="CTX000000003.alto.xml" ftype="xml"/>
+            <conditional name="method">
+                <param name="kind" value="alto-tools"/>
+            </conditional>
+            <output name="page_stats" ftype="csv">
+                <assert_contents>
+                    <has_line line="file,page,textlines,illustrations,graphics,strings,path"/>
+                    <has_text text="CTX000000003,1,2,0,0,3,"/>
+                </assert_contents>
+            </output>
+            <output_collection name="page_texts" type="list" count="1">
+                <element name="CTX000000003-1" ftype="txt">
+                    <assert_contents>
+                        <has_line line="Náčrt sondy."/>
+                        <has_line line="1998"/>
+                    </assert_contents>
+                </element>
+            </output_collection>
+            <output_collection name="pages_alto" type="list" count="1">
+                <element name="CTX000000003-1" ftype="xml">
+                    <assert_contents>
+                        <has_text text="Náčrt"/>
+                    </assert_contents>
+                </element>
+            </output_collection>
+            <output name="record" ftype="json">
+                <assert_contents>
+                    <has_text text="&quot;doc_id&quot;: &quot;CTX000000003&quot;"/>
+                    <has_text text="&quot;engine&quot;: &quot;alto-tools&quot;"/>
+                </assert_contents>
+            </output>
+            <output name="paradata" ftype="json">
+                <assert_contents>
+                    <has_text text="ocr-postprocess"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- The same ALTO page read as text lines: the line table, ready for NLP enrichment. -->
+        <test expect_num_outputs="6">
+            <param name="document" value="CTX000000003.alto.xml" ftype="xml"/>
+            <output name="lines" ftype="csv">
+                <assert_contents>
+                    <has_text text="file,page_num,line_num,text,page_label"/>
+                    <has_text text="CTX000000003,1,1,Náčrt sondy.,1"/>
+                    <has_text text="CTX000000003,1,2,1998,1"/>
+                </assert_contents>
+            </output>
+            <output name="pages_report" ftype="csv">
+                <assert_contents>
+                    <has_text text="file,page,page_label,text_layer,needs_ocr_reason,lines,images,flags"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- A CSV with a text column and a page column: two pages. -->
+        <test expect_num_outputs="6">
+            <param name="document" value="CTX000000006.csv" ftype="csv"/>
+            <output name="lines" ftype="csv">
+                <assert_contents>
+                    <has_text text="CTX000000006,2,1,Foto 3: západní profil sondy II,2"/>
+                </assert_contents>
+            </output>
+            <output_collection name="page_texts" type="list" count="2">
+                <element name="CTX000000006-2" ftype="txt">
+                    <assert_contents>
+                        <has_text text="Foto 3: západní profil sondy II"/>
+                    </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+        <!-- OCR JSON with its text fields. -->
+        <test expect_num_outputs="4">
+            <param name="document" value="CTX000000015.json" ftype="json"/>
+            <conditional name="method">
+                <param name="kind" value="json-keys"/>
+            </conditional>
+            <output_collection name="page_texts" type="list" count="2"/>
+        </test>
+        <!-- An XML file that is not ALTO, read with alto-tools: no page is found, exit 1. -->
+        <test expect_exit_code="1" expect_failure="true">
+            <param name="document" value="not_alto.xml" ftype="xml"/>
+            <conditional name="method">
+                <param name="kind" value="alto-tools"/>
+            </conditional>
+            <assert_stdout>
+                <has_text text="Not a namespaced ALTO document"/>
+            </assert_stdout>
+            <assert_stderr>
+                <has_text text="Pipeline aborted"/>
+            </assert_stderr>
+        </test>
+    </tests>
+    <help><![CDATA[
+**What it does**
+
+Reads the output of an OCR engine, or another text-bearing document, splits it into pages and
+lines, and extracts their text. It runs the first three stages of the ATRIUM OCR post-processor
+(`ufal/atrium-ocr-postprocess`_), release @TOOL_VERSION@: *split*, *statistics* and *extract*. All
+three run on CPU; the line classification that follows them needs a GPU and is the separate tool
+*ATRIUM OCR line quality*.
+
+**Reading methods**
+
+- *Text lines* reads ALTO and most text-bearing formats (plain text, CSV or TSV with a ``text``
+  column, hOCR, PAGE XML, Tesseract TSV, PDF with a text layer, DOCX, XLSX, Markdown, OCR JSON). It
+  writes the **line table**, one row per line, which *ATRIUM NLP enrichment* takes as input.
+- *ALTO* reads ALTO only, keeps alto-tools' reading order and writes one ALTO file per page.
+- *OCR JSON* reads the text fields of an OCR engine's JSON.
+
+**Outputs**
+
+- *Line table* (CSV, text lines only): ``file,page_num,line_num,text,page_label``.
+- *Pages report* (CSV, text lines only): per page, its text layer and whether it needs OCR.
+- *Page texts*: a collection, one text file per page, named ``<document>-<page>``.
+- *ALTO pages* (ALTO only): a collection, one ALTO file per page.
+- *Page statistics* (CSV): lines, illustrations, graphics and strings per page.
+- *Document record* (JSON): the ATRIUM document record with the pages and their text.
+- *Paradata* (JSON): the run's provenance, with the components and their licences.
+
+**Licence**
+
+The code is MIT; the paradata lists each component's licence.
+
+.. _`ufal/atrium-ocr-postprocess`: https://github.com/ufal/atrium-ocr-postprocess
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

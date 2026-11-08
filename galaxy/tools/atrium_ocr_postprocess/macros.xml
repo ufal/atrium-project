@@ -1,0 +1,142 @@
+<macros>
+    <!-- The release of ufal/atrium-ocr-postprocess whose batch image both tools run: the first whose
+         entry point runs Galaxy's job script (v1.15.4-beta). -->
+    <token name="@TOOL_VERSION@">1.15.4-beta</token>
+    <token name="@VERSION_SUFFIX@">0</token>
+    <!-- The perplexity model of the line classifier, as the atrium_hf_models table names it. -->
+    <token name="@QWEN@">Qwen/Qwen2.5-0.5B</token>
+
+    <xml name="creator">
+        <creator>
+            <person givenName="Kateryna" familyName="Lutsai" identifier="https://orcid.org/0009-0002-4773-2797"/>
+            <person givenName="Dana" familyName="Křivánková" identifier="https://orcid.org/0000-0001-5718-9447"/>
+            <person givenName="David" familyName="Spáčil" identifier="https://orcid.org/0009-0002-8856-2501"/>
+            <person givenName="David" familyName="Novák" identifier="https://orcid.org/0000-0001-6592-6291"/>
+            <person givenName="Pavel" familyName="Straňák" identifier="https://orcid.org/0000-0002-6895-8536"/>
+            <organization name="ATRIUM project" url="https://ufal.github.io/atrium-project/"/>
+        </creator>
+    </xml>
+    <xml name="container">
+        <container type="docker">ghcr.io/ufal/atrium-ocr-postprocess:@TOOL_VERSION@</container>
+    </xml>
+
+    <!-- The job's first steps, shared by both tools: the document under its collection name, a
+         working folder of links to /app, and the pipeline's config with absolute paths. -->
+    <token name="@PREPARE@"><![CDATA[
+#import re
+#set $stem = re.sub(r'(\.alto)?\.xml$|\.(json|txt|csv|tsv|tab|html?|hocr|pdf|docx|xlsx|md)$', '', str($document.element_identifier), flags=re.IGNORECASE)
+#set $stem = re.sub(r'[^\w.\-]', '_', $stem) or 'document'
+#set $ext = {'tabular': 'tsv', 'markdown': 'md'}.get(str($document.ext), str($document.ext))
+export TMPDIR="\${_GALAXY_JOB_TMP_DIR:-\$PWD/tmp}" &&
+export MAX_WORKERS="\${GALAXY_SLOTS:-1}" &&
+JOB="\$PWD" &&
+mkdir -p input out app "\$TMPDIR" &&
+## text_split.py does not follow symbolic links, so the document is copied.
+cp '$document' 'input/${stem}.${ext}' &&
+## The pipeline starts its stages by name from its working directory, and each stage writes its
+## paradata to paradata/ there: a folder of links to /app with a paradata/ of its own leaves the
+## image untouched (its /app is not writable for every user id).
+for entry in /app/*; do ln -s "\$entry" "app/\$(basename "\$entry")"; done &&
+rm -f app/paradata && mkdir app/paradata &&
+python3 '$write_config' /app/setup/config.txt "\$JOB/pipeline.cfg"
+    "PIPELINE.METHOD=$method.kind"
+    "PIPELINE.PARADATA_DIR=paradata"
+    "PIPELINE.PAGE_ALTO_DIR=\$JOB/out/PAGE_ALTO"
+    "PIPELINE.PAGE_JSON_DIR=\$JOB/out/PAGE_JSON"
+    "PIPELINE.PAGE_TEXT_DIR=\$JOB/out/PAGE_TEXT"
+    "EXTRACT.INPUT_CSV=\$JOB/out/page_stats.csv"
+    "EXTRACT.INPUT_CSV_TEXT=\$JOB/out/page_stats.csv"
+    "EXTRACT.OUTPUT_TXT=\$JOB/out/PAGE_TXT"
+    "EXTRACT.OUTPUT_TXT_JSON=\$JOB/out/PAGE_TXT"
+    "EXTRACT.OUTPUT_TXT_TEXT=\$JOB/out/PAGE_TXT"
+    "EXTRACT.OUTPUT_LINES_TEXT=\$JOB/out/LINES"
+    "DOCUMENT.JSON_DIR="
+]]></token>
+    <!-- The pipeline's command line, up to the stage choice. -->
+    <token name="@RUN@"><![CDATA[
+cd app &&
+python3 /app/run_pipeline.py
+    --config "\$JOB/pipeline.cfg"
+    --method '$method.kind'
+    --input-dir "\$JOB/input"
+    --input-csv "\$JOB/out/page_stats.csv"
+    --summary-out "\$JOB/out/pipeline-run.json"
+    --document-json-out "\$JOB/out/record.json"
+    #if $baseline:
+        --document-json '$baseline'
+    #end if
+    #if $method.kind == 'text-lines':
+        $method.strict
+    #end if
+]]></token>
+    <token name="@COLLECT@"><![CDATA[
+cd "\$JOB" &&
+mv out/record.json '$record' &&
+mv out/pipeline-run.json '$paradata' &&
+mv out/page_stats.csv '$page_stats'
+]]></token>
+
+    <xml name="write_config">
+        <!-- Copies the image's config and sets the given SECTION.KEY=value pairs, keeping every other
+             key (the classifier's thresholds among them) and the keys' case. -->
+        <configfile name="write_config"><![CDATA[
+import configparser
+import sys
+
+source, target, *pairs = sys.argv[1:]
+config = configparser.RawConfigParser(inline_comment_prefixes=None)
+config.optionxform = str
+config.read(source, encoding="utf-8")
+for pair in pairs:
+    key, value = pair.split("=", 1)
+    section, option = key.split(".", 1)
+    if not config.has_section(section):
+        config.add_section(section)
+    config.set(section, option, value)
+with open(target, "w", encoding="utf-8") as handle:
+    config.write(handle)
+]]></configfile>
+    </xml>
+
+    <xml name="inputs">
+        <param name="document" type="data" format="xml,json,txt,csv,tsv,tabular,html,pdf,docx,xlsx,markdown" label="OCR output or text-bearing document"
+            help="One document per job: an ALTO file (one or many pages), OCR JSON, or a text-bearing file (plain text, CSV or TSV with a text column, hOCR, PAGE XML, Tesseract TSV, PDF, DOCX, XLSX, Markdown). For a collection, the tool runs once per document; the element name becomes the document id."/>
+        <conditional name="method">
+            <param name="kind" type="select" label="Reading method">
+                <option value="text-lines" selected="true">Text lines: any of the formats above, ALTO included; writes the line table</option>
+                <option value="alto-tools">ALTO: page texts in alto-tools reading order, and one ALTO file per page</option>
+                <option value="json-keys">OCR JSON: page texts from the JSON's text fields</option>
+            </param>
+            <when value="text-lines">
+                <param name="strict" type="boolean" truevalue="--strict" falsevalue="--no-strict" checked="true"
+                    label="Fail when the document cannot be read"
+                    help="Otherwise an empty, unreadable or image-only file is reported in the pages report and skipped."/>
+            </when>
+            <when value="alto-tools"/>
+            <when value="json-keys"/>
+        </conditional>
+        <param name="baseline" type="data" format="json" optional="true" label="Document record to add to"
+            help="An ATRIUM document record from an earlier stage; this stage's blocks are added to it."/>
+    </xml>
+
+    <xml name="common_outputs">
+        <data name="record" format="json" label="${tool.name} on ${on_string}: document record"/>
+        <data name="paradata" format="json" label="${tool.name} on ${on_string}: paradata"/>
+        <data name="page_stats" format="csv" label="${tool.name} on ${on_string}: page statistics"/>
+        <collection name="page_texts" type="list" label="${tool.name} on ${on_string}: page texts">
+            <discover_datasets pattern="(?P&lt;designation&gt;.+)\.txt" directory="out/PAGE_TXT" recurse="true" format="txt"/>
+        </collection>
+    </xml>
+
+    <xml name="citations">
+        <citations>
+            <citation type="bibtex">@software{atrium_ocr_postprocess,
+  author = {Lutsai, Kateryna and Křivánková, Dana and Spáčil, David and Novák, David and Straňák, Pavel},
+  title = {{ATRIUM's OCR-output postprocessor: a tool to extract contents, fix word splits, and categorize textlines by language and severity of OCR errors, for ALTO XML and other OCR and text-bearing formats}},
+  version = {@TOOL_VERSION@},
+  year = {2026},
+  url = {https://github.com/ufal/atrium-ocr-postprocess}
+}</citation>
+        </citations>
+    </xml>
+</macros>

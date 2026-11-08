@@ -1,0 +1,177 @@
+<tool id="atrium_digital_convert" name="ATRIUM born-digital converter" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.0">
+    <description>turns a PDF, DOCX or XLSX into an ATRIUM document record and Markdown</description>
+    <macros>
+        <!-- The release of ufal/atrium-digital-convert whose command-line image (-digital) this wrapper
+             runs: the first whose entry point runs Galaxy's job script (v1.4.5-beta). -->
+        <token name="@TOOL_VERSION@">1.4.5-beta</token>
+        <token name="@VERSION_SUFFIX@">0</token>
+    </macros>
+    <creator>
+        <person givenName="Kateryna" familyName="Lutsai" identifier="https://orcid.org/0009-0002-4773-2797"/>
+        <person givenName="David" familyName="Novák" identifier="https://orcid.org/0000-0001-6592-6291"/>
+        <person givenName="Pavel" familyName="Straňák" identifier="https://orcid.org/0000-0002-6895-8536"/>
+        <organization name="ATRIUM project" url="https://ufal.github.io/atrium-project/"/>
+    </creator>
+    <requirements>
+        <container type="docker">ghcr.io/ufal/atrium-digital-convert-digital:@TOOL_VERSION@</container>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+#import re
+## The record's doc_id comes from the file name: the document is linked under its collection name,
+## with its format's extension (the converter reads the format from the bytes, not the name).
+#set $stem = re.sub(r'\.(pdf|docx|xlsx)$', '', str($document.element_identifier), flags=re.IGNORECASE)
+#set $stem = re.sub(r'[^\w.\-]', '_', $stem) or 'document'
+export TMPDIR="\${_GALAXY_JOB_TMP_DIR:-\$PWD/tmp}" &&
+mkdir -p input "\$TMPDIR" &&
+ln -s '$document' 'input/${stem}.${document.ext}' &&
+
+python3 /app/api_util/digital_to_json.py 'input/${stem}.${document.ext}'
+    --document-json-out record.json
+    #if $baseline:
+        --document-json '$baseline'
+    #end if
+    --docx-page-breaks '$docx_page_breaks'
+    #if $write_markdown:
+        --markdown record.md
+    #end if
+    --paradata-dir paradata
+&&
+mv record.json '$record' &&
+#if $write_markdown:
+    mv record.md '$markdown' &&
+#end if
+mv paradata/*_digital-convert.json '$paradata'
+    ]]></command>
+    <inputs>
+        <param name="document" type="data" format="pdf,docx,xlsx" label="Born-digital document"
+            help="A PDF with a text layer, a Word document (DOCX) or a spreadsheet (XLSX). For a collection, the tool runs once per document."/>
+        <param name="docx_page_breaks" type="select" label="Pages of a DOCX"
+            help="A DOCX has no fixed pages; this decides where a page ends. Ignored for PDF and XLSX.">
+            <option value="auto" selected="true">Explicit breaks, and Word's own rendered breaks where it saved them</option>
+            <option value="explicit">Explicit page breaks only</option>
+            <option value="none">The whole document as one page</option>
+        </param>
+        <param name="write_markdown" type="boolean" checked="true" label="Also write Markdown"
+            help="The record rendered as Markdown, one section per page, with layout cues as HTML comments."/>
+        <param name="baseline" type="data" format="json" optional="true" label="Document record to add to"
+            help="An ATRIUM document record from an earlier stage; its doc_id is kept."/>
+    </inputs>
+    <outputs>
+        <data name="record" format="json" label="${tool.name} on ${on_string}: document record"/>
+        <data name="markdown" format="markdown" label="${tool.name} on ${on_string}: Markdown">
+            <filter>write_markdown</filter>
+        </data>
+        <data name="paradata" format="json" label="${tool.name} on ${on_string}: paradata"/>
+    </outputs>
+    <tests>
+        <!-- A two-page PDF with a clean text layer. -->
+        <test expect_num_outputs="3">
+            <param name="document" value="minimal.pdf" ftype="pdf"/>
+            <output name="record" ftype="json">
+                <assert_contents>
+                    <has_text text="&quot;doc_id&quot;: &quot;minimal&quot;"/>
+                    <has_text text="&quot;origin&quot;: &quot;digital-born-pdf&quot;"/>
+                    <has_text text="&quot;program&quot;: &quot;digital-convert&quot;"/>
+                    <has_text text="&quot;text_layer&quot;: &quot;digital&quot;"/>
+                    <not_has_text text="&quot;needs_ocr&quot;: true"/>
+                </assert_contents>
+            </output>
+            <output name="markdown" ftype="markdown">
+                <assert_contents>
+                    <has_line line="# minimal"/>
+                    <has_line line="## Page 2"/>
+                    <has_text text="Excavation report, block one, line one."/>
+                </assert_contents>
+            </output>
+            <output name="paradata" ftype="json">
+                <assert_contents>
+                    <has_text text="&quot;program&quot;: &quot;digital-convert&quot;"/>
+                    <has_text text="&quot;tool_version&quot;: &quot;v@TOOL_VERSION@&quot;"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- A PDF whose later pages are images without text: those pages are flagged for OCR. -->
+        <test expect_num_outputs="2">
+            <param name="document" value="image_only.pdf" ftype="pdf"/>
+            <param name="write_markdown" value="false"/>
+            <output name="record" ftype="json">
+                <assert_contents>
+                    <has_text text="&quot;needs_ocr&quot;: true"/>
+                    <has_text text="no extractable text layer"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- A DOCX paged at its explicit breaks only. -->
+        <test expect_num_outputs="3">
+            <param name="document" value="rich.docx" ftype="docx"/>
+            <param name="docx_page_breaks" value="explicit"/>
+            <output name="record" ftype="json">
+                <assert_contents>
+                    <has_text text="&quot;origin&quot;: &quot;digital-born-docx&quot;"/>
+                    <has_text text="&quot;page&quot;: &quot;3&quot;"/>
+                    <not_has_text text="&quot;page&quot;: &quot;4&quot;"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- An XLSX: one page per sheet, one line per row. -->
+        <test expect_num_outputs="3">
+            <param name="document" value="finds.xlsx" ftype="xlsx"/>
+            <output name="record" ftype="json">
+                <assert_contents>
+                    <has_text text="&quot;origin&quot;: &quot;digital-born-xlsx&quot;"/>
+                    <has_text text="&quot;page&quot;: &quot;Nálezy&quot;"/>
+                    <has_text text="střep"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- A scan with an earlier OCR run's invisible text is not born-digital: exit 3. -->
+        <test expect_exit_code="3" expect_failure="true">
+            <param name="document" value="ocr_layer.pdf" ftype="pdf"/>
+            <assert_stderr>
+                <has_text text="ocr_text_layer"/>
+                <has_text text="send it to OCR"/>
+            </assert_stderr>
+        </test>
+    </tests>
+    <help><![CDATA[
+**What it does**
+
+Reads a born-digital document, a file that was written on a computer rather than scanned, and
+writes its text, pages, lines and tables as an ATRIUM document record. It runs the ATRIUM
+born-digital converter (`ufal/atrium-digital-convert`_), release @TOOL_VERSION@, with its light
+engine: no models and no network.
+
+**Input**
+
+- *PDF* with a text layer. Each page is checked: a page with no text, or with text that does not
+  decode, is flagged ``needs_ocr`` in the record, so that it can be sent to OCR.
+- *DOCX*: headings, paragraphs and tables. The pages follow the *Pages of a DOCX* setting.
+- *XLSX*: one page per sheet, one line per row.
+
+A PDF that already carries an OCR run's invisible text over page images is refused (exit 3): send it
+to OCR post-processing instead. A broken or encrypted file stops with exit 4.
+
+**Outputs**
+
+- *Document record* (JSON): the ATRIUM document record, with ``source``, ``pages`` (each with its
+  ``text_layer`` and a ``quality_band``), ``content``, ``lines`` and ``tables``.
+- *Markdown*: the record as Markdown, one ``## Page N`` section per page, with ``<!-- BBOX -->``
+  layout cues for PDF lines.
+- *Paradata* (JSON): the run's provenance, with the components and their licences.
+
+**Licence**
+
+The code is MIT; the paradata lists each component's licence.
+
+.. _`ufal/atrium-digital-convert`: https://github.com/ufal/atrium-digital-convert
+    ]]></help>
+    <citations>
+        <citation type="bibtex">@software{atrium_digital_convert,
+  author = {Lutsai, Kateryna and Novák, David and Straňák, Pavel},
+  title = {{ATRIUM's born-digital converter: PDF, DOCX, ODT, ODS, XLSX, RTF, DOC and XLS into atrium_document records, with a per-page assessment}},
+  version = {@TOOL_VERSION@},
+  year = {2026},
+  url = {https://github.com/ufal/atrium-digital-convert}
+}</citation>
+    </citations>
+</tool>

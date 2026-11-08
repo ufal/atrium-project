@@ -1,0 +1,173 @@
+{
+    "a_galaxy_workflow": "true",
+    "annotation": "Born-digital PDFs, DOCX and XLSX files to ATRIUM document records and Markdown (ATRIUM born-digital converter, no network), then the keywords of every document and page (ATRIUM keyword extraction, YAKE), added to the records. The pages flagged needs_ocr belong in the OCR route instead.",
+    "comments": [],
+    "creator": [
+        {
+            "class": "Organization",
+            "name": "ATRIUM project",
+            "url": "https://ufal.github.io/atrium-project/"
+        },
+        {
+            "class": "Person",
+            "name": "Kateryna Lutsai",
+            "identifier": "https://orcid.org/0009-0002-4773-2797"
+        }
+    ],
+    "format-version": "0.1",
+    "license": "MIT",
+    "name": "ATRIUM born-digital documents to keywords",
+    "release": "0.2.0",
+    "report": {
+        "markdown": "\n# Workflow Execution Report\n\n## Workflow Inputs\n```galaxy\ninvocation_inputs()\n```\n\n## Workflow Outputs\n```galaxy\ninvocation_outputs()\n```\n\n## Workflow\n```galaxy\nworkflow_display()\n```\n"
+    },
+    "steps": {
+        "0": {
+            "annotation": "A list of PDF (with a text layer), DOCX or XLSX files. The element names become the document ids.",
+            "content_id": null,
+            "errors": null,
+            "id": 0,
+            "input_connections": {},
+            "inputs": [
+                {
+                    "description": "A list of PDF (with a text layer), DOCX or XLSX files. The element names become the document ids.",
+                    "name": "Born-digital documents"
+                }
+            ],
+            "label": "Born-digital documents",
+            "name": "Input dataset collection",
+            "outputs": [],
+            "position": {
+                "left": 40,
+                "top": 120
+            },
+            "tool_id": null,
+            "tool_state": "{\"optional\": false, \"format\": [\"pdf\", \"docx\", \"xlsx\"], \"tag\": null, \"collection_type\": \"list\"}",
+            "tool_version": null,
+            "type": "data_collection_input",
+            "uuid": "8fe95c89-e813-577c-bdde-b55bb2ccc989",
+            "when": null,
+            "workflow_outputs": []
+        },
+        "1": {
+            "annotation": "Each document to an ATRIUM document record and Markdown; pages without a usable text layer are flagged for OCR.",
+            "content_id": "atrium_digital_convert",
+            "errors": null,
+            "id": 1,
+            "input_connections": {
+                "document": {
+                    "id": 0,
+                    "output_name": "output"
+                }
+            },
+            "inputs": [],
+            "label": "Convert",
+            "name": "ATRIUM born-digital converter",
+            "outputs": [
+                {
+                    "name": "record",
+                    "type": "json"
+                },
+                {
+                    "name": "markdown",
+                    "type": "markdown"
+                },
+                {
+                    "name": "paradata",
+                    "type": "json"
+                }
+            ],
+            "position": {
+                "left": 340,
+                "top": 180
+            },
+            "post_job_actions": {},
+            "tool_id": "atrium_digital_convert",
+            "tool_state": "{\"document\": {\"__class__\": \"ConnectedValue\"}, \"docx_page_breaks\": \"auto\", \"write_markdown\": true, \"baseline\": null, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "1.4.5-beta+galaxy0",
+            "type": "tool",
+            "uuid": "3985aac3-9f73-513d-9600-dec7540ee372",
+            "when": null,
+            "workflow_outputs": [
+                {
+                    "label": "Markdown",
+                    "output_name": "markdown",
+                    "uuid": "65386557-2ec1-52aa-9e56-e74b38267f4c"
+                }
+            ]
+        },
+        "2": {
+            "annotation": "YAKE on all records in one job, per document and per page; the keywords are added to the records.",
+            "content_id": "atrium_keyword_extract",
+            "errors": null,
+            "id": 2,
+            "input_connections": {
+                "documents": {
+                    "id": 1,
+                    "output_name": "record"
+                }
+            },
+            "inputs": [],
+            "label": "Find the keywords",
+            "name": "ATRIUM keyword extraction",
+            "outputs": [
+                {
+                    "name": "keywords",
+                    "type": "csv"
+                },
+                {
+                    "name": "document_keywords",
+                    "type": "input"
+                },
+                {
+                    "name": "page_keywords",
+                    "type": "input"
+                },
+                {
+                    "name": "records",
+                    "type": "input"
+                },
+                {
+                    "name": "paradata",
+                    "type": "json"
+                }
+            ],
+            "position": {
+                "left": 640,
+                "top": 120
+            },
+            "post_job_actions": {},
+            "tool_id": "atrium_keyword_extract",
+            "tool_state": "{\"documents\": {\"__class__\": \"ConnectedValue\"}, \"method\": {\"kind\": \"yake\", \"__current_case__\": 0}, \"num_keywords\": \"20\", \"max_words\": \"3\", \"lang\": \"cs\", \"per_page\": true, \"baselines\": null, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "1.6.5-beta+galaxy0",
+            "type": "tool",
+            "uuid": "01fef9a2-aa80-5568-98e1-ceaf1983f5dd",
+            "when": null,
+            "workflow_outputs": [
+                {
+                    "label": "Keywords",
+                    "output_name": "keywords",
+                    "uuid": "bd5ad7c7-33dd-521b-8d86-acd624b975bc"
+                },
+                {
+                    "label": "Keywords per page",
+                    "output_name": "page_keywords",
+                    "uuid": "2033da22-864b-5f2c-981d-4ec71db49a5c"
+                },
+                {
+                    "label": "Document records",
+                    "output_name": "records",
+                    "uuid": "a960e5e6-ba56-5f90-adf0-125c48fc5f56"
+                }
+            ]
+        }
+    },
+    "tags": [
+        "ATRIUM",
+        "born-digital",
+        "keywords",
+        "digital-humanities"
+    ],
+    "uuid": "11e6f10e-93df-5285-acd3-5f784ba953a0",
+    "version": 1
+}

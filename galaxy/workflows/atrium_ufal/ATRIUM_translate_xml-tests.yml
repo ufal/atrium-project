@@ -6,7 +6,7 @@
       elements:
         - class: File
           identifier: sample_amcr
-          path: ../tools/atrium_translator/test-data/sample_amcr.xml
+          path: ../../tools/atrium_translator/test-data/sample_amcr.xml
   outputs:
     Translated documents:
       element_tests:

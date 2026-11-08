@@ -1,0 +1,21 @@
+# Hugging Face models for the ATRIUM tools, one per line, tab-separated:
+#
+#   <value>	<name>	<repo_id>	<revision>	<path>
+#
+# value     a unique id, for example Qwen2.5-0.5B-060db64
+# name      what the tools' "Staged model" menu shows
+# repo_id   the model's id on the Hugging Face Hub; each tool lists only the model it uses:
+#             sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2   ATRIUM keyword extraction (KeyBERT)
+#             Qwen/Qwen2.5-0.5B                                              ATRIUM OCR line quality
+# revision  the Hub commit the files are from
+# path      the folder holding the model's files (config.json, model.safetensors, the tokenizer)
+#
+# The data manager "ATRIUM Hugging Face models" writes these lines. By hand, for example:
+#
+#   docker run --rm --user "$(id -u):0" -e HF_HOME=/tmp/hf -v /srv/atrium-hf-models:/models \
+#     ghcr.io/ufal/atrium-keyword-extract:1.6.5-beta python3 -c "from huggingface_hub import snapshot_download; \
+#     snapshot_download('Qwen/Qwen2.5-0.5B', revision='060db6499f32faf8b98477b0a26969ef7d8b9987', \
+#     local_dir='/models/Qwen2.5-0.5B-060db64', ignore_patterns=['onnx/*', 'openvino/*', '*.h5', '*.msgpack', '*.ot', 'pytorch_model.bin'])"
+#
+#Qwen2.5-0.5B-060db64	Qwen/Qwen2.5-0.5B (060db64)	Qwen/Qwen2.5-0.5B	060db6499f32faf8b98477b0a26969ef7d8b9987	/srv/atrium-hf-models/Qwen2.5-0.5B-060db64
+#paraphrase-multilingual-MiniLM-L12-v2-e8f8c21	paraphrase-multilingual-MiniLM-L12-v2 (e8f8c21)	sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2	e8f8c211226b894fcb81acc59f3b34ba3efd5f42	/srv/atrium-hf-models/paraphrase-multilingual-MiniLM-L12-v2-e8f8c21

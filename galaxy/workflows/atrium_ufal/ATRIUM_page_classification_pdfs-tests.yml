@@ -6,7 +6,7 @@
       elements:
         - class: File
           identifier: two_pages
-          path: ../tools/atrium_page_classification/test-data/two_pages.pdf
+          path: ../../tools/atrium_page_classification/test-data/two_pages.pdf
   outputs:
     Top-N tables:
       element_tests:

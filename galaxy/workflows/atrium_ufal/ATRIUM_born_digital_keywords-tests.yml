@@ -1,0 +1,29 @@
+- doc: A PDF and a DOCX; their records and Markdown, and the keywords added to the records. No network.
+  job:
+    Born-digital documents:
+      class: Collection
+      collection_type: list
+      elements:
+        - class: File
+          identifier: minimal
+          path: ../../tools/atrium_digital_convert/test-data/minimal.pdf
+        - class: File
+          identifier: rich
+          path: ../../tools/atrium_digital_convert/test-data/rich.docx
+  outputs:
+    Markdown:
+      element_tests:
+        minimal:
+          asserts:
+            has_line:
+              line: "# minimal"
+    Keywords:
+      asserts:
+        has_text:
+          text: "rich,"
+    Document records:
+      element_tests:
+        rich:
+          asserts:
+            has_text:
+              text: '"method": "yake"'
