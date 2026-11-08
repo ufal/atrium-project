@@ -22,8 +22,9 @@ extend-exclude = [
 # Same reasoning as the five tool repos, all of which declare this: pins the syntax
 # Ruff lints against to python:3.11-slim, which every image in the ecosystem ships
 # and every CI lane now runs (atrium-project#64). docs/templates/ruff.toml now
-# declares it too, as the floor every tool repo copies -- this repeats it here
-# because the hub root config does not extend that template.
+# declares it too, as the floor every tool repo copies. This file `extend`s that
+# template (above), so the line is redundant; it stays so the hub's floor is
+# visible here and survives the template ever changing its own.
 target-version = "py311"
 
 # NOTE: the isort `known-first-party` declaration for the canonical shared modules

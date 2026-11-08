@@ -793,6 +793,46 @@ jobs:
       # Scans the digest this job just pushed. Inside the publishing job it cannot race the push,
       # as scanning `:latest` from security.reusable.yml did (#18); that workflow keeps the weekly
       # `:latest` re-scan, for newly disclosed CVEs.
+      - name: Install Trivy from its container image
+        # Trivy's own image on ghcr.io, pinned by digest, instead of trivy-action's installer
+        # (aquasecurity/setup-trivy), which downloads the binary from GitHub's release storage. On
+        # 2026-11-08 every github.com/<owner>/<repo>/releases/download/… URL answered 504 for hours
+        # while ghcr.io answered, and that installer failed two releases and a `test` build. The
+        # Trivy steps below pass `skip-setup-trivy: true` and take this binary from PATH; their
+        # `version:` must equal this tag (tests/test_trivy_db_retry.py). The same step is in
+        # docker-tool.reusable.yml and security.reusable.yml. History:
+        # docs/decisions/docker-tool-reusable.md#release-download-outage
+        env:
+          TRIVY_IMAGE: ghcr.io/aquasecurity/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
+        run: |
+          set -euo pipefail
+          want="${TRIVY_IMAGE#*:}"   # 0.76.1@sha256:…
+          want="${want%%@*}"         # 0.76.1
+          # Three tries, 10 s and 20 s apart: a registry hiccup costs a pause, not the release.
+          for attempt in 1 2 3; do
+            if docker pull --quiet "$TRIVY_IMAGE"; then
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "::error::could not pull $TRIVY_IMAGE in 3 tries"
+              exit 1
+            fi
+            sleep $((attempt * 10))
+          done
+          # The image's ENTRYPOINT is this static binary (Trivy's Dockerfile: COPY … /usr/local/bin/trivy).
+          bin_dir="$RUNNER_TEMP/trivy-bin"
+          mkdir -p "$bin_dir"
+          cid="$(docker create "$TRIVY_IMAGE")"
+          docker cp "$cid:/usr/local/bin/trivy" "$bin_dir/trivy"
+          docker rm "$cid" > /dev/null
+          reported="$("$bin_dir/trivy" --version)"
+          echo "$reported"
+          if ! grep -qx "Version: $want" <<< "$reported"; then
+            echo "::error::expected Trivy $want from $TRIVY_IMAGE"
+            exit 1
+          fi
+          echo "$bin_dir" >> "$GITHUB_PATH"
+
       - name: Trivy scan the published digest
         id: scan
         # SHA-pinned (#18) — this is the action whose tags were force-pushed to
@@ -800,9 +840,11 @@ jobs:
         # the full note. Dereferenced commit of the annotated tag v0.36.0.
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
-          # Trivy itself: the action installs 0.70.0 by default, and that Trivy logged "Version
-          # 0.76.1 of Trivy is now available" on every scan (2026-11-02).
+          # Trivy itself comes from the install step above (skip-setup-trivy). `version` is then
+          # unused by the action and stays as the record: it must equal the image tag there. (The
+          # action's own default, 0.70.0, logged "Version 0.76.1 of Trivy is now available".)
           version: v0.76.1
+          skip-setup-trivy: true   # the binary comes from the install step above
           image-ref: ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}@${{ steps.build.outputs.digest }}
           format: sarif
           output: trivy-results.sarif
@@ -812,18 +854,19 @@ jobs:
           # build, even for a blocked release; the blocking decision is the narrower step below.
           exit-code: "0"
         # Report-only, so a failure here is Trivy failing to run: its DB download (mirror.gcr.io
-        # answered 404 on 2026-10-26) or its own download (exit 6, 2026-11-04). After a pause, the
-        # retry runs once from ghcr.io and is not continue-on-error, so a lasting outage still
-        # fails. The gate below reads the DB this step or the retry left on disk. History:
-        # docs/decisions/docker-tool-reusable.md#trivy-db-retry
+        # answered 404 on 2026-10-26) or a registry error pulling the image. (Its own download,
+        # exit 6 on 2026-11-04, is gone: the binary now comes from ghcr.io, step above.) After a
+        # pause, the retry runs once from ghcr.io and is not continue-on-error, so a lasting
+        # outage still fails. The gate below reads the DB this step or the retry left on disk.
+        # History: docs/decisions/docker-tool-reusable.md#trivy-db-retry
         # ci-optional: after a 30 s pause, the retry runs once from ghcr.io, without continue-on-error
         continue-on-error: true
 
       - name: Wait before retrying Trivy
-        # The first scan can also fail on Trivy's own download, before any DB: on 2026-11-04 the
-        # binary download exited 6 (host not resolved) on the scan and again on the retry one
-        # second later (translator v1.7.3-beta, run 41809705322); the next job installed the same
-        # Trivy 13 s after. A short pause lets a transient DNS or network fault pass. History:
+        # A short pause lets a transient DNS or network fault pass before the retry. It was added
+        # when Trivy's own download failed twice in one second (exit 6, translator v1.7.3-beta,
+        # 2026-11-04, run 41809705322); that download is gone (the install step above), but a DB
+        # or image pull can fail the same way. History:
         # docs/decisions/docker-tool-reusable.md#trivy-db-retry
         if: steps.scan.outcome == 'failure'
         run: sleep 30
@@ -836,6 +879,7 @@ jobs:
           TRIVY_JAVA_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-java-db:1
         with:
           version: v0.76.1   # as on the first scan
+          skip-setup-trivy: true   # the binary comes from the install step above
           image-ref: ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}@${{ steps.build.outputs.digest }}
           format: sarif
           output: trivy-results.sarif
@@ -919,6 +963,7 @@ jobs:
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
           version: v0.76.1   # as on the first scan
+          skip-setup-trivy: true   # the binary comes from the install step above
           image-ref: ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}@${{ steps.build.outputs.digest }}
           format: table   # human-readable in the log, so the failure explains itself
           severity: CRITICAL
@@ -936,6 +981,7 @@ jobs:
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
           version: v0.76.1   # as on the first scan
+          skip-setup-trivy: true   # the binary comes from the install step above
           image-ref: ghcr.io/${{ inputs.image-name }}${{ matrix.target != 'base' && format('-{0}', matrix.target) || '' }}@${{ steps.build.outputs.digest }}
           format: table   # human-readable in the log, so the failure explains itself
           severity: CRITICAL

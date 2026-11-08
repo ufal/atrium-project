@@ -4,7 +4,12 @@ Hub-only, like tests/test_atrium_service.py: every tool repo runs ``atrium_opena
 through para-drift and ``tests/test_openapi_contract.py`` against its own services; this file
 holds the rules themselves to account, including the ones a self-test cannot reach — a real
 oasdiff binary (when one is installed), a fake one for the exit-code contract, the release
-listing's failure modes and the command line.
+listing's failure modes, the asset's two routes and the command line.
+
+The two routes (2026-11-08): from about 09:10 UTC every ``releases/download`` URL answered 504
+while the API asset endpoint answered, and the API Meta-Contract job of four tools failed on that
+alone. ``baseline`` now asks the API endpoint first (token unredirected), then the download URL
+(no token), retrying each after a 5xx; the tests below hold each half of that.
 
 Each rule was checked against the failure it exists for on 2026-09-28 (oasdiff v1.32.1):
 without the raised severities, a removed optional response property, a renamed operationId and a
@@ -232,9 +237,11 @@ def test_real_oasdiff_with_the_raised_rules_catches_what_its_defaults_miss():
 # ── the baseline ───────────────────────────────────────────────────────────────────────────
 
 
-def _release(tag, asset=True, **flags):
-    assets = [{"name": "openapi.json", "browser_download_url": f"https://dl.invalid/{tag}"}] if asset else []
-    return {"tag_name": tag, "draft": False, "prerelease": False, "assets": assets, **flags}
+def _release(tag, asset=True, api=True, **flags):
+    row = {"name": "openapi.json", "browser_download_url": f"https://dl.invalid/{tag}"}
+    if api:
+        row["url"] = f"https://api.invalid/assets/{tag}"
+    return {"tag_name": tag, "draft": False, "prerelease": False, "assets": [row] if asset else [], **flags}
 
 
 class _Response(io.BytesIO):
@@ -245,7 +252,17 @@ class _Response(io.BytesIO):
         return False
 
 
-def _opener(listing, specs, fail=None):
+def _opener(listing, specs, fail=None, answers=None, calls=None, token=None):
+    """A fake ``urlopen`` serving the release listing and both asset routes.
+
+    ``answers`` scripts statuses per URL, consumed one per request (a status other than 200
+    raises ``HTTPError``; an exhausted script serves 200). ``calls`` collects every asset URL
+    requested. Every asset request is checked for the token rule of ``_fetch_asset``: the API
+    route carries ``token`` only as an unredirected header (never copied to the signed redirect
+    target), the download route carries no token at all.
+    """
+    script = {url: list(codes) for url, codes in (answers or {}).items()}
+
     def opener(request):
         url = request.full_url
         if fail and fail in url:
@@ -253,11 +270,26 @@ def _opener(listing, specs, fail=None):
         if "/releases?" in url:
             page = int(url.rsplit("page=", 1)[1])
             return _Response(json.dumps(listing if page == 1 else []).encode())
-        tag = url.rsplit("/", 1)[1]
-        assert "Authorization" not in request.headers, "the asset download must not carry the token"
-        return _Response(json.dumps(specs[tag]).encode())
+        if calls is not None:
+            calls.append(url)
+        assert request.get_header("Accept") == "application/octet-stream"
+        assert "Authorization" not in request.headers, "a token must never follow the redirect"
+        if url.startswith("https://api.invalid/assets/"):
+            expected = f"Bearer {token}" if token else None
+            assert request.unredirected_hdrs.get("Authorization") == expected
+        else:
+            assert not request.has_header("Authorization"), "the download URL must not carry the token"
+        queue = script.get(url)
+        status = queue.pop(0) if queue else 200
+        if status != 200:
+            raise urllib.error.HTTPError(url, status, "scripted", {}, None)
+        return _Response(json.dumps(specs[url.rsplit("/", 1)[1]]).encode())
 
     return opener
+
+
+_API = "https://api.invalid/assets/v1.9.0"
+_DL = "https://dl.invalid/v1.9.0"
 
 
 def test_the_baseline_is_the_highest_version_below_the_tag():
@@ -276,17 +308,67 @@ def test_the_baseline_is_the_highest_version_below_the_tag():
     assert select_baseline(listing, "v1.7.5-beta") is None
 
 
-def test_baseline_fetches_the_asset_without_the_token():
-    specs = {"v1.9.0": _spec("1.9.0")}
-    tag, spec = atrium_openapi.baseline(
-        "ufal/atrium-test", "v2.0.0", token="t0ken", opener=_opener([_release("v1.9.0")], specs)
+def _baseline(answers=None, token="t0ken", **release):
+    calls, pauses = [], []
+    opener = _opener(
+        [_release("v1.9.0", **release)], {"v1.9.0": _spec("1.9.0")}, answers=answers, calls=calls, token=token
     )
+    result = atrium_openapi.baseline("ufal/atrium-test", "v2.0.0", token=token, opener=opener, sleep=pauses.append)
+    return result, calls, pauses
+
+
+def test_baseline_fetches_the_asset_through_the_api_with_the_token_unredirected():
+    (tag, spec), calls, pauses = _baseline()
     assert tag == "v1.9.0" and spec["info"]["version"] == "1.9.0"
+    assert calls == [_API] and pauses == [], "the download URL is not needed when the API answers"
+
+
+def test_baseline_works_without_a_token():
+    (tag, _), calls, _ = _baseline(token=None)
+    assert tag == "v1.9.0" and calls == [_API], "a public repository's asset needs no token on either route"
+
+
+def test_a_504_on_the_api_url_falls_back_to_the_download_url():
+    """The 2026-11-08 outage, the other way round: either route alone is enough."""
+    (tag, _), calls, pauses = _baseline(answers={_API: [504, 504, 504]})
+    assert tag == "v1.9.0"
+    assert calls == [_API] * 3 + [_DL], "three attempts on the API URL, then the download URL"
+    assert pauses == list(atrium_openapi.RETRY_PAUSES)
+
+
+def test_a_504_on_the_download_url_does_not_matter_when_the_api_answers():
+    """2026-11-08: every releases/download URL answered 504 while the API endpoint answered."""
+    (tag, _), calls, _ = _baseline(answers={_DL: [504, 504, 504]})
+    assert tag == "v1.9.0" and calls == [_API]
+
+
+def test_a_transient_error_is_retried_before_falling_back():
+    (tag, _), calls, pauses = _baseline(answers={_API: [504]})
+    assert tag == "v1.9.0" and calls == [_API, _API] and pauses == [2]
+
+
+def test_a_4xx_is_an_answer_and_is_not_retried():
+    (tag, _), calls, pauses = _baseline(answers={_API: [404]})
+    assert tag == "v1.9.0" and calls == [_API, _DL] and pauses == []
+
+
+def test_both_routes_failing_fails_the_gate_naming_both_urls():
+    with pytest.raises(OpenAPIError) as raised:
+        _baseline(answers={_API: [504] * 3, _DL: [504] * 3})
+    message = str(raised.value)
+    assert _API in message and _DL in message and "v1.9.0" in message, message
+
+
+def test_a_row_without_an_api_url_uses_the_download_url():
+    (tag, _), calls, _ = _baseline(api=False)
+    assert tag == "v1.9.0" and calls == [_DL]
 
 
 def test_an_api_error_fails_the_gate_rather_than_passing_as_a_bootstrap():
+    pauses = []
     with pytest.raises(OpenAPIError, match="failed"):
-        atrium_openapi.baseline("ufal/atrium-test", None, opener=_opener([], {}, fail="/releases"))
+        atrium_openapi.baseline("ufal/atrium-test", None, opener=_opener([], {}, fail="/releases"), sleep=pauses.append)
+    assert pauses == list(atrium_openapi.RETRY_PAUSES), "a network error on the listing is retried too"
     assert atrium_openapi.baseline("ufal/atrium-test", None, opener=_opener([], {})) == (None, None)
 
 

@@ -729,8 +729,12 @@ collects test-coverage reports.
 
 * **Trivy** scans every published image by digest — CRITICAL and HIGH, fixed-only, report-only —
   and fails a release on a fixable CRITICAL, on tag pushes only. The action is pinned to a commit
-  SHA because its tags were compromised in March 2026 (GHSA-69fq-xp46-6x23).
-* **CodeQL** analyses Python with `build-mode: none`.
+  SHA because its tags were compromised in March 2026 (GHSA-69fq-xp46-6x23). Trivy itself comes
+  from its official image on ghcr.io, pinned by digest, not from GitHub's release downloads, which
+  answered 504 for hours on 2026-11-08 and stopped two releases.
+* **CodeQL** analyses Python with `build-mode: none`. Its bundle still comes from GitHub's release
+  downloads (nothing else works outside GitHub's default setup), so a run failed by such an outage
+  is simply re-run; CodeQL gates no release.
 * Both upload **SARIF** to GitHub code scanning.
 * **Codecov** receives coverage only when a token is configured. What fails a build is each
   repository's own `.coveragerc` `fail_under` floor.

@@ -53,9 +53,9 @@ carrying *"Draft shell — issue #57, round 2 (2026-09-18)"* and shipping its
 called *"no new information available"*.
 
 Since then: `f47bf54` removed the 25 mirror pages and the `- Tools:` nav block, and round 3
-wrote ten real tool pages in their place. The site is now **23 pages** — 13 hub pages plus five
-each for `page-classification` and `translator` — and the built `site/` carries no `ASSEMBLER`
-marker and no draft-shell admonition under `tools/`. See [`INDEX.md`](INDEX.md) for the
+wrote ten real tool pages in their place. The site then had **23 pages** — 13 hub pages plus five
+each for `page-classification` and `translator` (35 on 2026-11-08, after the hub pages grew) — and the
+built `site/` carries no `ASSEMBLER` marker and no draft-shell admonition under `tools/`. See [`INDEX.md`](INDEX.md) for the
 page-by-page state.
 
 ### The fences are gone — this section is history
@@ -260,7 +260,7 @@ up within 24 h. Never commit to it by hand.
 
 ```bash
 pip install -r tools/docs/requirements.txt
-mkdocs build --strict          # docs_site/ -> site/, 30 pages
+mkdocs build --strict          # docs_site/ -> site/, 35 pages (2026-11-08)
 ```
 
 `site/` is gitignored. `mkdocs.yml` sets `strict: true` **and** `validation.links.anchors: warn` —

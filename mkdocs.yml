@@ -41,8 +41,7 @@ copyright: >-
   Developed by UFAL, Charles University · funded by ATRIUM · MIT licensed
 
 docs_dir: docs_site
-site_dir: site        # add to .gitignore -- the hub's current .gitignore has no
-                      # build-output rule; it was written for tool caches only
+site_dir: site        # gitignored (`/site/` in .gitignore): the build output is never committed
 
 theme:
   name: material

@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 19 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81, #83). The pilot set (final 11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the pilot set is unchanged). Hub `v1` = `da7a066`, which all six tools call by commit; `main` = `test` = `f42018e` (11-06). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-08 (round 2), at the end of the file (this file is not in date order): #83, CI on the pushed round, the inputs, two releases prepared._
+> _Hub/planning repo. 19 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81, #83). The pilot set (final 11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the pilot set is unchanged). Hub `v1` = `da7a066`, which all six tools call by commit; `main` = `test` = `f42018e` (11-06). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-08 (round 3), at the end of the file (this file is not in date order): #83, CI made independent of GitHub's release downloads; a pre-pilot review of the six tools; page-classification v1.14.2-beta and digital-convert v1.4.7-beta prepared._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0411.md` (prior: `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -3659,3 +3659,46 @@ candidates are six `.3` releases carrying #6's step 1.
   2. re-run the red API Meta-Contract runs once GitHub's release downloads work;
   3. tag digital-convert `v1.4.6-beta` and page-classification `v1.14.1-beta`;
   4. then keyword-extract re-vendors the list v2.
+
+## 2026-11-08 (round 3) — #83: CI independent of GitHub's release downloads; the pre-pilot review
+
+* **Read:** CI on the round-2 heads. Every red run is the same outage: from about 09:10 UTC every
+  `github.com/<owner>/<repo>/releases/download/…` URL answered 504.
+  * API Meta-Contract in page-classification, ocr-postprocess, digital-convert and keyword-extract: the previous
+    release's `openapi.json`.
+  * ocr-postprocess CodeQL: the CodeQL bundle 2.27.4.
+  * Trivy's binary install: the page-classification `v1.14.0-beta` and `v1.14.1-beta` releases, digital-convert
+    `v1.4.6-beta`, and keyword-extract's Docker run on `test`. The three tags have no release.
+
+  The API's asset endpoint and ghcr.io answered throughout. From here, the download routes answered again at 10:44.
+* **Changed in the hub (not pushed):**
+  * `atrium_openapi.py` fetches the baseline through the API asset endpoint first, with the token unredirected, and
+    the download URL second. Each URL is retried twice after a 5xx or a network error. New tests and a self-test case.
+    Live: both repositories' baselines fetched, and their digests match the releases' `.sha256` assets.
+  * `docker-tool.reusable.yml` and `security.reusable.yml` install Trivy from its digest-pinned ghcr.io image. All six
+    trivy-action steps skip the action's installer. `tests/test_trivy_db_retry.py` holds the shape.
+  * CodeQL is unchanged, on purpose. codeql-action v4 ignores `tools: toolcache` outside GitHub's default setup, and
+    CodeQL gates nothing, so a re-run is the remedy. Recorded in `docs/decisions/docker-tool-reusable.md`
+    (`#release-download-outage`).
+  * The pre-commit pins (the hub and its template) moved to the tools' versions: pre-commit-hooks v6.0.0 and ruff
+    v0.15.18 (`ruff-check`).
+  * Stale comments and page counts fixed (`ruff.toml`, `mkdocs.yml`, `PAGES_SETUP.md`), and two headings.
+  * The Pages site's Trivy/CodeQL note updated.
+* **The review (all six tools):**
+  * The four new decision CLIs are offline only, by design, so there is no API path to diverge from.
+  * Fixed:
+    * an inverted or out-of-range `--accept-at`/`--review-below` failed mid-run, after a paid answer;
+    * page-classification's `--topn` gave a traceback instead of exit 2;
+    * digital-convert's paradata recorded an unclamped `--doc-pages`;
+    * ocr-postprocess's `decide_lines --config` ignored `LANGID_CONFIG`;
+    * keyword-extract's type-list pin claimed a release that never carried it. It now adopts the list v2 from
+      `427b690`, with an unchanged text view.
+  * The decision CLIs are now documented, with docstrings. Three usage tables were corrected (ocr-postprocess,
+    translator, nlp-enrich).
+* **Releases prepared:** page-classification `v1.14.2-beta`, digital-convert `v1.4.7-beta`. The tags are never moved.
+* **Yours:**
+  1. push the hub and move `v1`;
+  2. unpack the six tool archives;
+  3. from the hub, run `pin_hub_reusables.py --sha …`, then `revendor_shared.sh`, then `--check`;
+  4. one commit per tool, then push;
+  5. once green, `tag_release.py v1.14.2-beta` (page-classification) and `v1.4.7-beta` (digital-convert).

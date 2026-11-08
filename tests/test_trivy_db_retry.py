@@ -21,8 +21,15 @@ in both reusables:
      gate is `continue-on-error`, the retry with the same inputs is not, and a fixable CRITICAL
      fails both.
 
+  4. Trivy itself comes from its container image on ghcr.io, not from GitHub's release storage. On
+     2026-11-08 every `releases/download` URL answered 504 for hours, and trivy-action's installer
+     (`aquasecurity/setup-trivy`) failed two releases and a `test` build. Each scan job runs one
+     "Install Trivy from its container image" step before its first Trivy step, with the same text
+     in both reusables and the image pinned by digest; every trivy-action step passes
+     `skip-setup-trivy: true`, and its `version:` equals the image tag, so a bump moves both.
+
 Parsed, not grepped: the comments above these steps quote the incident.
-History: docs/decisions/docker-tool-reusable.md#trivy-db-retry
+History: docs/decisions/docker-tool-reusable.md#trivy-db-retry and #release-download-outage
 
 Run: pytest tests/test_trivy_db_retry.py
 """
@@ -125,3 +132,52 @@ def test_the_release_gate_stays_blocking():
     )
     assert not retry.get("continue-on-error"), "the retry must block: a fixable CRITICAL fails both"
     assert gate.get("continue-on-error") is True, "the first gate may fail into its retry"
+
+
+# ── 4. Trivy from its container image, not from GitHub's release storage ─────────────────────
+
+_INSTALL = "Install Trivy from its container image"
+_IMAGE_RE = re.compile(r"^ghcr\.io/aquasecurity/trivy:(?P<tag>\d+\.\d+\.\d+)@sha256:[0-9a-f]{64}$")
+
+
+def _install_step(workflow: str, job: str) -> tuple[int, dict]:
+    found = [(i, s) for i, s in enumerate(_steps(workflow, job)) if s.get("name") == _INSTALL]
+    assert len(found) == 1, f"{workflow}: exactly one '{_INSTALL}' step in job {job}"
+    return found[0]
+
+
+@pytest.mark.parametrize(("workflow", "job"), _SCANS)
+def test_trivy_is_installed_from_its_image_before_the_first_scan(workflow, job):
+    index, step = _install_step(workflow, job)
+    first, _ = _trivy_steps(workflow, job)[0]
+    assert index < first, f"{workflow}: the install step must run before the first Trivy step"
+    assert "uses" not in step and not step.get("continue-on-error"), (
+        f"{workflow}: the install is a plain run step, and a failed install must fail the job"
+    )
+    assert _IMAGE_RE.match(step["env"]["TRIVY_IMAGE"]), (
+        f"{workflow}: TRIVY_IMAGE must be ghcr.io/aquasecurity/trivy:<x.y.z>@sha256:<digest>, pinned by digest"
+    )
+    assert "/usr/local/bin/trivy" in step["run"] and "GITHUB_PATH" in step["run"]
+
+
+def test_the_install_step_is_the_same_in_both_reusables():
+    (_, a), (_, b) = (_install_step(w, j) for w, j in _SCANS)
+    assert a["env"] == b["env"] and a["run"] == b["run"], (
+        "docker-tool.reusable.yml and security.reusable.yml must install the same Trivy the same way"
+    )
+
+
+@pytest.mark.parametrize(("workflow", "job"), _SCANS)
+def test_every_trivy_step_skips_the_release_download_and_names_the_image_tag(workflow, job):
+    _, install = _install_step(workflow, job)
+    tag = _IMAGE_RE.match(install["env"]["TRIVY_IMAGE"])["tag"]
+    steps = _trivy_steps(workflow, job)
+    assert steps, f"{workflow}: no Trivy step found"
+    for _, step in steps:
+        assert step["with"].get("skip-setup-trivy") is True, (
+            f"{workflow}: '{step.get('name')}' would download Trivy from GitHub's release storage again"
+        )
+        assert str(step["with"].get("version", "")).lstrip("v") == tag, (
+            f"{workflow}: '{step.get('name')}' records version {step['with'].get('version')!r}, "
+            f"but the installed image is {tag}"
+        )

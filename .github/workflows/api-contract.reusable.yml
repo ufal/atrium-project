@@ -144,7 +144,9 @@ jobs:
       - name: Compare with the latest release's openapi.json
         # The vendored atrium_openapi.py is stdlib only, so nothing is installed. baseline: the
         # highest release carrying openapi.json (none → the bootstrap, which passes; an API
-        # error fails). compare: a removed reason code always fails; any other breaking change
+        # error fails), fetched through the API asset endpoint first and the download URL second,
+        # each retried, since releases/download answered 504 for hours on 2026-11-08
+        # (docs/decisions/docker-tool-reusable.md#release-download-outage). compare: a removed reason code always fails; any other breaking change
         # fails unless para_config.txt's major version is above the baseline's. The release
         # gate in release.yml runs the same two commands on the stamped spec.
         if: steps.adopted.outputs.run == 'true'

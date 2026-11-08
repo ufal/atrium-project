@@ -308,7 +308,7 @@ repo carries a ~12-line caller. Scope boundary per §5.H / §5.M.
 
 ---
 
-# Appendix — subprocess → in-process refactors (status)
+## Appendix — subprocess → in-process refactors (status)
 
 Executed across the ecosystem; the only remaining item is nlp C4:
 

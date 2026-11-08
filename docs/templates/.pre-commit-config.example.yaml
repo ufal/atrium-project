@@ -9,7 +9,7 @@
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0          # PARAM: pre-commit autoupdate to pin latest
+    rev: v6.0.0          # PARAM: pre-commit autoupdate to pin latest
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -18,9 +18,9 @@ repos:
         args: ["--maxkb=1024"]   # keep model/data blobs out of git
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.0          # PARAM: pre-commit autoupdate
+    rev: v0.15.18        # PARAM: pre-commit autoupdate; the tools' CI installs ruff==0.15.18
     hooks:
-      - id: ruff          # lint (reads ./ruff.toml)
+      - id: ruff-check    # lint (reads ./ruff.toml); ruff-pre-commit renamed `ruff` to `ruff-check`
       - id: ruff-format   # optional formatter; drop if you don't want auto-format
 
   # Shell repos only (nlp-enrich api_*.sh / api_util/*.sh; alto setup_api_server.sh):

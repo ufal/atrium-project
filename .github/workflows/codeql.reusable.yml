@@ -53,6 +53,10 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
 
+      # Downloads the action's linked CodeQL bundle from GitHub's release storage unless the runner
+      # image already has that version; `tools: toolcache` cannot avoid it outside default setup.
+      # A run failed by a release-download outage is re-run (CodeQL gates nothing). Why:
+      # docs/decisions/docker-tool-reusable.md#release-download-outage
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:

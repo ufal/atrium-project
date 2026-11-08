@@ -564,6 +564,58 @@ job installed the same Trivy 13 s later. A guarded `sleep 30` now sits between e
 retry, in both reusables, so a transient DNS or network fault can pass; the test checks that the step between
 them only pauses. It reaches a tool at its next pin sweep.
 
+### Release download outage
+
+Added 2026-11-08 ([#83](https://github.com/ufal/atrium-project/issues/83), round 3), on the new step "Install Trivy
+from its container image" here and in `security.reusable.yml`.
+
+From about 09:10 UTC on 2026-11-08, every `github.com/<owner>/<repo>/releases/download/…` URL answered 504 for
+hours, while `api.github.com` and `ghcr.io` answered normally. Three things in the ecosystem download from that
+route, and all three failed:
+
+| What failed                                                                                                                                       | What it downloads from `releases/download`                           | Now                                                   |
+|---------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|-------------------------------------------------------|
+| Trivy's install in this job: page-classification `v1.14.0-beta` and `v1.14.1-beta`, digital-convert `v1.4.6-beta`, keyword-extract's `test` build | the Trivy binary (`trivy-action` → `aquasecurity/setup-trivy`)       | from Trivy's image on ghcr.io                         |
+| API Meta-Contract and the release gate's baseline, four tools                                                                                     | the previous release's `openapi.json` (`atrium_openapi.py baseline`) | the API asset endpoint first, the download URL second |
+| CodeQL, ocr-postprocess                                                                                                                           | the CodeQL bundle (`codeql-action/init`)                             | unchanged, see below                                  |
+
+`setup-trivy`'s log showed only `found version: 0.76.1` and then exit 1: the tag lookup on github.com worked and the
+binary download did not. The image was built and pushed under its immutable tag but never promoted, and no release
+was created. Tags are never moved, so those versions are lost: the releases moved to page-classification
+`v1.14.2-beta` and digital-convert `v1.4.7-beta`.
+
+**Trivy.** Each scan job now pulls `ghcr.io/aquasecurity/trivy:<version>@sha256:<digest>`, Trivy's official image
+pinned by digest, with three tries. It copies the static binary out of it (`/usr/local/bin/trivy`, Trivy's
+Dockerfile) into `$RUNNER_TEMP/trivy-bin` and puts that on `PATH`. The step fails unless `trivy --version` names the
+tag. Every `trivy-action` step passes `skip-setup-trivy: true`. Its `version:` input is then unused, and stays as the
+record of the version. The DB already came from a registry, so the [DB retry](#trivy-db-retry) is unchanged.
+`tests/test_trivy_db_retry.py` holds four rules:
+- the install step comes before each job's first Trivy step;
+- it is the same in both reusables;
+- the image is pinned by digest;
+- every Trivy step skips the installer and names the image's tag.
+
+To bump Trivy, change the image reference (its tag and its index digest, read from
+`https://ghcr.io/v2/aquasecurity/trivy/manifests/<tag>`) and every `version:` together.
+
+**The OpenAPI baseline.** `atrium_openapi.py` (hub canonical, vendored into every tool) fetches the asset through
+`api.github.com/…/releases/assets/<id>` with `Accept: application/octet-stream` first. The token travels as an
+unredirected header, so it never reaches the signed storage URL the endpoint redirects to. The public download URL,
+without a token, comes second. Each URL is retried twice after a 5xx or a network error. Either route alone is now
+enough. `tests/test_atrium_openapi.py` and the module's `--selftest` hold the order and the token rule.
+
+**CodeQL stays exposed, on purpose.** codeql-action's `tools: toolcache` would use the runner image's CodeQL
+(2.27.3 on 11-08) instead of downloading the action's linked bundle (2.27.4). But codeql-action v4 honours that
+value only for `dynamic` workflows, GitHub's default setup. In a workflow triggered by a push or a schedule, it logs
+"Ignoring 'tools: toolcache' because the workflow was not triggered dynamically" and downloads anyway
+(`src/setup-codeql.ts`, checked on 11-08). The remaining options are:
+- pin `tools:` to the runner's bundle version, which freezes CodeQL and needs a hand bump whenever the runner image
+  moves;
+- run `init` twice.
+
+Neither is worth it: CodeQL gates no release and publishes nothing. A run that fails on the download is re-run once
+GitHub's release storage answers again.
+
 ### The CVE release gate
 
 Above "Fail the release on fixable CRITICAL vulnerabilities" (#18, 2026-07-31).
