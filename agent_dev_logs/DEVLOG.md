@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 19 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81, #83). The pilot set (final 11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the pilot set is unchanged). Hub `v1` = `da7a066`, which all six tools call by commit; `main` = `test` = `f42018e` (11-06). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-07, at the end of the file (this file is not in date order): #66, the Galaxy hand-off for all six tools._
+> _Hub/planning repo. 19 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81, #83). The pilot set (final 11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the pilot set is unchanged). Hub `v1` = `da7a066`, which all six tools call by commit; `main` = `test` = `f42018e` (11-06). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-08, at the end of the file (this file is not in date order): #83, the children's decision-model questions redefined._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0411.md` (prior: `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -3605,3 +3605,22 @@ candidates are six `.3` releases carrying #6's step 1.
   - page-classification: the batch image still on `entrypoint.py`.
 - **Yours:** push the hub; attach the DARIAH archive to #66 with the comment drafted in chat.
 - Not pushed: files delivered as per-repo zips.
+
+## 2026-11-08 — #83: the children's questions redefined; two shared-component rows
+
+* **Asked (K4TEL, in session):**
+  * page-classification, image only: which processors a page goes to (HTR, table/form extraction, graphics
+    extraction, each separately), its defects, and a damage score;
+  * ocr-postprocess, text only: the text's quality from the rules' degradation options, with a score;
+  * digital-convert and keyword-extract: the document type from the archive system's list, still under question.
+* **Decided in session:**
+  * 4 processor tags (OCR, HTR, tables, graphics); a stamp goes with tables;
+  * yes/no defects, plus paper, content and overall damage scores;
+  * on ocr-postprocess, both the quality questions on every line and the category on S1–S5;
+  * one shared type list.
+* **Written here (not pushed):** `docs/shared_components.md`, rows for `decision_client.py` and
+  `decisions/document_type.v1.json`; `plans/83.plan.md` and `digests/83.digest.md`.
+* **In the four tools (not pushed):** page-classification B3 v2, B4, triage and `degrade_pages.py` (`v1.14.0-beta`);
+  ocr-postprocess `--decide`; digital-convert's list v1; keyword-extract `--doc-type`. Each tool's suite passed.
+* **Yours:** unpack the per-repo archives and push; tag page-classification `v1.14.0-beta`; the comments for #83 and
+  the four children, delivered in chat.
