@@ -1,0 +1,9 @@
+<tables>
+    <!-- Hugging Face models staged by the data manager "ATRIUM Hugging Face models", for the ATRIUM tools
+         that would otherwise download them in every job (keyword extraction's KeyBERT model, the OCR line
+         classifier's Qwen2.5-0.5B). path: the folder the tool loads the model from. -->
+    <table name="atrium_hf_models" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, name, repo_id, revision, path</columns>
+        <file path="tool-data/atrium_hf_models.loc"/>
+    </table>
+</tables>

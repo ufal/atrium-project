@@ -1,0 +1,97 @@
+<tool id="data_manager_atrium_hf_models" name="ATRIUM Hugging Face models" tool_type="manage_data" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.0">
+    <description>stages the Hugging Face models of the ATRIUM tools on the server</description>
+    <macros>
+        <!-- The release of ufal/atrium-keyword-extract whose image downloads the models (it has
+             huggingface_hub); the same as the keyword-extraction tool's. -->
+        <token name="@TOOL_VERSION@">1.6.5-beta</token>
+        <token name="@VERSION_SUFFIX@">0</token>
+    </macros>
+    <requirements>
+        <container type="docker">ghcr.io/ufal/atrium-keyword-extract:@TOOL_VERSION@</container>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+export HF_HOME="\${_GALAXY_JOB_TMP_DIR:-\$PWD/tmp}/hf" &&
+mkdir -p "\$HF_HOME" '$out_file.extra_files_path' &&
+python3 '$stage' '$out_file' '$out_file.extra_files_path' '$model' '$value' '$name'
+    ]]></command>
+    <configfiles>
+        <configfile name="stage"><![CDATA[
+import json
+import re
+import shutil
+import sys
+from pathlib import Path
+
+from huggingface_hub import snapshot_download
+
+out_file, extra_files, model, value, name = sys.argv[1:6]
+repo_id, revision = model.split("@", 1)
+# The PyTorch weights in safetensors, the configs and the tokenizer; not the copies for other
+# runtimes (ONNX, OpenVINO, TensorFlow, Flax, Rust) nor the pickled duplicate of the weights.
+ignore = ["onnx/*", "openvino/*", "*.h5", "*.msgpack", "*.ot", "pytorch_model.bin", "*.onnx"]
+folder = Path(extra_files) / "model"
+snapshot_download(repo_id=repo_id, revision=revision, local_dir=str(folder), ignore_patterns=ignore)
+shutil.rmtree(folder / ".cache", ignore_errors=True)
+if not (folder / "config.json").is_file():
+    sys.exit(f"{repo_id}@{revision}: no config.json was downloaded")
+short = repo_id.rsplit("/", 1)[-1]
+value = re.sub(r"[^\w.\-]", "_", value.strip() or f"{short}-{revision[:7]}")
+name = name.strip() or f"{short} ({revision[:7]})"
+entry = {"value": value, "name": name, "repo_id": repo_id, "revision": revision, "path": "model"}
+with open(out_file, "w", encoding="utf-8") as handle:
+    json.dump({"data_tables": {"atrium_hf_models": [entry]}}, handle)
+size = sum(p.stat().st_size for p in folder.rglob("*") if p.is_file())
+print(json.dumps(entry), f"{size / 1e6:.0f} MB")
+]]></configfile>
+    </configfiles>
+    <inputs>
+        <param name="model" type="select" label="Model to stage">
+            <option value="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2@e8f8c211226b894fcb81acc59f3b34ba3efd5f42" selected="true">paraphrase-multilingual-MiniLM-L12-v2: KeyBERT in ATRIUM keyword extraction (about 0.5 GB)</option>
+            <option value="Qwen/Qwen2.5-0.5B@060db6499f32faf8b98477b0a26969ef7d8b9987">Qwen2.5-0.5B: ATRIUM OCR line quality (about 1 GB)</option>
+        </param>
+        <param name="value" type="text" value="" label="Id of the entry"
+            help="Empty: the model's name and the first seven characters of its revision, for example Qwen2.5-0.5B-060db64."/>
+        <param name="name" type="text" value="" label="Name shown in the tools"/>
+    </inputs>
+    <outputs>
+        <data name="out_file" format="data_manager_json"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="model" value="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2@e8f8c211226b894fcb81acc59f3b34ba3efd5f42"/>
+            <output name="out_file">
+                <assert_contents>
+                    <has_text text="atrium_hf_models"/>
+                    <has_text text="&quot;value&quot;: &quot;paraphrase-multilingual-MiniLM-L12-v2-e8f8c21&quot;"/>
+                    <has_text text="&quot;repo_id&quot;: &quot;sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2&quot;"/>
+                    <has_text text="&quot;path&quot;: &quot;model&quot;"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+Downloads a model from the Hugging Face Hub once, at a pinned revision, into a folder that the
+ATRIUM tools read offline. Without it, every job of those tools downloads the model again.
+
+- ``sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2``: KeyBERT, in *ATRIUM keyword
+  extraction*.
+- ``Qwen/Qwen2.5-0.5B``: the perplexity model of *ATRIUM OCR line quality*.
+
+Each entry of the ``atrium_hf_models`` data table is one model folder; each tool lists only the
+entries of its own model. Only the safetensors weights, the configs and the tokenizer are kept.
+
+The tools run in containers: the destination that runs them must mount the data manager's data
+path (``galaxy_data_manager_data_path``) into the container, read-only.
+
+Both models are Apache-2.0.
+    ]]></help>
+    <citations>
+        <citation type="bibtex">@software{atrium_keyword_extract,
+  author = {Lutsai, Kateryna and Spáčil, David and Novák, David and Straňák, Pavel},
+  title = {{ATRIUM's keyword extractor: statistical (KeyBERT, YAKE, KER) and vocabulary-controlled keywords from text-containing documents}},
+  version = {@TOOL_VERSION@},
+  year = {2026},
+  url = {https://github.com/ufal/atrium-keyword-extract}
+}</citation>
+    </citations>
+</tool>
