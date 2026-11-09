@@ -3715,3 +3715,33 @@ candidates are six `.3` releases carrying #6's step 1.
 * **keyword-extract#2:** David Spáčil's review (PR #4) adopted locally, with the four pinned tests moved. Detail in
   keyword-extract's dev log.
 * Not pushed.
+
+## 2026-11-09 — #83: form and content, by what each tool can see
+
+* **Asked (K4TEL):** AMČR-TEATER terms split into those about a document's form and those about its content, never
+  mixed. digital-convert gets images and may not get text; keyword-extract gets text only, so it works on content
+  only; ocr-postprocess gets text only; page-classification images only. The digests, plans and question sets are to
+  suit a historical documentary archive.
+* **Found:**
+  * AMČR's form lists (`dokument_typ` and the other `dokument_*`, `jazyk`) are already out of the keyword
+    vocabulary; no TEATER facet is about form, but 22 TEATER terms in content facets name a kind of record and
+    reached keyword-extract's decision tree;
+  * digital-convert could send the text layer (`--with-text`); keyword-extract asked `dokument_typ` from OCR text;
+    page-classification's Track 2 plan had a linked-text block and non-visual facets; two of ocr-postprocess's
+    factors asked about the page.
+* **Decided in session:** withhold the form-like terms from the decision tree; Track 2 keeps form and visibly
+  depicted objects (Artefact, Material, Feature); the written genres are asked of a document from its first page
+  images, a page gets its medium and picture type.
+* **Written here (not pushed):**
+  * `plans/83.plan.md`: the section "Form and content" (the table by tool, the form terms, the genres, the depicted
+    objects, cross-checks never inputs, gold by the split); the children's rows; the client row; questions 3 and 4;
+    out of scope and refresh conditions;
+  * `digests/83.digest.md`;
+  * `docs/shared_components.md`: the list's row removed (no consumer until Track 2 vendors it); the client's role
+    names the three CLIs.
+* **In the tools (not pushed):** digital-convert's list v3 and image-only CLI; keyword-extract without `--doc-type`
+  and with `FORM_TERMS`; ocr-postprocess's quality set v2; page-classification's Track 2 plan. Each tool's suite
+  passed: digital-convert 1,034, keyword-extract 1,062, ocr-postprocess 2,396.
+* **Not posted:** the 11-08 comment on #83 still says keyword-extract asks the document type from text; a short
+  correction can be drafted on request.
+* Committed locally, not pushed; files delivered as per-repo archives.
