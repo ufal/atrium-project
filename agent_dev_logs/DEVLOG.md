@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 19 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81, #83). The pilot set (final 11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the pilot set is unchanged). Hub `v1` = `da7a066`, which all six tools call by commit; `main` = `test` = `f42018e` (11-06). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-08 (round 3), at the end of the file (this file is not in date order): #83, CI made independent of GitHub's release downloads; a pre-pilot review of the six tools; page-classification v1.14.2-beta and digital-convert v1.4.7-beta prepared._
+> _Hub/planning repo. 19 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81, #83). The pilot set (final 11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the pilot set is unchanged). Hub `v1` = `da7a066`, which all six tools call by commit; `main` = `test` = `f42018e` (11-06). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-09, at the end of the file (this file is not in date order): #78, what LINDAT's terms say about outputs; nlp-enrich#7, the controlled keywords in place of a domain NER model; keyword-extract#2, David Spáčil's review adopted._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0411.md` (prior: `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -3702,3 +3702,16 @@ candidates are six `.3` releases carrying #6's step 1.
   3. from the hub, run `pin_hub_reusables.py --sha …`, then `revendor_shared.sh`, then `--check`;
   4. one commit per tool, then push;
   5. once green, `tag_release.py v1.14.2-beta` (page-classification) and `v1.4.7-beta` (digital-convert).
+
+## 2026-11-09 — #78: LINDAT's terms on outputs; nlp-enrich#7 and keyword-extract#2
+
+* **#78 (asked, K4TEL):** the output licence of Translation, UDPipe and NameTag; if only non-commercial, motyc
+  might skip the letter. **Found:** LINDAT's Terms of Use forbid publishing or deriving from anything obtained from
+  the services, unless a specific contract overrides that; Translation points to them, and UDPipe and NameTag are
+  "freely available for testing" under the models' CC BY-NC-SA, with ÚFAL free to reuse the data sent. So the
+  letter stays. `digests/78.digest.md`; a comment for motyc drafted, not posted.
+* **nlp-enrich#7:** a comment drafted: keyword-extract's controlled keywords cover what the domain NameTag model was
+  for. Detail in nlp-enrich's dev log.
+* **keyword-extract#2:** David Spáčil's review (PR #4) adopted locally, with the four pinned tests moved. Detail in
+  keyword-extract's dev log.
+* Not pushed.

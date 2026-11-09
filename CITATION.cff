@@ -1,6 +1,19 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "ATRIUM project hub: shared contracts, schemas and CI for the ATRIUM tools, including the atrium_document record schema"
+title: "ATRIUM project hub: shared schemas, contracts and continuous integration for the ATRIUM text-processing tools, including the atrium_document record schema"
+abstract: >-
+  The planning and documentation hub of ÚFAL's tools for the ATRIUM project: the issues and the
+  project board, the documentation site, the code shared by the tools, and the CI the tools call.
+  ATRIUM is an EU project (https://atrium-research.eu). Its goal (Advancing fronTier Research In the
+  arts and hUManities) is to bridge leading research infrastructures in arts and humanities (DARIAH),
+  archaeology (ARIADNE), language technologies (CLARIN) and open scholarly communication (OPERAS).
+keywords:
+  - "ATRIUM"
+  - "JSON Schema"
+  - "document record"
+  - "continuous integration"
+  - "digital humanities"
+  - "archaeology"
 authors:
   - family-names: "Lutsai"
     given-names: "Kateryna"
