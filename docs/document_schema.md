@@ -179,10 +179,12 @@ classification and line quality stay "only in the record" (the AMČR storage con
 three-format decision). nlp-enrich's opt-in projection (atrium-project#70 item 2,
 `api_util/teitok_project.py`; `run_pipeline.py --teitok-enrichment`, `teitok_enrichment` on its
 `/enrich`, `POST /project_record`) writes the page categories as `pb/@ana` plus a `classDecl`
-taxonomy (`@corresp` = the `atrium_vocab` concept URI) and llm-enrich's TEATER/AMČR categories and
-keywords, and nlp-enrich's own keywords per document and per page, as
-`profileDesc/textClass/keywords`, each pointing at its `<pb>`s. It reads the record and writes only
-the TEITOK header and `pb/@ana`; it never writes line quality, and it changes no block owner.
+taxonomy (`@corresp` = the `atrium_vocab` concept URI), and keyword-extract's TEATER/AMČR categories,
+its controlled keywords and its statistical keywords per document and per page (#73), as
+`profileDesc/textClass/keywords`, each pointing at its `<pb>`s. Each page's lists also get an id
+that its `<pb>` points to (`@teater`, `@kwcs`, `@kwen`, `@kwstat`), so a TEITOK project can search
+them as page attributes (ufal/flexiconv#1). It reads the record and writes only the TEITOK header
+and attributes of `<pb>`; it never writes line quality, and it changes no block owner.
 
 Two things a reader of both files should know. `lines[].teitok_ref` is granted to nlp-enrich
 but **not written** by it today (its hook's `include_lines` branch is a placeholder; the

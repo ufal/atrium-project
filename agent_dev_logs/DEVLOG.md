@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 19 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81, #83). The pilot set (final 11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the pilot set is unchanged). Hub `v1` = `da7a066`, which all six tools call by commit; `main` = `test` = `f42018e` (11-06). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-09, at the end of the file (this file is not in date order): #78, what LINDAT's terms say about outputs; nlp-enrich#7, the controlled keywords in place of a domain NER model; keyword-extract#2, David Spáčil's review adopted._
+> _Hub/planning repo. 19 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81, #83). The pilot set (final 11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the pilot set is unchanged). Hub `v1` = `da7a066`, which all six tools call by commit; `main` = `test` = `f42018e` (11-06). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-10, at the end of the file (this file is not in date order): the tools aligned with flexiconv v0.3.12 and the maintainer's answer on ufal/flexiconv#1 (#6)._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0411.md` (prior: `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -3745,3 +3745,21 @@ candidates are six `.3` releases carrying #6's step 1.
 * **Not posted:** the 11-08 comment on #83 still says keyword-extract asks the document type from text; a short
   correction can be drafted on request.
 * Committed locally, not pushed; files delivered as per-repo archives.
+
+## 2026-11-10 — The tools aligned with flexiconv v0.3.12 (ufal/flexiconv#1; #6)
+
+* **Asked (K4TEL):** align the tools with the flexiconv maintainer's 11-09 answer on ufal/flexiconv#1.
+* **Upstream, checked:** v0.3.12 (`5cfc483`) declares MIT in its package metadata and has a CITATION.cff;
+  `load_teitok` reads `<dtok>`; v0.3.12 writes the same TEITOK as v0.3.11 on nine inputs. Relative boxes
+  (`pct:x,y,w,h`) and the ALTO page size are on flexiconv's `main` (`ffee214`), not in a release.
+* **In the tools (not pushed):**
+  * **nlp-enrich:** the v0.3.12 pin; the GPL notes gone; the round-trip test reads the words of a multi-word token
+    and checks flexiconv's CoNLL-U export; the projection gives each page's lists an id its `<pb>` points to
+    (`teater`, `kwcs`, `kwen`, `kwstat`), with the XSD, the validator and a TEITOK settings example; the readers
+    and the core gate accept `pct:` boxes, and the writer keeps pixels.
+  * **digital-convert:** the pin re-vendored; `ADOPTED["commit"]` waits for the nlp-enrich commit.
+  * **keyword-extract:** one line in `docs/how-it-works.md`.
+* **Here:** `docs_site/external-tools.md` (v0.3.12); `docs/document_schema.md` (the page-list pointers, and the
+  keyword owners since #73); #6's plan and digest (the flexiconv item has nothing left).
+* **Not posted:** a reply on ufal/flexiconv#1, drafted in chat.
+* Files delivered as per-repo archives.

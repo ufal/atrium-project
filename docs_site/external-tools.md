@@ -757,7 +757,7 @@ every published image. It replaced a separate SBOM job that could race the image
 vLLM and Ollama (servers for running large language models locally) belong to keyword-extract (the controlled kind);
 alto-tools (ALTO utilities, vendored as `alto_tools.py`) to ocr-postprocess. flexiconv (UFAL's
 converter of PDF, DOCX, PAGE XML, hOCR, … into TEITOK; MIT, optional, pinned at
-v0.3.11) belongs to nlp-enrich, whose `api_flexiconv.sh` runs it on the command line only — no
+v0.3.12) belongs to nlp-enrich, whose `api_flexiconv.sh` runs it on the command line only — no
 service image contains it; digital-convert vendors the same adapter.
 
 ## The ATRIUM project itself
