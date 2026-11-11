@@ -1,6 +1,6 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 19 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81, #83). The pilot set (final 11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the pilot set is unchanged). Hub `v1` = `da7a066`, which all six tools call by commit; `main` = `test` = `f42018e` (11-06). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-10, at the end of the file (this file is not in date order): the tools aligned with flexiconv v0.3.12 and the maintainer's answer on ufal/flexiconv#1 (#6)._
-> _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_0411.md` (prior: `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
+> _Hub/planning repo. 19 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81, #83). The starting set of the pilot phase (11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the starting set is unchanged). Hub `v1` = `da7a066`, which all six tools call by commit; `main` = `test` = `f42018e` (11-06). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-11, at the end of the file (this file is not in date order): the output contract of the meeting of 11 November, the logs of all seven repositories aligned to it (doc-schema-v2, issue to be opened)._
+> _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_1111.md` (prior: `project_state_0411.md`, `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
 - **#4 SSH Open Marketplace records** — Opened by stranak: create SSHOMP records for every tool in our workflows (UDPipe ✅,
@@ -3763,3 +3763,48 @@ candidates are six `.3` releases carrying #6's step 1.
   keyword owners since #73); #6's plan and digest (the flexiconv item has nothing left).
 * **Not posted:** a reply on ufal/flexiconv#1, drafted in chat.
 * Files delivered as per-repo archives.
+
+## 2026-11-11 — The output contract of the meeting; doc-schema-v2 planned; #13's corrections
+
+* **Asked (K4TEL):** align the digests and plans of all seven repositories with ARÚP's output contract, read at the
+  meeting of 11 November (the .docx with David Novák's comments), and design the strategy; then suggest minimal
+  edits for the CAA paper from the Overleaf zip of the day. Her points:
+  * digital-convert reads any input (PDF, DOCX, images, CSV), records text and visual cues (JSON or Markdown,
+    interchangeable), and calls no other tool;
+  * page classification runs with the external ATR, which includes HTR for readable text; identifiers, technical
+    notes and signatures come out as gibberish; ATR boxes are blocks, not words;
+  * ocr-postprocess follows ATR and must read its JSON blocks in reading order; then nlp-enrich and keyword-extract;
+    the translator stays outside, on the metadata;
+  * SHA-512; the document's licence only in the RO-Crate, component terms in each step's paradata;
+    digital-convert's quality verdicts aligned or renamed; one line representation across the tools;
+  * the pilot is a phase, not the destination.
+* **Decided in session:** plans only this round; the consolidated schema issue is not opened yet (placeholder
+  `doc-schema-v2`); page classification runs on every PDF and image, bundled with the ATR call; digital-convert's
+  verdicts become a separate marker set (`decode`), `categ` stays ocr-postprocess's.
+* **Found:**
+  * the record's `lines[]` has four writers, two numberings (0 and 1), two `categ` vocabularies and two
+    `quality_score` meanings; only digital-convert writes boxes; nlp-enrich's line fields are never written;
+  * every service identifies files by `ni:///sha-256` (`atrium_rocrate.file_entity`); results name unstored files;
+  * no repository reads docproc; digital-convert reads no images or CSV and its `/describe` calls two services;
+  * the translator service loads the AMČR field list at startup only;
+  * 29 active scheduled workflows across the seven repositories (the two GPU lanes' schedules are commented out);
+  * the manuscript of 11-11 already carries C1–C3, C5, C6, C8, C9; the stamps (C4, l.330 and Figure 2), "fixed"
+    (C7) and the "no licence is asserted" sentence remain.
+* **Written here (not pushed):**
+  * **`digests/project_state_1111.md`** (new): the meeting, the order of the steps and variants A–E, the ATR
+    answers, the three licence layers, the paradata per step, the issue map;
+  * **`plans/doc-schema-v2.plan.md`, `digests/doc-schema-v2.digest.md`** (new): the consolidated issue — the v2
+    record and its common line shape, paradata v3, tasks per repository, the proof gate, questions Q1–Q7, the issue
+    body draft;
+  * **`plans/13.corrections.md`** (new), `13.*`: C1–C9 against the source, items 1–10 with starting wordings,
+    Figures 1 and 2 as draw.io lists;
+  * **`6.*`** (D2, three layers), **`77.*`** (the pilot phase), **`78.*`** (postponed), **`83.*`** (parked),
+    **`66.*`** (parked beyond 09-30), **`72.*`** (can close), **`67.*`**, **`81.*`** (the cron inventory and
+    proposal), **`40.*`** (squash, no direct pushes, `doc-schema-v*` tags), **`79.*`** (requests via David Novák;
+    the pages describing the old order), **`22.*`** (`forms` removed).
+* **In the tools (not pushed):** each has `plans/doc-schema-v2.plan.md` (its slice) and a DEVLOG entry; the parked
+  children (digital-convert#8, ocr-postprocess#10, keyword-extract#3, page-classification#58) and the issues with
+  superseded statements (digital-convert#5, ocr-postprocess#4, keyword-extract#2) are refreshed.
+* **Not posted:** the doc-schema-v2 issue body (in its plan); #72's closing line (in its plan). The questions wait
+  for the next meeting.
+* Plans only; no code changed. Files delivered as full files.
