@@ -1,23 +1,19 @@
-"""The frozen top-level contract: what `required` now accepts, and what it refuses.
+"""The record schema 2.0 floor: what it accepts, and what it refuses (doc-schema-v2, atrium-project#84).
 
-WHY THIS EXISTS. atrium-project#54 froze `atrium_document.schema.json` at 1.0 by tightening a
-top-level `required` that was `["schema_version", "doc_id"]` against seventeen declared
-properties -- so a stage that ran, wrote nothing, and emitted a two-key file passed every gate in
-the ecosystem.
+WHY THIS EXISTS. A validator change is safe only if you can name every producer it must keep
+accepting, and that list is not derivable from the schema: it lives in the call sites of six
+repositories. This file is that enumeration for record schema 2.0, executable. The POSITIVE cases
+are the shapes the 2.0 producers write — the record builder (ocr-postprocess) from the stored
+docproc of each producer, the enrichment steps, a standalone run with no seed (rule 3) — and the
+NEGATIVE cases are the defects the floor exists to catch, including everything 2.0 removed.
 
-Tightening a validator is only safe if you can name every producer it must keep accepting, and
-the answer is not derivable from the schema: it lives in the call sites across five repos, each
-of which emits a different subset of blocks. This file is that enumeration, executable. The
-POSITIVE cases are the record shapes production code actually writes, traced from those call
-sites; the NEGATIVE cases are the four defect classes the freeze exists to catch.
+Read it as the answer to "may I change the schema?": you may, if every positive case here still
+passes and you have moved a producer to the negative list on purpose.
 
-Read it as the answer to "may I add a key to `required`?" -- you may, if every positive case here
-still passes, and you have added the producer you are about to exclude to the negative list on
-purpose. A change that reds a positive case is a behaviour change to a shipped tool, not a
-schema tidy-up.
-
-The E2E's half of the same gate (validating REAL five-stage output) lives in
-tools/e2e/e2e_assert.py; the committed worked example is pinned by tests/test_fixture_schema.py.
+The 1.x shapes are kept as data in tests/document_shapes_v1.py: tests/test_schema_freeze_records.py
+checks them against the frozen `doc-schema-v1` copy and their migration to 2.0. The committed
+worked example is pinned by tests/test_fixture_schema.py; the E2E's half of the gate lives in
+tools/e2e/e2e_assert.py.
 
 Run: pytest tests/test_document_required.py
 """
@@ -61,314 +57,103 @@ def _is_valid(record: Dict[str, Any]) -> bool:
         return False
 
 
-#: A run's stable id as atrium_paradata mints it (atrium-project#71).
-_RUN_UUID = "urn:uuid:4f1c2e3a-5b6d-4e7f-8a9b-0c1d2e3f4a5b"
+#: The three keys `DocumentRecord.to_dict()` emits on every path.
+_FLOOR: Dict[str, Any] = {"schema_version": "2.0", "record_type": "atrium-document", "doc_id": "CTX000000001"}
+
+_SEED_SOURCE = {"sha512": "a" * 128, "filename": "CTX000000001.pdf", "media_type": "application/pdf"}
 
 
-def _stamp(*names: str, run_uuid: str = "") -> Dict[str, Any]:
-    """An `assembled` block stamped for `names`, shaped exactly as `_stamp()` writes it; with
-    `run_uuid` as a run that carries one (atrium-project#71) writes it."""
-    stamp = {"program": "p", "run_id": "260909-000000"}
-    if run_uuid:
-        stamp["run_uuid"] = run_uuid
-    stamp.update({"paradata_ref": run_uuid, "updated_at": "2026-09-09T00:00:00+00:00"})
-    return {
-        "blocks": {n: dict(stamp) for n in names},
-        "had_baseline": False,
-        "note": "Blocks reflect CONTRIBUTED steps only; a block is absent until its tool has run.",
+def _page(index: int, status: str = "text", **extra: Any) -> Dict[str, Any]:
+    row = {
+        "page": str(index),
+        "page_index": index,
+        "canvas": {"width": 595.0, "height": 842.0, "unit": "pt"},
+        "content_status": status,
     }
+    row.update(extra)
+    return row
 
 
-def _handoff_stamp() -> Dict[str, Any]:
-    """`assembled` after ocr-postprocess's OCR hand-off (atrium-digital-convert#4 W4): its `pages`
-    and `lines` stamps carry `contribution: "ocr-handoff"`; `content` is still the converter's."""
-    assembled = _stamp("pages", "lines", "content", run_uuid=_RUN_UUID)
-    for name in ("pages", "lines"):
-        assembled["blocks"][name].update(program="ocr-postprocess", contribution="ocr-handoff")
-    assembled["blocks"]["content"]["program"] = "digital-convert"
-    return assembled
-
-
-def _unstamped() -> Dict[str, Any]:
-    """`assembled` as a record that only ever had set_source() carries it: no `blocks` key at all
-    (checked against a real alto-postprocess page_split/text_split record)."""
-    return {
-        "had_baseline": False,
-        "note": "Blocks reflect CONTRIBUTED steps only; a block is absent until its tool has run.",
+def _line(page: str, line: int, text: str, source: str, precision: str, **extra: Any) -> Dict[str, Any]:
+    row: Dict[str, Any] = {
+        "page": page,
+        "line": line,
+        "text": text,
+        "block": f"p{page}-b0",
+        "text_source": source,
+        "bbox_precision": precision,
     }
+    if precision != "absent":
+        row["bbox"] = [72.0, 100.0 + 14 * line, 400.0, 112.0 + 14 * line]
+    row.update(extra)
+    return row
 
 
-#: The five keys `DocumentRecord.to_dict()` emits on every path, with no branch that can skip one.
-#: `schema_version`/`record_type` are setdefault in __init__, `doc_id` is assigned there
-#: unconditionally, and `to_dict()` itself always assigns `provenance` and `assembled`.
-_FLOOR: Dict[str, Any] = {
-    "schema_version": "1.0",
-    "record_type": "atrium-document",
-    "doc_id": "CTX000000001",
-    "provenance": {
-        "license": "CC BY-NC 4.0",
-        "license_url": "https://x",
-        "license_basis": "calculated",
-        "contributors": [],
-    },
-}
-
-
-# ── the shapes production code actually writes ────────────────────────────────
-#
-# Each entry names the call site it was traced from, as <repo>/<file>::<function> (line numbers
-# drifted with every edit of the tools; the function does not). If you change one of those call
-# sites so it emits a different shape, change it here in the same commit -- that is the whole
-# point of the file.
-VALID_SHAPES = {
-    # alto-postprocess/page_split.py::main -- the scanned originator. set_source() deliberately does
-    # NOT stamp, so this record has no `assembled.blocks` key at all. It is the reason the schema
-    # says "source OR a stamped block" rather than "a stamped block".
-    "alto page_split (source only, no stamp)": {
+# ── the shapes 2.0 producers write ───────────────────────────────────────────
+VALID_SHAPES: Dict[str, Dict[str, Any]] = {
+    # The AMČR seed (atrium-project#71, H1): identity only. Valid input to every tool.
+    "AMČR seed": {**_FLOOR, "source": dict(_SEED_SOURCE)},
+    # The record builder on the ATR's docproc of a scanned document: block-level boxes, lines
+    # derived from blocks; one page empty (D29, rule 7).
+    "record builder, scanned (ATR docproc)": {
         **_FLOOR,
-        "source": {
-            "sha256": "a" * 64,
-            "filename": "CTX000000001.alto.xml",
-            "media_type": "application/alto+xml",
-            "page_count": 1,
-            "origin": "ABBYY-ALTO",
+        "source": {**_SEED_SOURCE, "language": ["cs"], "page_count": 2, "origin": "atr"},
+        "pages": [_page(1, quality_score=0.81, quality_band="Clear"), _page(2, "empty")],
+        "content": {"text": "Hradiště u Horní Mezi"},
+        "lines": [
+            _line("1", 1, "Hradiště u Horní Mezi", "atr", "derived", categ="Clear", quality_score=0.81, lang="cs")
+        ],
+        "quality_summary": {
+            "pages": {"total": 2, "empty": 1, "scored": 1, "mean": 0.81, "median": 0.81, "min": 0.81, "max": 0.81},
+            "lines": {"total": 1, "by_categ": {"Clear": 1}},
         },
-        "assembled": _unstamped(),
     },
-    # alto-postprocess/page_split.py::main again, for --method json-keys: the same call with the
-    # JSON media type and the `ocr:generic` origin.
-    "alto page_split, json-keys (source only, no stamp)": {
+    # The same on digital-convert's docproc of a born-digital PDF: measured line boxes.
+    "record builder, born-digital (digital-convert docproc)": {
         **_FLOOR,
-        "source": {
-            "sha256": "d" * 64,
-            "filename": "CTX000000015.json",
-            "media_type": "application/json",
-            "page_count": 2,
-            "origin": "ocr:generic",
-        },
-        "assembled": _unstamped(),
+        "source": {**_SEED_SOURCE, "page_count": 1, "origin": "digital"},
+        "pages": [_page(1, canvas={"width": 612.0, "height": 792.0, "unit": "pt", "user_unit": 1})],
+        "content": {"text": "Zpráva o výzkumu"},
+        "lines": [
+            _line("1", 1, "Zpráva o výzkumu", "text-layer", "measured", categ="Clear", quality_score=0.97, lang="cs")
+        ],
     },
-    # alto-postprocess/text_split.py::main -- the --method text-lines originator (atrium-alto-
-    # postprocess#31): source only, like page_split; `page_count` only for formats with real pages.
-    "alto text_split (source only, no stamp)": {
+    # A mixed document (H6, D21): exact text-layer lines on a good page linked to the ATR block that
+    # contains them; ATR lines on the page that needed ATR; a figure's OCR child block.
+    "record builder, mixed (both producers' lines)": {
         **_FLOOR,
-        "source": {
-            "sha256": "e" * 64,
-            "filename": "CTX000000012.pdf",
-            "media_type": "application/pdf",
-            "page_count": 1,
-            "origin": "ocr:pdf-text-layer",
-        },
-        "assembled": _unstamped(),
+        "source": {**_SEED_SOURCE, "page_count": 2, "origin": "atr"},
+        "pages": [_page(1), _page(2)],
+        "content": {"text": "Úvod\nPlán sondy 1"},
+        "lines": [
+            _line("1", 1, "Úvod", "text-layer", "measured", categ="Clear"),
+            _line("2", 1, "Plán sondy 1", "atr", "derived", block="p2-b3.t0", categ="Noisy"),
+        ],
     },
-    # alto-postprocess/text_split.py::main for a born-digital input: a `digital-born-*` origin
-    # hands the positional blocks to digital-convert, so every later stage of alto-postprocess
-    # holds them back and this `source` stays the record's only contribution from that repo.
-    "alto text_split, born-digital (source only, no positional block)": {
+    # The one-off PCSS converter's docproc, an original that could not be matched: px canvas.
+    "record builder, legacy PCSS (px)": {
         **_FLOOR,
-        "source": {
-            "sha256": "f" * 64,
-            "filename": "CTX000000010.docx",
-            "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "origin": "digital-born-docx",
-        },
-        "assembled": _unstamped(),
+        "source": {**_SEED_SOURCE, "origin": "legacy"},
+        "pages": [_page(1, canvas={"width": 2480, "height": 3508, "unit": "px"})],
+        "lines": [_line("1", 1, "Nálezová zpráva", "legacy", "measured", categ="Clear")],
     },
-    # The AMČR-seeded path (atrium-project#71), as it leaves the reading stage:
-    # alto-postprocess/document_hook.py::write_document_block on a seed. The seed's doc_id (an AMČR
-    # file id), sha512, file name and media type are kept; the stage added the origin (its sha256
-    # is of the ALTO it read, not of the original, so it is dropped) and stamped its run_uuid on
-    # its blocks and its contributor entry.
-    "AMČR seed after the reading stage (sha512 kept, run_uuid stamped)": {
+    # Rule 3: a standalone run of the builder, no seed: its own part only, no source.
+    "record builder standalone (no seed)": {
         **_FLOOR,
-        "doc_id": "AMCR-F-CTX000000001",
-        "source": {
-            "sha512": "c" * 128,
-            "filename": "CTX000000001.pdf",
-            "media_type": "application/pdf",
-            "origin": "ABBYY-ALTO",
-        },
-        "provenance": {
-            **_FLOOR["provenance"],
-            "contributors": [
-                {
-                    "program": "alto-postprocess",
-                    "run_id": "261001-000000",
-                    "run_uuid": _RUN_UUID,
-                    "paradata_ref": _RUN_UUID,
-                    "blocks": "pages,lines",
-                    "at": "2026-10-01T00:00:00+00:00",
-                }
-            ],
-        },
-        "assembled": _stamp("pages", "lines", run_uuid=_RUN_UUID),
-        "pages": [{"page": "1", "quality_band": "Clear"}],
-        "lines": [{"page": "1", "line": 0, "text": "Náčrt sondy.", "categ": "Clear"}],
+        "pages": [_page(1)],
+        "lines": [_line("1", 1, "Text", "atr", "absent")],
+        "content": {"text": "Text"},
     },
-    # alto-postprocess/extract_ALTO_2_TXT.py::main (and its four twins: extract_LytRdr_ALTO_2_TXT,
-    # extract_LLM_ALTO_2_TXT, extract_JSON_2_TXT and, for --method text-lines, extract_TEXT_2_TXT)
-    "alto extract (pages + content)": {
-        **_FLOOR,
-        "assembled": _stamp("pages", "content"),
-        "pages": [{"page": "1"}],
-        "content": {"text": "Náčrt sondy."},
-    },
-    # alto-postprocess/classify_TEXT.py::process_document
-    "alto classify_TEXT (lines)": {
-        **_FLOOR,
-        "assembled": _stamp("lines"),
-        "lines": [{"page": "1", "line": 0, "text": "Náčrt sondy.", "categ": "Clear"}],
-    },
-    # alto-postprocess/aggregate_STAT.py::main
-    "alto aggregate_STAT (pages)": {
-        **_FLOOR,
-        "assembled": _stamp("pages"),
-        "pages": [{"page": "1", "quality_score": 0.9, "quality_band": "Clear"}],
-    },
-    # page-classification/atrium_document_adapter.py::_write_one -- stage 1 of the scanned pipeline, and
-    # it never calls set_source(). This is why `source` is NOT in the floor.
+    # page-classification standalone, keyed by the physical page (H2, H3).
     "page-classification standalone": {
         **_FLOOR,
-        "assembled": _stamp("page_categories", "pages", "derived_from"),
-        "derived_from": {"classification": "CATEG/CTX000000001.csv"},
         "page_categories": {"1": "TEXT"},
-        "pages": [{"page": "1", "category": "TEXT", "category_confidence": 0.98}],
+        "pages": [{"page_index": 1, "category": "TEXT", "category_confidence": 0.97}],
     },
-    # translator/main.py::process_single_file -- add_derived_from() is unconditional inside the `with`, so a
-    # standalone translator record is seven keys, not six.
-    "translator standalone": {
-        **_FLOOR,
-        "assembled": _stamp("translations", "derived_from"),
-        "derived_from": {"translated_xml": "TRANSLATED/CTX000000001.alto.xml"},
-        "translations": {"source_lang": "cs", "target_lang": "en", "backend": "lindat"},
-    },
-    # nlp-enrich/api_util/document_hook.py::run_document_hook -- both merges are unconditional, so both blocks
-    # are present even when empty. An empty list is a contribution; no key is not.
-    "nlp-enrich standalone (empty entities list)": {
-        **_FLOOR,
-        "assembled": _stamp("entities", "pages"),
-        "entities": [],
-        "pages": [],
-    },
-    # llm-enrich/llm_client_shared.py::write_document_record
-    "llm-enrich standalone": {
-        **_FLOOR,
-        "assembled": _stamp("enrichment", "derived_from", "regenerable"),
-        "derived_from": {"enriched": "KW_PER_DOC_LLM/CTX000000001_enriched.json"},
-        "regenerable": {"markdown": {"from": "CTX000000001.document.json", "converter": "json_to_md@1.0"}},
-        "enrichment": {"items": [], "summary": None, "topics": []},
-    },
-    # digital-convert/api_util/digital_to_json.py::to_record -- the digital-born originator, which DOES call
-    # set_source() first, deliberately. Every page row carries `text_layer` since v1.1.1-beta.
-    "digital-convert originator": {
-        **_FLOOR,
-        "source": {"sha256": "b" * 64, "media_type": "application/pdf", "origin": "digital-born-pdf"},
-        "assembled": _stamp("pages", "lines", "content", "tables"),
-        "pages": [{"page": "1", "page_index": 1, "text_layer": "digital"}],
-        "lines": [{"page": "1", "line": 0, "text": "t"}],
-        "content": {"text": "t"},
-        "tables": [{"table_id": "t1", "page": "1"}],
-    },
-    # digital-convert/api_util/digital_to_json.py::to_record for a DOCX (llm-enrich#18), trimmed from a real
-    # rich.docx record: no bbox and no canvas (a DOCX has no page geometry), a counted page_count,
-    # and the layout cues in lines[].style -- heading_level, and `region` for the running header and
-    # the footnote. `region` was written before the schema declared it (additionalProperties: true);
-    # declaring it as a closed enum is only additive because this shape still validates.
-    "digital-convert originator, DOCX with layout cues": {
-        **_FLOOR,
-        "source": {
-            "sha256": "8" * 64,
-            "filename": "rich.docx",
-            "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "origin": "digital-born-docx",
-            "page_count": 2,
-        },
-        "assembled": _stamp("pages", "lines", "content", "tables"),
-        "pages": [
-            {"page": "1", "page_index": 1, "quality_score": 1.0, "quality_band": "Clear"},
-            {"page": "2", "page_index": 2, "quality_score": 1.0, "quality_band": "Clear"},
-        ],
-        "lines": [
-            {
-                "page": "1",
-                "line": 0,
-                "text": "Nálezová zpráva",
-                "group_id": "hdr0-0",
-                "style": {"region": "page_header"},
-            },
-            {"page": "1", "line": 1, "text": "Hradiště u Horní Mezi", "group_id": "p0", "style": {"heading_level": 1}},
-            {"page": "1", "line": 2, "text": "Sonda II", "group_id": "p1", "style": {"bold": True}},
-            {
-                "page": "1",
-                "line": 3,
-                "text": "Katalog je v archivu.",
-                "group_id": "fn1",
-                "style": {"region": "footnote"},
-            },
-            {"page": "2", "line": 0, "text": "Nálezy", "group_id": "tbl0-r0c0"},
-            {"page": "2", "line": 1, "text": "Strana 2", "group_id": "ftr0-0", "style": {"region": "page_footer"}},
-        ],
-        "content": {
-            "text": "Hradiště u Horní Mezi\n\nSonda II\n\nKatalog je v archivu.\n\nNálezy",
-            "reading_order": "layout",
-        },
-        "tables": [
-            {
-                "table_id": "t0",
-                "page": "2",
-                "caption": "",
-                "n_rows": 1,
-                "n_cols": 1,
-                "group_id": "tbl0",
-                "cells": [{"row": 0, "col": 0, "is_header": True, "group_id": "tbl0-r0c0"}],
-            }
-        ],
-    },
-    # ocr-postprocess/service/text_api.py::process_document -> document_hook.write_document_block ->
-    # DocumentRecord.replace_page_rows (atrium-digital-convert#4 W4): a born-digital PDF whose page ii
-    # did not decode, after its ATR ALTO came back. Page ii holds the OCR lines only and gains `ocr`;
-    # `needs_ocr`, `text_layer`, `canvas` and `category` stay; `source` and `content` are the converter's.
-    "ocr-postprocess W4 hand-off on a born-digital PDF": {
-        **_FLOOR,
-        "source": {
-            "sha256": "d" * 64,
-            "sha512": "e" * 128,
-            "filename": "C-202000543A-DT-27.pdf",
-            "media_type": "application/pdf",
-            "origin": "digital-born-pdf",
-            "page_count": 2,
-        },
-        "assembled": _handoff_stamp(),
-        "pages": [
-            {"page": "i", "page_index": 1, "quality_score": 1.0, "quality_band": "Clear", "text_layer": "digital"},
-            {
-                "page": "ii",
-                "page_index": 2,
-                "canvas": {"width": 595.0, "height": 842.0, "unit": "pt"},
-                "needs_ocr": True,
-                "needs_ocr_reason": "embedded text layer does not decode: 2 of 2 lines carry CP1250 bytes",
-                "text_layer": "garbled",
-                "category": "TEXT_P",
-                "category_confidence": 0.93,
-                "quality_score": 0.9,
-                "quality_band": "Clear",
-                "ocr": {"engine": "ocr:pero"},
-            },
-        ],
-        "lines": [
-            {"page": "i", "line": 0, "text": "Nálezová zpráva", "bbox": [72.0, 64.0, 388.0, 80.0]},
-            {"page": "ii", "line": 1, "text": "sondě", "categ": "Clear", "quality_score": 0.91, "lang": "ces"},
-            {"page": "ii", "line": 2, "text": "hřeby", "categ": "Clear", "quality_score": 0.88, "lang": "ces"},
-        ],
-        "content": {"text": "Nálezová zpráva", "reading_order": "layout"},
-    },
-    # keyword-extract/service/api.py::_run -> llm_client_shared.write_document_record(keywords=...)
-    # (atrium-project#73): the statistical kind on the record nlp-enrich wrote, document and pages.
+    "nlp-enrich standalone (empty entities list)": {**_FLOOR, "entities": []},
     "keyword-extract statistical keywords (keywords block)": {
         **_FLOOR,
-        "source": {"sha256": "a" * 64, "filename": "CTX000000001.alto.xml", "origin": "ABBYY-ALTO"},
-        "assembled": _stamp("lines", "keywords", run_uuid=_RUN_UUID),
-        "lines": [{"page": "1", "line": 0, "text": "Hradiště u Horní Mezi", "categ": "Clear"}],
+        "lines": [{"page": "1", "line": 1, "text": "Hradiště u Horní Mezi", "categ": "Clear"}],
         "keywords": {
             "document": [
                 {"keyword": "hradiště", "method": "yake", "score": 1.0, "rank": 1},
@@ -377,17 +162,13 @@ VALID_SHAPES = {
             "pages": [{"page": "1", "keywords": [{"keyword": "hradiště", "method": "yake", "score": 1.0, "rank": 1}]}],
         },
     },
-    # The same call with kind=both: `keywords` and `enrichment` side by side, never one list.
     "keyword-extract both kinds (keywords beside enrichment)": {
         **_FLOOR,
-        "source": {"sha256": "a" * 64, "filename": "CTX000000001.alto.xml", "origin": "ABBYY-ALTO"},
-        "assembled": _stamp("keywords", "enrichment", run_uuid=_RUN_UUID),
         "keywords": {"document": [{"keyword": "sonda", "method": "keybert", "score": 0.64, "rank": 1}], "pages": []},
         "enrichment": {
             "items": [
                 {
                     "page": "1",
-                    "line": 0,
                     "extracted_keywords_cs": ["hradiště"],
                     "extracted_keywords_en": ["hillfort"],
                     "teater_category": "hradiště",
@@ -397,119 +178,100 @@ VALID_SHAPES = {
             ]
         },
     },
-    # ocr-postprocess/document_hook.py::write_document_block (and ::write_scores) after its pages and
-    # lines (atrium-project#73 R6): the summary is recomputed from them on every such write.
-    "ocr-postprocess quality summary (quality_summary block)": {
+    "quality summary, nothing scored": {
         **_FLOOR,
-        "source": {"sha256": "a" * 64, "filename": "CTX000000001.alto.xml", "origin": "ABBYY-ALTO"},
-        "assembled": _stamp("pages", "lines", "quality_summary", run_uuid=_RUN_UUID),
-        "pages": [{"page": "1", "quality_score": 0.75, "quality_band": "Clear"}],
-        "lines": [
-            {"page": "1", "line": 0, "text": "Hradiště u Horní Mezi", "categ": "Clear", "quality_score": 0.9},
-            {"page": "1", "line": 1, "text": "||| ..", "categ": "Trash", "quality_score": 0.1},
-        ],
-        "quality_summary": {
-            "pages": {"total": 1, "scored": 1, "mean": 0.75, "median": 0.75, "min": 0.75, "max": 0.75},
-            "lines": {"total": 2, "by_categ": {"Clear": 1, "Trash": 1}},
-        },
+        "pages": [_page(1, "empty")],
+        "quality_summary": {"pages": {"total": 1, "empty": 1, "scored": 0}, "lines": {"total": 0, "by_categ": {}}},
     },
-    # The same writer on a born-digital record no page of which was scored: no statistics.
-    "ocr-postprocess quality summary, nothing scored": {
+    "merge_document_records output": {**_FLOOR, "record_type": "atrium-document-merged", "source": dict(_SEED_SOURCE)},
+    # Rule 6: a newer 2.x minor's block passes a tool that vendored this schema.
+    "a newer 2.x minor's block": {
         **_FLOOR,
-        "source": {"sha256": "d" * 64, "filename": "x.pdf", "origin": "digital-born-pdf"},
-        "assembled": _stamp("pages", "quality_summary", run_uuid=_RUN_UUID),
-        "pages": [{"page": "i", "page_index": 1, "text_layer": "blank"}],
-        "quality_summary": {"pages": {"total": 1, "scored": 0}, "lines": {"total": 0, "by_categ": {}}},
-    },
-    # atrium_document.merge_document_records() -- record_type differs, and `blocks` may legitimately
-    # be {} when every input was a source-only record. That is why minProperties lives inside the
-    # anyOf branch rather than on assembled.blocks itself.
-    "merge_document_records output (source-only inputs)": {
-        **_FLOOR,
-        "record_type": "atrium-document-merged",
-        "source": {"sha256": "c" * 64},
-        "assembled": {"blocks": {}, "merged_from": 2, "merged_at": "2026-09-09T00:00:00+00:00", "note": "…"},
+        "schema_version": "2.1",
+        "source": dict(_SEED_SOURCE),
+        "newer_block": {"x": 1},
     },
 }
 
 
-# ── the defect classes the freeze exists to catch ─────────────────────────────
-INVALID_SHAPES = {
-    # What `required` accepted before the freeze. nlp-enrich/tests/test_run_pipeline.py (the
-    # `_fake_stage` of its --document-json-out test) wrote literally this.
-    "today's two-key minimum": {"schema_version": "1.0", "doc_id": "CTX000000001"},
-    # The issue's own words: "a stage that produces nothing still validates". finalize() already
-    # prints WARNING - <program> contributed no block; this promotes it to a failure.
-    # Live instance: alto-postprocess/classify_TEXT.py::process_document on an empty CSV, whose
-    # hook call sits outside the `if not df.empty` guard.
-    "a stage that contributed nothing (no source, no stamp)": {**_FLOOR, "assembled": _stamp()},
-    # A stamp is written by _stamp(), which only runs where the payload is written in the same
-    # call -- so a stamp without a payload cannot come from the module. It means the record was
-    # hand-built, truncated in transit, or field-filtered down to nothing.
-    "stamp without payload": {**_FLOOR, "assembled": _stamp("lines")},
-    "record_type missing": {
-        k: v for k, v in {**_FLOOR, "assembled": _stamp("pages"), "pages": []}.items() if k != "record_type"
-    },
-    "provenance missing": {
-        k: v for k, v in {**_FLOOR, "assembled": _stamp("pages"), "pages": []}.items() if k != "provenance"
-    },
+def _with(label: str, path: tuple, value: Any) -> Dict[str, Any]:
+    record = json.loads(json.dumps(VALID_SHAPES[label]))
+    node = record
+    for key in path[:-1]:
+        node = node[key]
+    node[path[-1]] = value
+    return record
+
+
+# ── the defects the floor refuses ────────────────────────────────────────────
+_SCAN = "record builder, scanned (ATR docproc)"
+INVALID_SHAPES: Dict[str, Dict[str, Any]] = {
+    "the two-key minimum": {"schema_version": "2.0", "doc_id": "CTX000000001"},
+    # A stage that ran and wrote nothing: no source, no block.
+    "a stage that contributed nothing": dict(_FLOOR),
+    "record_type missing": {"schema_version": "2.0", "doc_id": "CTX000000001", "entities": []},
+    # A 1.x record must be migrated before it is checked against 2.0.
+    "a 1.x record": {**_FLOOR, "schema_version": "1.0", "source": dict(_SEED_SOURCE)},
+    # D1, D2, D19, D26: run data, licence, forms and tables are gone.
+    "run data: provenance": _with(_SCAN, ("provenance",), {"license": "CC BY-NC 4.0", "contributors": []}),
+    "run data: assembled stamps": _with(_SCAN, ("assembled",), {"blocks": {"pages": {"program": "ocr-postprocess"}}}),
+    "run data: derived_from": _with(_SCAN, ("derived_from",), {"teitok": "TEITOK/x.teitok.xml"}),
+    "run data: regenerable": _with(_SCAN, ("regenerable",), {"markdown": {}}),
+    "layout: tables": _with(_SCAN, ("tables",), []),
+    "forms": _with(_SCAN, ("forms",), {}),
+    "layout: content.reading_order": _with(_SCAN, ("content", "reading_order"), "ltr-columns"),
+    "layout: lines[].style": _with(_SCAN, ("lines", 0, "style"), {"bold": True}),
+    "layout: lines[].group_id": _with(_SCAN, ("lines", 0, "group_id"), "g1"),
+    "page verdict: needs_ocr": _with(_SCAN, ("pages", 0, "needs_ocr"), True),
+    "page verdict: text_layer": _with(_SCAN, ("pages", 0, "text_layer"), "digital"),
+    "page verdict: ocr engine": _with(_SCAN, ("pages", 0, "ocr"), {"engine": "pero"}),
+    "a sha256 on the source": _with(_SCAN, ("source", "sha256"), "b" * 64),
+    # D18 rule 2: categ holds the five categories only.
+    "a decode verdict as a category": _with(_SCAN, ("lines", 0, "categ"), "Garbage"),
+    # H2: every page row carries its physical page number.
+    "a page row without page_index": {**_FLOOR, "pages": [{"page": "1", "content_status": "text"}]},
+    # D25: a box says how it was obtained; `absent` means none.
+    "a box without its precision": {**_FLOOR, "lines": [{"page": "1", "line": 1, "text": "x", "bbox": [0, 0, 1, 1]}]},
+    "an absent box that is there": _with(_SCAN, ("lines", 0, "bbox_precision"), "absent"),
+    # D18 rule 7: an empty page has no page score.
+    "a scored empty page": _with(_SCAN, ("pages", 1, "quality_score"), 0.2),
+    # 2.0 numbers lines from 1 (they were 0- or 1-based in 1.x).
+    "a line numbered from 0": _with(_SCAN, ("lines", 0, "line"), 0),
 }
 
 
 @pytest.mark.parametrize("label", sorted(VALID_SHAPES))
-def test_every_shape_production_writes_still_validates(label):
-    """A tightened `required` must not exclude a shape a shipped tool emits.
-
-    This is the half that matters. The E2E gates validate records produced by PUBLISHED :latest
-    images, and :latest only moves on a version tag -- so excluding a real producer here cannot be
-    fixed from `test`; it costs a release cycle in the owning repo.
-    """
+def test_every_shape_a_2_0_producer_writes_validates(label):
     _validate(VALID_SHAPES[label])
 
 
 @pytest.mark.parametrize("label", sorted(INVALID_SHAPES))
 def test_defect_shapes_are_refused(label):
     pytest.importorskip("jsonschema")
-    assert not _is_valid(INVALID_SHAPES[label]), (
-        f"{label!r} validates, but the #54 freeze exists to refuse it -- "
-        f"the top-level required/anyOf/allOf has been widened"
-    )
+    assert not _is_valid(INVALID_SHAPES[label]), f"{label!r} validates, but the 2.0 floor exists to refuse it"
 
 
-def test_style_region_is_a_closed_enum():
-    """`lines[].style.region` (llm-enrich#18) is declared as a closed enum, so a misspelled value
-    is refused instead of silently rendering as body text.
-
-    json_to_md treats an unknown region as body, which is the safe fallback for a record written
-    before the declaration -- but for a producer it would hide the typo: the running header would
-    reach the model inline, and back into content.text. The freeze's rule makes the narrowing
-    additive: every producer already writes one of the three values (the DOCX shape above).
-    """
+@pytest.mark.parametrize(
+    "path, values",
+    [
+        (("source", "origin"), ("digital-born-pdf", "ABBYY-ALTO", "ocr:pero")),
+        (("lines", 0, "text_source"), ("text_layer", "ocr", "")),
+        (("lines", 0, "bbox_precision"), ("exact", "")),
+        (("pages", 0, "content_status"), ("blank", "")),
+        (("pages", 0, "canvas", "unit"), ("mm10", "inch1200")),
+        (("lines", 0, "block"), ("block-3", "3")),
+    ],
+)
+def test_the_new_fields_are_closed(path, values):
+    """#84 §2: the new vocabularies are closed, so a producer's typo is refused, not stored."""
     pytest.importorskip("jsonschema")
-    shape = json.loads(json.dumps(VALID_SHAPES["digital-convert originator, DOCX with layout cues"]))
-    assert _is_valid(shape)
-    for wrong in ("sidebar", "header", "Page_Header"):
-        shape["lines"][0]["style"]["region"] = wrong
-        assert not _is_valid(shape), f"style.region {wrong!r} validates -- the enum has been widened or dropped"
-
-
-def test_text_layer_is_a_closed_enum():
-    """`pages[].text_layer` (2026-10-05) is a closed enum: a routing step branches on it, so a
-    misspelled verdict must be refused, not routed as an unknown page. Additive under the freeze's
-    rule: the converter writes one of the five values, and a record without the field validates."""
-    pytest.importorskip("jsonschema")
-    shape = json.loads(json.dumps(VALID_SHAPES["ocr-postprocess W4 hand-off on a born-digital PDF"]))
-    assert _is_valid(shape)
-    for wrong in ("scanned", "Digital", "", None):
-        shape["pages"][1]["text_layer"] = wrong
-        assert not _is_valid(shape), f"text_layer {wrong!r} validates -- the enum has been widened or dropped"
-    del shape["pages"][1]["text_layer"]
-    assert _is_valid(shape)
+    assert _is_valid(VALID_SHAPES[_SCAN])
+    for wrong in values:
+        assert not _is_valid(_with(_SCAN, path, wrong)), f"{'.'.join(map(str, path))}={wrong!r} validates"
 
 
 def test_a_statistical_keyword_carries_its_method_score_and_rank():
-    """Every statistical keyword says how it was found (atrium-project#73): a score is comparable only
-    within its method, and `rank` is what orders a list across methods."""
+    """Every statistical keyword says how it was found (atrium-project#73)."""
     pytest.importorskip("jsonschema")
     shape = json.loads(json.dumps(VALID_SHAPES["keyword-extract statistical keywords (keywords block)"]))
     assert _is_valid(shape)
@@ -525,54 +287,40 @@ def test_a_statistical_keyword_carries_its_method_score_and_rank():
     assert not _is_valid(shape), "a keywords block without `pages` validates"
 
 
-def test_the_blocks_of_73_have_stamp_payload_clauses():
-    """`/allOf/12` and `/allOf/13` (2026-10-09): a stamped `keywords` or `quality_summary` must be
-    present. Not in INVALID_SHAPES: the frozen schema predates both clauses, and the floor refuses
-    INVALID_SHAPES under the freeze as well."""
-    pytest.importorskip("jsonschema")
-    for block in ("keywords", "quality_summary"):
-        assert not _is_valid({**_FLOOR, "assembled": _stamp(block)}), f"a {block} stamp without its block validates"
-
-
 def test_the_quality_summary_is_numbers():
     """`quality_summary` counts and averages; a statistic outside [0, 1] or a count below 0 is refused."""
     pytest.importorskip("jsonschema")
-    shape = json.loads(json.dumps(VALID_SHAPES["ocr-postprocess quality summary (quality_summary block)"]))
-    for path, wrong in ((("pages", "mean"), 1.5), (("pages", "total"), -1), (("lines", "by_categ"), {"Clear": -2})):
+    shape = json.loads(json.dumps(VALID_SHAPES[_SCAN]))
+    for path, wrong in (
+        (("pages", "mean"), 1.5),
+        (("pages", "total"), -1),
+        (("pages", "empty"), -1),
+        (("lines", "by_categ"), {"Clear": -2}),
+    ):
         broken = json.loads(json.dumps(shape))
         broken["quality_summary"][path[0]][path[1]] = wrong
         assert not _is_valid(broken), f"quality_summary.{'.'.join(path)}={wrong!r} validates"
 
 
 def test_the_floor_is_what_to_dict_guarantees():
-    """`required` may name only keys `DocumentRecord.to_dict()` emits unconditionally.
-
-    Checked against the module rather than restated, so the two cannot drift: a future edit that
-    makes one of these conditional has to fail here rather than in a pipeline.
-    """
+    """`required` may name only keys `DocumentRecord.to_dict()` emits unconditionally."""
     from atrium_document import DocumentRecord, load_schema
 
-    record = DocumentRecord("CTX000000001", "alto-postprocess").to_dict()
+    record = DocumentRecord("CTX000000001", "ocr-postprocess").to_dict()
     for key in load_schema()["required"]:
-        assert key in record, (
-            f"schema requires {key!r} but a record that contributed nothing does not carry it -- "
-            f"either to_dict() changed or required was widened past what it guarantees"
-        )
+        assert key in record, f"schema requires {key!r} but a record that contributed nothing does not carry it"
 
 
 def test_source_is_not_required():
-    """Four of the five tools never call set_source(); one of them runs first.
-
-    page-classification, translator, nlp-enrich and llm-enrich have no set_source() call on any
-    path, and page-classification is stage 1 of the scanned pipeline. Requiring `source` would
-    refuse a legitimate rule-3 standalone run of most of the ecosystem.
-    """
-    from atrium_document import load_schema
+    """Rule 3: a tool run with no seed and no baseline emits its own part, and most tools never call
+    set_source(). The seed profile is what requires the archive's sha512 (atrium-project#71)."""
+    from atrium_document import load_schema, seed_schema
 
     assert "source" not in load_schema()["required"]
+    assert seed_schema()["properties"]["source"]["required"] == ["sha512", "filename", "media_type"]
 
 
 def test_committed_example_still_validates():
-    """Belt and braces with tests/test_fixture_schema.py: the freeze must not orphan the example."""
+    """Belt and braces with tests/test_fixture_schema.py."""
     fixture = _HUB_ROOT / "fixtures" / "atrium_document.example.json"
     _validate(json.loads(fixture.read_text(encoding="utf-8")))

@@ -879,7 +879,7 @@ def test_parse_record_part_opens_what_opens_and_refuses_the_rest():
         (b"{not json", "not valid JSON"),
         (b"[1, 2]", "not an object"),
         (b"\xff\xfe\x00", "not UTF-8"),
-        (b'{"schema_version": "9.0"}', "reads up to 1.x"),
+        (b'{"schema_version": "9.0"}', "reads up to 2.x"),
         (b'{"schema_version": "one"}', "not a version"),
         (["a"], "not an object"),
     ):

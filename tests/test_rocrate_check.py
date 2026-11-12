@@ -76,12 +76,13 @@ def test_a_validator_that_writes_no_report_fails(tmp_path):
     assert rocrate_check.validate(tmp_path, gates, [sys.executable, "-c", "pass"]) == 2
 
 
-def test_the_samples_are_four_crates_with_their_files(tmp_path):
+def test_the_samples_are_four_crates(tmp_path):
     crates = rocrate_check.build_samples(tmp_path)
     assert [c.name for c in crates] == ["document", "run", "fragment", "service-action"]
     for crate in crates:
         assert (crate / "ro-crate-metadata.json").is_file()
-    assert (tmp_path / "document" / "TEITOK" / "CTX000000001.teitok.xml").is_file()
+        text = (crate / "ro-crate-metadata.json").read_text(encoding="utf-8")
+        assert "no-licence-asserted" not in text and "ni:///" not in text  # D2; #84 §4
     assert (tmp_path / "run" / "CTX000000001" / "ro-crate-metadata.json").is_file()
 
 
@@ -116,3 +117,4 @@ def test_make_seed_writes_a_valid_seed_of_its_file(tmp_path):
     seed = json.loads(out.read_text(encoding="utf-8"))
     assert seed["doc_id"] == "AMCR-F-7" and seed["source"]["filename"] == "x.pdf"
     assert "origin" not in seed["source"]
+    assert "schema_version" not in seed  # identity only: read by tools on record 1.x and 2.0 alike

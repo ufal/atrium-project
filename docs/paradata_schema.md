@@ -1,77 +1,131 @@
 # ATRIUM Paradata Schema & Migration Policy
 
-This document defines the schema versioning policy for the `atrium_paradata.py` provenance JSONs, handling how ATRIUM tools interact with historical logs when architectures change.
+This document defines the schema versioning policy for the `atrium_paradata.py` run records, and
+how ATRIUM tools read records written under an older schema.
 
-## Schema `2.0` Context
-- **Contract:** Establishes fixed `provenance`, `license`, `timing`, `config`, and `statistics` blocks along with `record_type` for multi-stage pipelines.
-- **The `license` block is a calculation:** the components the run used, each with its licence, and the most restrictive of them (`para_licenses.merge_effective_licenses`). It is evidence about the components, not the licence of the run's output; the rights in an output depend on the source document and are stated only by whoever holds them ([#6](https://github.com/ufal/atrium-project/issues/6), agreed 2026-10-22; [`proposals/rights-and-policy.md`](proposals/rights-and-policy.md)). Dropping or renaming the block would be a `3.0` change (rule 2 below).
-- **Old Log Validity:** Pre-`2.0` (or unversioned `1.0` logs) remain completely valid. Tools load historical logs using the transparent migrator built into `atrium_paradata.py` (`load_paradata()` automatically upconverts them).
+A run's paradata describe the run that produced the current version of a distribution (ARÚP's
+output contract of 12 November 2026, §6; [atrium-project#84](https://github.com/ufal/atrium-project/issues/84)).
+They are the only home of run data: the document record carries none
+([`document_schema.md`](document_schema.md)). AMČR stores them as the distribution's RO-Crate
+`paradata/<distribution>`, built from this record ([`rocrate_export.md`](rocrate_export.md) §5).
 
-## Versioning Rules
-1. **Additive Updates:** Adding an optional field or component requires **no bump**. Existing parsers will ignore the unknown keys seamlessly.
-2. **Breaking Changes:** If a field is renamed, deleted, or fundamentally alters semantic calculation, the `SCHEMA_VERSION` will be explicitly bumped to the next major component (e.g. `3.0`).
-3. **Migration Mechanics:** A schema bump mandates the inclusion of a sequential migration script (`_migrate_X_to_Y()`). The tool will branch logic depending on the major iteration.
+## Schema `3.0`
 
-## Consumers to Update on Bumps
-If a schema bump is required, downstream aggregators relying on hard-key lookups must be updated manually. Before releasing a breaking bump, update:
-- Both `merge_paradata_files` and `merge_run_paradata`
-- `_cli()` bash shim parser dependencies
-- `alto`'s `run_pipeline.py` which drives the stage aggregation
-- Compose network orchestration logic
+| Key                                                        | Meaning                                                                                                                       |
+|------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| `program`, `tool_version`, `repository`, `docker_image`, … | the software that ran                                                                                                         |
+| `run_id`, `run_uuid`, `run_agent`                          | the run's ids and the operating organisation (below)                                                                          |
+| `action_status`                                            | `completed`, or `failed` with `error` (a short message). What AMČR stores is always `completed` (D13)                         |
+| `start_time`, `end_time`, `duration_seconds`               | when the run ran                                                                                                              |
+| `inputs`, `outputs`                                        | each by AMČR distribution **`name`** and **`sha512`**, with `media_type` and `stored` (below)                                 |
+| `parameters`                                               | only what shaped the output: a model revision, a threshold, the forced pages, the translator's field list. Never a path       |
+| `limits`                                                   | the sampling and splitting notes (below)                                                                                      |
+| `components`                                               | each component used: `name`, `version` when known, and its own `license` or terms, as facts (`para_licenses.component_terms`) |
+| `config`, `statistics`, `skipped_files_detail`             | the tool's configuration and counters, as in 2.0; a skipped file is named by its file name only                               |
 
-## Optional fields added within `2.0`
+**No licence** (D2). There is no `license`, `license_url` or `license_detail`, and nothing is
+computed or merged: the rights in an output depend on the source document and are stated only by
+whoever holds them ([#6](https://github.com/ufal/atrium-project/issues/6)). `components` is a list of
+facts, never reduced to one value. `para_licenses` keeps only the spelling of licence ids
+(`normalise_license()`, `LICENSE_URL`) and `component_terms()`.
 
-### `limits_applied` (2026-09-27, atrium-project#53 factor III)
-Every limit that **shaped** the run's result without refusing it. A limit that refused the
-input is not here: the service answered with `reason: "limit_exceeded"` instead (hub
-`docs/agent_skill_strategy.md` §4.4). Additive under rule 1 above — no bump; a record
-without the key means "not recorded", which is what every record before this date is.
+**Inputs and outputs** are the RO-Crate action's `object` and `result`:
 
 ```json
-"limits_applied": [
+"outputs": [
+  {"name": "atrium/document-json", "sha512": "9f2c…", "media_type": "application/json", "stored": true,
+   "record_fields": {"lines": ["lemma", "upos"], "entities": ["surface", "type_cnec", "char_span"]}}
+]
+```
+
+* `ParadataLogger.add_input(name, data=None, *, path=None, sha512=None, media_type=None, stored=True)`
+  and `add_output(…, record_fields=None)`. Pass the bytes, a `path` to hash (read, never recorded) or
+  the `sha512`. Never a local path and never a SHA-256 `ni:` identifier.
+* For the record (`atrium/document-json`): an input is the record version read; an output names the
+  blocks **and fields** the run wrote, `record_fields` = `DocumentRecord.written()`.
+* `stored: false`: an intermediate that is not stored but reaches a stored distribution (D23), such
+  as digital-convert's docproc of a mixed document (H14). It is still named by its SHA-512. An
+  intermediate that reaches no stored distribution is not recorded.
+
+**Failure and limits** (D13). A failed or incomplete step fails the job, so nothing is written to
+AMČR. `ParadataLogger.fail(error)` marks the run failed, and so does leaving its `with` block with an
+exception. A limit that **trimmed, skipped or stopped** content is not a note: `note_limit()` and
+`note_limits()` raise `ContentLimitError` (reason `limit_exceeded`) and the run fails. Only explicit
+**sampling** and **splitting**, where a tool specifies them, are recorded in `limits`:
+
+```json
+"limits": [
   {"limit": "lang_id_document_chars", "value": 20000, "effect": "sampled", "count": 1,
    "detail": "language decided on the first 20000 of 58213 characters"}
 ]
 ```
 
-| Member   | Meaning                                                                                                      |
-|----------|--------------------------------------------------------------------------------------------------------------|
-| `limit`  | the limit's `/info` `limits` key (the service's `limits_meta` names the variable)                            |
-| `value`  | the limit's effective value during the run                                                                   |
-| `effect` | `sampled` · `split` · `trimmed` · `skipped` · `stopped` — published, never renamed (`atrium_limits.EFFECTS`) |
-| `count`  | how many units (segments, lines, pages, chunks, terms) it applied to                                         |
-| `detail` | a human-readable sentence; may be empty                                                                      |
+| Member   | Meaning                                                                           |
+|----------|-----------------------------------------------------------------------------------|
+| `limit`  | the limit's `/info` `limits` key (the service's `limits_meta` names the variable) |
+| `value`  | the limit's effective value during the run                                        |
+| `effect` | `sampled` · `split` (`atrium_limits.RECORDED_EFFECTS`)                            |
+| `count`  | how many units (segments, lines, pages, chunks) it applied to                     |
+| `detail` | a human-readable sentence; may be empty                                           |
 
-- `ParadataLogger.finalize()` always writes the key (`[]` when nothing applied). Notes are added
-  with `ParadataLogger.note_limit(limit, value, effect, count, detail)` or `note_limits(notes)`
-  (an `atrium_limits.LimitNotes`), and from a bash stage with
-  `python atrium_paradata.py note-limit --state … --limit … --value … --effect … --count …`.
-  Notes for the same `limit` and `effect` are merged (counts add up).
-- `merge_paradata_files` and `merge_run_paradata` carry every stage's notes into the merged
-  record's `limits_applied`, each tagged with the stage's `program`.
-- Every service response also echoes the same list (`limits_applied` in JSON, the
-  `X-Atrium-Limits-Applied` header otherwise), next to the run's `paradata` (below).
+`atrium_limits.EFFECTS` keeps the three failing names so older notes stay readable;
+`ParadataLogger.limits_applied` is an alias of `limits`. Notes for the same `limit` and `effect` are
+merged (counts add up), and a service echoes them in its response.
 
-### `run_uuid` and `run_agent`, and the service mode (2026-10-01, atrium-project#71)
-Two more optional fields, so no bump either. A record written before this date has neither.
+**`run_uuid` and `run_agent`** (atrium-project#71). `run_uuid` is `urn:uuid:` and a random UUID,
+minted when the logger starts: the run's stable id and the `@id` of its RO-Crate `CreateAction`.
+`run_id` has one-second resolution and names the paradata file. `run_agent` is `ATRIUM_RUN_AGENT`,
+the IRI (a ROR id, say) of the organisation operating the deployment; `""` when unset. Never a
+processing account.
 
-| Field       | Meaning                                                                                                                                                                                                             |
-|-------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `run_uuid`  | the run's stable id, `urn:uuid:` and a random UUID, minted when the logger starts. `run_id` has one-second resolution, so two workers started together share one; they never share a `run_uuid`                     |
-| `run_agent` | `ATRIUM_RUN_AGENT`: the IRI (a ROR id, say) of the organisation operating the deployment; `""` when unset. It is the `agent` of the run's CreateAction. Never a processing account, which only reads and calls back |
+**Service mode.** A service creates its logger with `paradata_dir=None`: nothing is written to the
+container's filesystem, `finalize()` returns `""`, `logger.record` is the finalized record, and
+`logger.paradata_ref` is the `run_uuid`. The service returns the run as `paradata`, a Process Run
+Crate `CreateAction` built from that record (`atrium_rocrate.action_from_paradata`).
 
-- `run_uuid` is what ties the three records of a run together. It is stamped into the document
-  record (`DocumentRecord(run_uuid=logger.run_uuid)`, on every block and the contributor entry),
-  and it is the `@id` of the run's RO-Crate `CreateAction`
-  (`atrium_rocrate.create_action(logger.record)`). The CLI state file keeps it across a bash
-  stage's calls, and a step of such a stage that writes the record reads the run from that file,
-  `ParadataLogger.from_state_file(state)` (its `run_id`, `run_uuid` and `paradata_ref`).
-  `merge_paradata_files` and `merge_run_paradata` carry each step's and stage's
-  `run_uuid`, and a merged record mints its own. Merged stages also carry their `repository`,
-  `tool_version`, `docker_image` and `start_time`/`end_time`, so a run crate describes each stage
-  by itself.
-- **Service mode.** A service creates its logger with `paradata_dir=None`: nothing is written to
-  the container's filesystem, `finalize()` returns `""`, `logger.record` is the finalized record,
-  and `logger.paradata_ref` is the `run_uuid` instead of a file path. The service returns the run
-  as `paradata`, a Process Run Crate `CreateAction` built from that record
-  ([`rocrate_export.md`](rocrate_export.md) §5), with every successful response.
+**Bash stages** use the CLI shim with a state file: `start`, `component`, `input`, `output`,
+`parameter`, `note-limit`, `skip`, `success`, `fail`, `finish`. A step that writes the record reads the run from the
+state file (`ParadataLogger.from_state_file(state)`).
+
+**Merging.** `merge_paradata_files` and `merge_run_paradata` carry each stage's `program`,
+`run_uuid` and status; `merge_run_paradata` also each stage's inputs and outputs. Components are
+united, limits are tagged with the stage's `program`, a failed stage fails the merged record, and a
+merged record mints its own `run_uuid`. No licence is merged and no local path is carried.
+
+## Reading older records
+
+`load_paradata()` migrates on read, and a newer MAJOR is refused:
+
+* `1.x` → `2.0` as before;
+* `2.x` → `3.0` (`_migrate_2_0_to_3_0()`): `license`, `license_url` and `license_detail` are
+  dropped, the components of `license_detail` become `components` (name and licence, as facts),
+  `limits_applied` becomes `limits`, and `action_status` is `completed` (a 2.x record was written by
+  a run that finished). A 2.x record has no `inputs`/`outputs` by distribution name; nothing invents
+  them.
+
+## Versioning Rules
+
+1. **Additive Updates:** adding an optional field or component requires **no bump**. Existing
+   parsers ignore unknown keys.
+2. **Breaking Changes:** renaming or deleting a field, or changing what one means, bumps
+   `SCHEMA_VERSION` to the next major. `3.0` is such a bump (the licence block went).
+3. **Migration Mechanics:** a bump mandates a sequential `_migrate_X_to_Y()`, and the tool branches
+   on the major.
+
+## Consumers to Update on Bumps
+
+Before releasing a breaking bump, update:
+
+- `merge_paradata_files` and `merge_run_paradata`
+- the `_cli()` shim and the bash stages that call it
+- `atrium_rocrate.action_from_paradata` and `tools/ci/rocrate_check.py`
+- each tool's own paradata writers (re-vendor, then adapt: `scripts/revendor_shared.sh --repo atrium-<tool>`)
+
+## Changelog
+
+- **2026-11-12, `3.0` (atrium-project#84):** no licence fields and no calculated licence;
+  `components` as facts; `inputs`/`outputs` by distribution name and SHA-512, with `stored` and
+  `record_fields`; `parameters`; `action_status` and `error`; `limits` replaces `limits_applied`
+  and holds sampling and splitting only (D13).
+- **2026-10-01 (#71):** `run_uuid`, `run_agent`, service mode.
+- **2026-09-27 (#53 factor III):** `limits_applied`.

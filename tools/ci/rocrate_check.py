@@ -52,6 +52,8 @@ if str(_SHARED_DIR) not in sys.path:
     sys.path.insert(0, str(_SHARED_DIR))
 
 import atrium_rocrate as rc  # noqa: E402  (needs the path above)
+from atrium_document import migrate_document  # noqa: E402
+from atrium_paradata import migrate_paradata  # noqa: E402
 
 #: (profile id, extra validator arguments). The PRC run disables inheritance; see the docstring.
 PROFILES: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
@@ -123,18 +125,16 @@ def validate(crate_dir: Path, gates: Dict[str, str], validator: Sequence[str]) -
 
 
 def build_samples(out: Path) -> List[Path]:
-    """The module's own crates, each a directory with its files in place."""
+    """The module's own crates, each a directory: the document crate, the run crate (with its nested
+    crate and paradata file), the record fragment under a stub root, and a service's CreateAction
+    under a stub root. Record schema 2.0 and paradata 3.0: no data entities from the record, no
+    licence on any root (D2)."""
     record = rc._sample_record()
     paradata = rc._sample_paradata()
-    license_url = record["provenance"]["license_url"]
     dirs: List[Path] = []
 
     doc = out / "document"
-    for path in record["derived_from"].values():
-        target = doc / path
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text("{}\n" if path.endswith(".json") else "<TEI/>\n", encoding="utf-8")
-    rc.write_crate(rc.document_crate(record, paradata=paradata, data_dir=str(doc)), str(doc))
+    rc.write_crate(rc.document_crate(record, paradata=paradata), str(doc))
     dirs.append(doc)
 
     run = out / "run"
@@ -148,8 +148,6 @@ def build_samples(out: Path) -> List[Path]:
         "run_agent": stage["run_agent"],
         "start_time": stage["start_time"],
         "end_time": stage["end_time"],
-        "license": record["provenance"]["license"],
-        "license_url": license_url,
         "pipeline_stages": [stage],
     }
     rc.write_crate(
@@ -173,10 +171,10 @@ def build_samples(out: Path) -> List[Path]:
     action = rc.create_action(
         paradata[0],
         inputs=[
-            rc.file_entity("page.alto.xml", b"<alto/>", media_type="application/alto+xml"),
-            rc.record_entity("C-1"),
+            rc.file_entity("atr/docproc-json", b"{}", media_type="application/json"),
+            rc.record_entity("C-1", b"{}"),
         ],
-        outputs=rc.block_entities(["lines", "pages"]),
+        outputs=[rc.record_result({"lines": ["page", "line", "text"], "pages": ["page", "page_index"]}, b"{}")],
     )
     problems = rc.action_problems(action)
     if problems:
@@ -196,7 +194,8 @@ def build_samples(out: Path) -> List[Path]:
 
 
 def _paradata_records(paths: Sequence[str]) -> List[dict]:
-    """The paradata records among `paths`: JSON objects with a `program` or `pipeline`."""
+    """The paradata records among `paths`: JSON objects with a `program` or `pipeline`, read as
+    paradata 3.0 (an image older than #84 wrote 2.x: its calculated licence is dropped on read)."""
     records = []
     for path in paths:
         try:
@@ -205,19 +204,20 @@ def _paradata_records(paths: Sequence[str]) -> List[dict]:
             _annotate("warning", "{}: not a JSON file, skipped".format(path))
             continue
         if isinstance(data, dict) and (data.get("program") or data.get("pipeline")):
-            records.append(data)
+            records.append(migrate_paradata(data))
     return records
 
 
 def build_record(record_path: Path, paradata: Sequence[str], out: Path) -> Path:
-    """The fragment of a real record, under a stub root."""
-    record = json.loads(record_path.read_text(encoding="utf-8"))
-    fragment = rc.document_crate(record, paradata=_paradata_records(paradata), fragment=True)
+    """The fragment of a real record, under a stub root. The record is read as 2.0 (rule 6)."""
+    record = migrate_document(json.loads(record_path.read_text(encoding="utf-8-sig")))
+    runs = _paradata_records(paradata)
+    fragment = rc.document_crate(record, paradata=runs, fragment=True)
     crate = rc.wrap_fragment(
         fragment,
         name="ATRIUM record fragment {} (stub root)".format(record.get("doc_id") or ""),
         description="The fragment of the E2E's final record under a stub root, as AMČR's record crate embeds it.",
-        date_published=rc._date_published(record),
+        date_published=rc._date_published(rc.action_from_paradata(pd) for pd in runs),
     )
     rc.write_crate(crate, str(out))
     return out

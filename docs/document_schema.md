@@ -1,75 +1,132 @@
 # ATRIUM Document Schema & Accretion Policy
 
-This document defines the per-document aggregate record produced by `atrium_document.py` — the
-**paradata pair**. Where [`paradata-schema.md`](paradata_schema.md) covers *how a run behaved*,
-this covers *what we know about one document*: text, pages, entities and enrichment, gathered
-across the pipeline into one FAIR, versioned JSON for search and catalogue export.
+This document defines the per-document record produced by `atrium_document.py`
+(`atrium/document-json`): *what we know about one document* — text, pages, lines, entities and
+enrichment — gathered across the pipeline into one versioned JSON for search and catalogue export.
+*How a run behaved* is the run's paradata ([`paradata_schema.md`](paradata_schema.md)) and its
+RO-Crate ([`rocrate_export.md`](rocrate_export.md)), never the record.
 
 Template files: [`templates/shared/atrium_document.py`](templates/shared/atrium_document.py) ·
 [`templates/shared/atrium_document.schema.json`](templates/shared/atrium_document.schema.json).
 Several of this record's fields carry **controlled terms**; which values are legal in each, and what
 they mean, is [`skos_strategy.md`](skos_strategy.md) and the registry it describes.
-Design discussion: [ufal/atrium-llm-enrich#13](https://github.com/ufal/atrium-llm-enrich/issues/13).
+Design discussion: [ufal/atrium-llm-enrich#13](https://github.com/ufal/atrium-llm-enrich/issues/13);
+schema 2.0: [atrium-project#84](https://github.com/ufal/atrium-project/issues/84) and ARÚP's output
+contract of 12 November 2026.
 
 ## Why accretion, not an aggregator
 
 The tools are separate containers reached over their own APIs, and **no tool sees another tool's
 outputs**. So the record is not assembled by a central service; it travels *with* the document.
 Each tool takes the previous version of the JSON — if it is given one — and returns it with
-**only its own block** updated:
+**only its own block or fields** updated:
 
 ```
-doc.json ──► [alto] ──► doc.json ──► [nlp] ──► doc.json ──► [llm] ──► doc.json
-pages/lines           entities            enrichment
+seed ──► [ocr-postprocess] ──► record ──► [page-classification] ──► [nlp-enrich] ──► [keyword-extract]
+          pages/content/lines             pages[] category         entities, lemmas   enrichment, keywords
 ```
 
 This keeps every tool independently runnable, makes updates granular (re-run one tool → one
 block changes), and needs no shared volume or orchestrator.
 
-## Schema `1.0` Context
-- **Contract:** fixed `source`, `derived_from`, `regenerable`, `provenance` and `assembled`
-  blocks, plus the content blocks (`pages`, `content`, `lines`, `tables`, `entities`,
-  `translations`, `enrichment`, `page_categories`, `forms`) each written by exactly one tool
-  per document — for the positional blocks, *which* tool is fixed by `source.origin`
-  (see **Originators**, below).
-- **First published version.** There is nothing to migrate yet; `load_document()` already
-  carries the guard and `migrate_document()` the branch point, so the mechanism exists before
-  it is needed.
-- **Frozen as [`doc-schema-v1`](https://github.com/ufal/atrium-project/releases/tag/doc-schema-v1)**
-  (`544298b`, 2026-09-25). What that tag promises, what may still change under it, and how a tool
-  shows it conforms are in [Freeze & conformance](#freeze--conformance), below.
+## Schema `2.0` (doc-schema-v2, atrium-project#84)
+
+**Status.** `SCHEMA_VERSION = "2.0"` on the hub branch `84-doc-schema-v2`. The tag `doc-schema-v2` is
+cut only after the schema validator, the E2E checks (`e2e_assert.py --require-current-major`) and a
+run through the assembled pipeline chain have passed (D12). Until then `test_schema_freeze.py` lists
+MAJOR 2 in `PENDING_FREEZES` and skips its freeze checks with that reason. `doc-schema-v1` is not
+moved; 1.x records stay readable (see [Reading 1.x records](#reading-1x-records)).
+
+**Content only.** The record holds what is known about the document. It holds no run data, no
+licence and no layout:
+
+| Removed in 2.0                                                                  | Where it is now                                                                                              |
+|---------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| `provenance` (contributors, `license`, `license_url`, `license_basis`)          | the run's paradata `components` (facts only, no calculated licence) and its RO-Crate `CreateAction` (D1, D2) |
+| `assembled` (block stamps, `had_baseline`)                                      | the paradata output entry: `record_fields`, the blocks and fields the run wrote (`DocumentRecord.written()`) |
+| `derived_from`, `regenerable`                                                   | the paradata inputs and outputs, by AMČR distribution name and SHA-512                                       |
+| `forms`, `tables`, `content.reading_order`, `lines[].group_id`, `lines[].style` | docproc (`atr/docproc-json`), the layout's one home (D26); `lines[].block` joins a line to it                |
+| `pages[].text_layer`, `needs_ocr`, `needs_ocr_reason`, `ocr`                    | the route step's decision and docproc; a line says where its text came from (`text_source`)                  |
+| `source.sha256`                                                                 | `source.sha512` only: one digest, of the original                                                            |
+| the `Garbage` and `Inverted` line categories                                    | docproc line flags (`atrium_vocab.DECODE_FLAGS`): decode verdicts, not text quality (D18 rule 2)             |
+
+The schema declares each removed name with `not: {}`, so a record that carries one fails validation
+by name, and `DocumentRecord` refuses to write one: `add_derived_from()`, `add_regenerable()` and
+`add_license_detail()` raise `RemovedInSchema2`, `set_source(sha256=…)` is refused.
+
+**New or changed** (#84 §2):
+
+| Field                         | Values                                                   | Meaning                                                                                                                                                      |
+|-------------------------------|----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `source.origin`               | `digital` · `atr` · `legacy`                             | how the text was obtained; **descriptive only**, it selects no writer (#84 §1)                                                                               |
+| `pages[].page_index`          | integer ≥ 1, **required**                                | the physical page, the join key with docproc `pageNumber` (H2); `page` stays the printed label                                                               |
+| `pages[].content_status`      | `text` · `empty`                                         | an `empty` page has no lines and no page score, and is counted apart in `quality_summary` (D29)                                                              |
+| `pages[].canvas`              | `unit` `pt` (default) · `px`; `user_unit`, `pixel_ratio` | the unit of every box on the page (D28); `px` only for PCSS pages whose original cannot be matched; the two factor names are proposed by this implementation |
+| `lines[].line`                | integer ≥ 1                                              | numbered from 1 on every page                                                                                                                                |
+| `lines[].block`               | `p<page>-b<n>`, e.g. `p3-b7`                             | the docproc block the line belongs to (D26)                                                                                                                  |
+| `lines[].text_source`         | `text-layer` · `atr` · `legacy`                          | where this line's text came from (D25); a mixed document has more than one                                                                                   |
+| `lines[].bbox_precision`      | `measured` · `derived` · `absent`                        | a box the producer measured, one derived from the containing block, or none; required with `bbox` (D16)                                                      |
+| `lines[].categ`               | `Clear` · `Noisy` · `Trash` · `Non-text` · `Empty`       | the five text-quality categories of the line-quality model                                                                                                   |
+| `quality_summary.pages.empty` | integer                                                  | the empty pages, counted apart                                                                                                                               |
+
+`entities`, `enrichment`, `keywords`, `page_categories` and `quality_summary` keep their 1.x shape.
+`translations` and `entities[].translation_en` stay declared and **reserved**: the pilot translates
+only the record-level metadata, into its own distribution (`metadata-en`), never the full text.
+
+The top level requires `schema_version`, `record_type` and `doc_id`, plus `source` or at least one
+content block, so a standalone run (rule 3) without `source` stays valid while an empty shell does
+not.
 
 ## The accretion contract (six rules)
 
 1. **Baseline in, record out.** Tools take an optional `--document-json` and write
    `--document-json-out` (default `<doc_id>.document.json`); services accept and return an
-   optional `document_json` part. **`doc_id` travels WITH the baseline**: the originator derives
-   it once with `canonical_doc_id()`, and every stage after it inherits that value —
-   `DocumentRecord` keeps the baseline's `doc_id` and reports (never refuses) a caller that
-   passed a different one. A stage's input is usually *not* the original document — the
-   translator reads `PAGE_ALTO/<doc>/<doc>-1.alto.xml` — so a stage that keys its record off its
-   own filename re-keys the document and orphans everything already in the record.
-2. **Own block only.** A tool writes its own block(s); every other block is deep-copied through
-   **unchanged**. This invariant is what makes the pair safe to pass around.
+   optional `document_json` part. **`doc_id` travels WITH the baseline**: the first writer derives
+   it once with `canonical_doc_id()` (or takes it from the AMČR seed), and every stage after it
+   inherits that value — `DocumentRecord` keeps the baseline's `doc_id` and reports (never
+   refuses) a caller that passed a different one. A stage's input is usually *not* the original
+   document, so a stage that keys its record off its own filename re-keys the document and
+   orphans everything already in the record.
+2. **Own block only.** A tool writes its own block(s) and fields; every other block is
+   deep-copied through **unchanged**. This invariant is what makes the record safe to pass around.
 3. **No baseline → own part only** (plus `doc_id`/`schema_version`, and `source` if it is the
-   first writer). Standalone runs keep working; `assembled.had_baseline` records which case it was.
-   This is also the only case in which a non-originating tool's own `canonical_doc_id()` decides
-   the key: with no baseline there is no document context to inherit.
-4. **Per-block provenance.** Every write stamps `assembled.blocks[<block>]` with the writing
-   tool's `program`, its paradata `run_id`, and a `paradata_ref`. Granularity comes from here.
-   For a field-split block the stamp names the **most recent** writer, so the full picture lives
-   in `provenance.contributors[]`, where each run lists the blocks it wrote.
-5. **Component licences accrete** through `para_licenses.merge_effective_licenses` — the same
-   most-restrictive union as paradata. `provenance.license` is that calculation, not the licence
-   of the record or of any output: the rights in an output depend on the source document and are
-   stated only by whoever holds them (#6, agreed 2026-10-22; the schema's descriptions say so).
-   Since 2026-11-04 the record says so too: `provenance.license_basis: "calculated"`, and an
-   RO-Crate export names `#no-licence-asserted` on its root instead of this value.
-6. **Unknown or newer blocks are preserved** verbatim; a newer MAJOR `schema_version` is refused
-   with the same guard as `load_paradata()`. A baseline that does not validate is still accreted
-   onto, except where a tool must add rows: a list block it merges into (`pages`, `lines`,
-   `tables`, `entities`) that is not a list of objects raises `InvalidRecordError` before anything
-   is written, and a service answers it with 422 `invalid_record` (#72; it used to be a 500).
+   first writer). Standalone runs keep working. This is the only case in which a tool's own
+   `canonical_doc_id()` decides the key: with no baseline there is no document context to inherit.
+4. **What a run wrote is paradata.** `DocumentRecord.written()` returns `{block: [fields]}` for
+   this run; the run's paradata name the record output with it (`record_fields`), and the RO-Crate
+   carries it as `recordFields` on the action's result. Nothing is stamped into the record (D1).
+5. **No licence.** The record carries no licence, calculated or otherwise (D2): the rights in an
+   output depend on the source document and are stated only by whoever holds them. The paradata
+   list each component with its own terms, as facts.
+6. **Unknown or newer blocks are preserved** verbatim; a newer MAJOR `schema_version` is refused.
+   An older MAJOR is migrated on read (`load_document()`, `migrate_document()`, and a dict
+   baseline in `DocumentRecord`). A baseline that does not validate is still accreted onto,
+   except where a tool must add rows: a list block it merges into (`pages`, `lines`,
+   `entities`) that is not a list of objects raises `InvalidRecordError` before anything is
+   written, and a service answers it with 422 `invalid_record` (#72).
+
+## Reading 1.x records
+
+Every reader migrates a 1.x record to 2.0 (`_migrate_1_to_2()`); content survives, run data,
+licence and layout do not:
+
+* the removed blocks and fields are dropped;
+* `source.origin` maps by prefix: `digital-born…`, `docx`, `pdf` → `digital`; `ABBYY…`, `alto…` →
+  `legacy`; `ocr:…`, `vlm:…` → `atr`; anything else is dropped. Each line's `text_source` follows
+  from it;
+* a page whose lines were numbered from 0 (1.x digital-convert) is renumbered from 1, and the
+  entities on it follow;
+* a `Garbage` or `Inverted` `categ` is dropped with its `quality_score`;
+* a missing `page_index` is the numeric page label, else the row's position; a missing
+  `content_status` follows from whether the page has lines (when the record has `lines`), and an
+  empty page loses its page score;
+* a canvas with no unit gets 1.x's default, `px`; a line with a box gets `bbox_precision:
+  measured`;
+* `quality_summary` is recomputed, since it reads the rows rewritten above.
+
+A seed is identity only, the same in every major, so only its `schema_version` moves. The E2E gate
+reads every stage record through the migration, so images older than #84 keep passing until they
+adopt 2.0; `--require-current-major` refuses any record not written at 2.x.
 
 ## The AMČR seed
 
@@ -82,123 +139,64 @@ record is a **seed**: the document's identity and nothing a tool writes.
 | `source.sha512`     | the Fedora digest of the original, lower-case hex     | yes      |
 | `source.filename`   | the original's file name in the archive               | yes      |
 | `source.media_type` | the original's media type, as the archive detected it | yes      |
-| `schema_version`    | `"1.0"`                                               | no       |
+| `schema_version`    | any `MAJOR.MINOR`; best left out                      | no       |
 | `record_type`       | `"atrium-document"`                                   | no       |
 
-Nothing else, and in particular **no `source.origin`**: the origin decides which tool writes the
-page layout (see [Originators](#originators-issue-18-1a)), so it belongs to the tool that reads
-the source. `python atrium_document.py seed-schema` prints the seed's JSON Schema; it is built from
-this schema's own subschemas, so the two cannot drift. A worked example is
+Nothing else, and in particular **no `source.origin`**: it describes what the record builder found
+in the original. A seed is the same in every major, so it carries no `schema_version`
+(`tools/e2e/make_seed.py` writes none) and a 1.x tool and a 2.0 tool read the same seed.
+`python atrium_document.py seed-schema` prints the seed's JSON Schema; it is built from this
+schema's own subschemas, so the two cannot drift. A worked example is
 [`fixtures/atrium_document.seed.example.json`](../fixtures/atrium_document.seed.example.json).
 
-**A seed is valid input; what a tool emits is a full record.** A seed has neither `provenance`
-nor `assembled`, so it fails the full schema, and it should not pass for one. Every tool's gate on
-the record it was HANDED calls `validate_baseline()`, which checks a seed against the seed profile
-(`is_seed()`, `validate_seed()`) and anything else in full. The gate on the record a tool WRITES
-stays `validate_document()`.
+**A seed is valid input; what a tool emits is a full record.** Every tool's gate on the record it
+was HANDED calls `validate_baseline()`, which checks a seed against the seed profile (`is_seed()`,
+`validate_seed()`) and anything else in full, after migration. The gate on the record a tool
+WRITES stays `validate_document()`.
 
 **The keep rule.** `doc_id`, `sha512`, the file name and the media type are never changed:
 
 * `doc_id` is inherited (accretion rule 1): a tool that derives another id from the file it reads
   keeps the seed's and says so in a NOTE;
-* `source` is first-writer-wins: the reading tool **adds** `origin`, and nothing else changes.
-  A tool reading an OCR output, a page split out of the original or a temporary upload sees
-  another file name and media type than the archive's. That difference is reported as a NOTE and
-  never refused, even by a strict writer;
-* no `sha256` joins the seed's `sha512`. A tool's `sha256` is the digest of what it read, which
-  on the AMČR path is a derivative (`atr/alto-xml` is derived from the OCR of the original), and
-  one `source` must not name two files by digest. `set_source()` drops it with a NOTE;
-* a different `sha512` or `origin` is still the conflict it always was.
+* the identity fields are first-writer-wins. A tool reading a derived file or a temporary upload
+  sees another file name and media type than the archive's; that difference is reported as a NOTE
+  and never refused, even by a strict writer. A different `sha512` is a conflict;
+* the described fields (`origin`, `language`, `page_count`) are the record builder's, and no later
+  stage changes them.
 
-**The run's stable id.** Every block stamp and contributor entry a run writes carries the run's
-`run_uuid` (`urn:uuid:…`, minted by `atrium_paradata`). It is also the `@id` of the run's RO-Crate
-`CreateAction`, which every service returns as `paradata`
-([`rocrate_export.md`](rocrate_export.md) §5). `run_id` stays: it names the paradata file, and a
-record written before atrium-project#71 has only that.
+The seeded path is the integration baseline of the pilot: the E2E smokes start from a seed whose
+`doc_id` matches no file name, and `e2e_assert.py --seed` fails any stage that changes the four
+values or rewrites a described field.
 
-The seeded path is the integration baseline of the pilot: the E2E smokes start from a seed
-(`tools/e2e/make_seed.py`) whose `doc_id` matches no file name, and `e2e_assert.py --seed` fails
-any stage that changes the four values or names the origin without reading the source.
+## References and coordinates
 
-## Reference discipline (non-negotiable)
+The record names no file: the original is `source` (keyed by `doc_id` and `sha512`; originals are
+archive-managed), and every other input and output of a run is named in that run's paradata by
+its AMČR distribution name and SHA-512. A temporary file, a page image or a rendering is never
+named anywhere (contract §6).
 
-Only two classes of reference may appear: the **original input** (`source`, keyed by `doc_id` +
-`sha256` — originals are archive-managed, so no path is required) and **persistent step outputs**
-(`derived_from`).
+Every `bbox` is in one coordinate space: **origin top-left, y increasing downwards, in the unit
+named by that page's `pages[].canvas.unit`** — `pt` (1/72 inch × `user_unit`) by default, `px`
+only for PCSS pages whose original cannot be matched (D28). A born-digital PDF writer converts
+from PDF user space, which puts the origin bottom-left (with pdfplumber, use `top`/`bottom`,
+never `y0`/`y1`). `bbox_precision` says whether a line's box was measured or derived from its
+block.
 
-Transient artifacts are **never** referenced. Page images and thumbnails are produced during
-processing or created late by the presentation layer and are not stored; the annotated Markdown is
-derived and disposable. Both belong in `regenerable` as a recipe:
-
-```json
-"regenerable": {
-  "markdown": { "from": "TEITOK/CTX000000001.teitok.xml",
-                "converter": "xml_to_md@0.3.0", "detail": "full" }
-}
-```
-
-**Detail profiles** (`regenerable.*.detail`, atrium-project#70 item 1; implemented in digital-convert's
-renderer, `api_util/layout_md.py`, `json_to_md@1.1`). The Markdown's **text lines are the same in
-all three**; a lighter profile drops layout cues only, and the cue sets nest
-(minimal ⊂ standard ⊂ full):
-
-| Profile    | Keeps                                                                                                                                                                                      | Drops (against the next richer one)                  |
-|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------|
-| `full`     | every cue the record supports: `BBOX` per line, `DOC_META`, `OCR` provenance, whole-line emphasis, and `LAYOUT_MARGIN` (canvas minus the body-line union) on pages with a canvas and boxes | —                                                    |
-| `standard` | one `BBOX` per block (a `group_id` run; a table keeps its own; ungrouped lines none), `DOC_META`, `OCR`, emphasis                                                                          | per-line boxes, `LAYOUT_MARGIN`                      |
-| `minimal`  | the page skeleton and structure: `# doc`, `## Page`, `PAGE_BREAK`, `NEEDS_OCR`, headings, footnotes, GFM tables, `HEADER_*`/`FOOTER_*`, figure placeholders                                | all geometry, `DOC_META`, `OCR` provenance, emphasis |
-
-`full` is the default everywhere; which lighter profile is safe for the model is the #22 bake-off's
-call. A recipe names the profile the Markdown was rendered at; llm-enrich writes a `json_to_md`
-recipe only when the record it writes can actually be rendered (a record with no `lines[]` and no
-`content.text` gets none).
-
-Visual overlay still works without stored images: every `bbox` is in one declared coordinate
-space — **origin top-left, y increasing downwards, in the unit named by that page's
-`pages[].canvas.unit`** — and `pages[].teitok_surface` is a **logical** `<surface>` id, so
-the presentation layer re-renders on demand.
-
-The TEITOK references are **local ids inside that document's TEITOK file** (nlp-enrich,
-`TEITOK/<doc_id>.teitok.xml`), in TEITOK's own scheme: `pages[].teitok_surface` = the page's
-`<surface id>` (`facs-1`), `entities[].teitok_ref` = the entity's `<name id>` (`n-5`),
-`lines[].teitok_ref` = a sentence `<s id>` (`s-3`). They are not globally unique, so they
-are always read together with `doc_id` (or `derived_from.teitok`). nlp-enrich's TEITOK
-format 2 (2026-09) takes them from the same parse as the XML; before that they were
-`<doc_id>.surface1`/`<doc_id>.name5`. The schema types them as plain strings, so both forms
-validate. `pages[].teitok_surface` is set only for pages that have a `<surface>`: ALTO
-input, or a converted TEITOK layout whose pages name an image or a size (nlp-enrich's
-`FLEXICONV_ANNOTATE`, or `/enrich` with a TEITOK upload or an `alto` part); a text-only run has
-no facsimile. `entities[].page` is the page of the entity's first token, the same page as the
-`<pb>` in force where its `<name>` starts (nlp-enrich takes both from one resolution of the
-document's pages, layout first — since nlp-enrich#38, not from UDPipe's chunks). The E2E lane
-checks that every reference resolves to the right element (`entities[]` to a `<name>`,
-`lines[]` to an `<s>`) and that the pages agree (`tools/e2e/e2e_assert.py --teitok-dir`).
+The TEITOK references are **local ids inside that document's TEITOK file** (nlp-enrich), in
+TEITOK's own scheme: `pages[].teitok_surface` = the page's `<surface id>` (`facs-1`),
+`entities[].teitok_ref` = the entity's `<name id>` (`n-5`), `lines[].teitok_ref` = a sentence
+`<s id>` (`s-3`). They are not globally unique, so they are always read together with `doc_id`
+and the TEITOK distribution the same run wrote. `pages[].teitok_surface` is set only for pages
+that have a `<surface>`. `entities[].page` is the page of the entity's first token, the same page
+as the `<pb>` in force where its `<name>` starts (nlp-enrich#38). The E2E lane checks that every
+reference resolves to the right element and that the pages agree
+(`tools/e2e/e2e_assert.py --teitok-dir`).
 
 The other direction — the record's facts inside the TEITOK file — is **off by default**: page
 classification and line quality stay "only in the record" (the AMČR storage contract; #24's
-three-format decision). nlp-enrich's opt-in projection (atrium-project#70 item 2,
-`api_util/teitok_project.py`; `run_pipeline.py --teitok-enrichment`, `teitok_enrichment` on its
-`/enrich`, `POST /project_record`) writes the page categories as `pb/@ana` plus a `classDecl`
-taxonomy (`@corresp` = the `atrium_vocab` concept URI), and keyword-extract's TEATER/AMČR categories,
-its controlled keywords and its statistical keywords per document and per page (#73), as
-`profileDesc/textClass/keywords`, each pointing at its `<pb>`s. Each page's lists also get an id
-that its `<pb>` points to (`@teater`, `@kwcs`, `@kwen`, `@kwstat`), so a TEITOK project can search
-them as page attributes (ufal/flexiconv#1). It reads the record and writes only the TEITOK header
-and attributes of `<pb>`; it never writes line quality, and it changes no block owner.
-
-Two things a reader of both files should know. `lines[].teitok_ref` is granted to nlp-enrich
-but **not written** by it today (its hook's `include_lines` branch is a placeholder; the
-fixture's `s-3` shows the intended form). And `entities[].bbox` is in the **layout source's
-own coordinates** (ALTO units, as `pages[].canvas` declares), while the TEITOK file may have
-scaled its `bbox`es to the page images (`INPUT_PAGES_DIR`, `IMAGE_DPI`) or shifted them to the
-PrintSpace (`BBOX_ORIGIN=printspace`); its `<surface lrx lry>` names the extent it uses.
-
-That convention is normative and format-independent. It is what ALTO already uses, so the
-OCR path is unchanged, but it is **not** PDF user space, which puts the origin bottom-left:
-a digital-born PDF adapter must convert before writing (with pdfplumber, use `top`/`bottom`,
-never `y0`/`y1`). This used to read "bounding boxes stay in ALTO/TEITOK coordinate space",
-which a digital-born record does not have — leaving the y-axis direction and the unit
-undefined for exactly the writer whose whole selling point is exact coordinates.
+three-format decision). nlp-enrich's opt-in projection (atrium-project#70 item 2) writes the page
+categories and keyword-extract's categories and keywords into the TEITOK header and `<pb>`
+attributes; it never writes line quality, and it changes no block owner.
 
 ## Block ownership
 
@@ -206,166 +204,72 @@ One owner per block. Blocks that several tools contribute to are split **by fiel
 (`BLOCK_FIELD_OWNERS`), so no field is ever co-mutated — use `merge_block()` for those and
 `set_block()` for blocks you own outright.
 
-### Originators (Issue #18 §1a)
+**One writer of the positional blocks (D20).** `pages`, `content` and `lines` have one writer, the
+**record builder**, `ocr-postprocess` (`RECORD_BUILDER`), on every route: it builds them from
+docproc, whether the text came from a born-digital text layer, the ATR or PCSS ALTO. It also writes
+the described `source` fields and, as the owner of the line-quality model (D18), every line and
+page score. digital-convert writes docproc and no record block. So 1.x's originator arbitration
+(`source.origin` selecting the writer, the per-page OCR hand-off, the scoring co-contribution) has
+no role and is gone.
 
-Four blocks — `pages`, `content`, `lines`, `tables` — describe a document's **positional
-plane**, and there are two ways to acquire one: OCR/ALTO, or direct extraction from a
-digital-born PDF/DOCX. These are mutually exclusive per document, so those blocks have a
-**tuple** of possible originators in `BLOCK_OWNERS` and the choice is fixed per record by
-`source.origin`:
-
-| `source.origin` prefix           | Originator         |
-|----------------------------------|--------------------|
-| `digital-born…` · `docx` · `pdf` | `digital-convert`  |
-| `ABBYY-ALTO` · `ocr:…` · `vlm:…` | `alto-postprocess` |
-
-The first writer of `source` decides the origin. alto-postprocess records one per input format:
-`ABBYY-ALTO` for ALTO (its text-lines method records the engine an ALTO or hOCR file names in its
-header instead — `ocr:tesseract`, `ocr:pero`, `ocr:kraken`, `ocr:transkribus`, `ocr:ocrd`, …);
-`ocr:page-xml`, `ocr:hocr`, `ocr:abbyy-finereader`, `ocr:djvu`,
-`ocr:tesseract` and `ocr:pdf-text-layer` for the other OCR formats; `ocr:generic` for text whose
-making the file does not record (OCR JSON, TXT, CSV, TEI, …); and `digital-born-<kind>` for the
-born-digital documents its text-lines method reads (DOCX, ODT/ODS/ODP, XLSX, PPTX, EPUB, RTF,
-HTML, e-mail, a PDF with visible text). For those it writes `source` only. `digital-born…` then
-names `digital-convert`, which reads only PDF and DOCX, so for the other kinds no program writes
-the positional plane yet. A site whose files of such a kind really are transcriptions declares
-them `ocr:generic` with ocr-postprocess's `[DOCUMENT].SOURCE_ORIGIN_BY_KIND`
-([`docs/text_inputs.md` §6](https://github.com/ufal/atrium-ocr-postprocess/blob/master/docs/text_inputs.md#6-provenance-sourceorigin)).
-The `digital-born…` row stays a prefix by decision (atrium-alto-postprocess#31, 2026-09-25):
-narrowing it to `digital-born-pdf`/`-docx` would change the §1a contract for all five repos, and the
-per-kind override already lets a site say what its files are. Revisit it when digital-convert reads
-more kinds.
-
-`_assert_origin_consistent()` enforces it on both `set_block()` and `merge_block()`. Matching
-is case-insensitive; `resolve_originator(origin)` is the public form. An origin the table has
-not been taught causes the check to **abstain**, not to fail — with a `NOTE` on stderr, so a
-document that §1a has stopped applying to is visible rather than silent.
-
-Calling `set_source()` before the first block write is the natural order but is **not
-required**: a block written earlier is re-checked as soon as an origin arrives, and again in
-`to_dict()`.
-
-**One documented exception — the digital→OCR hand-off, page by page (atrium-digital-convert#4
-W4).** A page whose own `pages[]` row sets `needs_ocr: true` authorises `ocr-postprocess` to
-re-originate **that page**, even though `source.origin` is a `digital-born-*` value. That is what
-the `needs_ocr` grant to `digital-convert` exists for (Issue #10: an embedded text layer that
-decodes to corrupt diacritics; a scanned insert; a prior OCR layer), and it keeps `source.origin`
-truthful — it records how the **original input** was acquired, which really was a digital-born
-PDF. The rules (`OCR_HANDOFF` in `atrium_document.py`):
-
-* **Per page.** A `pages`/`lines` row on a page that is not flagged is refused, and so is a
-  wholesale `set_block()` of `content` or `tables`: one scanned insert must not let the OCR pass
-  write the born-digital pages. Until 2026-10-05 any one flagged page opened the whole plane.
-* **Replaced, not mixed.** `DocumentRecord.replace_page_rows("lines", pages, rows)` removes the
-  converter's rows of the flagged pages and merges the OCR rows in their place, then keeps the
-  block in page order (`page_index`). A `merge_block()` alone would leave the converter's lines
-  past the OCR line count on the page. `pages[]` rows are merged, never replaced: they carry
-  `page_index`, `canvas`, `category` and `text_layer` from the other tools.
-* **Stamped.** Both blocks' stamps read `{"program": "ocr-postprocess", …, "contribution":
-  "ocr-handoff"}`, and `merge_document_records()` does not read that as a second originator while
-  the merged `pages[]` still flags a page.
-* **What stays.** `source` (the original's), `content` (the converter's reading-order text of its
-  born-digital pages; per-page text is in `lines`), and `needs_ocr` itself — it is the
-  converter's request. That the request was served is `pages[].ocr` (the engine), never granted
-  to `digital-convert`, so "was this page OCR'd" stays answerable. Who wrote the plane is
-  `assembled.blocks[…].program`, as always.
-
-`ocr-postprocess` makes this write through `document_hook.write_document_block()`, so its
-`POST /process` (an ATR ALTO page with the record and the page key) and its batch stages behave
-the same.
-
-**One documented co-contribution — the quality model's scores (atrium-digital-convert#4 W3).**
-`ocr-postprocess` owns the common line-quality model, and a born-digital record needs its answer
-as much as a scanned one. A `merge_block()` by `ocr-postprocess` whose writable fields are a
-non-empty subset of `SCORING_FIELDS` — `lines[]` *categ, quality_score, lang*, `pages[]`
-*quality_score, quality_band* — into a plane another tool originated is a scoring
-co-contribution: noted, not refused, even under `strict=True`. It only updates rows the
-originator wrote (a row with no match is not appended), and its stamp reads
-`{"program": "ocr-postprocess", …, "contribution": "scoring"}` so neither a reader nor the fan-in
-check of `merge_document_records()` mistakes it for a second originator (the stamp's object
-admits extra keys; the schema is unchanged). Anything else `ocr-postprocess` writes on such a
-record (`text`, `bbox`, `ocr`, a new row, `content`, `tables`) is still refused, except the
-hand-off of a page the record flags `needs_ocr` (above). Which lines are scored is the caller's policy:
-`ocr-postprocess`'s `POST /score_record` never re-scores a line carrying `digital-convert`'s
-decode verdict (`categ` `Garbage` or `Inverted`).
-
-> ⚠️ **`BLOCK_OWNERS` authorises writes; it is not the read-time contract.** To find out who
-> wrote a block in a *given* record, read `assembled.blocks[<block>].program` — and for a
-> field-split block, `provenance.contributors[]`, since the stamp names only the most recent
-> writer. Code that hardcodes `alto-postprocess` as the source of `lines[]` was reading the
-> wrong contract even before digital-born documents existed.
-
-| Tool                | Owns                                                                                                                                                                                                                                                                                           |
-|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| page-classification | `page_categories` · `pages[]` *category, category_confidence*                                                                                                                                                                                                                                  |
-| ocr-postprocess ¹   | `pages[]` *page_index, quality_score, quality_band, needs_ocr, needs_ocr_reason, ocr, canvas* · `content` · `lines[]` *categ, quality_score, lang, text* · `tables[]` — **originator, documents with an OCR-class origin** (`ABBYY-ALTO`, `ocr:…`, `vlm:…`) · `quality_summary` (every origin) |
-| digital-convert     | `pages[]` *page_index, canvas, quality_score, quality_band, needs_ocr, needs_ocr_reason, text_layer* · `content` · `lines[]` *text, bbox, group_id, style, lang, quality_score, categ* · `tables[]` — **originator, digital-born documents only**                                              |
-| translator          | `translations` · `entities[]` *translation_en* — **reserved**: granted, written by no tool (#70; see below)                                                                                                                                                                                    |
-| nlp-enrich          | `entities[]` · `lines[]` *lemma, upos, feats, teitok_ref, bbox* · `pages[]` *teitok_surface* · `derived_from.teitok`                                                                                                                                                                           |
-| keyword-extract ¹   | `enrichment` · `keywords` · `forms` · `entities[]` *pid* · `regenerable.markdown`                                                                                                                                                                                                              |
+| Tool                | Writes                                                                                                                                                                                                                                   |
+|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ocr-postprocess ¹   | `pages[]` *page, canvas, content_status, quality_score, quality_band* · `content` · `lines[]` *text, bbox, block, text_source, bbox_precision, categ, quality_score, lang* · `quality_summary` · `source` *language, page_count, origin* |
+| page-classification | `page_categories` · `pages[]` *category, category_confidence*                                                                                                                                                                            |
+| nlp-enrich          | `entities[]` · `lines[]` *lemma, upos, feats, teitok_ref* · `pages[]` *teitok_surface*                                                                                                                                                   |
+| keyword-extract ¹   | `enrichment` · `keywords` · `entities[]` *pid*                                                                                                                                                                                           |
+| translator          | `translations` · `entities[]` *translation_en* — **reserved**: granted, written by no tool in the pilot                                                                                                                                  |
+| digital-convert     | — (writes docproc, `atr/docproc-json`)                                                                                                                                                                                                   |
 
 ¹ The successor of `alto-postprocess` and of `llm-enrich` respectively, since the repository moves of
-2026-10-01. Each predecessor keeps the same grant beside it — see [Program successors](#program-successors-2026-10-01).
+2026-10-01. Each predecessor id resolves to it — see [Program successors](#program-successors-2026-10-01).
 
-`quality_score` is one axis — **text trustworthiness, 0–1** — with two derivations. On the
-OCR path it is an engine-confidence proxy; on the digital-born path it is a decode-sanity
-score over the embedded text layer: per line, the lower of the share of letters that are
-*not* a CP1250-read-as-CP1252 misread and the share of visible characters that are not
-U+FFFD, control or private-use; per page, the mean over its lines (`digital_to_json.py`
-`decode_sanity()` / `normalize()`). An earlier revision of this paragraph described a
-vowel/consonant ratio and a dictionary hit-rate — the Layer B sketch in llm-enrich's #18 plan,
-which was never built. Which derivation produced a given value is answerable from `source.origin`, so the
-field is not split. Consumers that filter on it (`json_to_md --min-quality`) are filtering
-the same thing either way: *do not show this line to the model*.
+A list block's rows are keyed by `BLOCK_KEY_FIELDS`: pages by `page_index`, lines by `page` and
+`line`, entities by `page`, `line` and `char_span`. A page-classification run with no baseline
+writes `pages[]` rows keyed by `page_index`; the record builder adds the `page` label.
 
-**The two read-outs of atrium-project#73 (2026-10-09).** Both are single-owner blocks outside the
-positional plane, so §1a does not apply to them.
+`quality_score` is one axis — **text trustworthiness, 0–1** — written by the one line-quality
+model for every line, whatever its `text_source`. Consumers that filter on it are filtering the
+same thing on every route: *do not show this line to the model*.
+
+**The two read-outs of atrium-project#73.**
 
 * `keywords` (keyword-extract): the statistical keywords of the document (`document`) and of each
   page (`pages[]`, keyed by the `lines[].page` label), every one with its `method`, `score` and
   `rank`. One run writes one method's lists, and a re-run replaces the block. The controlled
-  keywords stay in `enrichment`; the two kinds are never merged into one list. A score is
-  comparable only within its own list (KeyBERT: a cosine; YAKE: normalised per document; KER: a
-  count); `rank` orders every list.
-* `quality_summary` (ocr-postprocess): `atrium_document.quality_summary(record)` written into the
-  record whenever ocr-postprocess writes or scores `pages[]`/`lines[]` — `pages` {`total`,
-  `scored`, `mean`, `median`, `min`, `max`} of `quality_score`, and `lines` {`total`, `by_categ`}.
-  Numbers only: no band, no threshold, and no tool reads it to route or refuse a document.
-  `pages[].quality_score` stays the authoritative signal; the Digital Archive computes its bands
-  from these numbers at index time.
+  keywords stay in `enrichment`; the two kinds are never merged into one list.
+* `quality_summary` (the record builder): `atrium_document.quality_summary(record)` written
+  whenever it writes pages and lines — `pages` {`total`, `empty`, `scored`, `mean`, `median`,
+  `min`, `max`} of `quality_score`, and `lines` {`total`, `by_categ`}. Numbers only: no band, no
+  threshold, and no tool reads it to route or refuse a document.
 
 ## Usage
 
-Alongside the tool's existing `ParadataLogger`, so both records share one `run_id`:
+Alongside the tool's `ParadataLogger`:
 
 ```python
 from atrium_document import DocumentRecord
 
-with DocumentRecord.open(
-    doc_id,
-    "llm-enrich",
-    baseline=args.document_json,  # may be None — rule 3; may be an AMČR seed
-    run_id=logger.run_id,
-    run_uuid=logger.run_uuid,  # the run's stable id (atrium-project#71)
-    paradata_ref=logger.paradata_ref,
-) as doc:
+with DocumentRecord.open(doc_id, "keyword-extract", baseline=args.document_json) as doc:
     doc.set_block("enrichment", {"items": items})
-    doc.add_derived_from("enriched", f"{doc_id}_enriched.json")
-    doc.add_regenerable("markdown", {"from": teitok_path, "converter": "xml_to_md@0.3.0", "detail": "full"})
-    doc.add_license_detail(paradata["license_detail"])
+logger.add_output("atrium/document-json", path=doc_path, record_fields=doc.written())
 ```
 
-Field-level contribution into a shared block:
+`baseline` may be None (rule 3), an AMČR seed, or a 1.x record (migrated). `run_id`, `run_uuid`
+and `paradata_ref` are still accepted so a caller need not change at once; none is written into
+the record. Field-level contribution into a shared block:
 
 ```python
 doc.merge_block("lines", rows)  # writes only this program's declared fields
 ```
 
-Shell stages use the CLI shim, as they do for paradata:
+Shell stages use the CLI shim:
 
 ```bash
-python atrium_document.py set-block --doc-id "$DOC" --program alto-postprocess \
-    --block pages --payload pages.json --baseline "$DOC.document.json" --out "$DOC.document.json"
+python atrium_document.py set-block --doc-id "$DOC" --program ocr-postprocess \
+    --block pages --payload pages.json --baseline "$DOC.document.json" --out "$DOC.document.json" \
+    --written written.json
+python atrium_document.py migrate --path old.document.json
 ```
 
 ## Versioning Rules
@@ -373,16 +277,7 @@ python atrium_document.py set-block --doc-id "$DOC" --program alto-postprocess \
 1. **Additive Updates:** adding an optional field or a new block requires **no bump** — rule 6
    means existing tools pass unknown keys through untouched.
 2. **Breaking Changes:** renaming/removing a field, or changing block ownership, bumps
-   `SCHEMA_VERSION` to the next major (e.g. `2.0`).
-
-   * **Not breaking, and therefore no bump:** adding an authorised *originator* to a block's
-     candidate set, where the choice is fixed per document by `source.origin` and no existing
-     tool loses a capability. No field is renamed or removed, every existing record stays
-     valid under the new module, and every existing tool keeps writing exactly what it wrote
-     before. This is the Issue #18 §1a case, and it is called out explicitly because a
-     literal reading of "changing block ownership" would have forced an unnecessary `2.0`
-     migration across five repos. The distinction that matters: **widening write
-     authorisation is additive; re-attributing an already-written block would not be.**
+   `SCHEMA_VERSION` to the next major. Schema 2.0 is such a bump.
 3. **Migration Mechanics:** a bump mandates a sequential `_migrate_X_to_Y()` and a branch in
    `migrate_document()`, exactly as in `atrium_paradata.py`.
 
@@ -391,21 +286,28 @@ python atrium_document.py set-block --doc-id "$DOC" --program alto-postprocess \
 * `merge_document_records()` and the `_cli()` shim in `atrium_document.py`
 * `atrium_document.schema.json` (kept in step with the module — one is the contract, one the validator)
 * Every tool's block writer, and any search/presentation layer indexing the record
-* This document and the ownership table above
+* `tools/e2e/e2e_assert.py`, the fixtures and this document
 
 ## Distribution
 
 `atrium_document.py` and `atrium_document.schema.json` are **hub-canonical**: they live here in
 `docs/templates/shared/` and are copied byte-identical into the tool repos, enforced by
-`para-drift.reusable.yml` — the same guarantee already covering `atrium_paradata.py` and
-`para_licenses.py`.
-Since 2026-09-26 the frozen copy `atrium_document.schema.doc-schema-v1.json` and
-`test_schema_freeze.py` travel with them; see below.
+`para-drift.reusable.yml` — the same guarantee covering `atrium_paradata.py` and
+`para_licenses.py`. The frozen copy `atrium_document.schema.doc-schema-v1.json` and
+`test_schema_freeze.py` travel with them; see below. Each tool adopts 2.0 in its own repository:
+`scripts/revendor_shared.sh --repo atrium-<tool>` copies the files, then the tool's callers change.
 
 ## Freeze & conformance
 
 Schema `1.0` is frozen as the tag **`doc-schema-v1`** (atrium-project#54). From that tag on, the
 schema is a compatibility obligation, not a design surface.
+
+**MAJOR 2 is pending.** Schema `2.0` has taken the MAJOR bump's first step (below): the module,
+the schema and `_migrate_1_to_2()`. Its tag `doc-schema-v2` is cut only after the proof gate (D12):
+the validator, the E2E checks and a complete run through the assembled pipeline chain. Until then
+`test_schema_freeze.py` keeps MAJOR 2 in `PENDING_FREEZES`: the checks against the current major's
+freeze skip with that reason, its register (`POST_FREEZE_CHANGES_BY_MAJOR[2]`) is empty, and the v1
+frozen copy is still checked byte for byte. The 1.x register below stays as the record of 1.x.
 
 ### Three references, three jobs
 
@@ -413,7 +315,7 @@ schema is a compatibility obligation, not a design surface.
 |-------------------------|----------------------------------------------------------------------------------|-------------------------------------------------|
 | `doc-schema-v1`         | the frozen contract for schema MAJOR 1                                           | **never**; it is not moved, deleted or re-cut   |
 | `v1`                    | the current canonical shared files, which the tools vendor and para-drift checks | yes, on every hub change the tools must pick up |
-| `schema_version: "1.0"` | what every record carries, and what `load_document()`'s MAJOR guard reads        | only on a MAJOR bump                            |
+| `schema_version: "2.0"` | what every record carries, and what `load_document()`'s MAJOR guard reads        | only on a MAJOR bump                            |
 
 `v1` is the reusable-workflow tag and says nothing about the schema by itself; `doc-schema-v1` says
 nothing about workflows. Neither replaces the other.
@@ -460,6 +362,10 @@ changes. para-drift adds that the schema, the frozen copy and the test are all b
 hub `v1`, and the hub's records test that those registered changes still admit every record the
 tools write.
 
+Until `doc-schema-v2` is cut, a repository implements `atrium_document` 2.0 when it carries the
+re-vendored shared files, its own tests pass, and the records it writes pass the E2E lane with
+`--require-current-major`, natively and not only after migration.
+
 Each tool repo's README (a *Document record schema* subsection under its paradata section) and its
 `CITATION.cff` (a `references:` entry of type `standard`) name `doc-schema-v1` and its commit, so
 the baseline is visible from every repository without reading the hub.
@@ -485,8 +391,11 @@ Then the usual order ([`docker_gha.md`](docker_gha.md), "The procedure"): land t
 **Removing or renaming a declared field, or re-attributing a written block, is a MAJOR bump**
 (rule 2). The test has no register entry for a removal on purpose. The order:
 
-1. `_migrate_1_to_2()`, its branch in `migrate_document()`, and `SCHEMA_VERSION = "2.0"`;
-2. cut `doc-schema-v2` on the hub commit that carries them;
+1. `_migrate_1_to_2()`, its branch in `migrate_document()`, and `SCHEMA_VERSION = "2.0"`, with
+   MAJOR 2 in `PENDING_FREEZES` (done on `84-doc-schema-v2`, atrium-project#84);
+2. cut `doc-schema-v2` on the hub commit that carries them, **only after the proof gate**: the
+   validator, the E2E checks with `--require-current-major`, and a complete run through the
+   assembled chain (D12). Remove MAJOR 2 from `PENDING_FREEZES` in the same commit;
 3. add `atrium_document.schema.doc-schema-v2.json` (the file as that tag has it) to
    `docs/templates/shared/` with its `MANIFEST.json` row, add `FREEZES[2]` to
    `test_schema_freeze.py`, and start its `POST_FREEZE_CHANGES` empty;
@@ -1138,7 +1047,7 @@ and the `v1` move follow, hub first (para-drift diffs every tool repo against th
   saying so; `atrium_document.py` gains a comment beside the grant; the ownership table above says
   *reserved*.
 * **`regenerable.*.detail` gains a description** naming the three profiles, and this document
-  their definition ([Reference discipline](#reference-discipline-non-negotiable)). The enum is
+  their definition ([References and coordinates](#references-and-coordinates)). The enum is
   unchanged. llm-enrich implements `standard` and `minimal` (`--detail`; `json_to_md@1.1`).
 * **TEITOK projection (opt-in)** noted under Reference discipline: nlp-enrich can write the page
   categories and keywords into the TEITOK header; no record field changes.
@@ -1392,3 +1301,35 @@ as motyc chose it on #6 (2026-10-29).
   licence entity: the host's root decides its own. `--wrap` gives its stub root `#no-licence-asserted` unless a
   licence is passed.
 - Not in this change: the paradata `license` fields (paradata 3.0) and moving the calculated value out of the record.
+
+## Changelog — 2026-11-12 (#84: record schema 2.0, paradata 3.0)
+
+The hub side of doc-schema-v2, after ARÚP's output contract of 12 November 2026 and atrium-project#84.
+On the branch `84-doc-schema-v2`; the tools adopt it each in its own repository.
+
+- **Record 2.0** (`SCHEMA_VERSION = "2.0"`): content only. Removed: `provenance`, `assembled`,
+  `derived_from`, `regenerable`, `forms`, `tables`, `content.reading_order`, `lines[].group_id`,
+  `lines[].style`, `pages[].text_layer`, `needs_ocr`, `needs_ocr_reason`, `ocr`, `source.sha256`, and the
+  `Garbage`/`Inverted` line categories (D1, D2, D19, D26). New: `lines[].block`, `text_source`,
+  `bbox_precision`; `pages[].content_status`; `canvas.unit` `pt`/`px` with `user_unit` and `pixel_ratio`
+  (names proposed); `source.origin` `digital`/`atr`/`legacy`, descriptive. Pages are keyed by
+  `page_index`; lines are numbered from 1. See [Schema 2.0](#schema-20-doc-schema-v2-atrium-project84).
+- **One writer of the positional blocks** (D20): ocr-postprocess, the record builder. digital-convert
+  owns no block. `ORIGIN_ORIGINATORS`, `resolve_originator()`, the OCR hand-off and the scoring
+  co-contribution are gone.
+- **`written()`** replaces the stamps: the blocks and fields a run wrote go into its paradata.
+  `add_derived_from()`, `add_regenerable()` and `add_license_detail()` raise `RemovedInSchema2`.
+- **Migration**: `_migrate_1_to_2()` in `migrate_document()`, so every reader takes a 1.x record
+  ([Reading 1.x records](#reading-1x-records)). The 1.x example is kept as
+  `fixtures/atrium_document.v1.example.json`; `fixtures/atrium_document.example.json` is a 2.0 record.
+  Seeds carry no `schema_version`.
+- **Freeze**: MAJOR 2 is in `PENDING_FREEZES`; `doc-schema-v2` waits for the proof gate (D12).
+  `doc-schema-v1` is unchanged.
+- **Paradata 3.0, RO-Crate, limits** (shared, see [`paradata_schema.md`](paradata_schema.md) and
+  [`rocrate_export.md`](rocrate_export.md)): no licence fields and no calculated licence; inputs and outputs
+  by distribution name and SHA-512; a trimmed, skipped or stopped content raises `ContentLimitError` (D13).
+- **E2E gate** (`tools/e2e/e2e_assert.py`): reads every record through the migration; no stamp or
+  provenance checks; `--expect-atr-pages` (alias `--expect-needs-ocr`) reads the ATR pages off
+  `lines[].text_source`; `--expect-layout` checks `lines[].block`; `--require-current-major` is new.
+  The workflows are unchanged.
+- `ocr_text_layer` stays in the service reason codes as deprecated: a published code is not removed.

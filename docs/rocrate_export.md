@@ -147,10 +147,9 @@ Three reasons, in descending order of how much they bind us:
    that action for its call, and the record's crate entities are what AMČR's record crate embeds.
 2. **The DMP names it.** RO-Crate appears in the WP3 standards column alongside CIDOC CRM, SKOS,
    PeriodO, Getty AAT, TEI, DataCite and IIIF.
-3. **The record already promised it.** [`document_schema.md`](document_schema.md) has described
-   the document record as "one FAIR, versioned JSON for search and **catalogue export**" since it
-   was written, and accretion rule 5 exists so the JSON "stays self-describing for catalogue
-   export". This is the consumer.
+3. **The record needs it.** Since record schema 2.0 the document record holds content only
+   ([`document_schema.md`](document_schema.md)); how each version of it was made is said by the
+   runs' paradata, and this is their form.
 
 ### What it is *not*, and this matters
 
@@ -166,80 +165,79 @@ it has already written, once per call. No stage computes anything for it.
 
 ### 4.1 Field by field
 
-Every property comes from something the record or its paradata already carries. Where a field
-does not exist it is **omitted, not guessed** — a crate that asserts a checksum nobody computed is
-worse than one that admits the gap. The one exception is a tool's `version`, which RO-Crate 1.2
-makes a MUST: without paradata it reads `"unrecorded"`, which states the gap instead of hiding it.
+Since record schema 2.0 and paradata 3.0 (atrium-project#84) the record holds content only, so every
+statement about a run comes from that run's paradata. Where a field does not exist it is **omitted,
+not guessed** — a crate that asserts a checksum nobody computed is worse than one that admits the
+gap. The one exception is a tool's `version`, which RO-Crate 1.2 makes a MUST: without paradata it
+reads `"unrecorded"`, which states the gap instead of hiding it.
 
-| RO-Crate                     | ATRIUM source                                                                            | Note                                                                                                                                             |
-|------------------------------|------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| root `identifier`            | `doc_id`, as a `PropertyValue` (`#doc_id`)                                               | the form RO-Crate 1.2 recommends                                                                                                                 |
-| root `name`                  | `doc_id`                                                                                 |                                                                                                                                                  |
-| root `datePublished`         | the record's **newest `assembled.blocks[*].updated_at`**                                 | never the clock — see §7.3                                                                                                                       |
-| root `license`               | `#no-licence-asserted`, a contextual entity                                              | asserts nothing: rights depend on the source and AMČR's permission (#6, 2026-11-04); the calculated `provenance.license` is not exported         |
-| root `conformsTo`            | the Process Run Crate 0.5 `Profile`                                                      | the descriptor names RO-Crate 1.2                                                                                                                |
-| root `hasPart` → `File`      | `derived_from` values, **and only those**                                                | persistent step outputs; `contentSize` when the files are present (`data_dir`)                                                                   |
-| root `isBasedOn` → `#source` | `source`                                                                                 | contextual, not a part — §4.2; carries the archive's `sha512`, or else `sha256`                                                                  |
-| root `about` → `DefinedTerm` | every controlled value in the record; every AMČR/TEATER concept in `teater_category_ids` | `@id` from `atrium_vocab.concept_uri()`; a source concept keeps its own URI (nothing minted)                                                     |
-| root `mentions`              | the `CreateAction`s and the regenerable recipes                                          |                                                                                                                                                  |
-| `CreateAction`               | one per `provenance.contributors[]` entry                                                | `@id` = its `run_uuid`; a record written before #71 keeps `#run-<program>-<run_id>`                                                              |
-| `CreativeWork` per block     | one per `assembled.blocks[…]` stamp                                                      | §4.3; the action that wrote it lists it as `result`                                                                                              |
-| `SoftwareApplication`        | `REPO_URLS` plus, with paradata, `repository` / `tool_version` / `python_version`        | `@id` = the release page; `version`; its own authors (`PROGRAM_AUTHORS`) as `creator`                                                            |
-| `ContainerImage`, `agent`    | paradata `docker_image` (ATRIUM_RUNNER_IMAGE) and `run_agent` (ATRIUM_RUN_AGENT)         | on the action, only when recorded                                                                                                                |
+| RO-Crate                     | ATRIUM source                                                                            | Note                                                                                         |
+|------------------------------|------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
+| root `identifier`            | `doc_id`, as a `PropertyValue` (`#doc_id`)                                               | the form RO-Crate 1.2 recommends                                                             |
+| root `name`                  | `doc_id`                                                                                 |                                                                                              |
+| root `datePublished`         | the **newest run's end time**                                                            | never the clock — see §7.3                                                                   |
+| root `license`               | none, unless the caller asserts one (`license=`)                                         | the rights in a document are the archive's to state; the tools assert none (D2)              |
+| root `conformsTo`            | the Process Run Crate 0.5 `Profile`                                                      | the descriptor names RO-Crate 1.2                                                            |
+| root `isBasedOn` → `#source` | `source`                                                                                 | contextual, not a part — §4.2; carries the archive's `sha512`                                |
+| root `about` → `DefinedTerm` | every controlled value in the record; every AMČR/TEATER concept in `teater_category_ids` | `@id` from `atrium_vocab.concept_uri()`; a source concept keeps its own URI (nothing minted) |
+| root `mentions`              | the runs' `CreateAction`s                                                                | one per paradata record (`action_from_paradata`) or returned action                          |
+| `CreateAction` `object`      | paradata `inputs`                                                                        | by AMČR distribution name and SHA-512 (§5.1); the record input is the record version read    |
+| `CreateAction` `result`      | paradata `outputs`                                                                       | the record's carries `recordFields`, the blocks and fields the run wrote                     |
+| `SoftwareApplication`        | paradata `repository` / `tool_version` / `python_version`, else `REPO_URLS`              | `@id` = the release page; `version`; its own authors (`PROGRAM_AUTHORS`) as `creator`        |
+| `ContainerImage`, `agent`    | paradata `docker_image` (ATRIUM_RUNNER_IMAGE) and `run_agent` (ATRIUM_RUN_AGENT)         | on the action, only when recorded                                                            |
 
 Each **tool's `creator`** is its own authors, not the root's `author`: the record is the
 archive's, the software is theirs (atrium-project#71). Who wrote which tool is `PROGRAM_AUTHORS`,
 taken from each tool's `CITATION.cff`; a program it does not list (a predecessor) gets the authors
-every tool has (`CORE_AUTHORS`), and a service's `-api` suffix is ignored. Until 2026-10-28 every
-tool named the same four people. ORCIDs are their `@id`s, so no ATRIUM identifier is minted for a
-person.
+every tool has (`CORE_AUTHORS`), and a service's `-api` suffix is ignored. ORCIDs are their `@id`s,
+so no ATRIUM identifier is minted for a person.
 
-### 4.2 The reference-discipline rule, restated in RO-Crate terms
+### 4.2 Distributions, not files
 
-This is the part where ATRIUM's existing design and RO-Crate's hard rule turn out to be the same
-rule. [`document_schema.md`](document_schema.md) says only two classes of reference may appear in
-a record — the **original input** and **persistent step outputs** — and that "transient artifacts
-are **never** referenced". RO-Crate says everything in `hasPart` must be in the crate. So:
+AMČR stores a document's outputs as **distributions** (`atrium/document-json`, `atr/docproc-json`,
+`atr/teitok-xml`, `metadata`, `metadata-en`), and the crate names them the same way: every input and
+output of a run is a `CreativeWork` with the distribution's `name` and its `sha512`, and an `@id`
+that joins the two (`#atr/docproc-json@<first 16 hex of the digest>`). So the output of one step and
+the input of the next are one entity, and a crate never names a local path or a SHA-256 `ni:` URI
+(contract §6). An intermediate that is not stored but reaches a stored distribution is still named
+by its SHA-512 and carries `stored: false` (D23).
 
-| ATRIUM block   | Becomes                                  | Because                                                                    |
-|----------------|------------------------------------------|----------------------------------------------------------------------------|
-| `derived_from` | `hasPart` data entities                  | persistent step outputs; the files exist                                   |
-| `regenerable`  | contextual entities, **never `hasPart`** | recipes for files that do not exist                                        |
-| `source`       | root `isBasedOn`, contextual             | archive-managed; it carries no path *by design*, so it is not in the crate |
-
-A crate that put `regenerable` in `hasPart` would be invalid for exactly the reason the record
-forbids storing the derived Markdown: the file is not there. `atrium_rocrate.py`'s `--selftest`
-asserts all three of these directly, so the rule cannot rot.
-
-The `#source` entity is honest about its own absence:
+The document crate has no `hasPart`: the files are AMČR's, held in its own crate, and a record names
+none. The original is archive-managed and not in the crate, so `source` becomes the root's
+`isBasedOn`, a contextual entity that is honest about its absence:
 
 ```json
 {
   "@id": "#source",
   "@type": "CreativeWork",
-  "name": "CTX000000001.alto.xml",
+  "name": "CTX000000001.pdf",
   "identifier": "CTX000000001",
-  "encodingFormat": "application/alto+xml",
-  "sha256": "3b1f0000…",
-  "description": "The ORIGINAL input this record was built from, identified by doc_id and its digest. Archive-managed and not part of this crate. Acquired as: ABBYY-ALTO."
+  "encodingFormat": "application/pdf",
+  "sha512": "72e9c14d…",
+  "description": "The ORIGINAL input this record was built from, identified by doc_id and its SHA-512. Archive-managed and not part of this crate. Text obtained as: atr."
 }
 ```
 
-### 4.3 Why each block gets its own entity
+### 4.3 What a run wrote into the record
 
-`assembled.blocks` is, in the record's own words, "the source of granularity" — re-running one
-tool rewrites exactly one entry. A crate that flattened that to a single "produced by the ATRIUM
-pipeline" claim would throw away the one thing the accretion design bought. So each stamped block
-becomes a small contextual entity, and each run's `CreateAction` lists the blocks it wrote as its
-`result`.
+The record carries no stamps (D1). The run's paradata output for the record names the blocks
+**and fields** the run wrote (`record_fields`, from `DocumentRecord.written()`), and the action's
+result carries them as `recordFields`, a JSON literal:
 
-**Who wrote a block is answered by the actions, not by the block.** `entities` is a field-split
-block: nlp-enrich wrote the entities, llm-enrich later wrote `entities[].pid` into the same rows.
-Both runs list `#block-entities` as a `result`, which is the record's `provenance.contributors[]`
-said in RO-Crate. The block entity itself carries no `creator`: in RO-Crate `creator` is for people
-(the tools' authors), and a stamp names only the most recent writer anyway
-([`document_schema.md`](document_schema.md), rule 4). A stamp whose run has no contributor entry —
-a record assembled from a hand-built baseline — still gets an action, reconstructed from the stamp.
+```json
+{
+  "@id": "#atrium/document-json@eeeeeeeeeeeeeeee",
+  "@type": "CreativeWork",
+  "name": "atrium/document-json",
+  "encodingFormat": "application/json",
+  "sha512": "eeee…",
+  "recordFields": "{\"lines\": [\"page\", \"line\", \"text\", \"block\", \"text_source\", \"bbox_precision\"], \"pages\": [\"page\", \"page_index\", \"content_status\"]}"
+}
+```
+
+That is finer than 1.x's one entity per block: a field-split block (`entities`, written by
+nlp-enrich, with `pid` added by keyword-extract) is answered field by field, and the record version
+each run read is its `object`, so the chain of versions is explicit.
 
 ---
 
@@ -249,95 +247,85 @@ a record assembled from a hand-built baseline — still gets an action, reconstr
 
 Every ATRIUM service returns its run as `paradata`, with every successful response
 (atrium-project#71). It is one Process Run Crate `CreateAction`, as nested JSON-LD, built by
-`create_action()` from the paradata record the service's logger has just finalized. It is the same
-document AMČR stores as the run's paradata file, and it reads:
+`action_from_paradata()` from the paradata record the service's logger has just finalized. It is
+the document AMČR stores as the distribution's `paradata/<distribution>`, and it reads:
 
 ```json
 {
   "@context": ["https://w3id.org/ro/crate/1.2/context", { "…": "the local terms, §10" }],
   "@id": "urn:uuid:5a1e0c1e-1b2d-4c3e-8f40-0a1b2c3d4e5f",
   "@type": "CreateAction",
-  "name": "atrium-alto-postprocess run 260724-101112",
+  "name": "atrium-ocr-postprocess run 260724-101112",
   "instrument": {
-    "@id": "https://github.com/ufal/atrium-alto-postprocess/releases/tag/v1.6.0-beta",
+    "@id": "https://github.com/ufal/atrium-ocr-postprocess/releases/tag/v1.16.0-beta",
     "@type": "SoftwareApplication",
-    "name": "atrium-alto-postprocess", "version": "1.6.0-beta",
-    "url": "https://github.com/ufal/atrium-alto-postprocess",
+    "name": "atrium-ocr-postprocess", "version": "1.16.0-beta",
     "creator": [ { "@id": "https://orcid.org/0009-0002-4773-2797", "@type": "Person", "name": "Kateryna Lutsai" }, "…" ]
   },
-  "containerImage": {
-    "@id": "#image:ghcr.io/ufal/atrium-alto-postprocess-api:1.6.0-beta",
-    "@type": ["ContainerImage", "CreativeWork"],
-    "additionalType": { "@id": "https://w3id.org/ro/terms/workflow-run#DockerImage" },
-    "registry": "ghcr.io", "name": "ufal/atrium-alto-postprocess-api", "tag": "1.6.0-beta"
-  },
+  "containerImage": { "@id": "#image:ghcr.io/ufal/atrium-ocr-postprocess-api:1.16.0-beta", "…": "…" },
   "object": [
-    { "@id": "ni:///sha-256;…", "@type": "CreativeWork", "name": "page.alto.xml",
-      "encodingFormat": "application/alto+xml", "contentSize": "48213", "sha256": "…" },
-    { "@id": "#record", "@type": "CreativeWork", "identifier": "AMCR-F-0042", "name": "AMCR-F-0042.document.json" }
+    { "@id": "#atr/docproc-json@cccccccccccccccc", "@type": "CreativeWork", "name": "atr/docproc-json", "sha512": "cccc…" },
+    { "@id": "#atrium/document-json@dddddddddddddddd", "@type": "CreativeWork", "name": "atrium/document-json", "sha512": "dddd…" }
   ],
-  "result": [ { "@id": "#block-lines", "@type": "CreativeWork", "recordBlock": "lines" }, "…" ],
+  "result": [
+    { "@id": "#atrium/document-json@eeeeeeeeeeeeeeee", "@type": "CreativeWork", "name": "atrium/document-json",
+      "sha512": "eeee…", "recordFields": "{\"lines\": [\"…\"], \"pages\": [\"…\"]}" }
+  ],
   "agent": { "@id": "https://ror.org/…", "@type": "Organization" },
   "startTime": "2026-07-24T10:11:12+00:00",
   "endTime": "2026-07-24T10:11:40+00:00",
   "actionStatus": "http://schema.org/CompletedActionStatus",
-  "paradataRecord": { "schema_version": "2.0", "program": "alto-postprocess", "run_uuid": "urn:uuid:5a1e…", "…": "…" }
+  "paradataRecord": { "schema_version": "3.0", "program": "ocr-postprocess", "run_uuid": "urn:uuid:5a1e…", "…": "…" }
 }
 ```
 
-* **`@id` is the run's `run_uuid`**, the value the call stamped into every block of the record it
-  returned. The response, the record and the archived crate name the run the same way.
+* **`@id` is the run's `run_uuid`**, minted by `atrium_paradata` when the run starts. The response,
+  the paradata file and the archived crate name the run the same way.
 * **`instrument`** is the tool. Its `@id` is its release page, so it is stable and resolvable; it
   carries `version` (never `softwareVersion`) and its authors as `creator`.
-* **`containerImage`** is the image the service runs as (`ATRIUM_RUNNER_IMAGE`, the tag the
-  registry carries, atrium-project#69 B3).
-* **`object`** is what the call read: the upload, identified by its content (RFC 6920
-  `ni:///sha-256;…`, so the output of one stage and the input of the next are one entity), and
-  `#record`, the record it was handed — an AMČR seed or the previous stage's record.
-* **`result`** is what it wrote: the record's blocks (`#block-<name>`, the entities of §4.3) and
-  any output file.
+* **`containerImage`** is the image the service runs as (`ATRIUM_RUNNER_IMAGE`).
+* **`object`** is what the call read and **`result`** what it wrote, each a distribution by name
+  and SHA-512 (§4.2), from the paradata `inputs` and `outputs`. The record's result carries
+  `recordFields` (§4.3).
 * **`agent`** is the organisation operating the deployment, from `ATRIUM_RUN_AGENT`, an IRI.
-  Unset, there is no agent: one is never invented, and it is never the processing account, which
-  only reads and calls back (grounding report §8).
-* **`startTime` / `endTime`** are UTC, to the second: the profile's pattern refuses Python's
-  microseconds. **`actionStatus`** is `CompletedActionStatus`; `FailedActionStatus` with `error`
-  exists for a caller that records a failure, but a service returns no action with an error
-  body: AMČR records a failed call from the status and reason code.
+  Unset, there is no agent: one is never invented, and it is never the processing account.
+* **`startTime` / `endTime`** are UTC, to the second. **`actionStatus`** is
+  `CompletedActionStatus`, or `FailedActionStatus` with `error` when the paradata say
+  `action_status: failed`. A failed step fails the job and nothing is stored (D13), so what AMČR
+  stores is always completed.
 * **`paradataRecord`** is the whole paradata record as a JSON literal, so nothing it says is lost
-  to a schema.org mapping.
+  to a schema.org mapping. It carries no licence: `components` lists each component with its own
+  terms, as facts.
 
-`action_problems(action)` is the shared contract check: every repository's contract test and the
-E2E run it against a real response.
+`action_problems(action)` is the shared contract check, run by every repository's contract test and
+by the E2E against a real response. Besides the frame it checks that every `object` and `result`
+names a distribution and a SHA-512, that no `@id` is an `ni:` URI, that the record's result carries
+`recordFields`, and that `paradataRecord` carries no licence.
 
 ### 5.2 Where each service returns it
 
-| Service             | Where the action is                                                                                                      | Output file in `result` |
-|---------------------|--------------------------------------------------------------------------------------------------------------------------|-------------------------|
-| page-classification | `paradata` in `/predict_image` and `/predict_document`                                                                   | `predictions.json`      |
-| alto-postprocess    | `paradata` in `/process`                                                                                                 | `cleaned_lines.json`    |
-| translator          | `paradata` with `response_format=json`; `paradata.json`, the fourth part of `multipart/mixed`; none in a bare XML answer | the translated XML      |
-| nlp-enrich          | `paradata` in `/enrich`, `/enrich_text` and a job's result                                                               | `<doc_id>.teitok.xml`   |
-| llm-enrich          | `paradata` in `/extract_keywords` and `/extract_keywords_text`                                                           | `results.json`          |
+| Service             | Where the action is                                                                                                      |
+|---------------------|--------------------------------------------------------------------------------------------------------------------------|
+| page-classification | `paradata` in `/predict_image` and `/predict_document`                                                                   |
+| ocr-postprocess     | `paradata` in `/process`                                                                                                 |
+| translator          | `paradata` with `response_format=json`; `paradata.json`, the fourth part of `multipart/mixed`; none in a bare XML answer |
+| nlp-enrich          | `paradata` in `/enrich`, `/enrich_text` and a job's result                                                               |
+| keyword-extract     | `paradata` in `/extract_keywords` and `/extract_keywords_text`                                                           |
 
-A JSON output file is the response member of that name, and an XML one the document returned;
-each is identified by its content, like the upload. nlp-enrich runs a pipeline of
-stages: its `paradataRecord` is the merged pipeline-run record, and its `@id` is the `run_uuid`
-the stats stage stamped into the record (the merged run's own when no record was asked for).
-alto-postprocess, the one service that reads the source, also records `source.origin` in the
-record it returns (`docs/document_schema.md`, The AMČR seed).
+nlp-enrich runs a pipeline of stages: its `paradataRecord` is the merged pipeline-run record. Each
+tool adopts paradata 3.0 in its own repository; until it does, its action keeps the 1.x shape.
 
 ### 5.3 Fragments: entities for a crate someone else owns
 
 AMČR's record crate is AMČR's: its root is the archived record, its files are the record's
 distributions. What ATRIUM contributes are entities: the runs, the tools and their authors, the
-images, the controlled terms, the record's blocks. A **fragment** is exactly that — the entities
-with **no metadata descriptor and no root**, so embedding one never creates a second root:
+images, the controlled terms. A **fragment** is exactly that — the entities with **no metadata
+descriptor and no root**, so embedding one never creates a second root:
 
-* `document_crate(record, fragment=True)`: the record's entities. No `derived_from` files (the
-  host decides which files it holds), and `source_id="…"` points every action's `object` at the
-  host's own entity for the original instead of a `#source`.
+* `document_crate(record, paradata=…, fragment=True)`: the record's entities. `source_id="…"`
+  points at the host's own entity for the original instead of a `#source`.
 * `action_fragment(action)`: one service's `CreateAction`, flattened. In a crate the graph is flat,
-  so `paradataRecord` travels there as its JSON text.
+  so `paradataRecord` and `recordFields` travel there as JSON text.
 
 The host puts the entities in its `@graph`, lists every `CreateAction` in its root's `mentions`
 and every `DefinedTerm` in `about`, and declares the Process Run Crate profile on its root.
@@ -348,23 +336,14 @@ and a working example for the host.
 
 ## 6. A real worked example
 
-Everything below is genuine output from
-`python3 atrium_rocrate.py --document fixtures/atrium_document.example.json` — 50 entities. The
-example record predates `run_uuid` and comes with no paradata, so its runs keep their legacy ids
-and its tools read `"version": "unrecorded"`; pass `--paradata` for each run to get the release ids.
+Everything below is genuine output of `document_crate()` over
+`fixtures/atrium_document.example.json` and the module's two sample paradata records (an
+ocr-postprocess run that built the record from docproc, and an nlp-enrich run that added entities)
+— 37 entities. The record alone (`python3 atrium_rocrate.py --document …`) gives a crate with no
+runs; pass `--paradata` once per run.
 
-**The descriptor** — the entry point. `about` points at the root; `conformsTo` pins the spec:
-
-```json
-{
-  "@id": "ro-crate-metadata.json",
-  "@type": "CreativeWork",
-  "about": { "@id": "./" },
-  "conformsTo": { "@id": "https://w3id.org/ro/crate/1.2" }
-}
-```
-
-**The root**, abridged — note that every value is either a literal or an `@id` pointer:
+**The root**, abridged — every value is either a literal or an `@id` pointer, and there is no
+`license`:
 
 ```json
 {
@@ -372,47 +351,30 @@ and its tools read `"version": "unrecorded"`; pass `--paradata` for each run to 
   "@type": "Dataset",
   "identifier": { "@id": "#doc_id" },
   "name": "ATRIUM document record CTX000000001",
-  "datePublished": "2026-07-25",
-  "schemaVersion": "1.0",
+  "datePublished": "2026-07-24",
+  "schemaVersion": "2.0",
   "conformsTo": { "@id": "https://w3id.org/ro/wfrun/process/0.5" },
-  "license":   { "@id": "#no-licence-asserted" },
   "isBasedOn": { "@id": "#source" },
-  "hasPart":   [ { "@id": "DOC_LINE_CATEG/CTX000000001.csv" },
-                 { "@id": "KW_PER_DOC_LLM/CTX000000001_enriched.json" }, … 2 more … ],
-  "mentions":  [ { "@id": "#regenerable-markdown" },
-                 { "@id": "#run-alto-postprocess-260725-072210" }, … 4 more runs … ],
-  "about":     [ { "@id": "https://w3id.org/atrium/cnec/gc" }, … 7 more terms … ]
+  "mentions":  [ { "@id": "urn:uuid:5a1e0c1e-1b2d-4c3e-8f40-0a1b2c3d4e5f" },
+                 { "@id": "urn:uuid:9c8b7a6d-5e4f-4321-9abc-def012345678" } ],
+  "about":     [ { "@id": "https://api.aiscr.cz/id/HES-000021" }, … 7 more terms … ]
 }
 ```
 
-**A run**, with its instrument and results:
+**The second run**: it read the record version the first one wrote, and wrote the next version and
+the TEITOK file:
 
 ```json
 {
-  "@id": "#run-nlp-enrich-260725-074512",
+  "@id": "urn:uuid:9c8b7a6d-5e4f-4321-9abc-def012345678",
   "@type": "CreateAction",
-  "name": "nlp-enrich run 260725-074512",
-  "endTime": "2026-07-25T03:54:14+00:00",
-  "actionStatus": "http://schema.org/CompletedActionStatus",
-  "instrument": { "@id": "https://github.com/ufal/atrium-nlp-enrich" },
-  "object":     { "@id": "#source" },
-  "result": [ { "@id": "#block-entities" }, { "@id": "#block-lines" },
-              { "@id": "#block-pages" },    { "@id": "#block-derived_from" } ],
-  "description": "Contributed block(s) entities, lines, pages, derived_from. Run paradata: not recorded."
-}
-```
-
-**A regenerable recipe** — a contextual entity, deliberately absent from `hasPart`. Its source is
-a file of the crate, so it is a reference:
-
-```json
-{
-  "@id": "#regenerable-markdown",
-  "@type": "CreativeWork",
-  "name": "markdown",
-  "regenerableFrom": { "@id": "TEITOK/CTX000000001.teitok.xml" },
-  "regenerableWith": "xml_to_md@0.3.0",
-  "description": "DISPOSABLE derivation, recorded as a reproducible recipe rather than a stored path (detail: full). Deliberately absent from hasPart: the file is not in this crate and is not meant to be."
+  "name": "atrium-nlp-enrich run 260724-101500",
+  "instrument": { "@id": "https://github.com/ufal/atrium-nlp-enrich/releases/tag/v1.4.0" },
+  "object": [ { "@id": "#atrium/document-json@eeeeeeeeeeeeeeee" } ],
+  "result": [ { "@id": "#atrium/document-json@aaaaaaaaaaaaaaaa" }, { "@id": "#atr/teitok-xml@ffffffffffffffff" } ],
+  "startTime": "2026-07-24T10:15:00+00:00",
+  "endTime": "2026-07-24T10:16:02+00:00",
+  "actionStatus": "http://schema.org/CompletedActionStatus"
 }
 ```
 
@@ -434,12 +396,12 @@ a file of the crate, so it is a reference:
 
 ### 7.1 The functions
 
-**Per-document** — the primitive, one crate per `doc_id`:
+**Per-document** — one crate per `doc_id`, with the runs that wrote it:
 
 ```bash
 python3 atrium_rocrate.py --document CTX000000001.document.json \
-    --paradata paradata/260724-101112_alto-postprocess.json --paradata paradata/260724-101500_nlp-enrich.json \
-    --data-dir crates/CTX000000001/ --out-dir crates/CTX000000001/
+    --paradata paradata/260724-101112_ocr-postprocess.json --paradata paradata/260724-101500_nlp-enrich.json \
+    --out-dir crates/CTX000000001/
 # -> crates/CTX000000001/ro-crate-metadata.json
 ```
 
@@ -464,48 +426,31 @@ Without `--out-dir` the crate goes to stdout, which is what you want for a pipe 
 From Python:
 
 ```python
-from atrium_rocrate import create_action, document_crate, file_entity, block_entities, write_crate
+from atrium_rocrate import action_from_paradata, document_crate, write_crate
 
-crate = document_crate(record, paradata=[alto_paradata, nlp_paradata])
+action = action_from_paradata(logger.record)  # what a service returns as `paradata`
+crate = document_crate(record, paradata=[ocr_paradata, nlp_paradata])
 write_crate(crate, "crates/CTX000000001/")
-
-action = create_action(
-    logger.record, inputs=[file_entity(name, data, media_type=mt)], outputs=block_entities(["pages", "lines"])
-)
 ```
 
-`paradata` is the run records of the runs that wrote the record, matched by `run_uuid` (else by
-program and `run_id`); the `{program: record}` map of earlier versions is still accepted. Without
-it the crate is still valid — it just says less about *what ran*.
+A caller that has no paradata 3.0 record builds the entities itself: `create_action(paradata,
+inputs=[file_entity(name, data, media_type=…)], outputs=[record_result(doc.written(), data)])`, and
+`record_entity(doc_id, data)` for the record version read.
 
 ### 7.2 What the folder looks like
 
-A crate is a **directory**, and the metadata file's paths are relative to it. So the data files
-must sit where the record says they do:
-
-```
-crates/CTX000000001/
-├── ro-crate-metadata.json            <- what this module writes
-├── DOC_LINE_CATEG/CTX000000001.csv   <- you place these; the module does not move files
-├── TEITOK/CTX000000001.teitok.xml
-├── TRANSLATED/CTX000000001.alto.xml
-└── KW_PER_DOC_LLM/CTX000000001_enriched.json
-```
-
-> ⚠️ **`atrium_rocrate.py` writes metadata; it does not copy data.** Assembling the directory is
-> the caller's job, and it must use the same relative paths `derived_from` records — otherwise the
-> `hasPart` entries point at files that are not there, and the crate is invalid. This is deliberate:
-> a module that moved pipeline outputs around would be a second, competing opinion about where
-> artifacts live. With `--data-dir` pointing at that directory, each file found there gains its
-> `contentSize`.
+A document crate is one file, `ro-crate-metadata.json`, in a directory of the caller's choosing:
+it names no data files (§4.2). A run crate's `hasPart` references the per-document crates, which
+sit beside it as `<doc_id>/ro-crate-metadata.json`. `atrium_rocrate.py` writes metadata; it never
+copies or moves pipeline outputs.
 
 ### 7.3 Determinism, and why it is a feature
 
-Two runs on the same record produce **byte-identical** JSON: `@graph` is sorted by `@id` (with the
+Two runs on the same input produce **byte-identical** JSON: `@graph` is sorted by `@id` (with the
 descriptor and root pinned first), `json.dumps` runs with `sort_keys=True`, **`datePublished` comes
-from the record's own newest block stamp, not from `datetime.now()`**, and a run's `@id` is the
-`run_uuid` the record carries — the exporter mints nothing. Re-exporting an archived record in 2031
-reproduces the crate it shipped with.
+from the newest run's end time, not from `datetime.now()`**, and a run's `@id` is the `run_uuid`
+its paradata carry — the exporter mints nothing. Re-exporting an archived record in 2031 reproduces
+the crate it shipped with.
 
 This is not fussiness. The canonical files are drift-gated by byte comparison, and a crate that
 changed on every export could not be committed, diffed, or checksummed.
@@ -516,13 +461,12 @@ changed on every export could not be committed, diffed, or checksummed.
 
 Recorded rather than papered over. None of these blocks a crate; each makes it materially better.
 
-| Gap                                                                                            | Consequence                                                                                | Fix                                                                                   |
-|------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
-| **No git SHA.** Paradata carries `runner_ref` (a branch or tag), not a commit.                 | Software provenance is "this release", not "this commit".                                  | add a commit SHA to `atrium_paradata`                                                 |
-| **No output checksums.** `sha256` exists only on `source` and on a service's inputs.           | Every `hasPart` file is named without a hash, so tampering is undetectable from the crate. | add `sha256` alongside each `derived_from` value                                      |
-| **`derived_from` paths are the tools' own**, sometimes absolute or bare names.                 | A crate over a real record needs its files placed by hand; a fragment leaves them out.     | relative paths in every tool's `derived_from`                                         |
-| **No DOI or PID anywhere** — not on any `CITATION.cff`, not on any record.                     | The crate has no persistent identifier; `@id` is a local path.                             | out of scope here; needs a repository deposit                                         |
-| **`forms` has no writer** in any repo, and `entities[].translation_en` is owned-but-unwritten. | Two declared parts of the schema can never appear in a crate.                              | `forms`: the plan for issue #54, part C; `translation_en`: reserved (#70, 2026-09-30) |
+| Gap                                                                            | Consequence                                                    | Fix                                           |
+|--------------------------------------------------------------------------------|----------------------------------------------------------------|-----------------------------------------------|
+| **No git SHA.** Paradata carries `runner_ref` (a branch or tag), not a commit. | Software provenance is "this release", not "this commit".      | add a commit SHA to `atrium_paradata`         |
+| **No DOI or PID anywhere** — not on any `CITATION.cff`, not on any record.     | The crate has no persistent identifier; `@id` is a local path. | out of scope here; needs a repository deposit |
+| **`entities[].translation_en` is reserved**, written by no tool.               | A declared part of the schema can never appear in a crate.     | reserved (#70, contract §5)                   |
+| **Tools still on paradata 2.0** return actions without distributions.          | Their `object`/`result` fail `action_problems()`.              | each tool adopts paradata 3.0 (#84)           |
 
 ---
 
@@ -538,10 +482,10 @@ python3 atrium_rocrate.py --selftest      # exit 0, or 1 with one line per probl
 ```
 
 It checks the descriptor and the profile; the root's required properties; that **no reference
-dangles**; that `regenerable` never reaches `hasPart` and `derived_from` always does; that output
-is deterministic and `datePublished` derived from the record; that runs keep their `run_uuid`
-ids, tools their release ids, `version` and authors; the fragment and its wrapping; and that a
-service's `CreateAction` meets `action_problems()`.
+dangles**; that the root asserts no licence; that output is deterministic and `datePublished`
+derived from the runs; that runs keep their `run_uuid` ids, tools their release ids, `version` and
+authors; that inputs and outputs are named by distribution and SHA-512, never an `ni:` URI; the
+fragment and its wrapping; and that a service's `CreateAction` meets `action_problems()`.
 
 **Conformance is the RO-Crate validator's, run in the hub's CI only.** `tools/ci/rocrate_check.py`
 runs [`roc-validator`](https://github.com/crs4/rocrate-validator), pinned in
@@ -594,18 +538,22 @@ The `CreateAction` is the unit AMČR stores per run. Making the run crate *refer
 crates rather than inline them is what keeps it viable at corpus scale.
 
 **`@context` is an array.** RO-Crate 1.2's own context plus a small local map, the spec-sanctioned
-way to add terms: `regenerableFrom`, `regenerableWith`, `recordBlock`, `sha512` and
-`paradataRecord` (a JSON literal) under `https://w3id.org/atrium/`, and the four Workflow Run
+way to add terms: `sha512`, `stored`, `recordFields` and `paradataRecord` (the last two JSON
+literals) under `https://w3id.org/atrium/`, and the four Workflow Run
 terms (`ContainerImage`, `containerImage`, `registry`, `tag`). Declaring those four here rather than
 loading the Workflow Run context keeps every crate dependent on exactly one remote document.
 
 **Stable ids.** A run is its `run_uuid` (`urn:uuid:…`), minted by `atrium_paradata` when the run
-starts and carried in the record; `run_id` has one-second resolution and two parallel workers can
-share one. A tool is its release page, an absolute URL that resolves. An upload is its content
-(`ni:` URI). None of them is minted by the exporter.
+starts; `run_id` has one-second resolution and two parallel workers can share one. A tool is its
+release page, an absolute URL that resolves. A distribution version is its name and SHA-512. None
+of them is minted by the exporter.
 
-**`creator` is for people.** A tool's authors are its `creator`. A block is attributed
-by the run that wrote it, not by a `creator` naming software.
+**`creator` is for people.** A tool's authors are its `creator`. What a run wrote is its
+`result`, not a `creator` naming software.
+
+**No licence on the root** (D2). A crate root names a licence only when its caller asserts one.
+Until 2.0 the root named `#no-licence-asserted`, a placeholder that asserted nothing; with the
+calculated licence gone from the record and the paradata there is nothing for it to stand in for.
 
 **`PROCESS_RUN_PROFILE` is pinned and checked.** 0.5 is the profile IRI the validator ships; the
 caveat that used to sit on the constant is replaced by the hub's validator job.
@@ -643,6 +591,6 @@ decide how to interpret the graph. Do not bump it to pick up a new property.
 * Process Run Crate 0.5 — [w3id.org/ro/wfrun/process/0.5](https://w3id.org/ro/wfrun/process/0.5)
 * The validator — [github.com/crs4/rocrate-validator](https://github.com/crs4/rocrate-validator)
 * schema.org vocabulary, which supplies `Dataset`, `File`, `Person`, `CreateAction`, `SoftwareApplication`, `DefinedTerm`
-* [`document_schema.md`](document_schema.md) — the record being exported, the AMČR seed, and the reference discipline §4.2 rests on
-* [`paradata_schema.md`](paradata_schema.md) — the run record an action is built from (`run_uuid`, `run_agent`)
+* [`document_schema.md`](document_schema.md) — the record being exported and the AMČR seed
+* [`paradata_schema.md`](paradata_schema.md) — the run record an action is built from (inputs, outputs, `run_uuid`, `run_agent`)
 * [`skos_strategy.md`](skos_strategy.md) — the URI policy behind every `DefinedTerm`

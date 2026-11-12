@@ -13,8 +13,10 @@ wrong around it:
   * `set_source()` reported the seed's file name differing from the tool's local one as a
     conflict, on nearly every call, and refused it outright for a strict writer (digital-convert).
 
-`run_uuid` is the run's stable id, minted by `atrium_paradata` and stamped into the record. It is
-the `@id` of the run's CreateAction; `run_id` has one-second resolution and can collide.
+`run_uuid` is the run's stable id, minted by `atrium_paradata`: the `@id` of the run's CreateAction
+(`run_id` has one-second resolution and can collide). Since record schema 2.0 (atrium-project#84,
+D1) it names the run's paradata and is never written into the record. A seed is identity only, the
+same in every major, so a 1.x seed is still a seed.
 
 Run: pytest tests/test_document_seed.py
 """
@@ -122,76 +124,75 @@ def test_seed_schema_is_printed_for_a_caller_without_python():
 
 def test_validate_baseline_still_checks_a_written_record_in_full():
     with pytest.raises(jsonschema.ValidationError):
-        ad.validate_baseline({**_seed(), "assembled": {"blocks": {"lines": {"program": "p"}}}})
+        ad.validate_baseline({**_seed(), "schema_version": "2.0", "pages": [{"page": "1"}]})  # no page_index
+    # A 1.x record is checked as it will be used: migrated first, its run data dropped.
+    ad.validate_baseline({**_seed(), "assembled": {"blocks": {"lines": {"program": "p"}}}, "lines": []})
 
 
 # ── a seed through a stage ───────────────────────────────────────────────────
 
 
-def test_a_seed_keeps_its_identity_through_a_strict_reading_stage(seed_path, capsys):
-    run_uuid = _run_uuid()
+def test_a_seed_keeps_its_identity_through_the_strict_record_builder(seed_path, capsys):
     with ad.DocumentRecord.open(
         "CTX000000042",  # what the stage derives from the file it reads
-        "alto-postprocess",
+        "ocr-postprocess",
         baseline=str(seed_path),
-        run_id="261001-101010",
-        run_uuid=run_uuid,
+        run_uuid=_run_uuid(),
         strict=True,
     ) as doc:
-        doc.set_source(
-            sha256="a" * 64, filename="CTX000000042.alto.xml", media_type="application/alto+xml", origin="ABBYY-ALTO"
-        )
-        doc.merge_block("pages", [{"page": "1", "quality_band": "Clear"}])
+        doc.set_source(filename="CTX000000042.json", media_type="application/json", origin="atr", page_count=1)
+        doc.merge_block("pages", [{"page_index": 1, "page": "1", "content_status": "text", "quality_band": "Clear"}])
         record = doc.to_dict()
 
     ad.validate_document(record)
-    assert record["doc_id"] == "AMCR-F-0042"
+    assert record["doc_id"] == "AMCR-F-0042" and record["schema_version"] == "2.0"
     assert {k: record["source"][k] for k in ad.SEED_SOURCE_REQUIRED} == _seed()["source"]
-    assert record["source"]["origin"] == "ABBYY-ALTO"
-    # The stage digested the ALTO it read, not the archive's original: no second digest.
-    assert "sha256" not in record["source"]
+    assert record["source"]["origin"] == "atr"
     err = capsys.readouterr().err
-    assert "NOTE" in err and "zprava_1923.pdf" in err and "a" * 64 in err
+    assert "NOTE" in err and "zprava_1923.pdf" in err
     assert "WARNING" not in err
 
 
-def test_an_unseeded_source_still_takes_the_readers_sha256():
-    with ad.DocumentRecord.open("CTX000000042", "alto-postprocess", baseline=None, strict=True) as doc:
-        doc.set_source(sha256="a" * 64, filename="CTX000000042.alto.xml", origin="ABBYY-ALTO")
-        doc.merge_block("pages", [{"page": "1", "quality_band": "Clear"}])
+def test_the_source_takes_no_second_digest(seed_path):
+    """The original is named by its SHA-512 only (#84 §4): a reader's sha256 is refused."""
+    doc = ad.DocumentRecord.open("x", "ocr-postprocess", baseline=str(seed_path), strict=True)
+    with pytest.raises(ValueError, match="sha256"):
+        doc.set_source(sha256="a" * 64)
+
+
+def test_an_unseeded_run_names_the_original_by_its_sha512():
+    with ad.DocumentRecord.open("CTX000000042", "ocr-postprocess", baseline=None, strict=True) as doc:
+        doc.set_source(sha512=_SHA512, filename="CTX000000042.pdf")
+        doc.merge_block("pages", [{"page_index": 1, "quality_band": "Clear"}])
         record = doc.to_dict()
-    assert record["source"]["sha256"] == "a" * 64
+    assert record["source"] == {"sha512": _SHA512, "filename": "CTX000000042.pdf"}
+    ad.validate_document(record)
 
 
 def test_a_stage_may_not_rewrite_the_seeds_digest_or_an_origin(seed_path):
-    doc = ad.DocumentRecord.open("x", "alto-postprocess", baseline=str(seed_path), strict=True)
+    doc = ad.DocumentRecord.open("x", "ocr-postprocess", baseline=str(seed_path), strict=True)
     with pytest.raises(ValueError, match="sha512"):
         doc.set_source(sha512="0" * 128)
-    doc.set_source(origin="ABBYY-ALTO")
+    doc.set_source(origin="atr")
     with pytest.raises(ValueError, match="origin"):
-        doc.set_source(origin="digital-born-pdf")
+        doc.set_source(origin="digital")
 
 
 # ── run_uuid ─────────────────────────────────────────────────────────────────
 
 
-def test_run_uuid_is_stamped_on_every_block_and_the_contributor(seed_path):
-    run_uuid = _run_uuid()
-    with ad.DocumentRecord.open("x", "nlp-enrich", baseline=str(seed_path), run_uuid=run_uuid) as doc:
-        doc.merge_block("entities", [{"page": "1", "line": 0, "char_span": [0, 5], "surface": "Praha"}])
-        doc.add_derived_from("teitok", "TEITOK/x.teitok.xml")
+def test_run_uuid_names_the_paradata_never_the_record(seed_path):
+    """D1: which run wrote which blocks and fields is the paradata `result`, not a stamp."""
+    logger = ParadataLogger("nlp-enrich", {}, paradata_dir=None)
+    with ad.DocumentRecord.open("x", "nlp-enrich", baseline=str(seed_path), run_uuid=logger.run_uuid) as doc:
+        doc.merge_block("entities", [{"page": "1", "line": 1, "char_span": [0, 5], "surface": "Praha"}])
         record = doc.to_dict()
-    assert {s["run_uuid"] for s in record["assembled"]["blocks"].values()} == {run_uuid}
-    assert record["provenance"]["contributors"][-1]["run_uuid"] == run_uuid
+    assert logger.run_uuid not in json.dumps(record)
+    assert not {"assembled", "provenance", "derived_from"} & set(record)
     ad.validate_document(record)
-
-
-def test_a_record_without_run_uuid_carries_no_empty_one(seed_path):
-    with ad.DocumentRecord.open("x", "nlp-enrich", baseline=str(seed_path)) as doc:
-        doc.add_derived_from("teitok", "TEITOK/x.teitok.xml")
-        record = doc.to_dict()
-    assert "run_uuid" not in record["assembled"]["blocks"]["derived_from"]
-    assert "run_uuid" not in record["provenance"]["contributors"][-1]
+    logger.add_output("atrium/document-json", json.dumps(record).encode(), record_fields=doc.written())
+    logger.finalize()
+    assert logger.record["outputs"][0]["record_fields"] == {"entities": ["page", "line", "char_span", "surface"]}
 
 
 def test_a_malformed_run_uuid_is_refused_before_anything_is_written():
@@ -199,12 +200,11 @@ def test_a_malformed_run_uuid_is_refused_before_anything_is_written():
         ad.DocumentRecord("x", "nlp-enrich", run_uuid="260724-101112")
 
 
-def test_the_schema_refuses_a_malformed_run_uuid_or_digest():
-    record = {**_seed(), "provenance": {"contributors": [{"program": "p", "run_uuid": "nope"}]}, "assembled": {}}
+def test_the_schema_refuses_run_data_or_a_malformed_digest():
     with pytest.raises(jsonschema.ValidationError):
-        ad.validate_document(record)
+        ad.validate_document({**_seed(), "schema_version": "2.0", "provenance": {"contributors": []}})
     with pytest.raises(jsonschema.ValidationError):
-        ad.validate_document({**_seed(sha512="xyz"), "provenance": {}, "assembled": {}})
+        ad.validate_document({**_seed(sha512="xyz"), "schema_version": "2.0"})
 
 
 # ── the paradata side ────────────────────────────────────────────────────────

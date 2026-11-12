@@ -16,6 +16,11 @@ own copy of the schema. Three checks cannot travel with it:
     still validates after it. The shapes are tests/test_document_required.py's enumeration, which
     is hub-only, and validating them needs jsonschema.
 
+SCHEMA 2.0 (atrium-project#84). The current MAJOR's freeze is pending until the proof gate (the
+shared file's `PENDING_FREEZES`), so its checks skip with that reason. `doc-schema-v1` stays
+published and cited, so the 1.x shapes (tests/document_shapes_v1.py) are still checked against the
+frozen v1 copy, and each must migrate to a valid 2.0 record.
+
 The register itself is not repeated here: it is read from the shared file, so there is one.
 
 Run: pytest tests/test_schema_freeze_records.py
@@ -39,6 +44,7 @@ _SHARED = _HUB_ROOT / "docs" / "templates" / "shared"
 _CANONICAL_IN_REPO = "docs/templates/shared/atrium_document.schema.json"
 _SCHEMA_DOC = _HUB_ROOT / "docs" / "document_schema.md"
 _EXAMPLE = _HUB_ROOT / "fixtures" / "atrium_document.example.json"
+_EXAMPLE_V1 = _HUB_ROOT / "fixtures" / "atrium_document.v1.example.json"
 
 # Same resolution as tests/test_fixture_schema.py: the canonical module is not an installed
 # package and not importable from the repo root.
@@ -56,14 +62,20 @@ def _load_by_path(name: str, path: Path):
 #: The shared freeze test: FREEZES, POST_FREEZE_CHANGES and the frozen copy's locator.
 _FREEZE = _load_by_path("_shared_schema_freeze", _SHARED / "test_schema_freeze.py")
 #: tests/test_document_required.py: VALID_SHAPES / INVALID_SHAPES, the one enumeration of what
-#: producers write and what the floor refuses.
+#: 2.0 producers write and what the floor refuses.
 _SHAPES = _load_by_path("_document_required_shapes", Path(__file__).with_name("test_document_required.py"))
+#: The 1.x enumeration, kept as data for the doc-schema-v1 checks.
+_SHAPES_V1 = _load_by_path("_document_shapes_v1", Path(__file__).with_name("document_shapes_v1.py"))
 
 
 def _schemas() -> Dict[str, Dict[str, Any]]:
     from atrium_document import load_schema
 
     return {"frozen": _FREEZE.load_snapshot(_FREEZE.current_freeze()), "current": load_schema()}
+
+
+def _frozen_v1() -> Dict[str, Any]:
+    return _FREEZE.load_snapshot(_FREEZE.FREEZES[1])
 
 
 def _validator(schema: Dict[str, Any]):
@@ -81,12 +93,13 @@ def _git(*args: str) -> Optional[str]:
 # ── the tag ───────────────────────────────────────────────────────────────────
 
 
-def test_the_freeze_tag_has_not_moved():
+@pytest.mark.parametrize("major", sorted(_FREEZE.FREEZES))
+def test_the_freeze_tag_has_not_moved(major):
     """Where the tag is present, it still names the frozen commit and the frozen file.
 
     Skipped in CI, whose checkout carries no tags; run `git fetch --tags` to make it bite locally.
     """
-    freeze = _FREEZE.current_freeze()
+    freeze = _FREEZE.FREEZES[major]
     commit = _git("rev-parse", "--verify", "--quiet", f"{freeze['tag']}^{{commit}}")
     if commit is None:
         pytest.skip(f"tag {freeze['tag']} not available here (shallow or tagless checkout)")
@@ -100,9 +113,14 @@ def test_the_freeze_tag_has_not_moved():
 # ── the changelog ─────────────────────────────────────────────────────────────
 
 
-@pytest.mark.parametrize("prefix", sorted(_FREEZE.POST_FREEZE_CHANGES))
-def test_every_registered_change_has_its_changelog(prefix):
-    date = _FREEZE.POST_FREEZE_CHANGES[prefix]["changelog"]
+_REGISTERED = sorted(
+    (major, prefix) for major, register in _FREEZE.POST_FREEZE_CHANGES_BY_MAJOR.items() for prefix in register
+)
+
+
+@pytest.mark.parametrize("major, prefix", _REGISTERED)
+def test_every_registered_change_has_its_changelog(major, prefix):
+    date = _FREEZE.POST_FREEZE_CHANGES_BY_MAJOR[major][prefix]["changelog"]
     heading = re.compile(r"^## Changelog — " + re.escape(date) + r"\b", re.MULTILINE)
     assert heading.search(_SCHEMA_DOC.read_text(encoding="utf-8")), (
         f"{prefix} is registered under changelog {date}, but docs/document_schema.md has no "
@@ -132,7 +150,39 @@ def test_the_committed_example_validates_under_the_freeze_and_now():
 
 @pytest.mark.parametrize("label", sorted(_SHAPES.INVALID_SHAPES))
 def test_the_floor_refuses_under_the_freeze_and_now(label):
-    """The freeze's floor (required + anyOf + allOf) refuses the same defects in both schemas."""
+    """The freeze's floor refuses the same defects in both schemas."""
     record = _SHAPES.INVALID_SHAPES[label]
     for name, schema in _schemas().items():
         assert not _validator(schema).is_valid(record), f"{label!r} validates under the {name} schema"
+
+
+# ── doc-schema-v1: published, cited, and migrated from ────────────────────────
+
+
+@pytest.mark.parametrize("label", sorted(_SHAPES_V1.VALID_SHAPES))
+def test_every_1x_shape_is_valid_under_v1_and_migrates_to_a_valid_2_0_record(label):
+    """What 1.x producers wrote still meets the frozen v1 contract, and reads as 2.0 (rule 6)."""
+    import copy
+
+    from atrium_document import migrate_document, validate_document
+
+    record = _SHAPES_V1.VALID_SHAPES[label]
+    errors = sorted(e.message for e in _validator(_frozen_v1()).iter_errors(record))
+    assert not errors, f"{label!r} fails the frozen v1 schema: {errors}"
+    migrated = migrate_document(copy.deepcopy(record))
+    assert migrated["schema_version"] == "2.0"
+    validate_document(migrated)
+
+
+@pytest.mark.parametrize("label", sorted(_SHAPES_V1.INVALID_SHAPES))
+def test_the_v1_floor_still_refuses_the_1x_defects(label):
+    assert not _validator(_frozen_v1()).is_valid(_SHAPES_V1.INVALID_SHAPES[label])
+
+
+def test_the_1x_example_is_valid_under_v1_and_migrates():
+    from atrium_document import migrate_document, validate_document
+
+    record = json.loads(_EXAMPLE_V1.read_text(encoding="utf-8"))
+    errors = sorted(e.message for e in _validator(_frozen_v1()).iter_errors(record))
+    assert not errors, f"fixtures/atrium_document.v1.example.json fails the frozen v1 schema: {errors}"
+    validate_document(migrate_document(record))

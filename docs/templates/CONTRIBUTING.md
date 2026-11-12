@@ -159,7 +159,7 @@ pytest --tb=short                                        # full suite (needs mod
 
 **Shared, drop-in test files (keep byte-identical across repos):**
 * `tests/test_paradata.py` — `ParadataLogger`, `_sanitise`
-* `tests/test_para_licenses.py` — `resolve_effective_license`, `merge_effective_licenses`
+* `tests/test_para_licenses.py` — `normalise_license`, `component_terms` (facts only; no licence is computed)
 
 **Rules:**
 * Any test that loads a checkpoint, hits the network, or needs a GPU **must** be
