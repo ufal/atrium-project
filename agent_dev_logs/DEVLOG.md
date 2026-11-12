@@ -1,6 +1,6 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 19 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81, #83). The starting set of the pilot phase (11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the starting set is unchanged). Hub `v1` = `da7a066`, which all six tools call by commit; `main` = `test` = `f42018e` (11-06). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-11, at the end of the file (this file is not in date order): the output contract of the meeting of 11 November, the logs of all seven repositories aligned to it (doc-schema-v2, issue to be opened)._
-> _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_1111.md` (prior: `project_state_0411.md`, `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
+> _Hub/planning repo. 20 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81, #83, #84). The starting set of the pilot phase (11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the starting set is unchanged). Hub `v1` = `da7a066`, which all six tools call by commit; `main` = `test` = `f42018e` (11-06). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-12, at the end of the file (this file is not in date order): ARÚP's output contract of 12 November and #84 (doc-schema-v2), the logs of all seven repositories aligned to it._
+> _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_1211.md` (prior: `project_state_1111.md`, `project_state_0411.md`, `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
 - **#4 SSH Open Marketplace records** — Opened by stranak: create SSHOMP records for every tool in our workflows (UDPipe ✅,
@@ -3807,4 +3807,44 @@ candidates are six `.3` releases carrying #6's step 1.
   superseded statements (digital-convert#5, ocr-postprocess#4, keyword-extract#2) are refreshed.
 * **Not posted:** the doc-schema-v2 issue body (in its plan); #72's closing line (in its plan). The questions wait
   for the next meeting.
+* Plans only; no code changed. Files delivered as full files.
+
+## 2026-11-12 — The output contract of 12 November; #84 opened; David's comments on #13, #16, #78
+
+* **Asked (K4TEL):** align the logs with ARÚP's output contract of 12 November (the .docx of that day, replacing the
+  meeting document of 10 November) and with David Novák's comments of 11-12 (atrium-project#84 opened, #13, #16,
+  #78); `test` fetched first (all seven working branches = `test`).
+  Anchor: [contract digest](https://github.com/ufal/atrium-project/blob/test/agent_dev_logs/digests/project_state_1211.md) · [hub plan of #84](https://github.com/ufal/atrium-project/blob/test/agent_dev_logs/plans/84.plan.md).
+* **Decided in session:** the tool slices are named `plans/84.plan.md`; the translator keeps `amcr-fields.txt` as a
+  documented example that nothing loads (no default list, D34); the hub's #84 plan carries a reply draft agreeing on
+  points 1 and 2.
+* **The contract of 12 November** (D1–D36; it replaces the 10 November document): digital-convert first, the whole
+  document through the ATR when any page needs it, page-classification on those pages (H3, H4, H12); docproc the
+  layout contract of both producers, one stored per document (D20, D22); ocr-postprocess builds every record from
+  docproc and merges two outputs (H6, D21); no ALTO (D24); no run data in the record at all (D1); layout in docproc
+  (D26); line quality rules 1–8 (D18); PCSS ALTO converted once (D31); the translator's list per request (D34);
+  LINDAT outputs not published until #78 (D35).
+* **On GitHub, 11-12 (motyc):** #84 opened from K4TEL's #67 draft, docproc schema in comment 1, Kate's answer on
+  points 1–2 due 16 November; #13 R1–R16 (supersedes C1–C9; [GATED]/Fallback); #16 A answered (not approved in
+  keyword-extract and digital-convert; Figure 3 approved; Galaxy images only from the published dataset); #78
+  deferred (all of nlp-enrich and the translator; ARÚP prefers an agreement keeping the original's licence).
+* **Found:**
+  * the 11-11 round missed #13's comments 56–60 (Zenodo and draw.io, 11-09; the AI-illustration rule; C1–C9 and
+    Kate's entry) and misread #67's closing (it closes with #77, motyc 11-10);
+  * the Galaxy page-classification test images are copies of page-classification's `small_data_samples/` with no
+    recorded source; digital-convert's test PDFs are synthetic;
+  * the shared `atrium_service.py` carries the `ocr_text_layer` error code (185-246), which goes with H12.
+* **Written here (not pushed):**
+  * **`digests/project_state_1211.md`** (new): the contract of 12 November — the changes since 11-11, the route and
+    H1–H15, docproc, the record, paradata, rules 1–8, licences, PCSS, D1–D36, the open items, the issue map;
+  * **`plans/84.plan.md`, `digests/84.digest.md`** (were `doc-schema-v2.*`, rewritten): the changes, the v2 record,
+    what ÚFAL relies on in docproc, paradata v3, hub tasks, the proof gate, Q1–Q7 answered or open, Q8–Q10, the
+    docproc schema's facts, the reply draft for 16 November;
+  * **#13** (`13.plan.md`, `13.digest.md`, `13.corrections.md`: R1–R16 mapped to what is entered), **#16** (actions
+    1–7), **#78** (deferred; D35), **#24** (the three-format rule revised), **#6** (D35, D36), **#67** (the draft
+    moved; closes with #77), **#79** (the new order), **#66** (the test-data condition), **#77** (the route, D13,
+    D35), **#22** (layout in docproc).
+* **Unchanged:** #83 and its children (parked), #81, #40, #72, #4, #10, #15, #17, #18, #56.
+* **`issues/` exports to regenerate:** #84 (new), #13 (61 comments), #16 (12), #78 (8).
+* **Not posted:** the reply on #84 (draft in its plan, for K4TEL); nothing else; questions batched for the meeting.
 * Plans only; no code changed. Files delivered as full files.

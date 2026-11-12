@@ -12,7 +12,7 @@
   The record gets its own paradata file, `paradata/atrium/document-json`.
 - **One common line representation** (K4TEL): every tool reads and writes `lines[]` in one shape; today the row is
   split by field across four tools, numbered from 0 or 1, and boxed by one tool only. This is the core of
-  doc-schema-v2 ([`../plans/doc-schema-v2.plan.md`](../plans/doc-schema-v2.plan.md)).
+  doc-schema-v2 ([`../plans/doc-schema-v2.plan.md`](../plans/84.plan.md)).
 - **SHA-512 and distribution names** identify every input and output in the paradata; `ni:///sha-256` identifiers
   and unstored files go.
 - **Licences: three layers, nothing computed** (below).
@@ -111,7 +111,7 @@ written, stored outputs only; `parameters` that shaped the output; `limits` (sam
 
 ## Questions batched for the next meeting
 
-Not posted on GitHub (working agreement); collected in [`../plans/doc-schema-v2.plan.md`](../plans/doc-schema-v2.plan.md#questions-for-the-next-meeting).
+Not posted on GitHub (working agreement); collected in [`../plans/doc-schema-v2.plan.md`](../plans/84.plan.md#questions).
 Answers ÚFAL can already give:
 
 - **Which unit do digital-convert's lines use?** pt, top-left origin, from pdfplumber
@@ -121,18 +121,18 @@ Answers ÚFAL can already give:
 
 ## Issue map
 
-| Issue                                                                                    | What the meeting changes                                                    | Log                                                                |
-|------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|--------------------------------------------------------------------|
-| doc-schema-v2 (to be opened)                                                             | §8 changes 1–11, the common line representation, SHA-512, docproc alignment | [`../plans/doc-schema-v2.plan.md`](../plans/doc-schema-v2.plan.md) |
-| #13 CAA paper                                                                            | minimal corrections C1–C9 and K4TEL's points                                | [`../plans/13.corrections.md`](../plans/13.corrections.md)         |
-| #6 licences                                                                              | three layers; nothing computed                                              | `plans/6.plan.md`                                                  |
-| #77 pilot handover                                                                       | the pilot is a phase; the set is its starting point                         | `plans/77.plan.md`                                                 |
-| #78 LINDAT                                                                               | postponed; protected fields may go to LINDAT                                | `plans/78.plan.md`                                                 |
-| #83 and digital-convert#8, ocr-postprocess#10, keyword-extract#3, page-classification#58 | parked                                                                      | each `plans/{n}.plan.md`                                           |
-| #66 Galaxy                                                                               | parked beyond the 30 September agreement                                    | `plans/66.plan.md`                                                 |
-| #72, #67                                                                                 | #72 can close; #67 follows                                                  | `plans/72.plan.md`, `plans/67.plan.md`                             |
-| #81, #40                                                                                 | event-driven CI; one PR per issue, squash, no direct pushes                 | `plans/81.plan.md`, `plans/40.plan.md`                             |
-| #79                                                                                      | the docs that describe the old order                                        | `plans/79.plan.md`                                                 |
-| #22                                                                                      | `forms` removed (D19)                                                       | `plans/22.plan.md`                                                 |
-| digital-convert#5, keyword-extract#2, ocr-postprocess#4                                  | superseded statements marked                                                | in each repository                                                 |
-| Each tool                                                                                | its slice of doc-schema-v2                                                  | `<repo>/agent_dev_logs/plans/doc-schema-v2.plan.md`                |
+| Issue                                                                                    | What the meeting changes                                                    | Log                                                        |
+|------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|------------------------------------------------------------|
+| doc-schema-v2 (to be opened)                                                             | §8 changes 1–11, the common line representation, SHA-512, docproc alignment | [`../plans/doc-schema-v2.plan.md`](../plans/84.plan.md)    |
+| #13 CAA paper                                                                            | minimal corrections C1–C9 and K4TEL's points                                | [`../plans/13.corrections.md`](../plans/13.corrections.md) |
+| #6 licences                                                                              | three layers; nothing computed                                              | `plans/6.plan.md`                                          |
+| #77 pilot handover                                                                       | the pilot is a phase; the set is its starting point                         | `plans/77.plan.md`                                         |
+| #78 LINDAT                                                                               | postponed; protected fields may go to LINDAT                                | `plans/78.plan.md`                                         |
+| #83 and digital-convert#8, ocr-postprocess#10, keyword-extract#3, page-classification#58 | parked                                                                      | each `plans/{n}.plan.md`                                   |
+| #66 Galaxy                                                                               | parked beyond the 30 September agreement                                    | `plans/66.plan.md`                                         |
+| #72, #67                                                                                 | #72 can close; #67 follows                                                  | `plans/72.plan.md`, `plans/67.plan.md`                     |
+| #81, #40                                                                                 | event-driven CI; one PR per issue, squash, no direct pushes                 | `plans/81.plan.md`, `plans/40.plan.md`                     |
+| #79                                                                                      | the docs that describe the old order                                        | `plans/79.plan.md`                                         |
+| #22                                                                                      | `forms` removed (D19)                                                       | `plans/22.plan.md`                                         |
+| digital-convert#5, keyword-extract#2, ocr-postprocess#4                                  | superseded statements marked                                                | in each repository                                         |
+| Each tool                                                                                | its slice of doc-schema-v2                                                  | `<repo>/agent_dev_logs/plans/doc-schema-v2.plan.md`        |
