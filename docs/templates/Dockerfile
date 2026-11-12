@@ -27,7 +27,7 @@
 # Pinned by tag AND digest — see the note under the ENV block. Dependabot's `docker`
 # ecosystem bumps the digest; refresh it by hand with
 # `docker buildx imagetools inspect python:3.11-slim`.
-FROM python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce AS base
+FROM python:3.11-slim@sha256:07d4824036af339fa1b6ef769cc99d9c10a141769538b52b3b597c84f7a7b535 AS base
 
 # ── Provenance: build-time ARGs -> ENV, read by atrium_paradata.py ───────────────────
 # CI passes ATRIUM_RUNNER_REF as `github.ref_name`. That makes this ENV layer unique per
