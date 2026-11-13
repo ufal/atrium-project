@@ -685,10 +685,11 @@ def assert_digital_contract(doc, json_path, written=None):
 
     W10. This is NOT a shorter version of the scanned contract — it is a different
     one, and the difference is the point. A born-digital record can never carry
-    `page_categories` (no page image exists to classify), `translations` or
-    `entities` (translator and nlp-enrich both need the scanned branch's output,
-    which never exists on this branch). Asserting the scanned blocks here would not
-    be "stricter", it would be wrong.
+    `page_categories` (no page image exists to classify) or `translations` (the translator
+    needs the scanned branch's output). A 1.x record can carry no `entities` either; since 2.0
+    nlp-enrich enriches the record builder's lines whatever their source (D20, nlp-enrich#42),
+    so a 2.x record may, and they are then checked as on the scanned branch. Asserting the
+    scanned blocks here would not be "stricter", it would be wrong.
 
     Since 2.0 the positional blocks have one writer, the record builder (D20): digital-convert
     writes docproc, and the route step, not the record, decides which pages go to the ATR. So
@@ -704,11 +705,13 @@ def assert_digital_contract(doc, json_path, written=None):
 
     # Blocks that CANNOT exist here. A record carrying them means either the branch
     # was fed a scanned document, or a tool wrote a block it does not own.
-    for forbidden, why in (
+    forbidden_blocks = [
         ("page_categories", "no page image exists to classify on this branch"),
         ("translations", "the translator needs the scanned branch's PAGE_ALTO output"),
-        ("entities", "nlp-enrich needs the DOC_LINE_CATEG classify CSV and INPUT_ALTO_DIR"),
-    ):
+    ]
+    if _major(written) < 2:
+        forbidden_blocks.append(("entities", "nlp-enrich needs the DOC_LINE_CATEG classify CSV and INPUT_ALTO_DIR"))
+    for forbidden, why in forbidden_blocks:
         assert forbidden not in doc, (
             f"❌ '{forbidden}' present on a born-digital record — {why}. Either the fixture "
             f"is not actually born-digital, or a tool wrote a block it does not own."
@@ -773,6 +776,29 @@ def assert_layout(doc, written=None):
     print(f"✅ layout: {len(lines)} line(s) joined to {len(blocks)} docproc block(s)")
 
 
+def _assert_entities(doc):
+    """nlp-enrich's `entities`: present, non-empty, each with a `char_span` pair and a type."""
+    entities_found = False
+    assert "entities" in doc, "❌ 'entities' block missing. run_document_hook() failed or baseline was dropped."
+
+    for entity in doc.get("entities", []):
+        entities_found = True
+
+        # Prevent the hardcoded char_span=None bug from collapsing entities
+        assert "char_span" in entity, f"❌ Entity missing 'char_span' key: {entity}"
+        assert entity["char_span"] is not None, "❌ 'char_span' is None (collapsed co-located entities)"
+        assert isinstance(entity["char_span"], (list, tuple)) and len(entity["char_span"]) == 2, (
+            f"❌ 'char_span' must be a coordinate pair, got {entity['char_span']}"
+        )
+
+        # Prevent the nonexistent span["type"] key regression
+        assert "type_onto" in entity or "type_cnec" in entity or "type_teitok" in entity, (
+            f"❌ Entity missing type keys: {entity}"
+        )
+
+    assert entities_found, "❌ No entities found in document. run_document_hook() may be failing silently."
+
+
 def assert_document_contract(
     json_path,
     llm_stage_ran="auto",
@@ -830,6 +856,11 @@ def assert_document_contract(
 
         if expect_layout:
             assert_layout(doc, written)
+        if "entities" in doc:
+            # 2.x only (assert_digital_contract): nlp-enrich read the record's own layout.
+            _assert_entities(doc)
+            if teitok_dir:
+                assert_teitok(doc, teitok_dir, written)
 
         _assert_enrichment(doc, llm_stage_ran)
         _assert_keywords(doc, keywords_stage_ran)
@@ -857,25 +888,7 @@ def assert_document_contract(
     assert "content" in doc, "❌ 'content' block missing: the record builder wrote no content"
 
     # 2. NLP Enrich: CoNLL-U Entity Structure
-    entities_found = False
-    assert "entities" in doc, "❌ 'entities' block missing. run_document_hook() failed or baseline was dropped."
-
-    for entity in doc.get("entities", []):
-        entities_found = True
-
-        # Prevent the hardcoded char_span=None bug from collapsing entities
-        assert "char_span" in entity, f"❌ Entity missing 'char_span' key: {entity}"
-        assert entity["char_span"] is not None, "❌ 'char_span' is None (collapsed co-located entities)"
-        assert isinstance(entity["char_span"], (list, tuple)) and len(entity["char_span"]) == 2, (
-            f"❌ 'char_span' must be a coordinate pair, got {entity['char_span']}"
-        )
-
-        # Prevent the nonexistent span["type"] key regression
-        assert "type_onto" in entity or "type_cnec" in entity or "type_teitok" in entity, (
-            f"❌ Entity missing type keys: {entity}"
-        )
-
-    assert entities_found, "❌ No entities found in document. run_document_hook() may be failing silently."
+    _assert_entities(doc)
 
     # 3. Translator. `translations` is reserved since 2.0 (contract §5: the pilot translates the
     #    record-level metadata into its own distribution, never the full text), so it is not

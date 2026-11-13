@@ -485,6 +485,10 @@ def _error_app() -> FastAPI:
     def boom():
         raise RuntimeError("an unexpected failure")
 
+    @app.get("/trimmed")
+    def trimmed():
+        raise atrium_limits.ContentLimitError("max_test_terms", "trimmed", 3, "3 terms left out")
+
     @app.get("/unmergeable")
     def unmergeable():
         # A record that opens but cannot be added to: its `pages` is a string (atrium-project#72).
@@ -543,6 +547,23 @@ def test_limit_exceeded_carries_its_status_and_the_limit(monkeypatch):
     r = client.get("/timeout")
     assert r.status_code == 504 and r.json()["reason"] == "limit_exceeded"
     assert r.json()["limit"]["observed"] is None
+
+
+def test_a_content_limit_fails_the_call_with_422_and_names_the_limit():
+    """D13 (atrium-project#84): a trimmed, skipped or stopped result is a failed step, not a 500."""
+    r = TestClient(_error_app(), raise_server_exceptions=False).get("/trimmed")
+    assert r.status_code == 422
+    body = r.json()
+    assert body["reason"] == "limit_exceeded"
+    assert body["limit"] == {
+        "key": "max_test_terms",
+        "env": None,
+        "value": None,
+        "observed": 3,
+        "unit": "units",
+        "effect": "trimmed",
+    }
+    assert "max_test_terms" in body["detail"]
 
 
 def test_validation_errors_keep_a_string_detail_and_list_the_problems():

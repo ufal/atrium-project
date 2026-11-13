@@ -462,6 +462,21 @@ def test_born_digital_record_passes_without_the_layout_flag(tmp_path, capsys):
     assert "no page went to the ATR" in capsys.readouterr().out
 
 
+def test_a_2_0_born_digital_record_may_carry_nlp_enrichs_entities(tmp_path, capsys):
+    """Since 2.0 nlp-enrich enriches the record builder's lines whatever their source (D20,
+    nlp-enrich#42), so a born-digital record may carry `entities`; they are checked as on the
+    scanned branch. A 1.x born-digital record still may not."""
+    record = _digital_record()
+    record["entities"] = [{"surface": "Horní Mezi", "type_teitok": "gu", "char_span": [10, 20], "page": "1"}]
+    final = _write(tmp_path, "rich.json", record)
+    e2e_assert.assert_document_contract(final, llm_stage_ran=False)
+    assert "born-digital contract verified" in capsys.readouterr().out
+
+    record["entities"] = [{"surface": "Horní Mezi", "type_teitok": "gu", "page": "1"}]
+    with pytest.raises(AssertionError, match="char_span"):
+        e2e_assert.assert_document_contract(_write(tmp_path, "rich2.json", record), llm_stage_ran=False)
+
+
 def test_pages_re_acquired_by_the_atr_pass_when_expected(tmp_path, capsys):
     """The garbled lane: the pages the ATR re-acquired are read off the lines (D25)."""
     final = _write(tmp_path, "garbled.json", _with_atr_page(_digital_record()))
