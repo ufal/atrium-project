@@ -8,6 +8,12 @@ issue: 6
 
 # Licences and paradata
 
+> **Pending: record schema 2.0 and paradata 3.0** ([atrium-project#84](https://github.com/ufal/atrium-project/issues/84)).
+> This page describes the 1.x record the released tools write today. On the hub's `test` branch the record
+> holds content only (no `provenance`, `assembled`, `derived_from`, `regenerable` or licence), ocr-postprocess is the one
+> writer of `pages`, `content` and `lines`, and the paradata name each input and output by distribution name and SHA-512.
+> Each tool adopts it in its own repository; see the hub's `docs/document_schema.md` and `docs/paradata_schema.md`.
+
 This page explains, without code, what the ATRIUM tools record about the software, models and data they use,
 and who states the rights in what they produce.
 

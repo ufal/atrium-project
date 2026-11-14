@@ -63,14 +63,37 @@ def test_example_fixture_carries_the_blocks_the_e2e_asserts():
     A fixture that validates but omits, say, `translations` would let the E2E's
     assertions be "verified" against an example that cannot exercise them.
     """
+    from atrium_document import REMOVED_BLOCKS
+
     record = json.loads(_FIXTURE.read_text(encoding="utf-8"))
-    for block in ("page_categories", "pages", "content", "entities", "translations", "enrichment"):
+    for block in (
+        "source",
+        "page_categories",
+        "pages",
+        "content",
+        "lines",
+        "quality_summary",
+        "entities",
+        "enrichment",
+    ):
         assert block in record, f"example record is missing the {block!r} block"
-    stamped = record.get("assembled", {}).get("blocks", {})
-    assert "enrichment" in stamped, (
-        "assembled.blocks must record enrichment's originating program -- that stamp is what "
-        "e2e_assert.py uses to tell 'llm-enrich contributed' from 'the key happens to be there'"
-    )
+    # Record schema 2.0 (atrium-project#84): no run data, no layout copy.
+    assert not set(REMOVED_BLOCKS) & set(record), set(REMOVED_BLOCKS) & set(record)
+    line = record["lines"][0]
+    assert {"block", "text_source", "bbox_precision"} <= set(line)
+    assert {"page_index", "content_status"} <= set(record["pages"][0])
+
+
+def test_the_1x_example_migrates_to_a_valid_record():
+    """The 1.x worked example is kept (fixtures/atrium_document.v1.example.json): it reads as 2.0."""
+    from atrium_document import migrate_document
+
+    record = json.loads((_HUB_ROOT / "fixtures" / "atrium_document.v1.example.json").read_text(encoding="utf-8"))
+    assert record["schema_version"] == "1.0"
+    try:
+        _validate_document()(migrate_document(record))
+    except RuntimeError as exc:  # jsonschema absent -> the gate cannot run
+        pytest.skip(f"jsonschema not installed: {exc}")
 
 
 def test_schema_version_matches_the_module():
@@ -109,17 +132,22 @@ def test_the_seed_example_digest_is_its_files():
 
 
 def test_fixture_controlled_values_are_registry_members():
-    """V-4 (docs/skos_strategy.md §6): the schema has no `enum` for these fields on purpose,
-    so only this test keeps the worked example's labels inside atrium_vocab's registry.
-    The fixture carried `Text`/`Plate` pages and a `Text` line until 2026-10-19."""
+    """V-4 (docs/skos_strategy.md §6): apart from `lines[].categ` (the five record categories since
+    2.0), the schema has no `enum` for these fields on purpose, so only this test keeps the worked
+    example's labels inside atrium_vocab's registry. The fixture carried `Text`/`Plate` pages and a
+    `Text` line until 2026-10-19."""
     import atrium_vocab as vocab
 
     record = json.loads(_FIXTURE.read_text(encoding="utf-8"))
     checks = [
         ("page_categories", list(record["page_categories"].values()), vocab.PAGE_CATEGORIES),
         ("pages[].category", [p["category"] for p in record["pages"]], vocab.PAGE_CATEGORIES),
-        ("pages[].quality_band", [p["quality_band"] for p in record["pages"]], vocab.QUALITY_BANDS),
-        ("lines[].categ", [line["categ"] for line in record["lines"]], vocab.LINE_CATEGORIES),
+        (
+            "pages[].quality_band",
+            [p["quality_band"] for p in record["pages"] if "quality_band" in p],
+            vocab.QUALITY_BANDS,
+        ),
+        ("lines[].categ", [line["categ"] for line in record["lines"]], vocab.RECORD_LINE_CATEGORIES),
         ("entities[].type_teitok", [e["type_teitok"] for e in record["entities"]], vocab.ENTITY_TYPES),
     ]
     for field, values, registry in checks:

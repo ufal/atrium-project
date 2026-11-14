@@ -1,6 +1,6 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 20 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81, #83, #84). The starting set of the pilot phase (11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the starting set is unchanged). Hub `v1` = `da7a066`, which all six tools call by commit; `main` = `test` = `f42018e` (11-06). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-12, at the end of the file (this file is not in date order): ARÚP's output contract of 12 November and #84 (doc-schema-v2), the logs of all seven repositories aligned to it._
-> _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_1211.md` (prior: `project_state_1111.md`, `project_state_0411.md`, `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
+> _Hub/planning repo. 20 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #72, #77, #78, #79, #81, #83, #84). The starting set of the pilot phase (11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Since 11-06: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5, keyword-extract v1.6.5 and translator v1.7.8-beta (the shared Galaxy entry point; the starting set is unchanged). Hub `v1` = `da7a066`, which all six tools call by commit; `test` = `e32f378` (11-12), `doc-schema-v2` = `f8b296c` (11-13, #84). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-13, at the end of the file (this file is not in date order): round 4 of #84 (doc-schema-v2) — the push of 11-13 checked, the threads since 12 November, digital-convert#9._
+> _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` (#84: `doc-schema-v2.*`) · `issues/` exports (source of truth). Cross-repo snapshot: `digests/project_state_1211.md` (prior: `project_state_1111.md`, `project_state_0411.md`, `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
 - **#4 SSH Open Marketplace records** — Opened by stranak: create SSHOMP records for every tool in our workflows (UDPipe ✅,
@@ -3814,7 +3814,7 @@ candidates are six `.3` releases carrying #6's step 1.
 * **Asked (K4TEL):** align the logs with ARÚP's output contract of 12 November (the .docx of that day, replacing the
   meeting document of 10 November) and with David Novák's comments of 11-12 (atrium-project#84 opened, #13, #16,
   #78); `test` fetched first (all seven working branches = `test`).
-  Anchor: [contract digest](https://github.com/ufal/atrium-project/blob/test/agent_dev_logs/digests/project_state_1211.md) · [hub plan of #84](https://github.com/ufal/atrium-project/blob/test/agent_dev_logs/plans/84.plan.md).
+  Anchor: [contract digest](https://github.com/ufal/atrium-project/blob/test/agent_dev_logs/digests/project_state_1211.md) · [hub plan of #84](https://github.com/ufal/atrium-project/blob/test/agent_dev_logs/plans/doc-schema-v2.plan.md).
 * **Decided in session:** the tool slices are named `plans/84.plan.md`; the translator keeps `amcr-fields.txt` as a
   documented example that nothing loads (no default list, D34); the hub's #84 plan carries a reply draft agreeing on
   points 1 and 2.
@@ -3848,3 +3848,77 @@ candidates are six `.3` releases carrying #6's step 1.
 * **`issues/` exports to regenerate:** #84 (new), #13 (61 comments), #16 (12), #78 (8).
 * **Not posted:** the reply on #84 (draft in its plan, for K4TEL); nothing else; questions batched for the meeting.
 * Plans only; no code changed. Files delivered as full files.
+
+## 2026-11-12 — #84: the hub side of doc-schema-v2 on a local branch
+
+* **Asked (K4TEL):** the hub side of the schema changes on a new branch for a later PR; the tools adapt one by one,
+  re-vendoring locally. No pushes: the files are delivered as one archive with the commands to run.
+* **Decided in session:** branch `84-doc-schema-v2`; the agent_dev_logs edits stay out of it; read 1.x and write
+  2.0 (migrate on read); #84's field names as written.
+* **Done (local worktree, not pushed):** record 2.0 and its schema (content only; one writer of the positional
+  blocks; `_migrate_1_to_2()`); paradata 3.0 (no licence, inputs and outputs by distribution name and SHA-512,
+  `action_status`, `limits` sampled/split only); `ContentLimitError` (D13); the RO-Crate action and crates without
+  licence or `ni:` ids; the E2E gate and the crate check read older records through the migration; the hub and
+  shared tests; `docs/document_schema.md`, `paradata_schema.md`, `rocrate_export.md`, and pending notes on the
+  docs-site pages. Detail and deviations: [hub plan of #84](https://github.com/ufal/atrium-project/blob/test/agent_dev_logs/plans/doc-schema-v2.plan.md), "Status".
+* **Checked:** hub tests 724 passed, 42 skipped; shared tests 207 passed, 8 skipped; `atrium_rocrate`,
+  `atrium_limits`, `atrium_vocab` selftests; ruff. Not run: the RO-Crate validator (CI only).
+* **Not posted; not pushed.** `doc-schema-v1` untouched; `doc-schema-v2` waits for the proof gate (D12).
+
+## 2026-11-13 — #84: the six tools on record 2.0 and paradata 3.0, on local branches
+
+* **Asked (K4TEL):** adapt the tool repositories on the re-vendored shared modules; deliver every new or edited
+  file (the vendored ones excepted) as one archive per repository, with the commands to run.
+* **Decided in session:** adapt plus the tasks that need no docproc answer from ARÚP; digital-convert writes docproc
+  and ocr-postprocess builds the record from one producer (the mixed merge waits); a cut to a model window becomes
+  windows recorded as `split`, a prompt budget `sampled`, every other cut fails (D13); the translator keeps its
+  `document_json` input and writes nothing into the record.
+* **Done (local branches `84-doc-schema-v2`, not pushed):** the six tools, per their slice plans; a hub addendum
+  (`ContentLimitError` → 422, an action with no `result`, `e2e_assert.py` accepting nlp-enrich's entities on a 2.x
+  born-digital record). Detail: [hub plan of #84](https://github.com/ufal/atrium-project/blob/test/agent_dev_logs/plans/doc-schema-v2.plan.md),
+  "Status — tools".
+* **Checked:** each tool's full suite, ruff, its regenerated spec; hub tests 933 passed; a local chain (seed →
+  digital-convert docproc → `build_record.py` → nlp-enrich → YAKE → `e2e_assert.py --require-current-major`) passed,
+  with a stub classifier and LINDAT stood in.
+* **New for the meeting (not posted):** Q11 (the original's distribution name), Q12 (the stored record's bytes),
+  Q13 (page labels in docproc); Q6 still open.
+* **Not posted; not pushed.** `doc-schema-v1` untouched; `doc-schema-v2` waits for the proof gate.
+
+## 2026-11-13 — round 4: the push checked, the threads since 12 November, digital-convert#9
+
+* **Asked (K4TEL):** fetch every branch head and the latest comments, and plan and make the next edits: the logs
+  for the threads since 12 November, and digital-convert#9 points 1–3 in code.
+* **Decided in session:** the #84 files keep the name `doc-schema-v2.*` (`84.*` removed, links follow); K4TEL
+  regenerates the `issues/` exports; the reply on #84 is read as K4TEL's position (the stored docproc is the ATR's).
+* **The push (11-13)** and its gaps, closed in round 4: [plan of #84](https://github.com/ufal/atrium-project/blob/test/agent_dev_logs/plans/doc-schema-v2.plan.md),
+  "Status — pushed". Each tool's pushed tree, with the fixes, passes its suite.
+* **Written here (not pushed):** `plans/doc-schema-v2.plan.md`, `digests/doc-schema-v2.digest.md` (Kate's reply,
+  the status sections, Q14–Q15, Q9 narrowed); `digests/78.digest.md`, `plans/78.plan.md` (Pavel's and motyc's
+  comments of 11-12); `digests/13.digest.md`, `plans/13.plan.md`, `plans/13.corrections.md` (comment 62: R1–R16
+  entered); `digests/project_state_1211.md` (§9a); links to the #84 files in every repository's logs;
+  `docs/k8s_deployment.md` and `docs_site/operations.md` without `AMCR_FIELDS_PATH` and `OCR_LAYER_DOCUMENT_SHARE`,
+  which the tools dropped (the hub's sibling test failed on them; translator's is already on `test`).
+* **Checked:** hub tests 933 passed, 50 skipped, with the tools' round-4 trees as siblings.
+* **`issues/` exports to regenerate:** #84 (none yet), #13 (54 of 62 comments), #78 (7 of 10), #16 (11 of 12),
+  #6 (32 of 33); in the tools, digital-convert #9 (none yet) and keyword-extract #2 (57 of 59).
+* **Not posted; not pushed.**
+
+## 2026-11-14 — round 5: the seven doc-schema-v2 PRs and their checks
+
+* **Asked (K4TEL):** check the PRs opened across the repositories and fix their problems with the doc schema
+  update.
+* **Decided in session:** the tools keep their versions until release (the record-major check stays red until
+  then); after #86 merges, `v1` moves to the merge commit and the tools are pinned to it.
+* **Found:** six causes, A–F ([plan of #84](https://github.com/ufal/atrium-project/blob/test/agent_dev_logs/plans/doc-schema-v2.plan.md),
+  "Status — PRs"). Also missed until now: motyc's #6 comment of 11-12 08:24 (`#no-licence-asserted` confirmed)
+  and K4TEL's of 11-06 (the hub's licence and copyright holder).
+* **Fixed here (not pushed):** `docs/templates/shared/atrium_rocrate.py` and its test: a root without an asserted
+  licence names `#no-licence-asserted` again (RO-Crate 1.2 rule 13.3); `tests/test_rocrate_check.py`,
+  `tools/ci/rocrate_check.py`, `docs/rocrate_export.md`; the branch `84-doc-schema-v2` named in seven docs pages
+  is now the hub's `test`. Logs: `plans/doc-schema-v2.plan.md`, `digests/doc-schema-v2.digest.md`,
+  `digests/6.digest.md`, `plans/6.plan.md`.
+* **Checked:** hub tests 936 passed, 49 skipped, with the round-5 tools as siblings; the four sample crates pass
+  roc-validator 0.12.0 at both gates; the pin sweep and `workflow_lint.py --require-sha-pins` on copies of the six
+  tools.
+* **`issues/` exports to regenerate:** #6 (31 of 33 comments).
+* **Not posted; not pushed.**

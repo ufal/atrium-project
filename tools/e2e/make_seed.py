@@ -7,7 +7,9 @@ from the fixture the chain reads, with a `doc_id` unlike any file name in the ch
 AMČR situation, and it is the one that forked records before atrium-project#68.
 
 The seed is validated against `atrium_document.seed_schema()` before it is written, so a seed
-this script emits is one every tool accepts as input.
+this script emits is one every tool accepts as input. It carries no `schema_version`: a seed is
+identity only, the same in every record major, and a version-less seed is read as their own by
+tools on record schema 1.x and 2.0 alike (atrium-project#84 lands tool by tool).
 
 Usage:
     python tools/e2e/make_seed.py fixtures/e2e/ALTO/CTX000000003.alto.xml \\
@@ -28,14 +30,13 @@ _SHARED_DIR = Path(__file__).resolve().parents[2] / "docs" / "templates" / "shar
 if str(_SHARED_DIR) not in sys.path:
     sys.path.insert(0, str(_SHARED_DIR))
 
-from atrium_document import RECORD_TYPE, SCHEMA_VERSION, validate_seed  # noqa: E402  (needs the path above)
+from atrium_document import RECORD_TYPE, validate_seed  # noqa: E402  (needs the path above)
 
 
 def make_seed(path: Path, doc_id: str, media_type: str, filename: Optional[str] = None) -> Dict[str, Any]:
     """The seed of one file: its sha512 as the archive would record it, its name and media type."""
     digest = hashlib.sha512(path.read_bytes()).hexdigest()
     seed = {
-        "schema_version": SCHEMA_VERSION,
         "record_type": RECORD_TYPE,
         "doc_id": doc_id,
         "source": {"sha512": digest, "filename": filename or path.name, "media_type": media_type},

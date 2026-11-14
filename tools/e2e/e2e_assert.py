@@ -35,24 +35,33 @@ with tokens, and contain every id the record points into:
 ``pages[].teitok_surface`` → ``<surface id>`` and ``entities[]``/``lines[].teitok_ref``
 → an element ``id``. See `assert_teitok()`.
 
-With ``--seed``, the chain started from an AMČR seed (atrium-project#71), and every stage
-must have kept its identity: the seed's ``doc_id``, ``source.sha512``, file name and media type,
-with ``source.origin`` added by the program that reads the source and by no other. See
-`assert_seed_identity()`.
+RECORD SCHEMA 2.0 (atrium-project#84). Every record is read through
+``migrate_document()``, so a stage image older than #84 (a 1.x record) is checked as the 2.0
+record it migrates to; ``--require-current-major`` refuses any record not written at 2.x, which
+is the E2E half of the proof gate before ``doc-schema-v2`` is tagged (D12). A 2.0 record carries
+no run data: no ``provenance`` contributors and no ``assembled`` stamps, so a block's writer is
+its grant (`BLOCK_OWNERS`), and who ran is the paradata's question, not this gate's.
 
-On the born-digital branch, ``--expect-layout`` asks for the structure the
-converter recovers from a DOCX or a PDF with a layout (llm-enrich#18): a heading,
-page furniture or a footnote in ``lines[].style``, and tables whose cells join back
-into ``lines[]``. See `assert_layout()`.
+With ``--seed``, the chain started from an AMČR seed (atrium-project#71), and every stage
+must have kept its identity: the seed's ``doc_id``, ``source.sha512``, file name and media type.
+The described ``source`` fields (origin, language, page count) are the record builder's: once a
+stage record carries one, no later stage changes it. See `assert_seed_identity()`.
+
+The branch follows ``source.origin``: ``digital`` is the born-digital branch
+(`assert_digital_contract()`), anything else the scanned one. ``--expect-atr-pages`` asks for a
+born-digital record some of whose pages the ATR re-acquired; ``--expect-layout`` for lines that
+keep the docproc block they came from (``lines[].block``), from more than one block. A 1.x record
+is checked on its own evidence (``needs_ocr`` pages; ``style`` and ``tables``), which 2.0 moved out
+of the record.
 
 The two read-outs of atrium-project#73 are checked on both branches. With
 ``--keywords-stage-ran true``, keyword-extract's statistical kind ran, so the record must carry
-its ``keywords`` block: stamped by keyword-extract, every keyword with its method, score and
-rank, one method per block, ranks 1..n, pages that are pages of the record, and no controlled
-field in it (`_assert_keywords()`). A ``quality_summary`` is checked whenever the record carries
-one (``--quality-summary true`` requires it): stamped by ocr-postprocess, no band anywhere in it,
-and equal to what ``atrium_document.quality_summary()`` computes from the stage record that wrote
-it, unchanged since (`_assert_quality_summary()`).
+its ``keywords`` block: every keyword with its method, score and rank, one method per block,
+ranks 1..n, pages that are pages of the record, and no controlled field in it
+(`_assert_keywords()`). A ``quality_summary`` is checked whenever the record carries one
+(``--quality-summary true`` requires it): no band anywhere in it, and equal to what
+``atrium_document.quality_summary()`` computes from the stage record that last wrote it,
+unchanged since (`_assert_quality_summary()`).
 
 Usage:
     python tools/e2e/e2e_assert.py work/doc_json/5_llm.json \\
@@ -62,6 +71,7 @@ Usage:
 """
 
 import argparse
+import copy
 import json
 import re
 import sys
@@ -78,22 +88,44 @@ if str(_SHARED_DIR) not in sys.path:
 
 from atrium_document import (  # noqa: E402  (needs the path above)
     BLOCK_OWNERS,
+    SCHEMA_VERSION,
     SEED_SOURCE_REQUIRED,
+    SOURCE_DESCRIBED_FIELDS,
     canonical_program,
+    migrate_document,
     quality_summary,
-    resolve_originator,
     validate_document,
     validate_seed,
 )
 
+_CURRENT_MAJOR = int(SCHEMA_VERSION.split(".")[0])
+
 
 def _load(json_path):
-    with open(json_path, "r", encoding="utf-8") as f:
+    """The record as the stage wrote it."""
+    with open(json_path, "r", encoding="utf-8-sig") as f:
         return json.load(f)
 
 
-def assert_schema_valid(doc, json_path):
+def _major(record):
+    """The MAJOR a record was written at (a record without `schema_version` counts as current)."""
+    try:
+        return int(str(record.get("schema_version", SCHEMA_VERSION)).split(".")[0])
+    except (TypeError, ValueError):
+        return _CURRENT_MAJOR
+
+
+def _read(json_path):
+    """`(as written, as read)`: the stage's record and the same record migrated to the current major."""
+    raw = _load(json_path)
+    return raw, migrate_document(copy.deepcopy(raw))
+
+
+def assert_schema_valid(doc, json_path, written_major=None):
     """Layer D, against real pipeline output rather than a hand-written fixture.
+
+    `doc` is the record as read: a record written at an older major (`written_major`) is
+    validated after `migrate_document()`, which is how every 2.0 tool reads it.
 
     A missing `jsonschema` is a HARD failure here, deliberately unlike the
     per-repo write path (where the documented policy is one loud warning and
@@ -104,6 +136,11 @@ def assert_schema_valid(doc, json_path):
     tools/e2e/requirements.txt, so a RuntimeError here means the E2E environment
     is broken, not that the record is fine.
     """
+    read_as = (
+        f" (written at {written_major}.x, migrated)"
+        if written_major is not None and written_major != _CURRENT_MAJOR
+        else ""
+    )
     try:
         validate_document(doc)
     except RuntimeError as exc:
@@ -134,7 +171,7 @@ def assert_schema_valid(doc, json_path):
             jsonschema.Draft202012Validator(load_schema()).iter_errors(doc),
             key=lambda e: list(e.absolute_path),
         )
-        lines = [f"❌ schema: {json_path} does not validate against atrium_document.schema.json"]
+        lines = [f"❌ schema: {json_path}{read_as} does not validate against atrium_document.schema.json"]
         for err in errors:
             where = "/".join(str(p) for p in err.absolute_path) or "<root>"
             owner = _block_owner(err.absolute_path)
@@ -142,16 +179,35 @@ def assert_schema_valid(doc, json_path):
         lines.append(f"   {len(errors)} violation(s). Each is fixed in the OWNING repo, then released —")
         lines.append("   `:latest` only moves on a version tag, so a fix on `test` cannot green this run.")
         raise SystemExit("\n".join(lines)) from None
-    print(f"✅ schema: {json_path} validates against atrium_document.schema.json")
+    print(f"✅ schema: {json_path}{read_as} validates against atrium_document.schema.json {SCHEMA_VERSION}")
+
+
+def assert_current_major(paths_and_majors, required):
+    """Which major each record was written at; with `required`, every one must be the current one.
+
+    Until each tool writes 2.0 the chain mixes majors, and the gate reads the older ones through
+    `migrate_document()`. `--require-current-major` is the E2E half of the proof gate before the
+    `doc-schema-v2` tag (D12): a record that only validates after migration has not been proven.
+    """
+    older = {path: major for path, major in paths_and_majors.items() if major != _CURRENT_MAJOR}
+    if not older:
+        print(f"✅ schema_version: every record written at {_CURRENT_MAJOR}.x")
+        return
+    listed = ", ".join(f"{Path(p).name} ({m}.x)" for p, m in older.items())
+    assert not required, (
+        f"❌ --require-current-major: written at an older major and only valid after migration: {listed}. "
+        f"The stage images that wrote them have not adopted schema {SCHEMA_VERSION} yet."
+    )
+    print(f"ℹ️  schema_version: read through migrate_document(): {listed}")
 
 
 def _block_owner(path):
     """Which tool owns the block a validation error sits in, so the report names the repo to fix.
 
     `path` is a jsonschema `absolute_path` deque like ``["entities", 0, "type_cnec"]``; only
-    its first element identifies the block. Returns "" for structural keys and unknown blocks
-    rather than guessing — BLOCK_OWNERS authorises writes, and for a field-split block the
-    read-time answer is `assembled.blocks[<block>].program` (see docs/document_schema.md).
+    its first element identifies the block. Returns "" for structural keys, removed blocks and
+    unknown blocks rather than guessing. A 2.0 record carries no stamp, so the grant
+    (BLOCK_OWNERS) is the answer; for a field-split block it names the block's owner.
     """
     parts = list(path)
     if not parts:
@@ -215,24 +271,20 @@ def assert_doc_id_stable(stage_paths, final_doc, final_path):
     print(f"✅ doc_id: {distinct[0]!r} unchanged across {len(seen)} stage record(s)")
 
 
-def _programs(doc):
-    return {str(c.get("program")) for c in ((doc.get("provenance") or {}).get("contributors") or [])}
-
-
 def assert_seed_identity(seed_path, stage_paths, final_doc, final_path):
     """The AMČR seed's identity survives the whole chain (atrium-project#71).
 
     AMČR writes `doc_id` (its file id), `source.sha512` (the Fedora digest), the file name and the
-    media type before the first stage, and leaves `source.origin` to the tool that reads the
-    source, because the origin decides who writes the page layout. So, after every stage:
+    media type before the first stage. The fields that describe the original (`origin`,
+    `language`, `page_count`) are the record builder's (contract §5). So, after every stage:
 
-      * `doc_id` and the three `source` fields are the seed's, unchanged;
-      * the stage that first records an `origin` is one in which the program that origin
-        authorises (`resolve_originator`) contributed; a stage that only passes the record on
-        must never be the one that names it.
+      * `doc_id` and the three identity fields are the seed's, unchanged;
+      * a described field, once a stage record carries it, keeps its value in every later
+        record: a stage that only passes the record on never rewrites it.
 
     The seed's `doc_id` deliberately differs from every file name in the chain (make_seed.py), so
-    a stage that keys the record off its own input fails here, not in production.
+    a stage that keys the record off its own input fails here, not in production. Records are
+    compared as read (`migrate_document()`), so a 1.x origin is compared by its 2.0 value.
     """
     seed = _load(seed_path)
     try:
@@ -245,41 +297,31 @@ def assert_seed_identity(seed_path, stage_paths, final_doc, final_path):
     expected = {"doc_id": seed["doc_id"]}
     expected.update({f"source.{k}": seed["source"][k] for k in SEED_SOURCE_REQUIRED})
     paths = list(dict.fromkeys([*stage_paths, final_path]))
+    described = {}
     for path in paths:
-        doc = final_doc if path == final_path else _load(path)
+        doc = final_doc if path == final_path else _read(path)[1]
+        source = doc.get("source") or {}
         got = {"doc_id": doc.get("doc_id")}
-        got.update({f"source.{k}": (doc.get("source") or {}).get(k) for k in SEED_SOURCE_REQUIRED})
+        got.update({f"source.{k}": source.get(k) for k in SEED_SOURCE_REQUIRED})
         changed = {k: (expected[k], got[k]) for k in expected if got[k] != expected[k]}
         assert not changed, (
             f"❌ {path} changed the seed's identity: "
             + "; ".join(f"{k}: seed {v[0]!r}, record {v[1]!r}" for k, v in sorted(changed.items()))
             + ". doc_id is inherited and source is first-writer-wins: no stage may rewrite either."
         )
+        for field in SOURCE_DESCRIBED_FIELDS:
+            if field not in source:
+                continue
+            first = described.setdefault(field, (path, source[field]))
+            assert source[field] == first[1], (
+                f"❌ {path} rewrote source.{field}: {first[1]!r} in {first[0]}, {source[field]!r} here. "
+                f"It describes the original and is the record builder's; no later stage changes it."
+            )
 
     origin = (final_doc.get("source") or {}).get("origin")
-    assert origin, (
-        f"❌ {final_path} carries no source.origin: no stage recorded how the text was obtained, so "
-        f"nothing authorises the positional plane"
-    )
-    originator = resolve_originator(origin)
-    previous = set()
-    for path in paths:
-        doc = final_doc if path == final_path else _load(path)
-        programs = _programs(doc)
-        if (doc.get("source") or {}).get("origin"):
-            new = programs - previous
-            if originator is None:
-                print(f"⚠️  source.origin {origin!r} matches no known originator; who wrote it is not checked")
-            else:
-                assert canonical_program(originator) in {canonical_program(p) for p in new}, (
-                    f"❌ source.origin {origin!r} first appears in {path}, written by {sorted(new)}, but it "
-                    f"authorises {originator!r}: only the tool that reads the source may record the origin"
-                )
-            break
-        previous = programs
     print(
         f"✅ seed: doc_id {seed['doc_id']!r}, sha512, file name and media type kept across "
-        f"{len(paths)} record(s); origin {origin!r} recorded by {originator or 'an unknown originator'}"
+        f"{len(paths)} record(s); source.origin {origin!r}"
     )
 
 
@@ -325,7 +367,7 @@ def _teitok_format(root):
     return None
 
 
-def assert_teitok(doc, teitok_dir):
+def assert_teitok(doc, teitok_dir, written=None):
     """nlp-enrich's TEITOK file agrees with the record that points into it.
 
     The record's `pages[].teitok_surface` and `entities[].teitok_ref` are TEITOK-local
@@ -341,19 +383,29 @@ def assert_teitok(doc, teitok_dir):
     from UDPipe's chunks put entities on one page in the record and under another `<pb>` in
     the TEITOK. Format-1 files (older images) numbered entities in two places, so a
     mismatch there is reported but does not fail.
+
+    Which file: nlp-enrich names it after its own input, which differs from `doc_id` whenever the
+    record was seeded by an archive (atrium-project#71). A 2.0 record names no file (the paradata
+    lists the outputs by distribution name), so the gate takes `<doc_id>.teitok.xml`, else the
+    one TEITOK file of this single-document run; a 1.x record (`written`) still names it in
+    `derived_from.teitok`.
     """
     doc_id = doc.get("doc_id")
-    # The file the record names first: nlp-enrich names it after its own input, which differs
-    # from doc_id whenever the record was seeded by an archive (atrium-project#71).
-    names = [Path(str((doc.get("derived_from") or {}).get("teitok") or "")).name, f"{doc_id}.teitok.xml"]
+    named = Path(str(((written or {}).get("derived_from") or {}).get("teitok") or "")).name
+    names = [n for n in (named, f"{doc_id}.teitok.xml") if n]
     matches = []
-    for name in (n for n in names if n):
+    for name in names:
         matches = sorted(Path(teitok_dir).rglob(name))
         if matches:
             break
+    if not matches:
+        found = sorted(Path(teitok_dir).rglob("*.teitok.xml"))
+        if len(found) == 1:
+            matches = found
+            print(f"ℹ️  teitok: no {' or '.join(names)}; taking the run's one TEITOK file, {found[0].name}")
     assert matches, (
-        f"❌ no {' or '.join(n for n in names if n)} under {teitok_dir}: nlp-enrich ran with "
-        f"SAVE_TEITOK=true but wrote no TEITOK for this document"
+        f"❌ no {' or '.join(names)} under {teitok_dir} (and not exactly one *.teitok.xml): nlp-enrich "
+        f"ran with SAVE_TEITOK=true but wrote no TEITOK for this document"
     )
     path = matches[0]
     root = _parse_teitok(path)
@@ -414,36 +466,29 @@ def assert_teitok(doc, teitok_dir):
 
 
 def _assert_enrichment(doc, llm_stage_ran):
-    """The llm-enrich block check, shared by both branches (G5).
+    """The keyword-extract `enrichment` block check (formerly llm-enrich's), shared by both branches (G5).
 
-    `assembled.blocks` is the record's own account of which tool wrote what, so it
-    distinguishes "llm-enrich contributed" from "the key happened to be there",
-    which a bare `in doc` cannot.
+    A 2.0 record carries no stamp, so "the stage ran" comes from the workflow's gate
+    (`--llm-stage-ran`); `auto` infers it from the block itself, for a manual run.
     """
-    stamped = (doc.get("assembled") or {}).get("blocks") or {}
     if llm_stage_ran == "auto":
-        llm_stage_ran = "enrichment" in stamped
+        llm_stage_ran = "enrichment" in doc
         print(
             f"ℹ️  --llm-stage-ran not given; inferring the llm stage {'ran' if llm_stage_ran else 'was skipped'} "
-            f"from assembled.blocks. CI always passes the gate's value explicitly."
+            f"from the record's blocks. CI always passes the gate's value explicitly."
         )
     if llm_stage_ran:
         assert "enrichment" in doc, (
-            "❌ 'enrichment' block missing from llm-enrich stage.\n"
+            "❌ 'enrichment' block missing from the llm stage.\n"
             "   The stage is REQUIRED to write this block whenever it reached the model, "
-            "including when the model located nothing — an empty `items` list stamped by "
-            "llm-enrich is how 'ran and found nothing' is told apart from 'never ran'. "
-            "A run that could NOT reach the model writes no record and exits non-zero "
-            "instead, so it fails at its own step rather than here.\n"
-            "   So a record arriving here without the block means one of: llm-enrich is "
-            "older than that contract (atrium-project#49, fixed in llm-enrich after "
-            "v0.6.2 — check the image tag this run pulled); or a tool downstream of it "
-            "dropped the block; or the file handed to this assert is not the llm stage's "
-            "output at all but the baseline that went into it."
-        )
-        assert "enrichment" in stamped, (
-            "❌ 'enrichment' present but not recorded in assembled.blocks: it was not written "
-            "through DocumentRecord.set_block(), so it carries no program/paradata stamp"
+            "including when the model located nothing — an empty `items` list is how 'ran and "
+            "found nothing' is told apart from 'never ran'. A run that could NOT reach the "
+            "model writes no record and exits non-zero instead, so it fails at its own step "
+            "rather than here.\n"
+            "   So a record arriving here without the block means one of: the image is older "
+            "than that contract (atrium-project#49 — check the image tag this run pulled); or a "
+            "tool downstream of it dropped the block; or the file handed to this assert is not "
+            "the llm stage's output at all but the baseline that went into it."
         )
         # Reported, NOT asserted. Whether a live model finds archaeology in a fixture is a
         # model-quality question and pinning it would make the gate flap on provider drift;
@@ -451,19 +496,18 @@ def _assert_enrichment(doc, llm_stage_ran):
         # passages every night is a fixture problem worth seeing in the log rather than
         # discovering when someone finally reads the artifact — which is how #49 went.
         items = (doc.get("enrichment") or {}).get("items") or []
-        program = (stamped.get("enrichment") or {}).get("program")
         if items:
-            print(f"✅ enrichment: {len(items)} item(s) contributed by {program!r}")
+            print(f"✅ enrichment: {len(items)} item(s)")
         else:
             print(
-                f"⚠️  enrichment: block stamped by {program!r} but EMPTY — the stage ran and "
-                "located nothing. Valid, and not a failure, but if it is empty on every run "
-                "the smoke is only proving the plumbing: check the fixture actually contains "
-                "archaeological content (atrium-project#49)."
+                "⚠️  enrichment: block present but EMPTY — the stage ran and located nothing. "
+                "Valid, and not a failure, but if it is empty on every run the smoke is only "
+                "proving the plumbing: check the fixture actually contains archaeological "
+                "content (atrium-project#49)."
             )
     else:
         print(
-            "ℹ️  the llm-enrich stage did not run — 'enrichment' block not required. "
+            "ℹ️  the llm stage did not run — 'enrichment' block not required. "
             "This is the OPENROUTER_KEY-absent path the smoke workflows allow."
         )
 
@@ -475,16 +519,15 @@ _CONTROLLED_FIELDS = ("teater_category", "teater_category_ids", "extracted_keywo
 def _assert_keywords(doc, keywords_stage_ran):
     """keyword-extract's `keywords` block (atrium-project#73), when its statistical kind ran.
 
-    Asserted: the block, its stamp, the four fields of every keyword, ranks 1..n in each list, one
-    method per block, page labels that are the record's, and the separation from `enrichment`.
+    Asserted: the block, the four fields of every keyword, ranks 1..n in each list, one method per
+    block, page labels that are the record's, and the separation from `enrichment`.
     Reported: an empty document list (what a method finds in a fixture is not this gate's question).
     """
-    stamped = (doc.get("assembled") or {}).get("blocks") or {}
     if keywords_stage_ran == "auto":
-        keywords_stage_ran = "keywords" in stamped
+        keywords_stage_ran = "keywords" in doc
         print(
             f"ℹ️  --keywords-stage-ran not given; inferring the statistical kind "
-            f"{'ran' if keywords_stage_ran else 'did not run'} from assembled.blocks."
+            f"{'ran' if keywords_stage_ran else 'did not run'} from the record's blocks."
         )
     if not keywords_stage_ran:
         print("ℹ️  keyword-extract's statistical kind did not run — 'keywords' block not required.")
@@ -493,10 +536,6 @@ def _assert_keywords(doc, keywords_stage_ran):
     assert isinstance(block, dict), (
         "❌ 'keywords' block missing: keyword-extract's statistical kind ran on this record and did not "
         "write it (an image older than v1.2.0-beta?), or a later stage dropped it."
-    )
-    program = (stamped.get("keywords") or {}).get("program")
-    assert canonical_program(program) == "keyword-extract", (
-        f"❌ 'keywords' is stamped by {program!r}, not keyword-extract (BLOCK_OWNERS)"
     )
     labels = {str(row.get("page")) for key in ("pages", "lines") for row in doc.get(key) or [] if isinstance(row, dict)}
     lists = [("document", block.get("document") or [])]
@@ -525,10 +564,10 @@ def _assert_keywords(doc, keywords_stage_ran):
     if block.get("document"):
         print(
             f"✅ keywords: {len(block['document'])} document keyword(s) and {len(block.get('pages') or [])} "
-            f"page list(s) by {method!r}, stamped keyword-extract"
+            f"page list(s) by {method!r}"
         )
     else:
-        print("⚠️  keywords: block stamped by keyword-extract, but the document list is EMPTY")
+        print("⚠️  keywords: block present, but the document list is EMPTY")
 
 
 def _keys(node):
@@ -542,41 +581,45 @@ def _keys(node):
             yield from _keys(value)
 
 
-def _assert_quality_summary(doc, stage_paths, quality_summary_expected):
-    """ocr-postprocess's `quality_summary` (atrium-project#73 R6), wherever a record carries one.
+def _assert_quality_summary(doc, stage_paths, quality_summary_expected, written_major=None):
+    """The record builder's `quality_summary` (atrium-project#73 R6), wherever a record carries one.
 
-    The block must be what `quality_summary()` computes from the record that wrote it — found among
-    `stage_paths` by its stamp — and the final record must carry it unchanged. Without that stage
-    record the final record is used, and a difference is reported, not asserted: a later stage may
-    legitimately add `lines[]` rows (a field contribution) after the summary was taken.
+    The block has one writer, the record builder, which is the first stage that carries it. It
+    must be what `quality_summary()` computes from that stage record, and the final record must
+    carry it unchanged. Without stage records the final record is used, and a difference is
+    reported, not asserted. A 1.x record's block is recomputed by `migrate_document()` (the
+    migration rewrites the rows it reads), so it proves nothing about the writer and is not
+    compared.
     """
     block = doc.get("quality_summary")
     if block is None:
         assert quality_summary_expected is not True, (
-            "❌ 'quality_summary' missing: ocr-postprocess (v1.10.0-beta and later) writes it whenever it "
+            "❌ 'quality_summary' missing: the record builder (ocr-postprocess) writes it whenever it "
             "writes or scores pages and lines"
         )
-        print("ℹ️  no 'quality_summary' in this record (no ocr-postprocess v1.10.0-beta+ wrote or scored it)")
+        print("ℹ️  no 'quality_summary' in this record")
         return
-    stamp = ((doc.get("assembled") or {}).get("blocks") or {}).get("quality_summary") or {}
-    assert canonical_program(stamp.get("program")) == "ocr-postprocess", (
-        f"❌ 'quality_summary' is stamped by {stamp.get('program')!r}, not ocr-postprocess (BLOCK_OWNERS)"
-    )
     bands = sorted({k for k in _keys(block) if "band" in str(k).lower()})
     assert not bands, f"❌ quality_summary carries {bands}: it is numbers, the bands are computed at index time"
+    if written_major is not None and written_major != _CURRENT_MAJOR:
+        print(
+            f"ℹ️  quality_summary: recomputed by the {written_major}.x→{_CURRENT_MAJOR}.0 migration; the writer is not compared"
+        )
+        return
     writer = None
     for path in stage_paths:
-        record = _load(path)
-        if ((record.get("assembled") or {}).get("blocks") or {}).get("quality_summary") == stamp:
-            writer = (Path(path).name, record)
+        raw, record = _read(path)
+        if record.get("quality_summary") is not None:
+            writer = (Path(path).name, raw, record)
             break
     if writer is not None:
-        name, record = writer
-        expected = quality_summary(record)
-        assert record.get("quality_summary") == expected, (
-            f"❌ quality_summary in {name} is not quality_summary() of that record:\n"
-            f"   written:  {record.get('quality_summary')}\n   computed: {expected}"
-        )
+        name, raw, record = writer
+        if _major(raw) == _CURRENT_MAJOR:
+            expected = quality_summary(record)
+            assert record.get("quality_summary") == expected, (
+                f"❌ quality_summary in {name} is not quality_summary() of that record:\n"
+                f"   written:  {record.get('quality_summary')}\n   computed: {expected}"
+            )
         assert block == record.get("quality_summary"), f"❌ quality_summary changed after {name} wrote it"
         print(f"✅ quality_summary: {name}'s read-out of its pages and lines, unchanged since: {block}")
         return
@@ -586,117 +629,101 @@ def _assert_quality_summary(doc, stage_paths, quality_summary_expected):
     else:
         print(
             "⚠️  quality_summary differs from quality_summary() of this record, and no --stages record "
-            f"carries its stamp to check it against: {block} vs {expected}"
+            f"carries it to check it against: {block} vs {expected}"
         )
 
 
-def assert_digital_contract(doc, json_path):
-    """The born-digital branch: `digital-convert -> llm-enrich`.
+def _atr_pages(doc, written):
+    """The pages of a born-digital record whose text the ATR re-acquired, as page labels.
+
+    2.0: the pages of the lines whose `text_source` is `atr` (the route step sent them to the
+    ATR, and the record builder kept the source of each line, D25). A 1.x record has no such
+    field (its migration takes every line's source from `source.origin`), so its evidence is the
+    converter's `needs_ocr` page verdict, which 2.0 moved out of the record.
+    """
+    if _major(written) == _CURRENT_MAJOR:
+        pages = {str(ln.get("page")) for ln in doc.get("lines") or [] if ln.get("text_source") == "atr"}
+    else:
+        pages = {str(p.get("page")) for p in written.get("pages") or [] if p.get("needs_ocr")}
+    return sorted(pages)
+
+
+def assert_positional_blocks(doc):
+    """What the one writer of the positional blocks (the record builder, D20) guarantees beyond the schema.
+
+    The schema checks each row; these checks span rows. Every line says where its text came from
+    (`text_source`); a page row and the lines agree on whether the page has text (an `empty` page
+    has no line, a `text` page has one). Checked where the record carries lines: the scanned smoke
+    skips line classification and has none.
+    """
+    lines = doc.get("lines")
+    if not lines:
+        print("ℹ️  positional: no lines[] on this record — the line checks are not exercised")
+        return
+    missing = [(ln.get("page"), ln.get("line")) for ln in lines if not ln.get("text_source")]
+    assert not missing, (
+        f"❌ {len(missing)} line(s) without text_source (page, line): {missing[:5]}. The record builder "
+        "says for every line whether its text is the text layer, the ATR or legacy ALTO (D25)."
+    )
+    with_lines = {str(ln.get("page")) for ln in lines}
+    disagree = [
+        (p.get("page"), p.get("content_status"))
+        for p in doc.get("pages") or []
+        if p.get("content_status") in ("text", "empty")
+        and (p.get("content_status") == "text") != (str(p.get("page")) in with_lines)
+    ]
+    assert not disagree, (
+        f"❌ pages[].content_status disagrees with lines[] (page, status): {disagree[:5]}. "
+        "An empty page has no lines and a page with text has some (D29)."
+    )
+    sources = sorted({ln["text_source"] for ln in lines})
+    print(f"✅ positional: {len(lines)} line(s), text_source {sources}; content_status agrees with lines[]")
+
+
+def assert_digital_contract(doc, json_path, written=None):
+    """The born-digital branch (`source.origin: digital`).
 
     W10. This is NOT a shorter version of the scanned contract — it is a different
     one, and the difference is the point. A born-digital record can never carry
-    `page_categories` (no page image exists to classify), `translations` or
-    `entities` (translator and nlp-enrich both need alto-postprocess's PAGE_ALTO /
-    DOC_LINE_CATEG output, which never exists on this branch). Asserting the scanned
-    blocks here would not be "stricter", it would be wrong.
+    `page_categories` (no page image exists to classify) or `translations` (the translator
+    needs the scanned branch's output). A 1.x record can carry no `entities` either; since 2.0
+    nlp-enrich enriches the record builder's lines whatever their source (D20, nlp-enrich#42),
+    so a 2.x record may, and they are then checked as on the scanned branch. Asserting the
+    scanned blocks here would not be "stricter", it would be wrong.
 
-    What this branch uniquely proves is the §1a ORIGINATOR ARBITRATION: alto-
-    postprocess refuses to write `pages`/`lines` onto a record whose
-    `source.origin` is digital-born (`_assert_origin_consistent`), and the ONE
-    thing that legitimately re-opens that door is `needs_ocr: true` — the converter
-    finding a text layer it does not trust. Until now that handoff was covered only
-    by unit tests inside one repo. Since W4 (atrium-digital-convert#4) the door opens
-    per page: ocr-postprocess re-originates the flagged pages only, and its stamp says
-    `contribution: "ocr-handoff"`.
+    Since 2.0 the positional blocks have one writer, the record builder (D20): digital-convert
+    writes docproc, and the route step, not the record, decides which pages go to the ATR. So
+    there is no originator arbitration left to check; which pages the ATR re-acquired is read
+    from the lines (`_atr_pages()`).
     """
+    written = doc if written is None else written
     origin = (doc.get("source") or {}).get("origin")
     print(f"ℹ️  born-digital branch: source.origin = {origin!r}")
 
-    # Blocks digital-convert owns outright.
-    assert "pages" in doc, "❌ 'pages' block missing from digital-convert"
-    assert "lines" in doc, "❌ 'lines' block missing from digital-convert"
-
-    pages = doc.get("pages") or []
-    needs_ocr_pages = [p for p in pages if p.get("needs_ocr")]
-
-    stamped = (doc.get("assembled") or {}).get("blocks") or {}
-    lines_stamp = stamped.get("lines") or {}
-    lines_program = lines_stamp.get("program")
-    by_quality_model = canonical_program(lines_program) == "ocr-postprocess"
-    # atrium-digital-convert#4 W3: ocr-postprocess's `/score_record` may add the quality model's
-    # fields to the converter's rows (atrium_document.SCORING_FIELDS). Rule 4 then stamps it as
-    # the block's latest writer, marked `contribution: "scoring"`; that is a score, not an
-    # origination, and the rows are still digital-convert's.
-    scored = lines_stamp.get("contribution") == "scoring" and by_quality_model
-    # W4: the pages the converter flagged `needs_ocr` came back from OCR, and ocr-postprocess
-    # re-originated exactly those (atrium_document.OCR_HANDOFF), marked `contribution:
-    # "ocr-handoff"`. The flag is the authorisation, so a hand-off stamp with no flagged page is a
-    # second originator after all.
-    handed_off = lines_stamp.get("contribution") == "ocr-handoff" and by_quality_model
-    assert lines_program == "digital-convert" or scored or handed_off, (
-        f"❌ 'lines' was written by {lines_program!r}, expected 'digital-convert'. On the "
-        "born-digital branch alto-postprocess must never originate lines (§1a)."
-    )
-    if scored:
-        print("ℹ️  lines: scored by ocr-postprocess (contribution: scoring) on digital-convert's rows")
-    if handed_off:
-        assert needs_ocr_pages, (
-            "❌ 'lines' is stamped as an OCR hand-off (contribution: ocr-handoff), but no page asks "
-            "for OCR (needs_ocr): nothing authorised ocr-postprocess to re-originate a page (§1a)."
-        )
-        print(
-            "ℹ️  lines: OCR hand-off by ocr-postprocess (contribution: ocr-handoff) for page(s) "
-            f"{[p.get('page') for p in needs_ocr_pages]}"
-        )
-
-    # `pages[].text_layer` (2026-10-05): the converter flags exactly the pages whose layer is
-    # `garbled`, `ocr` or `none`. Checked only where a page carries the field, so a record from a
-    # converter older than v1.1.1-beta still passes.
-    for page in pages:
-        layer = page.get("text_layer")
-        if layer is None:
-            continue
-        assert (page.get("needs_ocr") is True) == (layer in ("garbled", "ocr", "none")), (
-            f"❌ page {page.get('page')!r}: text_layer {layer!r} but needs_ocr {page.get('needs_ocr')!r}. "
-            "The converter flags exactly the garbled, ocr and none pages."
-        )
+    assert "pages" in doc, "❌ 'pages' block missing: the record builder wrote no pages"
+    assert "lines" in doc, "❌ 'lines' block missing: the record builder wrote no lines"
 
     # Blocks that CANNOT exist here. A record carrying them means either the branch
     # was fed a scanned document, or a tool wrote a block it does not own.
-    for forbidden, why in (
+    forbidden_blocks = [
         ("page_categories", "no page image exists to classify on this branch"),
-        ("translations", "the translator needs alto-postprocess's PAGE_ALTO output"),
-        ("entities", "nlp-enrich needs the DOC_LINE_CATEG classify CSV and INPUT_ALTO_DIR"),
-    ):
+        ("translations", "the translator needs the scanned branch's PAGE_ALTO output"),
+    ]
+    if _major(written) < 2:
+        forbidden_blocks.append(("entities", "nlp-enrich needs the DOC_LINE_CATEG classify CSV and INPUT_ALTO_DIR"))
+    for forbidden, why in forbidden_blocks:
         assert forbidden not in doc, (
             f"❌ '{forbidden}' present on a born-digital record — {why}. Either the fixture "
             f"is not actually born-digital, or a tool wrote a block it does not own."
         )
 
-    return pages, needs_ocr_pages
+    return doc.get("pages") or [], _atr_pages(doc, written)
 
 
-def assert_layout(doc):
-    """The born-digital layout cues (llm-enrich#18), for a fixture that has them.
-
-    The happy-path contract above holds for a converter that flattens every page to plain
-    lines, which is what digital_to_json did until #18. These are the three things that
-    flattening would lose. The first two cannot pass on a record without them; the third
-    only has something to check when the record carries tables[]:
-
-      * a heading — ``lines[].style.heading_level`` on at least one line;
-      * a non-body region — ``lines[].style.region`` on at least one line (running header,
-        running footer or footnote; the schema's enum has already vetted the value);
-      * tables that point at their text — every ``tables[]`` item has at least one cell
-        whose ``group_id`` is carried by a line. Cell text lives only in ``lines[]``
-        (the schema's "grid SHAPE only" rule), so a table none of whose cells joins is an
-        empty grid to every consumer. "At least one", not "every": an empty cell keeps
-        its ``group_id`` and has no line to join.
-
-    Only meaningful for a fixture built to carry these cues (``rich.docx``,
-    ``two_column.pdf``); ``minimal.pdf`` has none and must fail it.
-    """
-    lines = doc.get("lines") or []
+def _assert_layout_1x(written):
+    """A 1.x record's layout cues (llm-enrich#18): a heading and a region in `lines[].style`, and
+    tables at least one cell of which joins a line by `group_id`. 2.0 moved all three to docproc."""
+    lines = written.get("lines") or []
     headings = [ln for ln in lines if (ln.get("style") or {}).get("heading_level")]
     assert headings, (
         "❌ --expect-layout: no line carries style.heading_level. The converter recovered no "
@@ -709,130 +736,48 @@ def assert_layout(doc):
             regions[region] = regions.get(region, 0) + 1
     assert regions, (
         "❌ --expect-layout: no line carries style.region. The fixture's running header, footer "
-        "or footnote reached the record as body text, so it will also reach content.text and "
-        "the model inline."
+        "or footnote reached the record as body text."
     )
-    print(f"✅ {len(headings)} heading line(s); regions {dict(sorted(regions.items()))}")
-
+    print(f"✅ {len(headings)} heading line(s); regions {dict(sorted(regions.items()))} (1.x record)")
     line_groups = {ln.get("group_id") for ln in lines if ln.get("group_id")}
-    tables = doc.get("tables") or []
-    for table in tables:
+    for table in written.get("tables") or []:
         cell_groups = {cell.get("group_id") for cell in table.get("cells") or [] if cell.get("group_id")}
-        joined = cell_groups & line_groups
-        assert joined, (
+        assert cell_groups & line_groups, (
             f"❌ --expect-layout: table {table.get('table_id')!r} on page {table.get('page')!r} has "
-            f"{len(cell_groups)} cell group_id(s) and none of them is carried by a line. Cell text "
-            "lives only in lines[], so this grid is empty to every consumer."
+            f"{len(cell_groups)} cell group_id(s) and none of them is carried by a line."
         )
-        print(f"✅ table {table.get('table_id')!r}: {len(joined)} of {len(cell_groups)} cell group(s) join lines[]")
-    if not tables:
-        print("ℹ️  no tables[] on this record — the table join is not exercised")
 
 
-def assert_document_contract(
-    json_path,
-    llm_stage_ran="auto",
-    stage_paths=(),
-    expect_needs_ocr=False,
-    teitok_dir=None,
-    expect_layout=False,
-    seed=None,
-    keywords_stage_ran=False,
-    quality_summary_expected="auto",
-):
-    doc = _load(json_path)
+def assert_layout(doc, written=None):
+    """The born-digital layout, for a fixture that has one (llm-enrich#18; 2.0: D26).
 
-    # 0. The contract itself, before any block-by-block check: a record that does
-    #    not validate is broken whatever else it contains (D4).
-    assert_schema_valid(doc, json_path)
-    assert_doc_id_stable(list(stage_paths), doc, json_path)
-    if seed:
-        assert_seed_identity(seed, list(stage_paths), doc, json_path)
-
-    # 0b. W10: which contract applies is derived from the RECORD, not from a flag.
-    #     `source.origin` already names the originator, and `resolve_originator()`
-    #     is the same function alto-postprocess uses to decide whether it may write
-    #     `pages`/`lines` at all — so the assert and the tool agree by construction
-    #     rather than by a CI argument someone has to remember to pass. Same lesson
-    #     as doc_id inheritance: the record carries the answer.
-    origin = (doc.get("source") or {}).get("origin")
-    originator = resolve_originator(origin) if origin else None
-    if originator == "digital-convert":
-        pages, needs_ocr_pages = assert_digital_contract(doc, json_path)
-
-        if expect_needs_ocr:
-            # The §1a handoff case. This is the assertion that must NOT be able to
-            # pass vacuously: a fixture whose text layer decodes cleanly would
-            # satisfy "no page needs OCR" trivially, and prove nothing.
-            assert needs_ocr_pages, (
-                "❌ expected at least one page with needs_ocr: true, got none. The garbled "
-                "fixture's whole purpose is to trip decode-sanity; if it stopped doing so, "
-                "this gate is now vacuous and the §1a arbitration is untested."
-            )
-            for page in needs_ocr_pages:
-                reason = page.get("needs_ocr_reason")
-                assert reason, (
-                    f"❌ page {page.get('page')!r} sets needs_ocr: true with no "
-                    "'needs_ocr_reason'. The reason is what tells alto-postprocess (and a "
-                    "human) WHY re-origination is authorised."
-                )
-                print(f"✅ needs_ocr page {page.get('page')!r}: {reason[:90]}…")
-            # At least one line must be flagged Garbage. NOT "all lines" — the
-            # converter flags per line, and the garbled fixture deliberately mixes
-            # decodable and undecodable lines (1 of 3), so an all-lines assert would
-            # fail against correct behaviour. After the OCR hand-off (W4) the flagged
-            # pages hold the OCR lines instead, so the evidence is gone by design.
-            garbage = [ln for ln in (doc.get("lines") or []) if ln.get("categ") == "Garbage"]
-            handed_off = ((doc.get("assembled") or {}).get("blocks") or {}).get("lines", {}).get(
-                "contribution"
-            ) == "ocr-handoff"
-            assert garbage or handed_off, (
-                "❌ needs_ocr is set but no line carries categ 'Garbage' — the page-level "
-                "verdict and the line-level evidence disagree."
-            )
-            if garbage:
-                print(f"✅ {len(garbage)} line(s) flagged Garbage, consistent with the page verdict")
-            else:
-                print("✅ the flagged pages were re-acquired by OCR (contribution: ocr-handoff)")
-        else:
-            assert not needs_ocr_pages, (
-                f"❌ {len(needs_ocr_pages)} page(s) unexpectedly set needs_ocr on the happy-path "
-                "fixture. Either the fixture regressed or decode-sanity became over-eager."
-            )
-            for line in doc.get("lines") or []:
-                assert line.get("text"), (
-                    f"❌ line {line.get('line')!r} on page {line.get('page')!r} has no text on the "
-                    "happy path; a born-digital PDF's text layer is the whole input."
-                )
-            print(f"✅ {len(pages)} page(s), all lines carry text, no page needs OCR")
-
-        if expect_layout:
-            assert_layout(doc)
-
-        _assert_enrichment(doc, llm_stage_ran)
-        _assert_keywords(doc, keywords_stage_ran)
-        _assert_quality_summary(doc, list(stage_paths), quality_summary_expected)
-        print(f"✅ e2e_assert.py: born-digital contract verified for {json_path}")
+    Since 2.0 the layout (headings, regions, tables, reading order) is docproc's, not the
+    record's; the record keeps, for each line, the docproc block it came from (`lines[].block`),
+    which is the join back to that layout. So a fixture built with a layout (`rich.docx`,
+    `two_column.pdf`) must give lines that all name a block, from more than one block: a
+    converter that flattened the page into one block fails, and so does `minimal.pdf`.
+    A 1.x record is checked on its own cues (`_assert_layout_1x()`).
+    """
+    written = doc if written is None else written
+    if _major(written) != _CURRENT_MAJOR:
+        _assert_layout_1x(written)
         return
-
-    # A flag that silently does nothing would let a mis-wired stage pass: the layout cues are
-    # a digital-convert contract, and a scanned record has no writer for them.
-    assert not expect_layout, (
-        f"❌ --expect-layout applies to the born-digital branch only, but source.origin is "
-        f"{origin!r} (originator {originator!r}). The stage fed this check the wrong record."
+    lines = [ln for ln in doc.get("lines") or [] if ln.get("text")]
+    unjoined = [(ln.get("page"), ln.get("line")) for ln in lines if not ln.get("block")]
+    assert lines and not unjoined, (
+        f"❌ --expect-layout: {len(unjoined)} of {len(lines)} line(s) name no docproc block (page, line): "
+        f"{unjoined[:5]}. Without lines[].block the record cannot be joined back to the layout."
     )
+    blocks = {(str(ln.get("page")), ln["block"]) for ln in lines}
+    assert len(blocks) > 1, (
+        f"❌ --expect-layout: every line comes from one block ({sorted(blocks)}): the layout of a fixture "
+        "built to have one was flattened."
+    )
+    print(f"✅ layout: {len(lines)} line(s) joined to {len(blocks)} docproc block(s)")
 
-    # ── the scanned branch (pc -> alto -> translate -> nlp -> llm) ──────────────
 
-    # 1. ALTO Postprocess: merge_blocks vs set_blocks regression check
-    # 'pages' and 'content' must exist from alto-postprocess.
-    # 'page_categories' must survive from page-classification.
-    # (Note: 'lines' is legitimately absent because SKIP_CLASSIFY=true in E2E)
-    assert "pages" in doc, "❌ 'pages' block missing: Contributions were erased"
-    assert "page_categories" in doc, "❌ 'page_categories' block missing: ALTO merge_blocks failed and erased Stage 1"
-    assert "content" in doc, "❌ 'content' block missing from ALTO postprocess"
-
-    # 2. NLP Enrich: CoNLL-U Entity Structure
+def _assert_entities(doc):
+    """nlp-enrich's `entities`: present, non-empty, each with a `char_span` pair and a type."""
     entities_found = False
     assert "entities" in doc, "❌ 'entities' block missing. run_document_hook() failed or baseline was dropped."
 
@@ -853,29 +798,122 @@ def assert_document_contract(
 
     assert entities_found, "❌ No entities found in document. run_document_hook() may be failing silently."
 
-    # 3. Translator: Schema enforcement
-    assert "translations" in doc, "❌ 'translations' block missing: Baseline was dropped during the pipeline!"
-    trans_block = doc["translations"]
-    if isinstance(trans_block, dict):
-        trans_block = [trans_block]
 
-    for trans in trans_block:
-        # Prevent writing the entire translated corpus text
-        assert "source_lang" in trans, "❌ Translation missing 'source_lang'"
-        assert "target_lang" in trans, "❌ Translation missing 'target_lang'"
-        assert "backend" in trans, "❌ Translation missing 'backend'"
-        assert "text" not in trans, "❌ 'translations' contains raw corpus text instead of metadata schema"
+def assert_document_contract(
+    json_path,
+    llm_stage_ran="auto",
+    stage_paths=(),
+    expect_atr_pages=False,
+    teitok_dir=None,
+    expect_layout=False,
+    seed=None,
+    keywords_stage_ran=False,
+    quality_summary_expected="auto",
+    require_current_major=False,
+):
+    written, doc = _read(json_path)
+    written_major = _major(written)
 
-    # 4. LLM Enrich: API Util Regeneration — conditional on the llm stage having run.
+    # 0. The contract itself, before any block-by-block check: a record that does
+    #    not validate is broken whatever else it contains (D4).
+    assert_schema_valid(doc, json_path, written_major)
+    assert_doc_id_stable(list(stage_paths), doc, json_path)
+    majors = {path: _major(_load(path)) for path in stage_paths}
+    majors[json_path] = written_major
+    assert_current_major(majors, require_current_major)
+    if seed:
+        assert_seed_identity(seed, list(stage_paths), doc, json_path)
+    assert_positional_blocks(doc)
+
+    # 0b. W10: which contract applies is derived from the RECORD, not from a flag:
+    #     `source.origin` says how the text was obtained, and only the born-digital branch
+    #     reads a text layer.
+    origin = (doc.get("source") or {}).get("origin")
+    if origin == "digital":
+        pages, atr_pages = assert_digital_contract(doc, json_path, written)
+
+        if expect_atr_pages:
+            # The garbled fixture's whole purpose is to send pages to the ATR. This is the
+            # assertion that must NOT be able to pass vacuously: a fixture whose text layer
+            # decodes cleanly would satisfy "no page went to the ATR" trivially, and prove nothing.
+            assert atr_pages, (
+                "❌ expected at least one page re-acquired by the ATR, got none. The garbled "
+                "fixture's whole purpose is to trip decode-sanity; if it stopped doing so, "
+                "this gate is now vacuous and the hand-off to the ATR is untested."
+            )
+            print(f"✅ page(s) {atr_pages} re-acquired by the ATR")
+        else:
+            assert not atr_pages, (
+                f"❌ page(s) {atr_pages} unexpectedly went to the ATR on the happy-path fixture. "
+                "Either the fixture regressed or decode-sanity became over-eager."
+            )
+            for line in doc.get("lines") or []:
+                assert line.get("text"), (
+                    f"❌ line {line.get('line')!r} on page {line.get('page')!r} has no text on the "
+                    "happy path; a born-digital PDF's text layer is the whole input."
+                )
+            print(f"✅ {len(pages)} page(s), all lines carry text, no page went to the ATR")
+
+        if expect_layout:
+            assert_layout(doc, written)
+        if "entities" in doc:
+            # 2.x only (assert_digital_contract): nlp-enrich read the record's own layout.
+            _assert_entities(doc)
+            if teitok_dir:
+                assert_teitok(doc, teitok_dir, written)
+
+        _assert_enrichment(doc, llm_stage_ran)
+        _assert_keywords(doc, keywords_stage_ran)
+        _assert_quality_summary(doc, list(stage_paths), quality_summary_expected, written_major)
+        print(f"✅ e2e_assert.py: born-digital contract verified for {json_path}")
+        return
+
+    # A flag that silently does nothing would let a mis-wired stage pass: both are born-digital
+    # contracts, and a scanned record has nothing for them to check.
+    for flag, given in (("--expect-layout", expect_layout), ("--expect-atr-pages", expect_atr_pages)):
+        assert not given, (
+            f"❌ {flag} applies to the born-digital branch only, but source.origin is {origin!r}. "
+            f"The stage fed this check the wrong record."
+        )
+
+    # ── the scanned branch ──────────────────────────────────────────────────────
+
+    # 1. The record builder: 'pages' and 'content' must exist, and 'page_categories'
+    #    must survive from page-classification (a stage that set blocks rather than
+    #    merging them erases it). 'lines' is legitimately absent: SKIP_CLASSIFY=true in E2E.
+    assert "pages" in doc, "❌ 'pages' block missing: Contributions were erased"
+    assert "page_categories" in doc, (
+        "❌ 'page_categories' block missing: a later stage erased page-classification's block"
+    )
+    assert "content" in doc, "❌ 'content' block missing: the record builder wrote no content"
+
+    # 2. NLP Enrich: CoNLL-U Entity Structure
+    _assert_entities(doc)
+
+    # 3. Translator. `translations` is reserved since 2.0 (contract §5: the pilot translates the
+    #    record-level metadata into its own distribution, never the full text), so it is not
+    #    required; an image older than #84 still writes it, and then it must stay metadata.
+    trans_block = doc.get("translations")
+    if trans_block is None:
+        print("ℹ️  no 'translations' block (reserved since schema 2.0; not required)")
+    else:
+        for trans in trans_block if isinstance(trans_block, list) else [trans_block]:
+            assert "source_lang" in trans, "❌ Translation missing 'source_lang'"
+            assert "target_lang" in trans, "❌ Translation missing 'target_lang'"
+            assert "backend" in trans, "❌ Translation missing 'backend'"
+            assert "text" not in trans, "❌ 'translations' contains raw corpus text instead of metadata schema"
+        print("ℹ️  'translations' present (reserved since schema 2.0): metadata only, no text")
+
+    # 4. The llm stage — conditional on it having run.
     _assert_enrichment(doc, llm_stage_ran)
 
-    # 4b. atrium-project#73: keyword-extract's statistical keywords, ocr-postprocess's summary.
+    # 4b. atrium-project#73: keyword-extract's statistical keywords, the record builder's summary.
     _assert_keywords(doc, keywords_stage_ran)
-    _assert_quality_summary(doc, list(stage_paths), quality_summary_expected)
+    _assert_quality_summary(doc, list(stage_paths), quality_summary_expected, written_major)
 
     # 5. NLP Enrich: the TEITOK file the record points into (only when asked for).
     if teitok_dir:
-        assert_teitok(doc, teitok_dir)
+        assert_teitok(doc, teitok_dir, written)
 
     print(f"✅ e2e_assert.py: Document contract verified successfully for {json_path}")
 
@@ -900,23 +938,25 @@ def main(argv=None):
         type=_tri_state,
         default="auto",
         help="pass e2e-pipeline-smoke.yml's gate output here. false = the "
-        "'enrichment' block is not required (G5); auto = infer from "
-        "assembled.blocks, for a manual run against a downloaded artifact.",
+        "'enrichment' block is not required (G5); auto = infer from the "
+        "record's blocks, for a manual run against a downloaded artifact.",
     )
     parser.add_argument(
+        "--expect-atr-pages",
         "--expect-needs-ocr",
+        dest="expect_atr_pages",
         action="store_true",
-        help="born-digital branch only: require at least one page with needs_ocr: true "
-        "and a matching Garbage line (the §1a handoff that authorises alto-postprocess "
-        "to re-originate). Without this the happy path is asserted instead: no page "
-        "needs OCR and every line carries text.",
+        help="born-digital branch only: require at least one page the ATR re-acquired (lines with "
+        "text_source atr; a 1.x record's needs_ocr pages). Without this the happy path is asserted "
+        "instead: no page went to the ATR and every line carries text. --expect-needs-ocr is the "
+        "flag's 1.x name, kept for the existing workflows.",
     )
     parser.add_argument(
         "--expect-layout",
         action="store_true",
-        help="born-digital branch only: also require the layout cues llm-enrich#18 added — a "
-        "style.heading_level, a style.region, and tables whose cells join lines[]. For "
-        "fixtures built to carry them (rich.docx, two_column.pdf).",
+        help="born-digital branch only: require lines that name their docproc block (lines[].block), "
+        "from more than one block; a 1.x record's style.heading_level, style.region and table joins. "
+        "For fixtures built with a layout (rich.docx, two_column.pdf).",
     )
     parser.add_argument(
         "--stages",
@@ -939,14 +979,15 @@ def main(argv=None):
         default=None,
         metavar="SEED",
         help="the AMČR seed the chain started from (tools/e2e/make_seed.py): every stage must keep its "
-        "doc_id, source.sha512, file name and media type, and only the reading tool may add source.origin.",
+        "doc_id, source.sha512, file name and media type, and no stage may change a described source "
+        "field (origin, language, page_count) once one carries it.",
     )
     parser.add_argument(
         "--keywords-stage-ran",
         type=_tri_state,
         default=False,
         help="true when keyword-extract's statistical kind ran on this record: its 'keywords' block "
-        "(atrium-project#73) is then required and checked; auto = infer from assembled.blocks.",
+        "(atrium-project#73) is then required and checked; auto = infer from the record's blocks.",
     )
     parser.add_argument(
         "--quality-summary",
@@ -955,18 +996,25 @@ def main(argv=None):
         help="true = ocr-postprocess's 'quality_summary' is required; auto (default) = checked when "
         "present; false = not required (still checked when present).",
     )
+    parser.add_argument(
+        "--require-current-major",
+        action="store_true",
+        help=f"every record (--stages and the final one) must be written at schema {SCHEMA_VERSION.split('.')[0]}.x, "
+        "not only valid after migrate_document(): the E2E half of the doc-schema-v2 proof gate (D12).",
+    )
     args = parser.parse_args(argv)
 
     assert_document_contract(
         args.record,
         llm_stage_ran=args.llm_stage_ran,
         stage_paths=args.stages,
-        expect_needs_ocr=args.expect_needs_ocr,
+        expect_atr_pages=args.expect_atr_pages,
         teitok_dir=args.teitok_dir,
         expect_layout=args.expect_layout,
         seed=args.seed,
         keywords_stage_ran=args.keywords_stage_ran,
         quality_summary_expected=args.quality_summary,
+        require_current_major=args.require_current_major,
     )
     return 0
 

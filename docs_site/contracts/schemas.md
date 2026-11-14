@@ -22,8 +22,9 @@ every tool, where `para-drift` checks them.
 ## `atrium_document.schema.json`
 
 The schema of the [document record](../ecosystem/document-contract.md) — JSON Schema, version
-`1.0`. It validates with `additionalProperties: true` at the top level and on most blocks, by
-design: rule 6 of the contract says a stage must carry blocks it does not recognise forward
+`1.0` (`2.0` on the hub's `test` branch, atrium-project#84: content only, see the version
+policy below). It validates with `additionalProperties: true` at the top level and on most blocks,
+by design: rule 6 of the contract says a stage must carry blocks it does not recognise forward
 untouched.
 
 ### `page_categories` — written by page-classification
@@ -110,16 +111,25 @@ It is vendored into every tool and byte-checked by `para-drift`. See
 
 ## Version policy
 
-| Contract            | Version                                                                                               | On a newer major          | On an older major                          |
-|---------------------|-------------------------------------------------------------------------------------------------------|---------------------------|--------------------------------------------|
-| document record     | `1.0`, frozen as [`doc-schema-v1`](https://github.com/ufal/atrium-project/releases/tag/doc-schema-v1) | `load_document()` refuses | migrated                                   |
-| paradata            | `2.0`                                                                                                 | refused                   | migrated (`1.0 → 2.0` adds `docker_image`) |
-| vocabulary registry | `1.0`                                                                                                 | —                         | —                                          |
-| RO-Crate            | `1.1` (the RO-Crate specification's version)                                                          | —                         | —                                          |
+| Contract            | Version                                                                                                                      | On a newer major          | On an older major                          |
+|---------------------|------------------------------------------------------------------------------------------------------------------------------|---------------------------|--------------------------------------------|
+| document record     | `1.0`, frozen as [`doc-schema-v1`](https://github.com/ufal/atrium-project/releases/tag/doc-schema-v1); `2.0` pending (below) | `load_document()` refuses | migrated                                   |
+| paradata            | `2.0`; `3.0` pending (below)                                                                                                 | refused                   | migrated (`1.0 → 2.0` adds `docker_image`) |
+| vocabulary registry | `1.0`                                                                                                                        | —                         | —                                          |
+| RO-Crate            | `1.1` (the RO-Crate specification's version)                                                                                 | —                         | —                                          |
 
 An **additive** change — a new optional field, a new block — does not bump a version. A
 **breaking** change bumps the major and ships a `_migrate_X_to_Y()` function. A record missing
 `schema_version` is read as `1.0`.
+
+**Pending: record `2.0` and paradata `3.0`** (atrium-project#84, the hub's `test` branch). The
+record holds content only — no `provenance`, `assembled`, `derived_from`, `regenerable`, licence or
+layout — and the paradata name every input and output by AMČR distribution name and SHA-512, with
+no licence fields. Both migrate older records on read. `doc-schema-v2` is tagged only after the
+validator, the E2E checks and a run through the assembled chain; until then `doc-schema-v1` is the
+published reference. See the hub's
+[`document_schema.md`](https://github.com/ufal/atrium-project/blob/main/docs/document_schema.md) and
+[`paradata_schema.md`](https://github.com/ufal/atrium-project/blob/main/docs/paradata_schema.md).
 
 The document record's freeze is a tag, one per major: `doc-schema-v1` is commit `544298b`, and it
 never moves. An additive change after it keeps that tag as the reference, but has to be registered.

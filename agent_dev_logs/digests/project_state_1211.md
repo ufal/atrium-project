@@ -6,6 +6,7 @@
 > meeting), *Decided* (by ARÚP on 12 November), *To confirm*, *Deferred*. D1–D19 keep their numbers; D20–D36 are
 > new. The record and docproc part is on [#84](https://github.com/ufal/atrium-project/issues/84) (motyc, 11-12).
 > Nothing was changed on GitHub._
+> _**Updated 2026-11-13:** §9a, the answers and new decisions on the threads since 12 November._
 
 ## §0 — What changed since 11-11
 
@@ -258,17 +259,41 @@ for the pilot, implementation status = today with record contract v1; passages d
 after Ronald's and Kate's confirmations, otherwise a short mention; entered by a human author in Overleaf's
 suggestion mode. motyc's R1–R16 on #13 (11-12) carry this out.
 
+## §9a — Since 12 November (updated 2026-11-13)
+
+- **Kate on #84** ([comment 2](https://github.com/ufal/atrium-project/issues/84#issuecomment-6820372800), 11-12):
+  points 1 and 2 agreed, with the stored docproc written by the ATR. The contract also stores digital-convert's
+  docproc for a born-digital document (D20, H14): Q15 in the [#84 plan](../plans/doc-schema-v2.plan.md#questions).
+  Ronald's answers are pending.
+- **#13** ([comment 62](https://github.com/ufal/atrium-project/issues/13#issuecomment-6821864621), 11-12): R1–R16
+  entered; the gated passages on their Fallback until the confirmations.
+- **#78** (11-12, [Pavel](https://github.com/ufal/atrium-project/issues/78#issuecomment-6820461633),
+  [motyc](https://github.com/ufal/atrium-project/issues/78#issuecomment-6827422711)): LINDAT's Terms of Use set aside
+  for the pilot; written terms before the production release. Whether D35 holds in the pilot: Q14.
+- **[atrium-digital-convert#9](https://github.com/ufal/atrium-digital-convert/issues/9)** (opened by K4TEL 11-12;
+  motyc's five points agreed 11-13):
+  1. text quality is not judged in digital-convert; its decode verdict is a flag scoring may read;
+  2. a page whose layer does not decode, is an earlier OCR run or has no text goes to the ATR, decided before it:
+     the whole document passes through the ATR once, with those pages forced;
+  3. `garbled` narrowed to decode failures; words that lose letters are scoring's question;
+  4. TXT, CSV, TSV and JSON skip the visual steps and go straight to scoring (narrows Q9);
+  5. office files are rendered for page geometry in pt; only the pages of point 2 go to page-classification and
+     the ATR.
+- **[atrium-keyword-extract#2](https://github.com/ufal/atrium-keyword-extract/issues/2)** (11-13): David Spáčil's gold
+  annotations delivered; up to three terms per line, ordered by importance; an AMČR-only vocabulary to be compared
+  with the union. Research past the pilot (#67); the annotations stay off public GitHub (#16).
+
 ## §10 — Issue map
 
-| Issue                                            | What 12 November changes                                                                                    | Log                                           |
-|--------------------------------------------------|-------------------------------------------------------------------------------------------------------------|-----------------------------------------------|
-| #84 doc-schema-v2 (opened 11-12)                 | the consolidated record and docproc issue; Kate's answer by 16 Nov                                          | [`../plans/84.plan.md`](../plans/84.plan.md)  |
-| #13 CAA paper                                    | R1–R16 supersede C1–C9; [GATED] passages wait for 16 Nov                                                    | `plans/13.plan.md`, `plans/13.corrections.md` |
-| #16 storage locations                            | public AMČR copies in keyword-extract and digital-convert not approved; Figure 3 approved; Galaxy condition | `plans/16.plan.md`                            |
-| #78 LINDAT                                       | deferred; covers all of nlp-enrich and the translator; nothing published meanwhile (D35)                    | `plans/78.plan.md`                            |
-| #24 LLM applications                             | the three-format decision revised: no ALTO                                                                  | `plans/24.plan.md`                            |
-| #6 licences                                      | D2 unchanged; D35, D36                                                                                      | `plans/6.plan.md`                             |
-| #67, #77                                         | #84 takes over the draft on #67; D35 on the pilot outputs                                                   | `plans/67.plan.md`, `plans/77.plan.md`        |
-| #79 docs, #66 Galaxy, #22 document understanding | the order of the steps; the Galaxy test-data condition; layout and tables in docproc                        | each `plans/{n}.plan.md`                      |
-| #83 and its children; #81, #40, #72              | unchanged since 11-11 (parked; CI and PR rules; can close)                                                  | as on 11-11                                   |
-| Each tool                                        | its slice of #84                                                                                            | `<repo>/agent_dev_logs/plans/84.plan.md`      |
+| Issue                                            | What 12 November changes                                                                                    | Log                                                                |
+|--------------------------------------------------|-------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| #84 doc-schema-v2 (opened 11-12)                 | the consolidated record and docproc issue; Kate's answer by 16 Nov                                          | [`../plans/doc-schema-v2.plan.md`](../plans/doc-schema-v2.plan.md) |
+| #13 CAA paper                                    | R1–R16 supersede C1–C9; [GATED] passages wait for 16 Nov                                                    | `plans/13.plan.md`, `plans/13.corrections.md`                      |
+| #16 storage locations                            | public AMČR copies in keyword-extract and digital-convert not approved; Figure 3 approved; Galaxy condition | `plans/16.plan.md`                                                 |
+| #78 LINDAT                                       | deferred; covers all of nlp-enrich and the translator; nothing published meanwhile (D35)                    | `plans/78.plan.md`                                                 |
+| #24 LLM applications                             | the three-format decision revised: no ALTO                                                                  | `plans/24.plan.md`                                                 |
+| #6 licences                                      | D2 unchanged; D35, D36                                                                                      | `plans/6.plan.md`                                                  |
+| #67, #77                                         | #84 takes over the draft on #67; D35 on the pilot outputs                                                   | `plans/67.plan.md`, `plans/77.plan.md`                             |
+| #79 docs, #66 Galaxy, #22 document understanding | the order of the steps; the Galaxy test-data condition; layout and tables in docproc                        | each `plans/{n}.plan.md`                                           |
+| #83 and its children; #81, #40, #72              | unchanged since 11-11 (parked; CI and PR rules; can close)                                                  | as on 11-11                                                        |
+| Each tool                                        | its slice of #84                                                                                            | `<repo>/agent_dev_logs/plans/doc-schema-v2.plan.md`                |
