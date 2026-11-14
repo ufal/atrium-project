@@ -1,6 +1,7 @@
 # 📓 Digest — [#84](https://github.com/ufal/atrium-project/issues/84) `open`: doc-schema-v2: the record and docproc contract after the 11 November meeting
 
-> _**Refreshed 2026-11-13**: comment 2, Kate's reply (11-12 09:52 UTC). The #84 files are named
+> _**Refreshed 2026-11-14**: the seven PRs of 11-14 and their checks (no new comment on the thread). Earlier:
+> **refreshed 2026-11-13**: comment 2, Kate's reply (11-12 09:52 UTC). The #84 files are named
 > `doc-schema-v2.*` again (`84.*` on 11-12 and 11-13). Earlier: refreshed **2026-11-12** when motyc opened the issue
 > (08:22 UTC, the docproc schema as comment 1), read against ARÚP's output contract of 12 November
 > ([`project_state_1211.md`](project_state_1211.md)) and the seven repositories at their `test` heads of 11-11; written
@@ -15,9 +16,13 @@ Harmonization] · **Assignees**: none · **Comments**: 2
 Paths: **S** = hub `docs/templates/shared/` (vendored byte-identically to every tool root); **AD** =
 `S/atrium_document.py`; **SCH** = `S/atrium_document.schema.json`; **DSM** = hub `docs/document_schema.md`.
 
+**Status (2026-11-14)**: 🟡 **One PR per repository, `doc-schema-v2` into `test` (K4TEL): the hub's
+[#86](https://github.com/ufal/atrium-project/pull/86) and the six tools' (below). No review or comment yet; every PR
+has failing checks.**
+
 **Status (2026-11-13)**: 🟡 **Kate answered on 11-12 (comment 2): points 1 and 2 agreed, with the stored docproc
 written by the ATR, narrower than point 1 of the body (digital-convert or the ATR; Q15 in the plan). Ronald's
-answers on ARUP-CAS/aiscr-docs-pipeline#17 are pending.**
+answers on ARUP-CAS/aiscr-docs-pipeline#17 are pending.** _(superseded 11-14: the PRs are open)_
 
 **Status (2026-11-12)**: 🟡 **Opened by motyc; it takes over K4TEL's draft on #67 (11-11 18:30). One answer is
 due from Kate by 16 November: whether she agrees with the two-level contract and with dropping ALTO (points 1
@@ -28,6 +33,22 @@ answered)_
 **Status (2026-11-11)**: 📋 Not opened. The contract's §8 listed eleven changes; K4TEL added the common line
 representation, SHA-512 everywhere and digital-convert's own marker set. _(superseded 11-12: the issue is #84;
 the line shape is §2 of the body, with the layout in docproc)_
+
+## 🧭 2026-11-14 — the PRs and their checks
+
+| PR                                                                                          | Head      | Failing checks (job log)                                                                                                                                         |
+|---------------------------------------------------------------------------------------------|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [atrium-project#86](https://github.com/ufal/atrium-project/pull/86)                         | `1aef6ad` | RO-Crates: `ro-crate-1.2_13.3`, no root `license`, on 4 crates; shared modules: the ocr-postprocess image closure (1 of 730)                                     |
+| [atrium-page-classification#71](https://github.com/ufal/atrium-page-classification/pull/71) | `d37a8bb` | drift (canonical): `atrium_limits.py` and others differ from the hub at `4435ffb`; api-contract: record major 1.0 → 2.0                                          |
+| [atrium-translator#60](https://github.com/ufal/atrium-translator/pull/60)                   | `7b3b853` | drift (canonical); api-contract: record major                                                                                                                    |
+| [atrium-keyword-extract#5](https://github.com/ufal/atrium-keyword-extract/pull/5)           | `9218faf` | drift (canonical); api-contract: record major                                                                                                                    |
+| [atrium-nlp-enrich#45](https://github.com/ufal/atrium-nlp-enrich/pull/45)                   | `d0df625` | drift (canonical); api-contract: record major                                                                                                                    |
+| [atrium-digital-convert#10](https://github.com/ufal/atrium-digital-convert/pull/10)         | `fd5951d` | drift (canonical); drift (vendored): `requirements_flexiconv.txt` against nlp-enrich `ba81709`; api-contract: `document_json` gone from `/describe`, `/reformat` |
+| [atrium-ocr-postprocess#11](https://github.com/ufal/atrium-ocr-postprocess/pull/11)         | `1a9e778` | build / test; drift (canonical); api-contract: record major, `ocr_handoff` and `skipped_decode_verdict` gone                                                     |
+
+The causes and fixes are in the [plan](../plans/doc-schema-v2.plan.md#status--prs-11-14). The RO-Crate failure
+comes from round 2 dropping the root's `#no-licence-asserted`, which motyc confirmed on #6 on 11-12 08:24
+([comment](https://github.com/ufal/atrium-project/issues/6#issuecomment-6818590785)); see [`6.digest.md`](6.digest.md).
 
 ## 🧭 2026-11-12 — what the issue asks
 

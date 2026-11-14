@@ -3902,3 +3902,23 @@ candidates are six `.3` releases carrying #6's step 1.
 * **`issues/` exports to regenerate:** #84 (none yet), #13 (54 of 62 comments), #78 (7 of 10), #16 (11 of 12),
   #6 (32 of 33); in the tools, digital-convert #9 (none yet) and keyword-extract #2 (57 of 59).
 * **Not posted; not pushed.**
+
+## 2026-11-14 — round 5: the seven doc-schema-v2 PRs and their checks
+
+* **Asked (K4TEL):** check the PRs opened across the repositories and fix their problems with the doc schema
+  update.
+* **Decided in session:** the tools keep their versions until release (the record-major check stays red until
+  then); after #86 merges, `v1` moves to the merge commit and the tools are pinned to it.
+* **Found:** six causes, A–F ([plan of #84](https://github.com/ufal/atrium-project/blob/test/agent_dev_logs/plans/doc-schema-v2.plan.md),
+  "Status — PRs"). Also missed until now: motyc's #6 comment of 11-12 08:24 (`#no-licence-asserted` confirmed)
+  and K4TEL's of 11-06 (the hub's licence and copyright holder).
+* **Fixed here (not pushed):** `docs/templates/shared/atrium_rocrate.py` and its test: a root without an asserted
+  licence names `#no-licence-asserted` again (RO-Crate 1.2 rule 13.3); `tests/test_rocrate_check.py`,
+  `tools/ci/rocrate_check.py`, `docs/rocrate_export.md`; the branch `84-doc-schema-v2` named in seven docs pages
+  is now the hub's `test`. Logs: `plans/doc-schema-v2.plan.md`, `digests/doc-schema-v2.digest.md`,
+  `digests/6.digest.md`, `plans/6.plan.md`.
+* **Checked:** hub tests 936 passed, 49 skipped, with the round-5 tools as siblings; the four sample crates pass
+  roc-validator 0.12.0 at both gates; the pin sweep and `workflow_lint.py --require-sha-pins` on copies of the six
+  tools.
+* **`issues/` exports to regenerate:** #6 (31 of 33 comments).
+* **Not posted; not pushed.**

@@ -127,8 +127,8 @@ def validate(crate_dir: Path, gates: Dict[str, str], validator: Sequence[str]) -
 def build_samples(out: Path) -> List[Path]:
     """The module's own crates, each a directory: the document crate, the run crate (with its nested
     crate and paradata file), the record fragment under a stub root, and a service's CreateAction
-    under a stub root. Record schema 2.0 and paradata 3.0: no data entities from the record, no
-    licence on any root (D2)."""
+    under a stub root. Record schema 2.0 and paradata 3.0: no data entities from the record, and
+    every root names `#no-licence-asserted` (D2; RO-Crate 1.2 requires a root licence)."""
     record = rc._sample_record()
     paradata = rc._sample_paradata()
     dirs: List[Path] = []

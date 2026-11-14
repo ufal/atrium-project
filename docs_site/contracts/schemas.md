@@ -22,7 +22,7 @@ every tool, where `para-drift` checks them.
 ## `atrium_document.schema.json`
 
 The schema of the [document record](../ecosystem/document-contract.md) — JSON Schema, version
-`1.0` (`2.0` on the hub branch `84-doc-schema-v2`, atrium-project#84: content only, see the version
+`1.0` (`2.0` on the hub's `test` branch, atrium-project#84: content only, see the version
 policy below). It validates with `additionalProperties: true` at the top level and on most blocks,
 by design: rule 6 of the contract says a stage must carry blocks it does not recognise forward
 untouched.
@@ -122,7 +122,7 @@ An **additive** change — a new optional field, a new block — does not bump a
 **breaking** change bumps the major and ships a `_migrate_X_to_Y()` function. A record missing
 `schema_version` is read as `1.0`.
 
-**Pending: record `2.0` and paradata `3.0`** (atrium-project#84, hub branch `84-doc-schema-v2`). The
+**Pending: record `2.0` and paradata `3.0`** (atrium-project#84, the hub's `test` branch). The
 record holds content only — no `provenance`, `assembled`, `derived_from`, `regenerable`, licence or
 layout — and the paradata name every input and output by AMČR distribution name and SHA-512, with
 no licence fields. Both migrate older records on read. `doc-schema-v2` is tagged only after the

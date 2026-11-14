@@ -176,7 +176,7 @@ reads `"unrecorded"`, which states the gap instead of hiding it.
 | root `identifier`            | `doc_id`, as a `PropertyValue` (`#doc_id`)                                               | the form RO-Crate 1.2 recommends                                                             |
 | root `name`                  | `doc_id`                                                                                 |                                                                                              |
 | root `datePublished`         | the **newest run's end time**                                                            | never the clock — see §7.3                                                                   |
-| root `license`               | none, unless the caller asserts one (`license=`)                                         | the rights in a document are the archive's to state; the tools assert none (D2)              |
+| root `license`               | `#no-licence-asserted`, unless the caller asserts one (`license=`)                       | the rights in a document are the archive's to state; the tools assert none (D2)              |
 | root `conformsTo`            | the Process Run Crate 0.5 `Profile`                                                      | the descriptor names RO-Crate 1.2                                                            |
 | root `isBasedOn` → `#source` | `source`                                                                                 | contextual, not a part — §4.2; carries the archive's `sha512`                                |
 | root `about` → `DefinedTerm` | every controlled value in the record; every AMČR/TEATER concept in `teater_category_ids` | `@id` from `atrium_vocab.concept_uri()`; a source concept keeps its own URI (nothing minted) |
@@ -482,7 +482,7 @@ python3 atrium_rocrate.py --selftest      # exit 0, or 1 with one line per probl
 ```
 
 It checks the descriptor and the profile; the root's required properties; that **no reference
-dangles**; that the root asserts no licence; that output is deterministic and `datePublished`
+dangles**; that the root names `#no-licence-asserted`; that output is deterministic and `datePublished`
 derived from the runs; that runs keep their `run_uuid` ids, tools their release ids, `version` and
 authors; that inputs and outputs are named by distribution and SHA-512, never an `ni:` URI; the
 fragment and its wrapping; and that a service's `CreateAction` meets `action_problems()`.
@@ -551,9 +551,14 @@ of them is minted by the exporter.
 **`creator` is for people.** A tool's authors are its `creator`. What a run wrote is its
 `result`, not a `creator` naming software.
 
-**No licence on the root** (D2). A crate root names a licence only when its caller asserts one.
-Until 2.0 the root named `#no-licence-asserted`, a placeholder that asserted nothing; with the
-calculated licence gone from the record and the paradata there is nothing for it to stand in for.
+**No licence asserted on the root** (D2). A crate root names a licence only when its caller
+asserts one. Otherwise its `license` names `#no-licence-asserted`, a `CreativeWork` that asserts
+nothing: the rights depend on the source and on AMČR's permission, and each run's paradata lists
+its components with their own terms. RO-Crate 1.2 requires a root `license` (rule 13.3), and the
+placeholder is not a calculated licence: motyc's option 1 on
+[#6](https://github.com/ufal/atrium-project/issues/6#issuecomment-6818590785), confirmed on
+2026-11-12 together with the removal of the calculated licence. A fragment carries no licence
+entity; its host's root decides.
 
 **`PROCESS_RUN_PROFILE` is pinned and checked.** 0.5 is the profile IRI the validator ships; the
 caveat that used to sit on the constant is replaced by the hub's validator job.

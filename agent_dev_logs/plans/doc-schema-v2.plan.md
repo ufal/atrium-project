@@ -1,6 +1,8 @@
 # Strategy — Issue [#84](https://github.com/ufal/atrium-project/issues/84): doc-schema-v2, the record and docproc contract after the 11 November meeting
 
-> _**Refreshed 2026-11-13** (round 4): Kate's reply on #84 (posted 11-12), the status of the hub side, the tools and
+> _**Refreshed 2026-11-14** (round 5): the seven PRs of 11-14 and their failing checks (Status — PRs); the crate
+> root's `#no-licence-asserted` restored, as motyc confirmed on #6 on 11-12. Earlier: **refreshed 2026-11-13**
+> (round 4): Kate's reply on #84 (posted 11-12), the status of the hub side, the tools and
 > the push, Q11–Q15. The #84 files are named `doc-schema-v2.*` again (they were `84.*` on 11-12 and 11-13). Evidence:
 > [`../digests/doc-schema-v2.digest.md`](../digests/doc-schema-v2.digest.md) · contract digest:
 > [`../digests/project_state_1211.md`](../digests/project_state_1211.md). Each tool's slice is
@@ -8,10 +10,17 @@
 > on ARÚP's output contract of 12 November; written **2026-11-11** before the issue existed (one record built by
 > every tool, one `run_uuid` per block, ALTO from the ATR, the D14 merge by decode verdict; superseded)._
 
+**Status (2026-11-14)**: 🟡 **K4TEL opened one PR per repository from `doc-schema-v2` into `test`: #86 here,
+page-classification#71, translator#60, keyword-extract#5, nlp-enrich#45, digital-convert#10, ocr-postprocess#11.
+Their checks fail for six reasons (Status — PRs). Round 5 fixes the code and the files the push missed; the
+hub-ref pins move after #86 merges; the record-major check clears when each tool's release raises its major
+version. Not tagged.**
+
 **Status (2026-11-13)**: 🟡 **Kate answered on 11-12: points 1 and 2 agreed, with the stored docproc written by the
 ATR (Q15). The hub and the six tools are adapted; the hub, page-classification, keyword-extract and digital-convert
 are on `doc-schema-v2`, translator and ocr-postprocess on `test`, nlp-enrich not pushed yet. Ronald's answers on
-ARUP-CAS/aiscr-docs-pipeline#17 are pending; `doc-schema-v2` is tagged only after the proof gate.**
+ARUP-CAS/aiscr-docs-pipeline#17 are pending; `doc-schema-v2` is tagged only after the proof gate.** _(superseded
+11-14: the PRs are open)_
 
 **Status (2026-11-12)**: 🟡 **Opened by motyc; it takes over K4TEL's draft on #67. Due from Kate by 16 November:
 agreement (or not) with the two-level contract and with dropping ALTO, which is also her consent as first author
@@ -94,8 +103,10 @@ distribution name and SHA-512, the record version read, the record blocks **and 
 stored named by its SHA-512 and marked (D23); `parameters` that shaped the output (model revision, thresholds,
 forced pages, the translator's field list); `limits` (sampled, split); `components` with their terms, never merged.
 The files per step are in [`project_state_1211.md` §4](../digests/project_state_1211.md#4--paradata-and-the-hand-over-6).
-The ÚFAL crate module keeps its building blocks (action, software, validator) and drops the `#no-licence-asserted`
-root (`atrium_rocrate.py:121`); AMČR builds the record's crate.
+The ÚFAL crate module keeps its building blocks (action, software, validator); AMČR builds the record's crate. A
+root that asserts no licence names `#no-licence-asserted`: RO-Crate 1.2 requires a root `license`, and motyc
+confirmed the placeholder on #6 on 11-12 ([comment](https://github.com/ufal/atrium-project/issues/6#issuecomment-6818590785)). _(Corrected 11-14: this line said
+the placeholder goes; round 2 removed it, and #86's RO-Crate check failed.)_
 
 ## Tasks
 
@@ -148,7 +159,7 @@ reachable here).
 - **Record 2.0**: as §5, plus `_migrate_1_to_2()` (every reader takes a 1.x record), `written()` in place of the
   stamps, `RemovedInSchema2` from `add_derived_from()`, `add_regenerable()`, `add_license_detail()`.
 - **Paradata 3.0, `para_licenses`, `atrium_limits`, `atrium_rocrate`**: as §6 and task 2–4; the crate root names no
-  licence (`#no-licence-asserted` gone).
+  licence (`#no-licence-asserted` gone). _(Restored 11-14: see Status — PRs, cause A.)_
 - **E2E**: `e2e_assert.py` and `rocrate_check.py` read every record and paradata file through the migration; new
   `--require-current-major` for the proof gate; `--expect-needs-ocr` kept as an alias of `--expect-atr-pages`.
   The workflows and the ALTO fixtures are unchanged until the tools adopt 2.0.
@@ -214,6 +225,33 @@ K4TEL pushed round 3 on 11-13: the hub, page-classification, keyword-extract and
   drop `AMCR_FIELDS_PATH` and `OCR_LAYER_DOCUMENT_SHARE`. Hub tests 933 passed.
 
 The workflows' `hub-ref` pins still point at `v1`: `para-drift` fails until the hub PR merges and the pins move.
+
+## Status — PRs (11-14)
+
+K4TEL pushed round 4 and opened one PR per repository from `doc-schema-v2` into `test` (no review yet). Each failing
+check traced to one of six causes:
+
+| Cause | Where                                        | What fails                                                                                                                                                         | Fix                                                                                               |
+|-------|----------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
+| A     | #86, "Validate the RO-Crates"                | RO-Crate 1.2 rule 13.3: the root has no `license` (all four sample crates)                                                                                         | round 5: the root names `#no-licence-asserted` again (#6, motyc 11-12)                            |
+| B     | #86, "Test canonical shared modules"         | the image-closure test reads ocr-postprocess's `test` head: `build_record.py`, `docproc.py`, `score_record.py` there, their declaration only in ocr-postprocess#11 | none: clears when ocr-postprocess#11 merges                                                       |
+| C     | the six tool PRs, "check-drift (canonical)"  | the callers read the hub at `v1` (`4435ffb`); the tools' copies are v2, byte-identical with `doc-schema-v2`                                                        | after #86 merges: `v1` moves to the merge commit and `scripts/pin_hub_reusables.py --sha` pins it |
+| D     | the six tool PRs, "api-contract"             | record schema 1.0 → 2.0 (digital-convert and ocr-postprocess also drop response fields) without a major version                                                    | each tool's release raises its major version (K4TEL, 11-14); `2.0.0-beta` passes                  |
+| E     | ocr-postprocess#11, "build / test"           | `tests/fixtures/docproc/*.json` not committed; `tests/test_ocr_handoff.py` still there (imports `OCR_HANDOFF`, gone in 2.0)                                        | round 5: the fixtures added, the test removed                                                     |
+| F     | digital-convert#10, "check-drift (vendored)" | the TEITOK pin names nlp-enrich `ba81709` (flexiconv v0.3.11); the copy pins v0.3.12                                                                               | round 5: the pin names `c9e94ee` (2026-11-10, flexiconv v0.3.12), which matches all 11 copies     |
+
+Also missing from the push: digital-convert's `digests/9.digest.md`, and nlp-enrich's `api_2_udp.sh` lost its
+exec bit. The hub's docs named a branch `84-doc-schema-v2` that does not exist; they now say the hub's `test`.
+
+**Merge order.** 1. #86, with B the only red check. 2. `v1` to the merge commit; the six tools pinned to it
+(`pin_hub_reusables.py --sha`, then `--check`), committed on each `doc-schema-v2`: C clears. 3. The six tool PRs,
+with D red until each release. Checked locally: every tool's suite; the hub's tests with the round-5 tools as
+siblings; the four sample crates through roc-validator 0.12.0 (0 issues at the gates); the pin sweep and
+`workflow_lint.py --require-sha-pins` on copies of the six tools.
+
+**At each tool's release** (D): `[tool] version` in `para_config.txt`, `version` in `CITATION.cff`, `info.version`
+in `service/openapi.json`, and keyword-extract's vocabulary sidecars (`vocab_build.py --from-flat --skos`) move to
+the new major.
 
 ## Proof gate (D12)
 
@@ -293,3 +331,4 @@ exists and `doc-schema-v1` (`544298b`) is untouched.
 - **11-13:** the six tools adapted, the hub addendum, a local chain check (see Status — tools).
 - **11-13 (later):** pushed (see Status — pushed); the files named `doc-schema-v2.*` again; digital-convert#9
   points 1–3.
+- **11-14:** round 4 pushed; the seven PRs opened; round 5 (see Status — PRs).

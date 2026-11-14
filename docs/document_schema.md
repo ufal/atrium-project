@@ -31,7 +31,7 @@ block changes), and needs no shared volume or orchestrator.
 
 ## Schema `2.0` (doc-schema-v2, atrium-project#84)
 
-**Status.** `SCHEMA_VERSION = "2.0"` on the hub branch `84-doc-schema-v2`. The tag `doc-schema-v2` is
+**Status.** `SCHEMA_VERSION = "2.0"` on the hub's `test` branch. The tag `doc-schema-v2` is
 cut only after the schema validator, the E2E checks (`e2e_assert.py --require-current-major`) and a
 run through the assembled pipeline chain have passed (D12). Until then `test_schema_freeze.py` lists
 MAJOR 2 in `PENDING_FREEZES` and skips its freeze checks with that reason. `doc-schema-v1` is not
@@ -392,7 +392,7 @@ Then the usual order ([`docker_gha.md`](docker_gha.md), "The procedure"): land t
 (rule 2). The test has no register entry for a removal on purpose. The order:
 
 1. `_migrate_1_to_2()`, its branch in `migrate_document()`, and `SCHEMA_VERSION = "2.0"`, with
-   MAJOR 2 in `PENDING_FREEZES` (done on `84-doc-schema-v2`, atrium-project#84);
+   MAJOR 2 in `PENDING_FREEZES` (done for atrium-project#84);
 2. cut `doc-schema-v2` on the hub commit that carries them, **only after the proof gate**: the
    validator, the E2E checks with `--require-current-major`, and a complete run through the
    assembled chain (D12). Remove MAJOR 2 from `PENDING_FREEZES` in the same commit;
@@ -1305,7 +1305,7 @@ as motyc chose it on #6 (2026-10-29).
 ## Changelog — 2026-11-12 (#84: record schema 2.0, paradata 3.0)
 
 The hub side of doc-schema-v2, after ARÚP's output contract of 12 November 2026 and atrium-project#84.
-On the branch `84-doc-schema-v2`; the tools adopt it each in its own repository.
+On the hub's `test` branch; the tools adopt it each in its own repository.
 
 - **Record 2.0** (`SCHEMA_VERSION = "2.0"`): content only. Removed: `provenance`, `assembled`,
   `derived_from`, `regenerable`, `forms`, `tables`, `content.reading_order`, `lines[].group_id`,

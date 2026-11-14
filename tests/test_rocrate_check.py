@@ -82,7 +82,9 @@ def test_the_samples_are_four_crates(tmp_path):
     for crate in crates:
         assert (crate / "ro-crate-metadata.json").is_file()
         text = (crate / "ro-crate-metadata.json").read_text(encoding="utf-8")
-        assert "no-licence-asserted" not in text and "ni:///" not in text  # D2; #84 §4
+        assert "ni:///" not in text and "effective_license" not in text  # #84 §4; D2
+        root = next(e for e in json.loads(text)["@graph"] if e["@id"] == "./")
+        assert root["license"] == {"@id": "#no-licence-asserted"}  # RO-Crate 1.2 rule 13.3; #6
     assert (tmp_path / "run" / "CTX000000001" / "ro-crate-metadata.json").is_file()
 
 
