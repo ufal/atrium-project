@@ -1,174 +1,295 @@
-# Strategy — doc-schema-v2 (issue to be opened): one record, one line shape, paradata AMČR can store
+# Strategy — Issue [#84](https://github.com/ufal/atrium-project/issues/84): doc-schema-v2, the record and docproc contract after the 11 November meeting
 
-> _Written **2026-11-11** after the meeting of that day (contract §5, §8; K4TEL's points in session). Evidence:
-> [`../digests/doc-schema-v2.digest.md`](../digests/doc-schema-v2.digest.md) · meeting digest:
-> [`../digests/project_state_1111.md`](../digests/project_state_1111.md). The issue is not opened; rename this file
-> and the tools' slices (`<repo>/agent_dev_logs/plans/doc-schema-v2.plan.md`) to the issue number once it is._
+> _**Refreshed 2026-11-13** (round 4): Kate's reply on #84 (posted 11-12), the status of the hub side, the tools and
+> the push, Q11–Q15. The #84 files are named `doc-schema-v2.*` again (they were `84.*` on 11-12 and 11-13). Evidence:
+> [`../digests/doc-schema-v2.digest.md`](../digests/doc-schema-v2.digest.md) · contract digest:
+> [`../digests/project_state_1211.md`](../digests/project_state_1211.md). Each tool's slice is
+> `<repo>/agent_dev_logs/plans/doc-schema-v2.plan.md`. Earlier: refreshed **2026-11-12** after motyc opened the issue
+> on ARÚP's output contract of 12 November; written **2026-11-11** before the issue existed (one record built by
+> every tool, one `run_uuid` per block, ALTO from the ATR, the D14 merge by decode verdict; superseded)._
 
-**Status (2026-11-11)**: 📋 **Planned, not opened. One consolidated issue in the hub for every record and paradata
-change, with the docproc schema shared there as the contract the record aligns to. Code starts in the next round;
-`doc-schema-v2` is tagged only after the proof gate.**
+**Status (2026-11-13)**: 🟡 **Kate answered on 11-12: points 1 and 2 agreed, with the stored docproc written by the
+ATR (Q15). The hub and the six tools are adapted; the hub, page-classification, keyword-extract and digital-convert
+are on `doc-schema-v2`, translator and ocr-postprocess on `test`, nlp-enrich not pushed yet. Ronald's answers on
+ARUP-CAS/aiscr-docs-pipeline#17 are pending; `doc-schema-v2` is tagged only after the proof gate.**
+
+**Status (2026-11-12)**: 🟡 **Opened by motyc; it takes over K4TEL's draft on #67. Due from Kate by 16 November:
+agreement (or not) with the two-level contract and with dropping ALTO, which is also her consent as first author
+for the paper revision (#13). A reply draft is below. Code starts after that answer and Ronald's on
+ARUP-CAS/aiscr-docs-pipeline#17; `doc-schema-v2` is tagged only after the proof gate.** _(superseded 11-13: Kate
+answered; the code is on branches)_
+
+**Status (2026-11-11)**: 📋 Planned, not opened. _(superseded 11-12: opened as #84)_
 
 ## Goal
 
-One record per document that holds content only, with one line shape that every tool reads and writes; paradata
-that AMČR can store as they are. The changes arrive during the pilot phase (§6 of the contract), released as
-`doc-schema-v2` once proven. `doc-schema-v1` stays as published and cited.
+Two levels, each content only. **Layout:** one `atr/docproc-json` per document, written by digital-convert or the
+ATR (ARÚP's schema, moved to aiscr-docs-pipeline). **Record:** `atrium/document-json`, its positional blocks built by
+ocr-postprocess from docproc, then enriched block by block. Run data only in each distribution's paradata.
+`doc-schema-v1` stays as published and cited.
 
 ## The changes
 
-| #  | Change                                                                                                                                           | Decision    | Owner of the code                                                                   |
-|----|--------------------------------------------------------------------------------------------------------------------------------------------------|-------------|-------------------------------------------------------------------------------------|
-| 1  | No calculated licence: `provenance.license`, `license_url`, `license_basis`, the computed `license_detail`, the merging                          | D2          | hub shared modules                                                                  |
-| 2  | Run history out of the record (`contributors[]`, the stamps); one `run_uuid` per block                                                           | D1          | hub                                                                                 |
-| 3  | `derived_from` and `regenerable` out of the record                                                                                               | D1          | hub; nlp-enrich, page-classification, keyword-extract, translator stop writing them |
-| 4  | Every line scored by ocr-postprocess; one `categ` vocabulary, one `quality_score`; digital-convert's verdict out of `categ` into its own markers | D17, D18    | ocr-postprocess, digital-convert                                                    |
-| 5  | The page merge takes the route's pages and replaces only the lines that do not decode                                                            | D14         | ocr-postprocess, hub                                                                |
-| 6  | `content` rebuilt after a page merge                                                                                                             | H8          | ocr-postprocess                                                                     |
-| 7  | `page_index` on every page and line row                                                                                                          | H2          | all originators                                                                     |
-| 8  | A line's box written by its originator, in pt, top-left                                                                                          | D16, D8     | digital-convert, ocr-postprocess; nlp-enrich stops                                  |
-| 9  | `forms` removed; `translations` and `entities[].translation_en` reserved                                                                         | D19         | hub; translator stops writing `translations`                                        |
-| 10 | Alignment with docproc: pt, top-left, `pageNumber` = `page_index`, ISO 639-1, a line's link to its block                                         | D8          | hub, ocr-postprocess                                                                |
-| 11 | Paradata in the stored form: distribution names and SHA-512, stored outputs only                                                                 | §5.5        | hub; every service                                                                  |
-| 12 | One common line representation (below)                                                                                                           | K4TEL       | all                                                                                 |
-| 13 | SHA-512 for every file AMČR identifies; `source.sha512` required                                                                                 | K4TEL, §5.5 | hub, digital-convert, ocr-postprocess                                               |
-| 14 | A limit that trims, skips or stops content fails the job; sampling and splitting are recorded                                                    | D13         | hub `atrium_limits.py`; each tool                                                   |
+| #  | Change                                                                                                                                   | Decision         | Code owner                                       |
+|----|------------------------------------------------------------------------------------------------------------------------------------------|------------------|--------------------------------------------------|
+| 1  | No run data in the record: `provenance`, `assembled`, `derived_from`, `regenerable`, and no per-block `run_uuid`                         | D1 (extended)    | hub; every tool stops writing them               |
+| 2  | No calculated licence and no licence merging, in the record, the paradata, a crate, the templates or the validator                       | D2               | hub `atrium_paradata.py`, `para_licenses.py`     |
+| 3  | digital-convert writes docproc (lines, per-page verdict, `needs_atr`), never refuses, never samples                                      | D20, H12         | digital-convert                                  |
+| 4  | ocr-postprocess builds every record from docproc; for a mixed document it merges two outputs (exact lines kept, linked to the ATR block) | D20, D21, H6, H8 | ocr-postprocess; hub (`replace_page_rows` goes)  |
+| 5  | Layout stays in docproc: `tables[]`, `content.reading_order`, `lines[].group_id`, `lines[].style`, the page verdicts leave the record    | D26, D27         | hub; digital-convert, ocr-postprocess            |
+| 6  | New line fields `block`, `text_source`, `bbox_precision`; `pages[].content_status`; a row for every page                                 | D16, D25, D29    | hub; ocr-postprocess                             |
+| 7  | `page_index` on every page row; one coordinate space (CropBox, `/Rotate`, UserUnit; `canvas` in pt)                                      | H2, D28          | hub; ocr-postprocess; digital-convert in docproc |
+| 8  | Scoring rules 1–8; `categ` five values only; the decode verdict a docproc line flag                                                      | D17, D18         | ocr-postprocess; digital-convert                 |
+| 9  | No ALTO produced or stored; nlp-enrich's layout from the record or docproc                                                               | D24              | nlp-enrich; hub E2E                              |
+| 10 | page-classification on the `needs_atr` pages only                                                                                        | H3, D33          | page-classification; the pipeline                |
+| 11 | Paradata: distribution name and SHA-512; unstored inputs/outputs marked; `result` names blocks and fields; `actionStatus` kept           | D13, D23, §6     | hub `atrium_rocrate.py`; every service           |
+| 12 | `forms` removed; `translations`, `entities[].translation_en` reserved                                                                    | D19              | hub; translator stops writing `translations`     |
+| 13 | Translator: field list per request, no default, refusal without one                                                                      | D34              | translator                                       |
+| 14 | A limit that trims, skips or stops content fails the job; sampling and splitting recorded                                                | D13              | hub `atrium_limits.py`; each tool                |
 
-## The v2 record
+## The v2 record (§5 of the contract)
 
-**Top level.** `schema_version` `"2.0"`, `record_type`, `doc_id` (the AMČR file id), `source` (`sha512` required,
-`filename`, `media_type`, `origin`, `page_count`, `language[]`), the per-block run map (Q1), `page_categories`,
-`pages[]`, `content`, `lines[]`, `tables[]`, `entities[]`, `enrichment`, `keywords`, `quality_summary`. Reserved:
-`translations`, `entities[].translation_en`. Removed: `provenance`, `assembled`, `derived_from`, `regenerable`,
-`forms`, `source.sha256`.
+Writers per step as in [`project_state_1211.md` §3](../digests/project_state_1211.md#3--record-level-atriumdocument-json-5).
+In short:
 
-**`pages[]`**
-
-| Field                                         | Writer              | Note                                                                    |
-|-----------------------------------------------|---------------------|-------------------------------------------------------------------------|
-| `page_index` (required)                       | the originator      | physical page, 1-based; = docproc `pageNumber` = ALTO `PHYSICAL_IMG_NR` |
-| `page`                                        | the originator      | the label (i, ii, A-1)                                                  |
-| `canvas`                                      | the originator      | `{width, height, unit: "pt"}`                                           |
-| `origin`                                      | the originator      | `text_layer` or `atr`; replaces `ocr` (`engine` goes to the paradata)   |
-| `text_layer`, `needs_ocr`, `needs_ocr_reason` | digital-convert     | signals to the route, not decisions                                     |
-| `decode_score`                                | digital-convert     | the page's share of decodable text (its markers)                        |
-| `category`, `category_confidence`             | page-classification |                                                                         |
-| `quality_score`, `quality_band`               | ocr-postprocess     | one banding rule (the plurality vote of `atrium_vocab.QUALITY_BANDS`)   |
-| `teitok_surface`                              | nlp-enrich          |                                                                         |
-
-**`lines[]` — one shape for every origin**
-
-| Field                                  | Writer               | Note                                                                                                               |
-|----------------------------------------|----------------------|--------------------------------------------------------------------------------------------------------------------|
-| `page_index`, `line` (required)        | the originator       | `line` 1-based, in reading order within the page; the key                                                          |
-| `text` (required)                      | the originator       |                                                                                                                    |
-| `origin`                               | the originator       | `text_layer` or `atr`                                                                                              |
-| `bbox`                                 | the originator only  | `[x0, y0, x1, y1]`, pt, top-left                                                                                   |
-| `bbox_level`                           | the originator       | `line` (digital-convert) or `block` (ATR: region boxes, no words)                                                  |
-| `block`                                | ocr-postprocess      | the docproc block the line came from                                                                               |
-| `handwritten`                          | ocr-postprocess      | ATR's handwritten/typed type (Q5)                                                                                  |
-| `group_id`, `style`                    | the originator       | layout cues; for ATR lines `style.region` from docproc's cross-page clusters (running headers, footers, footnotes) |
-| `decode`, `decode_score`               | digital-convert      | the text-layer marker set: `ok`, `garbled`, `inverted`; never called a category (Q5)                               |
-| `categ`, `quality_score`, `lang`       | ocr-postprocess only | five categories, one scale, every line                                                                             |
-| `lemma`, `upos`, `feats`, `teitok_ref` | nlp-enrich           |                                                                                                                    |
+- **Top level:** `schema_version` `"2.0"`, `record_type`, `doc_id`, `source` (`sha512` required, `filename`,
+  `media_type` from intake; `language`, `page_count`, `origin` from the builder), `page_categories`, `pages[]`,
+  `content` (`text`), `lines[]`, `entities[]`, `enrichment`, `keywords`, `quality_summary`. Reserved: `translations`,
+  `entities[].translation_en`.
+- **`pages[]`:** `page_index` (required, = docproc `pageNumber`), `page` (label), `canvas` (`width`, `height`,
+  `unit: "pt"`, UserUnit factor; image pixel ratio when docproc wraps an image), `content_status` (`text`, `empty`);
+  `category`, `category_confidence` (page-classification, `needs_atr` pages); `quality_score`, `quality_band`
+  (scoring; none on empty pages); `teitok_surface` (nlp-enrich).
+- **`lines[]`:** `page`, `line` (1-based in reading order; the key), `text`, `bbox`, `block` (docproc block id),
+  `text_source` (`text-layer`, `atr`, `legacy`), `bbox_precision` (`measured`, `derived`, `absent`); `categ`,
+  `quality_score`, `lang` (scoring); `lemma`, `upos`, `feats`, `teitok_ref` (nlp-enrich).
+- **Removed:** `provenance`, `assembled`, `derived_from`, `regenerable`, `forms`, per-block `run_uuid`, `tables[]`,
+  `content.reading_order`, `lines[].group_id`, `lines[].style`, `pages[].text_layer`, `needs_ocr`,
+  `needs_ocr_reason`, `ocr`, `source.sha256`.
+- The field names `block`, `text_source`, `bbox_precision`, `content_status` are ARÚP's proposals; ÚFAL may rename
+  them on #84.
 
 Consumers that filter lines (nlp-enrich, keyword-extract) read `categ` only; `atrium_vocab.UNTRUSTWORTHY_LINE_CATEGORIES`
-loses `Garbage` and `Inverted`.
+(`("Garbage", "Inverted", "Trash")`, `atrium_vocab.py:357`) keeps `Trash` only.
 
-## The paradata (version 3)
+## docproc: what ÚFAL relies on (Ronald's asks, §11)
 
-One `CreateAction` per step (RO-Crate 1.2, Process Run Crate 0.5), as the meeting digest gives it: `@id` =
-`run_uuid`; `instrument`; `agent`; times; `object` and `result` by distribution name and SHA-512, the record version
-read, the blocks written; `parameters`; `limits` (sampled, split); `components` with their terms, never combined.
-The distribution names come from the pipeline with the job; a tool hashes what it reads and writes. The ÚFAL crate
-module keeps the building blocks (action, software, validator) and drops the `#no-licence-asserted` root: AMČR builds
-the record's crate and puts the source's licence in `File.license`.
+| Ask | Needed by                                                                                                                                                                       |
+|-----|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 3   | run data out of the output (or optional): the record builder reads content only                                                                                                 |
+| 4   | routing lists every page, empty ones routed `empty`: H15's check in ocr-postprocess                                                                                             |
+| 5   | forced pages echoed with the reason: digital-convert's `needs_atr` reaches the ATR (D27)                                                                                        |
+| 7   | a line break per visual line in OCR blocks: rule 5 (a block scored as one unit otherwise)                                                                                       |
+| 8   | the handwriting marker                                                                                                                                                          |
+| 9   | an unread block or page fails (D13; `all_engines_failed`)                                                                                                                       |
+| 10  | the coordinate space (D28)                                                                                                                                                      |
+| 12  | `imageRef`/`imageData` not stored                                                                                                                                               |
+| 13  | optional `lines[]` with box precision, the verdict and `needs_atr`, ODT/spreadsheet `sourceFormat`, the `pipeline` pattern opened: digital-convert can then write valid docproc |
+
+## The paradata (version 3, §6)
+
+One `CreateAction` per step: `@id` = `run_uuid`; `actionStatus` (always completed in what AMČR stores);
+`instrument` (name, version, release link, image digest); `agent` (ROR id); times; `object` and `result` by
+distribution name and SHA-512, the record version read, the record blocks **and fields** written; anything not
+stored named by its SHA-512 and marked (D23); `parameters` that shaped the output (model revision, thresholds,
+forced pages, the translator's field list); `limits` (sampled, split); `components` with their terms, never merged.
+The files per step are in [`project_state_1211.md` §4](../digests/project_state_1211.md#4--paradata-and-the-hand-over-6).
+The ÚFAL crate module keeps its building blocks (action, software, validator) and drops the `#no-licence-asserted`
+root (`atrium_rocrate.py:121`); AMČR builds the record's crate.
 
 ## Tasks
 
-**Hub (first; then re-vendored with `scripts/revendor_shared.sh`, `--check` in CI):**
+**Hub (first; then re-vendored with `scripts/revendor_shared.sh`, `--check` in CI).** Paths in `docs/templates/shared/`:
 
-1. `atrium_document.py`: `SCHEMA_VERSION = "2.0"`, `_migrate_1_to_2()` (drops the run data, moves stamps' `run_uuid`
-   into the run map, renumbers digital-convert's lines from 1, maps `Garbage`/`Inverted` to `decode`),
-   `FREEZES[2]`, `atrium_document.schema.doc-schema-v2.json`; the merge of D14 in place of `OCR_HANDOFF` /
-   `replace_page_rows()`; field grants per the tables above.
-2. `atrium_paradata.py`, `para_licenses.py`: no `_license_block`, rank or merge; `para_licenses` keeps the component
-   registry as facts.
-3. `atrium_rocrate.py`: `file_entity(name, data)` with SHA-512 and the distribution name; `object`/`result` per
-   §5.5; fragments only; `action_problems()` checks the new shape.
-4. `atrium_limits.py`: `trimmed`, `skipped`, `stopped` raise; `sampled`, `split` go to `limits`.
-5. `atrium_vocab.py`: one line-category originator; the decode vocabulary.
-6. Docs: `docs/document_schema.md` (register and changelog), `docs/paradata_schema.md`, `docs/rocrate_export.md`,
-   and the pages that describe the order of the steps (#79).
-7. E2E: both lanes in the new order; a docproc fixture once the schema is shared (Q4).
+1. `atrium_document.py`: `SCHEMA_VERSION = "2.0"` (73); `_migrate_1_to_2()` drops the run data, the layout fields
+   and the page verdicts, renumbers 0-based lines from 1, maps `Garbage`/`Inverted` out of `categ`; `FREEZES[2]`;
+   `atrium_document.schema.doc-schema-v2.json`; `_stamp()` (1360), `_provenance()` (1379), `OCR_HANDOFF` (449-450)
+   and `replace_page_rows()` (924) go; field grants per §5 (the record builder owns the positional blocks).
+2. `atrium_paradata.py` (`_license_block`, 235), `para_licenses.py` (`resolve_effective_license`, 136;
+   `merge_effective_licenses`, 214): no licence block, rank or merge; the component registry stays as facts.
+3. `atrium_rocrate.py`: `file_entity()` (612) with SHA-512 and the distribution name, a `stored: false` mark; no
+   `ni_uri()` (479) for AMČR files; `result` with blocks and fields; `action_problems()` (730) checks the new shape.
+4. `atrium_limits.py`: `EFFECTS` (65) — `trimmed`, `skipped`, `stopped` raise; `sampled`, `split` go to `limits`.
+5. `atrium_vocab.py`: one line-category originator (`LINE_CATEGORY_ORIGINATORS`); the decode flag is docproc's.
+   `atrium_service.py`: the `ocr_text_layer` error code (185-246) goes with digital-convert's refusal (H12); also
+   in `docs/agent_skill_strategy.md:219` and `docs/k8s_deployment.md:245` (`OCR_LAYER_DOCUMENT_SHARE`).
+6. Docs: `docs/document_schema.md` (register and changelog; the MAJOR-bump procedure at 485-495),
+   `docs/paradata_schema.md`, `docs/rocrate_export.md`, and the pages that describe the order of the steps (#79).
+7. E2E: `e2e-pipeline-smoke.yml` and `e2e-digital-smoke.yml` follow the route of §3; `fixtures/e2e/ALTO/` gives way
+   to docproc fixtures (from comment 1's schema; a born-digital one from digital-convert, a scanned one in the
+   ATR's shape); `tools/e2e/make_seed.py` keeps writing the seed.
 
-**Tools** — each slice plan lists its own work:
+**Tools** — each slice plan lists its own work and code:
 
-| Repository          | Its part                                                                                                                                        |
-|---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
-| digital-convert     | every input (images, CSV/TXT added); `/describe` calls nothing; the decode markers; lines from 1; `page_index`; SHA-512; refusing limits        |
-| ocr-postprocess     | the docproc reader; the record built from ATR; the D14 merge and `content` rebuild; every line scored; boxes in pt; `page_index`                |
-| page-classification | `page_index`; no `derived_from`; the original as input                                                                                          |
-| nlp-enrich          | the `lines[]` linguistic fields; `entities[].bbox` in pt; TEITOK boxes from the originator; no `derived_from`; one action in two paradata files |
-| keyword-extract     | no `derived_from`, no `regenerable`; components with their terms                                                                                |
-| translator          | `metadata-en` as a record-level job; the field list per request; nothing in the record; no field text in the paradata                           |
+| Repository          | Its part                                                                                                                                                                                                                               |
+|---------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| digital-convert     | docproc with lines, verdicts and `needs_atr`; no refusal, no sampling; images skip it; the decode flag; paradata per H14; a page whose words lose letters left to scoring, office files rendered for page geometry (digital-convert#9) |
+| ocr-postprocess     | the record builder (docproc reader, merge of two outputs, H15 check, `content` in reading order); scoring rules 1–8                                                                                                                    |
+| nlp-enrich          | layout from the record or docproc, not ALTO; TEITOK's limits stated; one action in two paradata files                                                                                                                                  |
+| page-classification | the `needs_atr` pages only; output unchanged; `page_index`; no `derived_from`                                                                                                                                                          |
+| keyword-extract     | no run data; `result` names its blocks and fields; lines by `categ`                                                                                                                                                                    |
+| translator          | field list per request, no default, refusal without one; `amcr-fields.txt` an example only; nothing in the record                                                                                                                      |
 
 ## Order of work
 
-1. This round: the logs (done 11-11).
-2. Open the issue (body below); attach the docproc schema with Ronald's consent.
-3. Hub shared modules and docs, one PR.
-4. digital-convert and ocr-postprocess (the line originators), then the four others; one PR per repository, each
-   referring to the hub issue.
-5. The E2E lanes in the new order; then the proof gate.
+1. 11-12: the logs. Kate's answer on #84: given 11-12 (below).
+2. Ronald's answers on aiscr-docs-pipeline#17 (asks 1–2 by 20 November; 3–13 after).
+3. Hub shared modules and docs, one PR against #84.
+4. ocr-postprocess (the builder and scoring) and digital-convert (the docproc producer), then the four others; one
+   PR per repository, each referring to #84.
+5. The E2E lanes on the new route with docproc fixtures; then the proof gate.
+
+## Status — hub side (11-12)
+
+Tasks 1–6 done on a local branch from `test` (pushed 11-13 as `doc-schema-v2`); task 7 in part. Hub tests 724
+passed, shared 207 passed; the selftests pass; the RO-Crate validator runs in CI only (its context hosts are not
+reachable here).
+
+- **Record 2.0**: as §5, plus `_migrate_1_to_2()` (every reader takes a 1.x record), `written()` in place of the
+  stamps, `RemovedInSchema2` from `add_derived_from()`, `add_regenerable()`, `add_license_detail()`.
+- **Paradata 3.0, `para_licenses`, `atrium_limits`, `atrium_rocrate`**: as §6 and task 2–4; the crate root names no
+  licence (`#no-licence-asserted` gone).
+- **E2E**: `e2e_assert.py` and `rocrate_check.py` read every record and paradata file through the migration; new
+  `--require-current-major` for the proof gate; `--expect-needs-ocr` kept as an alias of `--expect-atr-pages`.
+  The workflows and the ALTO fixtures are unchanged until the tools adopt 2.0.
+- **Deviations from the tasks above**:
+  - no `FREEZES[2]` or `doc-schema-v2` copy yet: MAJOR 2 is in `PENDING_FREEZES` until the proof gate;
+  - `ocr_text_layer` deprecated, not removed (a published reason code is never removed);
+  - pages are keyed by `page_index` (H2); `source` is not required, so a standalone run stays valid (rule 3);
+  - seeds carry no `schema_version`, so a 1.x and a 2.0 tool read the same seed;
+  - `canvas.user_unit` and `pixel_ratio` are names this implementation proposes;
+  - `Garbage`/`Inverted` kept as `atrium_vocab.DECODE_FLAGS`, a docproc line flag; the name is still open (Q5);
+  - `fixtures/atrium_document.example.json` is a 2.0 record; the 1.x one is `atrium_document.v1.example.json`.
+- **Next**: the PR against #84 waits for review (pushed to `doc-schema-v2` on 11-13, with the addendum below).
+
+## Status — tools (11-13)
+
+The six tools were adapted on local branches (one per repository, from `test`), on the re-vendored shared modules
+with the hub addendum below, and delivered as one archive per repository (pushed 11-13; see Status — pushed). Per
+tool, the detail and what is deferred are in its `plans/doc-schema-v2.plan.md`, "Status — round 2".
+
+| Repository          | Done                                                                                                                 | Tests                      |
+|---------------------|----------------------------------------------------------------------------------------------------------------------|----------------------------|
+| page-classification | page rows by `page_index`; paradata 3.0                                                                              | 873 passed (offline lane)  |
+| translator          | the field list per request (D34); nothing in the record; D13; `metadata` → `metadata-en` paradata                    | 1160 passed (offline lane) |
+| keyword-extract     | no run data; lines by `categ`; D13 (windows `split`, vocabulary budget `sampled`)                                    | 1014 passed                |
+| nlp-enrich          | layout from the record (`block`, `bbox_precision`); per-line linguistic fields; TEITOK's limits stated               | 1085 passed                |
+| digital-convert     | docproc 1.1 against comment 1's schema with asks 3 and 13; no refusal; decode verdicts as line flags; paradata (H14) | 959 passed                 |
+| ocr-postprocess     | the docproc reader and the record builder (`POST /build_record`, one producer); every line scored; D13               | 2324 passed, 16 skipped    |
+
+- **Hub addendum** (on `doc-schema-v2`): `atrium_service` answers `ContentLimitError` with `422 limit_exceeded`;
+  `action_problems()` accepts an action with no `result` (a call that stores nothing); `e2e_assert.py` accepts
+  nlp-enrich's `entities` on a 2.x born-digital record (1.x unchanged). Hub tests 933 passed, 50 skipped.
+- **Local chain check, passed:**
+  - the chain: a seed, digital-convert's docproc of `two_column.pdf`, `build_record.py`, nlp-enrich `/enrich` and
+    keyword-extract's YAKE;
+  - then `e2e_assert.py --require-current-major --expect-layout --seed --teitok-dir`;
+  - where a file is passed on as written, each stage's input SHA-512 equals the previous stage's output; a service's
+    response is re-serialized (Q12);
+  - stand-ins: no models here, so a stub line classifier, and UDPipe and NameTag stood in as in nlp-enrich's tests.
+- **Deferred:**
+  - the merge of a mixed document (H6): a docproc with a `needsAtr` page fails the build;
+  - scoring rule 4 (the service's page and document passes);
+  - digital-convert's coordinates (D28, ask 10) and its object cap: a page over 20,000 objects is still judged on
+    its first ones;
+  - the E2E workflows on the docproc route (task 7): they wait for images built from these branches.
+- **Proof gate:** the validator part holds in the tools' tests and the local chain; the E2E lanes and the cluster
+  run do not yet.
+
+## Status — pushed (11-13)
+
+K4TEL pushed round 3 on 11-13: the hub, page-classification, keyword-extract and digital-convert to
+`doc-schema-v2`; translator and ocr-postprocess to `test`; nlp-enrich not yet. Round 4 closes the gaps of the push:
+
+- the addendum's shared files (`atrium_rocrate.py`, `service/atrium_service.py`) re-vendored in the five pushed
+  tools;
+- digital-convert: the docproc writer, its schemas, `tools/docproc_proposal.py` and their test, which the push left
+  out (a conversion failed without the writer);
+- ocr-postprocess: the docproc fixtures added, `tests/test_ocr_handoff.py` removed;
+- digital-convert#9 points 1–3: a page whose words lose letters to unmapped glyphs is no longer sent to the ATR (its
+  lines go to scoring), and `garbled` means a layer that does not decode;
+- the hub's tests that read the sibling checkouts, run against these trees: ocr-postprocess and digital-convert
+  declare their new modules in `.github/production-image.json` (`build_record.py`, `docproc.py`, `score_record.py`;
+  `api_util/docproc_writer.py`), and the environment tables (`docs/k8s_deployment.md`, `docs_site/operations.md`)
+  drop `AMCR_FIELDS_PATH` and `OCR_LAYER_DOCUMENT_SHARE`. Hub tests 933 passed.
+
+The workflows' `hub-ref` pins still point at `v1`: `para-drift` fails until the hub PR merges and the pins move.
 
 ## Proof gate (D12)
 
 `doc-schema-v2` is tagged only when all three hold: the validator accepts every tool's output and the migrated
-fixtures; both E2E lanes pass in the new order; one document of each variant (A–D) has run through the assembled
-chain on the cluster. Not on review alone.
+fixtures; both E2E lanes pass on the new route; one document of each case — born-digital, mixed or scanned PDF,
+image, and a converted PCSS document — has run through the assembled chain on the cluster. Not on review alone.
 
-## Questions for the next meeting
+## Questions
 
-- **Q1** — The per-block `run_uuid`: one top-level map from block name to `run_uuid` (recommended: rows stay
-  content), or a member inside each block?
-- **Q2** — ATR skips empty pages without an entry, against H5. The reader then needs the route's page list to tell
-  an empty page from a lost one; or can docproc keep an empty entry with a reason?
-- **Q3** — ALTO comes from "another component": which step's paradata records it? Should docproc be the primary
-  input of ocr-postprocess and nlp-enrich, and ALTO an output for AMČR only?
-- **Q4** — The docproc schema on the consolidated issue (with Ronald's consent), so the reader follows its block
-  types and fields.
-- **Q5** — The names `decode` / `decode_score`; whether the handwritten/typed type is stored per line.
-- **Q6** — A model's input cut to its window — keyword-extract's vocabulary fitted to the context, ocr-postprocess's
-  perplexity window: is that the trimming D13 forbids, or a recorded limit like sampling?
-- **Q7** — A line ocr-postprocess cannot score: does the job fail, or does the line get a category?
+The 11-11 list, answered by the contract of 12 November:
 
-## Issue body (draft, for K4TEL to post)
+| 11-11                                | Now                                                                                                      |
+|--------------------------------------|----------------------------------------------------------------------------------------------------------|
+| Q1 per-block `run_uuid`              | none in the record; the paradata `result` names blocks and fields (D1)                                   |
+| Q2 empty pages                       | no `pages[]` entry, every page in routing and in the record (D29, H15)                                   |
+| Q3 ALTO                              | none produced or stored (D24); docproc is the input of the builder and nlp-enrich                        |
+| Q4 docproc schema                    | on #84, comment 1                                                                                        |
+| Q5 decode names; handwriting         | the decode verdict is a docproc line flag (rule 2), name open; the handwriting marker is ask 8 to Ronald |
+| Q6 a model's input cut to its window | **open**; meanwhile a line over the perplexity window fails the run (ocr-postprocess)                    |
+| Q7 a line that cannot be scored      | rule 1 scores every line; whether a failure to score fails the job: **open**                             |
 
-```markdown
-Record and paradata changes agreed on 11 November (the output contract, §5 and §8), released as `doc-schema-v2` once proven.
+New, for the next meeting (not posted):
 
-**Changes**
-1. No calculated licence in the record, the paradata or a crate; components keep their terms (D2).
-2. Run history, stamps, `derived_from` and `regenerable` leave the record; one `run_uuid` per block (D1).
-3. One line shape for every tool: `page_index`, `line` (1-based), `text`, `origin`, `bbox` in pt from the line's originator, `bbox_level`, `block`; `categ`, `quality_score` and `lang` from ocr-postprocess only; digital-convert's text-layer verdicts as their own markers (D8, D14, D16–D18).
-4. `page_index` on every row; `content` rebuilt after a page merge (H2, H8).
-5. `forms` removed; `translations` and `entities[].translation_en` reserved (D19).
-6. Paradata name inputs and outputs by distribution and SHA-512, stored outputs only (§5.5).
-7. A step whose limits trim, skip or stop content fails the job (D13).
+- **Q8** — Who builds the PCSS converter and the page-geometry tool (§9)? ocr-postprocess holds the ALTO readers.
+- **Q9** — CSV and TXT: the 11-11 logs had digital-convert read them (variant B); the contract names PDFs and office
+  files only. Out of the pipeline, or a docproc with no geometry? _(11-13: in the pipeline, without the visual
+  steps, straight to scoring — [digital-convert#9](https://github.com/ufal/atrium-digital-convert/issues/9#issuecomment-6838301982)
+  point 4; still open: whether digital-convert writes them a docproc without geometry or ocr-postprocess reads them)_
+- **Q10** — digital-convert's line-level docproc for a mixed document is not stored (H14): is its SHA-512 in the
+  record builder's `object`, marked, enough to reproduce the merge, or does the ATR's docproc carry the kept lines?
+- **Q11** — AMČR's distribution name for the original file. The tools name it `original` (one constant each) until
+  AMČR says.
+- **Q12** — The stored record's bytes. A tool names the record it wrote by SHA-512. A service returns the record as
+  JSON, so the digest holds only if AMČR stores it as `DocumentRecord.finalize()` writes it: UTF-8,
+  `ensure_ascii=False`, `indent=2`, no final newline (checked in the local chain). Fix that as the stored form, or
+  have the services return the bytes?
+- **Q13** — docproc has no page label. A born-digital PDF's labels (`i`, `ii`) are lost, and the builder labels
+  pages by number. Ask Ronald for a label on the page (digital-convert can write it), or drop labels from the record?
+- **Q14** — D35 in the pilot. On #78 Pavel asked to ignore LINDAT's Terms of Use unless told otherwise, and David
+  agreed for now, with written terms needed for the production release
+  ([comment](https://github.com/ufal/atrium-project/issues/78#issuecomment-6827422711)). Does D35 (outputs produced
+  through LINDAT not published) still hold in the pilot? The tools' docs keep it until this is answered.
+- **Q15** — Which docproc is stored. Kate's reply has the stored docproc written by the ATR; the contract stores
+  digital-convert's docproc for a born-digital document (D20, H14), which round 3 implements. Is digital-convert's
+  docproc ever stored?
 
-**Contract it aligns to:** `atr/docproc-json` (schema attached with Ronald's consent).
+## Reply on #84 (posted 11-12)
 
-**Release:** tagged `doc-schema-v2` after the validator, both E2E lanes and one run through the assembled chain; `doc-schema-v1` stays as published.
-```
+Posted by K4TEL on 11-12, 09:52 UTC ([comment 2](https://github.com/ufal/atrium-project/issues/84#issuecomment-6820372800)),
+changed from the draft in two places:
+
+- docproc is "written by ATR" (the draft: "by digital-convert or the ATR"): the stored docproc is the ATR's (Q15);
+- the consent sentence became "I will also describe this shape in the paper revision under the gated wording on
+  #13": Kate's part of #13's gate is given; Ronald's is pending.
 
 ## Done when
 
-The issue's changes are released in the shared modules and all six tools; the proof gate holds; the tag
-`doc-schema-v2` exists and `doc-schema-v1` is untouched.
+The changes are released in the shared modules and all six tools; the proof gate holds; the tag `doc-schema-v2`
+exists and `doc-schema-v1` (`544298b`) is untouched.
 
 ## Boundaries
 
-- Parked scope stays parked: decision models, `/describe` in the pipeline, `forms`, full-text translation.
-- AMČR's crate, the import and the store step are AMČR's and the pipeline's (aiscr-webamcr, aiscr-docs-pipeline).
-- The ATR service and its schema are ARÚP's (aiscr-atr); ÚFAL proposes, ARÚP decides.
+- Parked scope stays parked: decision models (#83 and children), Galaxy beyond the 30 September agreement,
+  digital-convert's `/describe` in the pipeline, `forms`, full-text and ALTO translation.
+- docproc's schema is ARÚP's (aiscr-docs-pipeline, D30); the ATR is ARÚP's; ÚFAL proposes, ARÚP decides.
+- AMČR's crate, the import and the store step are AMČR's and the pipeline's (aiscr-webamcr, aiscr-docs-pipeline#13).
+- LINDAT-produced outputs are not published until #78 is settled (D35; Q14 asks whether that holds in the pilot).
+
+## History
+
+- **11-11:** planned as `doc-schema-v2` after the meeting: one record built by every tool, one common line shape,
+  a `run_uuid` per block, ALTO from the ATR, the page merge by decode verdict (D14), Q1–Q7; issue body drafted.
+- **11-11 18:30:** K4TEL posted the draft on #67.
+- **11-12:** ARÚP's contract of 12 November; motyc opened #84 from the draft, with the two-level contract.
+- **11-12 09:52:** Kate's reply on #84 (see Reply).
+- **11-12 (later):** the hub side implemented on a local branch (see Status — hub side).
+- **11-13:** the six tools adapted, the hub addendum, a local chain check (see Status — tools).
+- **11-13 (later):** pushed (see Status — pushed); the files named `doc-schema-v2.*` again; digital-convert#9
+  points 1–3.
