@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "pipeline": "pipeline-e2e/atrium-stand-in",
+  "processedAt": "2026-11-14T00:00:00Z",
+  "sourceFormat": "pdf-scanned",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "width": 1654.0,
+      "height": 2339.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p1-b0",
+          "type": "text",
+          "bbox": [
+            220.0,
+            160.0,
+            820.0,
+            280.0
+          ],
+          "readingOrder": 0,
+          "content": "Náčrt sondy.\n1998",
+          "language": "cs"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "routing": {
+      "pages": [
+        {
+          "page": 1,
+          "route": "atr",
+          "text_layer": false
+        }
+      ]
+    }
+  },
+  "documentLanguage": "cs"
+}

@@ -229,6 +229,8 @@ def test_the_e2e_lane_is_actually_covered() -> None:
 
     doc = yaml.safe_load((_WORKFLOW_DIR / "e2e-pipeline-smoke.yml").read_text(encoding="utf-8"))
     stages = [name for name, _ in _steps(doc) if name.startswith("Stage ")]
-    # Four numbered stages: the former stage 5 (LLM keywords) moved to keyword-extract, which the
-    # lane exercises in its own un-numbered step until the record has a keywords block (#73).
-    assert len(stages) == 4, f"expected four pipeline stages, found {len(stages)}: {stages}"
+    # Three numbered stages since record schema 2.0 (atrium-project#84): ocr-postprocess builds the
+    # record from docproc, page-classification adds its categories, nlp-enrich enriches it. The
+    # translator left the document chain (a record-level job), and keyword-extract runs in its own
+    # un-numbered steps (#73).
+    assert len(stages) == 3, f"expected three pipeline stages, found {len(stages)}: {stages}"

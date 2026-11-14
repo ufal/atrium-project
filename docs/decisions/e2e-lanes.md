@@ -15,6 +15,30 @@ a quote are as of when it was written; the workflow is the authority on what hol
 What each lane proves, and its gaps, is in the responsibility map of [`ci_policy.md`](../ci_policy.md);
 the image side of both lanes is in [`docker-tool-reusable.md`](docker-tool-reusable.md).
 
+## 2026-11-14 — both lanes on the route of record schema 2.0 (atrium-project#84)
+
+Since ARÚP's contract of 12 November 2026, digital-convert writes docproc and never the record, the ATR
+writes docproc for scanned pages, and ocr-postprocess builds every record from docproc and scores every
+line. Both lanes follow that route; what the sections below say about the earlier route (ocr-postprocess's
+ALTO stage, the translator stage, digital-convert's refusal of an OCR layer, the stamps in `assembled`)
+is history.
+
+- **Born-digital lane.** Per fixture, with its AMČR seed: digital-convert's `-digital` image writes
+  docproc; `tools/e2e/docproc_assert.py` checks it against digital-convert's proposal schema (from the
+  lane's checkout), the routing of every page (H5) and the absence of run data; ocr-postprocess's batch
+  image builds the record (`python3 /app/build_record.py`, through the entrypoint's interpreter rule, so
+  no entrypoint override); `e2e_assert.py --require-current-major` checks it. The garbled and OCR-layer
+  fixtures are routed to the ATR, and building their record from digital-convert's docproc alone fails
+  (`needs_atr`) until the merge of a mixed document (H6) is built. The service case chains `/reformat`
+  and ocr-postprocess's `/build_record` and checks both CreateActions.
+- **Scanned lane.** No ATR runs in CI, so `tools/e2e/alto_to_docproc.py` wrote a stand-in in the ATR's
+  shape for each fixture (`fixtures/e2e/docproc/`, from the same ALTO the page image is rendered from).
+  The chain: ocr-postprocess builds the record from it → page-classification adds its categories →
+  nlp-enrich reads the record's text (`--text-from-record`) → keyword-extract. The translator is not in
+  the chain: `metadata-en` is a record-level job on archiving, and full-text translation is parked.
+- **No schedule** (the event-driven CI rule): a push to `main` runs `:test`, a dispatch the tag it names.
+  The lane-failure issues reported scheduled runs only, so their steps went too.
+
 ## The scanned-document lane (e2e-pipeline-smoke.yml)
 
 ### What a pipeline run tests

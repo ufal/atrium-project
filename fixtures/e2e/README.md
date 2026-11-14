@@ -1,5 +1,12 @@
 # E2E pipeline smoke fixtures — default `CTX000000003`
 
+> **Since record schema 2.0 (2026-11-14, atrium-project#84)** the lane starts from a docproc in the ATR's
+> shape, `docproc/<id>.atr.docproc.json`, a stand-in for the ATR written from `ALTO/<id>.alto.xml` by
+> [`tools/e2e/alto_to_docproc.py`](../../tools/e2e/alto_to_docproc.py) (`--check` says whether they are
+> current). The chain is ocr-postprocess (the record from docproc) → page-classification → nlp-enrich →
+> keyword-extract; the ALTO stays as the stand-in's source and the page image's. `DOC_LINE_CATEG/` is no
+> longer read by the lane; the sections below describe the route before 2.0.
+
 Five fixture pairs; the default is one **single-page, synthetic Czech** document that travels the whole
 ATRIUM tool chain in CI (issue [#18](https://github.com/ufal/atrium-project/issues/18) follow-up — the
 "end-to-end integration smoke test" proposed 2026-06-26):

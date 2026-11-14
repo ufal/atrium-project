@@ -1,8 +1,11 @@
 # Reusable: atrium-project — end-to-end pipeline integration smoke test
-# The scanned-document chain on the published images at `image-tag`: page-classification ->
-# ocr-postprocess -> translator -> nlp-enrich -> keyword-extract, with the record contract
-# asserted after the stages and the RO-Crate validated. Runs on hub pushes to main, every third
-# day, by dispatch and as a reusable workflow. Reasons and history: docs/decisions/e2e-lanes.md.
+# The scanned-document route of record schema 2.0 (atrium-project#84) on the published images at
+# `image-tag`: the ATR's docproc (a stand-in, fixtures/e2e/docproc/) -> ocr-postprocess builds and
+# scores the record -> page-classification adds the page categories -> nlp-enrich -> keyword-extract,
+# with the record contract asserted after the stages and the RO-Crate validated. The translator is
+# not in the chain: `metadata-en` is a record-level job on archiving, and full-text translation is
+# parked. Runs on hub pushes to main, by dispatch and as a reusable workflow (no schedule since
+# 2026-11-14). Reasons and history: docs/decisions/e2e-lanes.md.
 name: Reusable E2E Pipeline Smoke Test
 
 on:
@@ -25,10 +28,10 @@ on:
         required: false
       e2e-doc:
         description: >-
-          Fixture pair under fixtures/e2e/ (ALTO/<id>.alto.xml + DOC_LINE_CATEG/<id>.csv)
-          the chain runs on. The default is the single-page synthetic CTX000000003.
-          The other four are multi-page, and Stages 1 (page-classification) and 3
-          (translator) see page 1 only; every other stage sees the whole document.
+          Fixture under fixtures/e2e/ (docproc/<id>.atr.docproc.json, the ATR's stand-in, and
+          ALTO/<id>.alto.xml, its source and the page image's) the chain runs on. The default is
+          the single-page synthetic CTX000000003. The other four are multi-page, and
+          page-classification sees page 1 only; every other stage sees the whole document.
         default: "CTX000000003"
         type: string
         required: false
@@ -47,7 +50,7 @@ on:
       OPENROUTER_KEY:
         description: >-
           OpenRouter API key for keyword-extract's controlled kind. Without it that step is skipped
-          with a warning (an error on the scheduled run).
+          with a warning.
         required: false
   workflow_dispatch:
     inputs:
@@ -57,7 +60,7 @@ on:
         type: string
         required: false
       e2e-doc:
-        description: "Fixture to run (fixtures/e2e/; multi-page ones reach Stages 1 and 3 as page 1 only)"
+        description: "Fixture to run (fixtures/e2e/; multi-page ones reach page-classification as page 1 only)"
         default: "CTX000000003"
         type: choice
         options:
@@ -73,27 +76,25 @@ on:
         required: false
   push:
     branches: [ main ]
-  schedule:
-    - cron: '0 2 */3 * *' # Runs at 02:00 on every 3rd day-of-month
 
 # What a run tests (issue #10): the stages are PUBLISHED images, and `:latest` moves only on a
-# version tag, so with `image-tag: latest` (the default) a run validates THE LAST RELEASE of
-# each tool. A red run can mean the released images are older than the fix, which only a
-# release clears. `image-tag: test` (published on every push to a repo's `test` branch)
-# validates what is about to be released. The default stays `latest` until
-# `docker pull ghcr.io/ufal/atrium-<tool>:test` succeeds for every tool.
-# History: docs/decisions/e2e-lanes.md#what-a-pipeline-run-tests
+# version tag, so `image-tag: latest` validates THE LAST RELEASE of each tool. `image-tag: test`
+# (published on every push to a repo's `test` branch) validates what is about to be released, and
+# is what a push runs (channel by event, as the born-digital lane does). A dispatch or a caller
+# chooses. History: docs/decisions/e2e-lanes.md#what-a-pipeline-run-tests
 
 concurrency:
   group: e2e-pipeline-smoke-${{ github.ref }}
   cancel-in-progress: false
 
-# Push and schedule runs have no inputs, so they keep CTX000000003 (roadmap S6, #69).
+# Push runs have no inputs, so they keep CTX000000003 (roadmap S6, #69).
 env:
   E2E_DOC: ${{ inputs.e2e-doc || 'CTX000000003' }}
-  # Push and schedule runs have no inputs and run seeded. Compared as a string on purpose: in an
+  # Push runs have no inputs and run seeded. Compared as a string on purpose: in an
   # expression a missing input (null) loosely EQUALS false, which would turn the default off.
   E2E_SEED: ${{ format('{0}', inputs.seed) == 'false' && 'false' || 'true' }}
+  # A push runs `:test`; a dispatch or a caller the tag it names (`latest` by default).
+  IMAGE_TAG: ${{ inputs.image-tag || (github.event_name == 'push' && 'test' || 'latest') }}
 
 jobs:
   e2e-json-thread:
@@ -102,7 +103,6 @@ jobs:
     permissions:
       packages: read
       contents: read
-      issues: write
 
     steps:
       # The default checkout, on purpose: this workflow lives in the hub, so fixtures/e2e/ and
@@ -122,7 +122,7 @@ jobs:
             echo "::error::e2e-doc is not a fixture id (letters, digits, '-', '_' only)"
             exit 1
           fi
-          for f in "fixtures/e2e/ALTO/${E2E_DOC}.alto.xml" "fixtures/e2e/DOC_LINE_CATEG/${E2E_DOC}.csv"; do
+          for f in "fixtures/e2e/ALTO/${E2E_DOC}.alto.xml" "fixtures/e2e/docproc/${E2E_DOC}.atr.docproc.json"; do
             if [ ! -f "$f" ]; then
               echo "::error::no fixture pair for e2e-doc '$E2E_DOC': $f is missing"
               echo "Available: $(for a in fixtures/e2e/ALTO/*.alto.xml; do basename "$a" .alto.xml; done | tr '\n' ' ')"
@@ -144,10 +144,9 @@ jobs:
       - name: Create workspace
         run: |
           W="${{ github.workspace }}/work"
-          mkdir -p "$W/input" "$W/ALTO" "$W/PAGE_ALTO" "$W/DOC_LINE_CATEG" \
-                   "$W/translated" "$W/nlp_out" "$W/doc_json" "$W/paradata"
-          cp "fixtures/e2e/ALTO/${E2E_DOC}.alto.xml" "$W/ALTO/"
-          cp "fixtures/e2e/DOC_LINE_CATEG/${E2E_DOC}.csv" "$W/DOC_LINE_CATEG/"
+          mkdir -p "$W/input" "$W/docproc" "$W/doc_json" "$W/records" "$W/paradata/ocr" \
+                   "$W/DOC_TEXT" "$W/nlp_out" "$W/TEMP"
+          cp "fixtures/e2e/docproc/${E2E_DOC}.atr.docproc.json" "$W/docproc/"
           chmod -R a+rwX "$W"
 
       # atrium-project#71: what AMČR hands the first stage. doc_id is an AMČR-style file id that
@@ -166,31 +165,15 @@ jobs:
             "fixtures/e2e/ALTO/${E2E_DOC}.alto.xml" \
             --out "${{ github.workspace }}/work/input/${E2E_DOC}-1.png"
 
-      - name: Write ocr-postprocess e2e config
-        run: |
-          W="${{ github.workspace }}/work"
-          cat > "$W/config_e2e_alto.txt" <<EOF
-          [PIPELINE]
-          METHOD = alto-tools
-          INPUT_DIR = /workspace/work/ALTO
-          PAGE_ALTO_DIR = /workspace/work/PAGE_ALTO
-          PARADATA_DIR = /workspace/work/paradata
-          SKIP_CLASSIFY = true
-          SKIP_AGGREGATE = true
-
-          [EXTRACT]
-          INPUT_CSV = /workspace/work/e2e_alto_stats.csv
-          OUTPUT_TXT = /workspace/work/PAGE_TXT
-          EOF
-
       # SAVE_TEITOK=true: the record's pages[].teitok_surface and entities[].teitok_ref are ids in
       # that file; the assert step checks that the file and the record agree (--teitok-dir).
+      # INPUT_TABLES_DIR starts empty: `--text-from-record` writes the record's lines there.
       - name: Write nlp-enrich e2e config
         run: |
           W="${{ github.workspace }}/work"
           cat > "$W/config_e2e_nlp.txt" <<EOF
           OUTPUT_DIR="/workspace/work/nlp_out"
-          INPUT_TABLES_DIR="/workspace/work/DOC_LINE_CATEG"
+          INPUT_TABLES_DIR="/workspace/work/DOC_TEXT"
           WORK_DIR="/workspace/work/TEMP"
           LOG_FILE="/workspace/work/nlp_out/processing.log"
           CONLLU_INPUT_DIR="/workspace/work/nlp_out/UDP"
@@ -199,7 +182,6 @@ jobs:
           TSV_INPUT_DIR="/workspace/work/nlp_out/NE"
           SUMMARY_OUTPUT_DIR="/workspace/work/nlp_out/UDP_NE"
           TEITOK_OUTPUT_DIR="/workspace/work/nlp_out/TEITOK"
-          INPUT_ALTO_DIR="/workspace/work/ALTO"
           PARADATA_DIR="/workspace/work/nlp_out/paradata"
           UDPIPE_URL="${UDPIPE_URL:-https://lindat.mff.cuni.cz/services/udpipe/api/process}"
           NAMETAG_URL="${NAMETAG_URL:-https://lindat.mff.cuni.cz/services/nametag/api/recognize}"
@@ -215,18 +197,19 @@ jobs:
           FAIL_ON_EMPTY=true
           EOF
 
-      # ── Hugging Face model cache (Stage 1) ──────────────────────────────────
-      # Stage 1 downloads `timm/regnety_160.swag_ft_in1k` from the Hub. Anonymous Hub requests share
-      # a low rate limit, and a 429 surfaces deep in transformers as an OSError that reads like a
-      # broken image. Two mitigations, as either alone can fail: the cache (a warm run makes no Hub
-      # request) and the optional HF_TOKEN (a higher limit on a miss). The pc image reads
-      # HF_HOME=/cache/huggingface as uid 10001: the host directory is mounted there, writable.
+      # ── Hugging Face model cache (page-classification, ocr-postprocess) ─────────
+      # page-classification downloads `timm/regnety_160.swag_ft_in1k` from the Hub, and ocr-postprocess
+      # its perplexity model for scoring. Anonymous Hub requests share a low rate limit, and a 429
+      # surfaces deep in transformers as an OSError that reads like a broken image. Two mitigations,
+      # as either alone can fail: the cache (a warm run makes no Hub request) and the optional
+      # HF_TOKEN (a higher limit on a miss). Both images read HF_HOME=/cache/huggingface as a non-root
+      # user: the host directory is mounted there, writable.
       # History: docs/decisions/e2e-lanes.md#hugging-face-model-cache
-      - name: Cache HuggingFace models (Stage 1)
+      - name: Cache HuggingFace models
         uses: actions/cache@v6
         with:
           path: ${{ github.workspace }}/hf-cache
-          key: e2e-hf-${{ inputs.image-tag || 'latest' }}-regnety160
+          key: e2e-hf-${{ env.IMAGE_TAG }}-regnety160-ocr
           restore-keys: e2e-hf-
 
       - name: Prepare the HF cache mount
@@ -234,65 +217,55 @@ jobs:
           mkdir -p "${{ github.workspace }}/hf-cache"
           chmod -R a+rwX "${{ github.workspace }}/hf-cache"
 
-      - name: Stage 1 - Page Classification
+      # Stage 1: the record from the ATR's docproc (here its stand-in), built and scored by
+      # ocr-postprocess (D18 rules 1–7). The batch image runs `build_record.py` through its
+      # entrypoint's interpreter rule (container_entrypoint.py: `python3 SCRIPT` runs as given), so
+      # the image's own ENTRYPOINT still starts it: no entrypoint override (B9, #62).
+      - name: Stage 1 - OCR Postprocess builds the record
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          ID_ARGS=(--doc-id "${E2E_DOC}")
+          if [ "$E2E_SEED" = "true" ]; then
+            ID_ARGS=(--seed /workspace/work/doc_json/0_seed.json)
+          fi
+          docker run --rm -v "${{ github.workspace }}:/workspace" \
+            -v "${{ github.workspace }}/hf-cache:/cache/huggingface" -e HF_TOKEN \
+            "ghcr.io/ufal/atrium-ocr-postprocess:${IMAGE_TAG}" \
+            python3 /app/build_record.py "/workspace/work/docproc/${E2E_DOC}.atr.docproc.json" \
+            "${ID_ARGS[@]}" \
+            --out-dir /workspace/work/records --paradata-dir /workspace/work/paradata/ocr
+          cp work/records/*.document.json work/doc_json/1_record.json
+
+      # Stage 2: page-classification on the page image, its categories into the record (H3).
+      - name: Stage 2 - Page Classification
         env:
           # Optional: absent means anonymous Hub requests; an HF_TOKEN secret raises the limit.
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        # Seeded (the default), Stage 1 accretes onto the seed instead of originating the record.
         run: |
-          SEED_ARGS=()
-          if [ "$E2E_SEED" = "true" ]; then
-            SEED_ARGS=(--document-json /workspace/work/doc_json/0_seed.json)
-          fi
           docker run --rm -v "${{ github.workspace }}:/workspace" \
             -v "${{ github.workspace }}/hf-cache:/cache/huggingface" \
             -e HF_TOKEN \
-            "ghcr.io/ufal/atrium-page-classification:${{ inputs.image-tag || 'latest' }}" \
+            "ghcr.io/ufal/atrium-page-classification:${IMAGE_TAG}" \
             -f "/workspace/work/input/${E2E_DOC}-1.png" \
             -m timm/regnety_160.swag_ft_in1k --hf \
-            "${SEED_ARGS[@]}" \
-            --document-json-out /workspace/work/doc_json/1_pc.json
+            --document-json /workspace/work/doc_json/1_record.json \
+            --document-json-out /workspace/work/doc_json/2_pc.json
 
-      # Runs the image AS BUILT (B9, #50, #62): no entrypoint override and nothing fetched or
-      # installed at run time; the image's ENTRYPOINT runs the stage with these arguments. The
-      # image's own WORKDIR (/app) and code run, with no source checkout (#77 D); every path is
-      # absolute under /workspace. History: docs/decisions/e2e-lanes.md#stage-2-ocr-postprocess
-      - name: Stage 2 - OCR Postprocess
-        run: >
-          docker run --rm -v ${{ github.workspace }}:/workspace
-          ghcr.io/ufal/atrium-ocr-postprocess:${{ inputs.image-tag || 'latest' }}
-          --config /workspace/work/config_e2e_alto.txt
-          --document-json /workspace/work/doc_json/1_pc.json
-          --document-json-out /workspace/work/doc_json/2_alto.json
-
-      # Stages 3 and 4 run their images as built too (B9, #62):
-      #   stage 3  translator  ENTRYPOINT ["python", "main.py"]          (base)
-      #   stage 4  nlp-enrich  ENTRYPOINT ["python", "run_pipeline.py"]  (base)
-      # The ENTRYPOINT supplies the script, so the command is only its arguments: naming `main.py`
-      # here would pass it to main.py as an argument (YAML linting cannot see this). The scripts
-      # resolve from the image's WORKDIR (/app), not a checkout (#77 D).
+      # Stage 3 runs its image as built too (B9, #62): ENTRYPOINT ["python", "run_pipeline.py"]
+      # supplies the script, so the command is only its arguments; the record is the text
+      # (`--text-from-record`: its lines, in record order, with their pages and blocks).
       # tests/test_e2e_entrypoints.py stops an entrypoint override from returning silently.
       # History: docs/decisions/e2e-lanes.md#stages-3-and-4-entrypoints
-      - name: Stage 3 - Translator
+      - name: Stage 3 - NLP Enrich
         run: >
           docker run --rm -v ${{ github.workspace }}:/workspace
-          ghcr.io/ufal/atrium-translator:${{ inputs.image-tag || 'latest' }}
-          /workspace/work/PAGE_ALTO/${E2E_DOC}/${E2E_DOC}-1.alto.xml
-          --alto --formats alto.xml --source_lang cs --target_lang en
-          -o /workspace/work/translated
-          --document-json /workspace/work/doc_json/2_alto.json
-          --document-json-out /workspace/work/doc_json/3_translate.json
-
-      # Runs the image as built -- see the note above Stage 3. `run_pipeline.py` is gone
-      # from the command because ENTRYPOINT ["python", "run_pipeline.py"] supplies it.
-      - name: Stage 4 - NLP Enrich
-        run: >
-          docker run --rm -v ${{ github.workspace }}:/workspace
-          ghcr.io/ufal/atrium-nlp-enrich:${{ inputs.image-tag || 'latest' }}
+          ghcr.io/ufal/atrium-nlp-enrich:${IMAGE_TAG}
           --config /workspace/work/config_e2e_nlp.txt
           --stages manifest udp nt stats
-          --document-json /workspace/work/doc_json/3_translate.json
-          --document-json-out /workspace/work/doc_json/4_nlp.json
+          --text-from-record
+          --document-json /workspace/work/doc_json/2_pc.json
+          --document-json-out /workspace/work/doc_json/3_nlp.json
 
       # The stage records are passed in explicitly, not globbed, so this step
       # states which stages were expected to write one: a stage whose document
@@ -300,9 +273,8 @@ jobs:
       # fails HERE by name instead of vanishing from a glob (#10, D1/D2/J4).
       - name: Assert Final Document Contract
         run: |
-          FINAL="work/doc_json/4_nlp.json"
-          STAGES="work/doc_json/1_pc.json work/doc_json/2_alto.json"
-          STAGES="$STAGES work/doc_json/3_translate.json work/doc_json/4_nlp.json"
+          FINAL="work/doc_json/3_nlp.json"
+          STAGES="work/doc_json/1_record.json work/doc_json/2_pc.json work/doc_json/3_nlp.json"
           SEED_ARGS=()
           if [ "$E2E_SEED" = "true" ]; then
             SEED_ARGS=(--seed work/doc_json/0_seed.json)
@@ -311,20 +283,21 @@ jobs:
           # --llm-stage-ran false: this record is nlp-enrich's, which is before keyword-extract's
           # controlled (LLM) kind, so `enrichment` is not required here. The record after that
           # kind is asserted below, in "Assert the record after keyword-extract".
-          # shellcheck disable=SC2086 — STAGES is a deliberate list of paths
+          # STAGES is a deliberate list of paths.
+          # shellcheck disable=SC2086
           python tools/e2e/e2e_assert.py "$FINAL" \
             --llm-stage-ran false \
             --stages $STAGES \
             --teitok-dir work/nlp_out/TEITOK \
+            --require-current-major \
             "${SEED_ARGS[@]}"
 
       # ── Keyword Extract (atrium-keyword-extract#1) ───────────────────────────────────────
       # The statistical kind, through the production `-api` image run as built, on the record
-      # Stage 4 wrote: it must answer with keywords carrying a method and a score. Since
-      # v1.2.0-beta it also returns the record with its `keywords` block (atrium-project#73), saved
-      # as 5_kw_stat.json; an older image (by its /info version) only warns. YAKE, not KeyBERT, so
-      # no model is downloaded from the Hub: a test choice, not the service default. A missing
-      # image is a warning, and an error on the scheduled run.
+      # Stage 3 wrote: it must answer with keywords carrying a method and a score, and return the
+      # record with its `keywords` block (atrium-project#73), saved as 4_kw_stat.json; an image
+      # older than v1.2.0-beta (by its /info version) only warns. YAKE, not KeyBERT, so no model is
+      # downloaded from the Hub: a test choice, not the service default. A missing image is a warning.
       - name: Keyword Extract (statistical kind)
         id: kw_statistical
         env:
@@ -332,12 +305,8 @@ jobs:
           # optional token raises the anonymous rate limit there too.
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          IMAGE="ghcr.io/ufal/atrium-keyword-extract-api:${{ inputs.image-tag || 'latest' }}"
+          IMAGE="ghcr.io/ufal/atrium-keyword-extract-api:${IMAGE_TAG}"
           if ! docker pull "$IMAGE"; then
-            if [ "${{ github.event_name }}" = "schedule" ]; then
-              echo "::error::$IMAGE is not published: keyword-extract has no image at this tag."
-              exit 1
-            fi
             echo "::warning::$IMAGE is not published yet (keyword-extract's first release or first test push); the keyword step is skipped."
             echo "**Skipped:** $IMAGE is not published yet (keyword-extract's first release or first test push); the keyword step is skipped." >> "$GITHUB_STEP_SUMMARY"
             exit 0
@@ -352,7 +321,7 @@ jobs:
           curl -fsS http://localhost:8080/ready
           curl -fsS http://localhost:8080/info -o work/keywords_stat_info.json
           curl -fsS -X POST http://localhost:8080/extract_keywords \
-            -F "document_json=@work/doc_json/4_nlp.json;type=application/json" \
+            -F "document_json=@work/doc_json/3_nlp.json;type=application/json" \
             -F kind=statistical -F method=yake -F num_keywords=5 -o work/keywords.json
           PYTHONPATH=docs/templates/shared python - <<'PY'
           import json
@@ -380,10 +349,10 @@ jobs:
               assert "document_json_schema_error" not in r, r["document_json_schema_error"]
               assert record["keywords"]["document"] == kws, "the record's document keywords are not the response's"
               assert record["keywords"]["pages"] == r.get("pages"), "the record's page keywords are not the response's"
-              json.dump(record, open("work/doc_json/5_kw_stat.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+              json.dump(record, open("work/doc_json/4_kw_stat.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
               with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
                   out.write("record=true\n")
-              print(f"record: keywords block with {len(record['keywords']['pages'])} page list(s) -> 5_kw_stat.json")
+              print(f"record: keywords block with {len(record['keywords']['pages'])} page list(s) -> 4_kw_stat.json")
           PY
 
       # The record after the statistical kind: the final-contract assertions, with `keywords` required.
@@ -394,27 +363,28 @@ jobs:
           if [ "$E2E_SEED" = "true" ]; then
             SEED_ARGS=(--seed work/doc_json/0_seed.json)
           fi
-          STAGES="work/doc_json/1_pc.json work/doc_json/2_alto.json work/doc_json/3_translate.json"
-          STAGES="$STAGES work/doc_json/4_nlp.json work/doc_json/5_kw_stat.json"
+          STAGES="work/doc_json/1_record.json work/doc_json/2_pc.json work/doc_json/3_nlp.json"
+          STAGES="$STAGES work/doc_json/4_kw_stat.json"
           # STAGES is a deliberate list of paths.
           # shellcheck disable=SC2086
-          python tools/e2e/e2e_assert.py work/doc_json/5_kw_stat.json \
+          python tools/e2e/e2e_assert.py work/doc_json/4_kw_stat.json \
             --llm-stage-ran false \
             --keywords-stage-ran true \
             --stages $STAGES \
             --teitok-dir work/nlp_out/TEITOK \
+            --require-current-major \
             "${SEED_ARGS[@]}"
 
       # ── Keyword Extract, the controlled kind (atrium-keyword-extract#1, #2) ─────────────────
-      # The same image with an LLM backend: the record after the statistical kind (`5_kw_stat.json`,
-      # or Stage 4's when the image predates it) goes in; the record with keyword-extract's
+      # The same image with an LLM backend: the record after the statistical kind (`4_kw_stat.json`,
+      # or Stage 3's when the image predates it) goes in; the record with keyword-extract's
       # `enrichment` block (and `entities[].pid`) comes out as `5_kw.json`. The lane's one call to a
       # paid third-party model, so:
-      #   * without the OPENROUTER_KEY secret it is skipped with a warning (an error on schedule);
+      #   * without the OPENROUTER_KEY secret it is skipped with a warning;
       #   * it runs only on records of at most E2E_CONTROLLED_MAX_LINES lines (one call per line);
       #   * the model's answer is reported, not asserted, so provider drift cannot flap the gate.
-      #     Asserted: the backend started, the call succeeded, keyword-extract stamped the block,
-      #     and the response's CreateAction is the stamp's run (atrium-project#71).
+      #     Asserted: the backend started, the call succeeded, and the response's CreateAction meets
+      #     the shared contract and names `enrichment` among the record fields it wrote (#71, #84).
       # keyword-extract's controlled-live.yml covers a fixed record; this covers the chain's record.
       - name: Keyword Extract (controlled kind, OpenRouter)
         id: kw_controlled
@@ -425,17 +395,13 @@ jobs:
         run: |
           echo "ran=false" >> "$GITHUB_OUTPUT"
           if [ -z "$OPENROUTER_API_KEY" ]; then
-            if [ "${{ github.event_name }}" = "schedule" ]; then
-              echo "::error::the OPENROUTER_KEY secret is not set: keyword-extract's controlled kind is no longer checked."
-              exit 1
-            fi
             echo "::warning::no OPENROUTER_KEY secret; keyword-extract's controlled kind is not checked in this run."
             echo "**Skipped:** no OPENROUTER_KEY secret; keyword-extract's controlled kind is not checked in this run." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           # The record the statistical kind returned, when there is one: both kinds accrete onto it.
-          KW_IN=work/doc_json/4_nlp.json
-          if [ -f work/doc_json/5_kw_stat.json ]; then KW_IN=work/doc_json/5_kw_stat.json; fi
+          KW_IN=work/doc_json/3_nlp.json
+          if [ -f work/doc_json/4_kw_stat.json ]; then KW_IN=work/doc_json/4_kw_stat.json; fi
           # What the service will send: the record's lines, or, for a record that holds its text in
           # `content.text` alone, every non-empty line of that (tools/e2e/controlled_rows.py).
           LINES=$(python tools/e2e/controlled_rows.py "$KW_IN")
@@ -443,7 +409,7 @@ jobs:
             echo "::notice::${E2E_DOC} has $LINES lines and the controlled kind makes one paid call per line (limit $E2E_CONTROLLED_MAX_LINES): skipped. The small fixtures run it."
             exit 0
           fi
-          IMAGE="ghcr.io/ufal/atrium-keyword-extract-api:${{ inputs.image-tag || 'latest' }}"
+          IMAGE="ghcr.io/ufal/atrium-keyword-extract-api:${IMAGE_TAG}"
           if ! docker pull "$IMAGE"; then
             echo "::warning::$IMAGE is not published; the controlled kind is not checked."
             echo "**Skipped:** $IMAGE is not published; the controlled kind is not checked." >> "$GITHUB_STEP_SUMMARY"
@@ -482,16 +448,15 @@ jobs:
           assert items, f"no enrichment items in the response: {sorted(body)}"
           assert "document_json_schema_error" not in body, body["document_json_schema_error"]
           record = body["document_json"]
-          stamp = record["assembled"]["blocks"]["enrichment"]
-          assert stamp.get("program") == "keyword-extract", f"enrichment is stamped by {stamp.get('program')!r}"
           action = body.get("paradata")
           problems = action_problems(action)
           assert not problems, f"the response's CreateAction: {problems}"
-          assert action["@id"] == stamp.get("run_uuid"), f"the action {action['@id']} is not the stamp's run {stamp.get('run_uuid')}"
+          written = [e.get("recordFields") for e in action.get("result") or [] if e.get("name") == "atrium/document-json"]
+          assert written and "enrichment" in written[0], f"the CreateAction does not name `enrichment` as written: {written}"
           json.dump(record, open("work/doc_json/5_kw.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
           for item in items:
               print(f"P{item['page']} L{item['line']}: {item['teater_category']!r} cs={item.get('extracted_keywords_cs')}")
-          print(f"✅ {len(items)} line(s) by {controlled['model']}; paradata {action['@id']} = the enrichment stamp's run")
+          print(f"✅ {len(items)} line(s) by {controlled['model']}; paradata {action['@id']} wrote `enrichment`")
           PY
           echo "ran=true" >> "$GITHUB_OUTPUT"
 
@@ -504,17 +469,18 @@ jobs:
           if [ "$E2E_SEED" = "true" ]; then
             SEED_ARGS=(--seed work/doc_json/0_seed.json)
           fi
-          STAGES="work/doc_json/1_pc.json work/doc_json/2_alto.json work/doc_json/3_translate.json"
-          STAGES="$STAGES work/doc_json/4_nlp.json"
-          if [ -f work/doc_json/5_kw_stat.json ]; then STAGES="$STAGES work/doc_json/5_kw_stat.json"; fi
+          STAGES="work/doc_json/1_record.json work/doc_json/2_pc.json work/doc_json/3_nlp.json"
+          if [ -f work/doc_json/4_kw_stat.json ]; then STAGES="$STAGES work/doc_json/4_kw_stat.json"; fi
           STAGES="$STAGES work/doc_json/5_kw.json"
           # --keywords-stage-ran auto: `keywords` is required when the statistical kind wrote it upstream.
-          # shellcheck disable=SC2086 — STAGES is a deliberate list of paths
+          # STAGES is a deliberate list of paths.
+          # shellcheck disable=SC2086
           python tools/e2e/e2e_assert.py work/doc_json/5_kw.json \
             --llm-stage-ran true \
             --keywords-stage-ran auto \
             --stages $STAGES \
             --teitok-dir work/nlp_out/TEITOK \
+            --require-current-major \
             "${SEED_ARGS[@]}"
 
       - name: Install the RO-Crate validator
@@ -527,7 +493,7 @@ jobs:
       # ATRIUM_RUN_AGENT, say), which is reported as a warning.
       - name: Validate the record crate (RO-Crate 1.2, Process Run Crate 0.5)
         run: |
-          FINAL="work/doc_json/4_nlp.json"
+          FINAL="work/doc_json/3_nlp.json"
           mapfile -t PARADATA < <(find work -path '*/paradata/*' -name '[!.]*.json' -type f | sort)
           echo "Paradata files: ${#PARADATA[@]}"
           python tools/ci/rocrate_check.py --record "$FINAL" --paradata "${PARADATA[@]}" --out work/crate
@@ -537,13 +503,11 @@ jobs:
       - name: Record the images of this run
         if: always()
         env:
-          IMAGE_TAG: ${{ inputs.image-tag || 'latest' }}
           JOB_STATUS: ${{ job.status }}
         run: |
           python3 tools/e2e/e2e_manifest.py --lane pipeline --tag "$IMAGE_TAG" --status "$JOB_STATUS" \
             --image "ghcr.io/ufal/atrium-page-classification:$IMAGE_TAG" \
             --image "ghcr.io/ufal/atrium-ocr-postprocess:$IMAGE_TAG" \
-            --image "ghcr.io/ufal/atrium-translator:$IMAGE_TAG" \
             --image "ghcr.io/ufal/atrium-nlp-enrich:$IMAGE_TAG" \
             --image "ghcr.io/ufal/atrium-keyword-extract-api:$IMAGE_TAG" \
             --info "ghcr.io/ufal/atrium-keyword-extract-api:$IMAGE_TAG=work/keywords_stat_info.json" \
@@ -570,15 +534,5 @@ jobs:
             work/keywords_info.json
             work/nlp_out/TEITOK/*.teitok.xml
             work/crate/
-
-      # One open issue per ongoing breakage, commented on each recurrence (atrium-project#81).
-      - name: Open or update the lane's issue on scheduled failure
-        if: failure() && github.event_name == 'schedule'
-        uses: ./.github/actions/lane-failure-issue
-        with:
-          lane: e2e-pipeline-smoke
-          title: E2E pipeline smoke failed
-          labels: ci,pipeline
-          body: |
-            Likely a cross-repo interface change on `main`, a LINDAT/HuggingFace/OpenRouter
-            upstream change, a stale `:latest` tag, or a stale e2e fixture.
+            work/records/
+            work/paradata/

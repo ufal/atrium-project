@@ -197,8 +197,9 @@ on their `agent-skill` branches), and each keeps a few workflows of its own:
 The hub runs its own workflows without `@v1` — they use `./…` so they test the commit under
 review — and three end-to-end workflows that exercise the published images together:
 `all-repos-smoke.yml` (each tool's fast suite, on its default branch), `e2e-pipeline-smoke.yml`
-(the scanned-document chain, four stages and a keyword-extract smoke) and `e2e-digital-smoke.yml`
-(the born-digital chain, one stage). See [Pipelines](../pipelines.md#w6--e2e-smoke-the-integration-contract).
+(the scanned-document chain from the ATR's docproc: the record builder, page-classification and
+nlp-enrich, and a keyword-extract smoke) and `e2e-digital-smoke.yml` (the born-digital chain:
+digital-convert's docproc and the record built from it). See [Pipelines](../pipelines.md#w6--e2e-smoke-the-integration-contract).
 
 ## Where the boundaries are
 

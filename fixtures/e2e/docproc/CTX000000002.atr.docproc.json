@@ -1,0 +1,119 @@
+{
+  "version": "1.0",
+  "pipeline": "pipeline-e2e/atrium-stand-in",
+  "processedAt": "2026-11-14T00:00:00Z",
+  "sourceFormat": "pdf-scanned",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "width": 1654.0,
+      "height": 2339.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p1-b0",
+          "type": "text",
+          "bbox": [
+            220.0,
+            160.0,
+            1420.0,
+            360.0
+          ],
+          "readingOrder": 0,
+          "content": "HRADIŠTĚ U HORNÍ MEZÍ\nLokalita: okr. Horní Mezi\nSonda II odkryla část valového tělesa.",
+          "language": "cs"
+        }
+      ]
+    },
+    {
+      "pageNumber": 2,
+      "width": 1654.0,
+      "height": 2339.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p2-b0",
+          "type": "text",
+          "bbox": [
+            220.0,
+            160.0,
+            1420.0,
+            360.0
+          ],
+          "readingOrder": 0,
+          "content": "Eva Procházková dokumentovala nálezy.\nrnn1 ww0rd vv_~~",
+          "language": "cs"
+        }
+      ]
+    },
+    {
+      "pageNumber": 3,
+      "width": 1654.0,
+      "height": 2339.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p3-b0",
+          "type": "text",
+          "bbox": [
+            220.0,
+            160.0,
+            1420.0,
+            360.0
+          ],
+          "readingOrder": 0,
+          "content": "Mocnost kulturní vrstvy činila 40 cm.\nqpqb dbqp uunn",
+          "language": "cs"
+        }
+      ]
+    },
+    {
+      "pageNumber": 4,
+      "width": 1654.0,
+      "height": 2339.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p4-b0",
+          "type": "text",
+          "bbox": [
+            220.0,
+            160.0,
+            1420.0,
+            280.0
+          ],
+          "readingOrder": 0,
+          "content": "Soubor nálezů byl uložen v depozitáři.\nA123/2024",
+          "language": "cs"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "routing": {
+      "pages": [
+        {
+          "page": 1,
+          "route": "atr",
+          "text_layer": false
+        },
+        {
+          "page": 2,
+          "route": "atr",
+          "text_layer": false
+        },
+        {
+          "page": 3,
+          "route": "atr",
+          "text_layer": false
+        },
+        {
+          "page": 4,
+          "route": "atr",
+          "text_layer": false
+        }
+      ]
+    }
+  },
+  "documentLanguage": "cs"
+}
