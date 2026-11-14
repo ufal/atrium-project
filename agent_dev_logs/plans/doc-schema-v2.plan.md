@@ -1,6 +1,8 @@
 # Strategy — Issue [#84](https://github.com/ufal/atrium-project/issues/84): doc-schema-v2, the record and docproc contract after the 11 November meeting
 
-> _**Refreshed 2026-11-14** (round 5): the seven PRs of 11-14 and their failing checks (Status — PRs); the crate
+> _**Refreshed 2026-11-14 (afternoon)** (round 6): #86 merged, the pins moved; the E2E lanes on the docproc route
+> (task 7), rule 5's mark (Q16), rules 4 and 5, no object sampling, v2.0.0-beta (Status — round 6). Earlier:
+> **refreshed 2026-11-14** (round 5): the seven PRs of 11-14 and their failing checks (Status — PRs); the crate
 > root's `#no-licence-asserted` restored, as motyc confirmed on #6 on 11-12. Earlier: **refreshed 2026-11-13**
 > (round 4): Kate's reply on #84 (posted 11-12), the status of the hub side, the tools and
 > the push, Q11–Q15. The #84 files are named `doc-schema-v2.*` again (they were `84.*` on 11-12 and 11-13). Evidence:
@@ -10,11 +12,17 @@
 > on ARÚP's output contract of 12 November; written **2026-11-11** before the issue existed (one record built by
 > every tool, one `run_uuid` per block, ALTO from the ATR, the D14 merge by decode verdict; superseded)._
 
+**Status (2026-11-14, afternoon)**: 🟡 **#86 is merged (`2f6c82f`, also on `main`), `v1` moved to it and the six
+tools are pinned to it. Round 6 completes the code that needs no outside answer: the E2E lanes on the docproc
+route (task 7), rule 5's mark (`lines[].unit`, Q16), rules 4 and 5 in ocr-postprocess, no object sampling in
+digital-convert, and v2.0.0-beta, unreleased, in every tool. Left: H6 (Q15), the coordinates (ask 10), Q6, Q9,
+the DOCX rendering, the cluster run, then the tag.**
+
 **Status (2026-11-14)**: 🟡 **K4TEL opened one PR per repository from `doc-schema-v2` into `test`: #86 here,
 page-classification#71, translator#60, keyword-extract#5, nlp-enrich#45, digital-convert#10, ocr-postprocess#11.
 Their checks fail for six reasons (Status — PRs). Round 5 fixes the code and the files the push missed; the
 hub-ref pins move after #86 merges; the record-major check clears when each tool's release raises its major
-version. Not tagged.**
+version. Not tagged.** _(superseded 11-14 afternoon: #86 merged, round 6)_
 
 **Status (2026-11-13)**: 🟡 **Kate answered on 11-12: points 1 and 2 agreed, with the stored docproc written by the
 ATR (Q15). The hub and the six tools are adapted; the hub, page-classification, keyword-extract and digital-convert
@@ -200,10 +208,11 @@ tool, the detail and what is deferred are in its `plans/doc-schema-v2.plan.md`, 
   - stand-ins: no models here, so a stub line classifier, and UDPipe and NameTag stood in as in nlp-enrich's tests.
 - **Deferred:**
   - the merge of a mixed document (H6): a docproc with a `needsAtr` page fails the build;
-  - scoring rule 4 (the service's page and document passes);
+  - scoring rule 4 (the service's page and document passes); _(done 11-14, round 6)_
   - digital-convert's coordinates (D28, ask 10) and its object cap: a page over 20,000 objects is still judged on
-    its first ones;
-  - the E2E workflows on the docproc route (task 7): they wait for images built from these branches.
+    its first ones; _(the cap gone 11-14, round 6; the coordinates still wait on ask 10)_
+  - the E2E workflows on the docproc route (task 7): they wait for images built from these branches. _(written
+    11-14, round 6; they run on images once the tools' `test` branches are merged)_
 - **Proof gate:** the validator part holds in the tools' tests and the local chain; the E2E lanes and the cluster
   run do not yet.
 
@@ -253,6 +262,44 @@ siblings; the four sample crates through roc-validator 0.12.0 (0 issues at the g
 in `service/openapi.json`, and keyword-extract's vocabulary sidecars (`vocab_build.py --from-flat --skos`) move to
 the new major.
 
+## Status — round 6 (11-14)
+
+After #86 merged, K4TEL moved `v1` to `2f6c82f` and pinned the six tools: drift went green on all six PRs. Hub
+Self-Check still fails on cause B until ocr-postprocess#11 merges. The E2E runs on `main` failed on the old route:
+the born-digital lane met digital-convert's v1 `:test` image, and the scanned lane's translator stage, still
+translating ALTO full text, could not reach LINDAT. Round 6 (local, delivered as archives):
+
+- **Hub, a second PR for #84:**
+  - **Task 7, the E2E lanes on the docproc route.**
+    - Born-digital: the `-digital` image writes docproc → `tools/e2e/docproc_assert.py` → ocr-postprocess's batch
+      image builds the record → `e2e_assert.py --require-current-major`. The ATR cases are routed to the ATR, and
+      `build_record` refuses them alone (`needs_atr`). The service case chains `/reformat` and `/build_record`.
+    - Scanned: `tools/e2e/alto_to_docproc.py` wrote stand-ins in the ATR's shape (`fixtures/e2e/docproc/`). The
+      chain is `build_record` → page-classification → nlp-enrich (`--text-from-record`) → keyword-extract; the
+      translator left the chain.
+    - Neither lane is scheduled any longer; a push runs `:test`.
+    - Checked locally on the round-6 tool code: every case of both lanes and the record crate. The stand-ins
+      were a scorer with the model's signals, a fixed page-classification answer, and a LINDAT stand-in, since
+      LINDAT reset this session's connections.
+  - **Rule 5's mark:** `lines[].unit: "block"` (record builder), kept out of the page score and of
+    `quality_summary.lines.by_categ`, counted as `block_units`. It is additive within 2.0 (not frozen yet). Its
+    name is proposed: Q16.
+- **Tools:**
+  - ocr-postprocess: rule 4 (the batch's `apply_document_postprocessing()` after scoring, in `build_record` and
+    `/score_record`) and rule 5 (the mark, out of the page score);
+  - ocr-postprocess and digital-convert: a PDF page is judged on all its objects (`PDF_OBJECT_CAP` and
+    digital-convert's `IMAGE_CAP` gone). digital-convert's reader pin names ocr-postprocess's merge commit once
+    #11 is merged.
+  - every tool: re-vendored, `v2.0.0-beta` unreleased (para_config, CITATION.cff, spec, CONTRIBUTING; keyword-extract's
+    vocabulary sidecars), so api-contract passes;
+  - the four ocr-postprocess fixtures again (`git add -f`), nlp-enrich's exec bit (`--chmod=+x`), and
+    translator's usage page link to its record section.
+- **Checked:** hub 738 and shared 210 passed; the tools' suites (page-classification 876, translator 1163,
+  keyword-extract 1017, nlp-enrich 1088, digital-convert 962, ocr-postprocess 2332); `compare` against each latest
+  release: compatible at v2.0.0-beta.
+- **Order:** this hub PR first, then `v1` and the pins again; ocr-postprocess#11; digital-convert's reader pin to
+  ocr's merge commit, then #10 and the other four; a dispatch of both lanes on `:test`; the releases.
+
 ## Proof gate (D12)
 
 `doc-schema-v2` is tagged only when all three hold: the validator accepts every tool's output and the migrated
@@ -297,6 +344,10 @@ New, for the next meeting (not posted):
 - **Q15** — Which docproc is stored. Kate's reply has the stored docproc written by the ATR; the contract stores
   digital-convert's docproc for a born-digital document (D20, H14), which round 3 implements. Is digital-convert's
   docproc ever stored?
+- **Q16** — Rule 5's mark. A row holding a whole docproc block scored as one unit is marked `lines[].unit: "block"`
+  and kept out of the page score and `quality_summary.lines.by_categ` (counted as `block_units`). The name is
+  proposed by this implementation. Until the ATR keeps a line break per visual line (ask 7), a one-line heading
+  cannot be told from a paragraph that lost its breaks, so both are marked.
 
 ## Reply on #84 (posted 11-12)
 
@@ -332,3 +383,4 @@ exists and `doc-schema-v1` (`544298b`) is untouched.
 - **11-13 (later):** pushed (see Status — pushed); the files named `doc-schema-v2.*` again; digital-convert#9
   points 1–3.
 - **11-14:** round 4 pushed; the seven PRs opened; round 5 (see Status — PRs).
+- **11-14 (afternoon):** #86 merged, `v1` moved, the tools pinned; round 6 (see Status — round 6).

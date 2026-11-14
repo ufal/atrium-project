@@ -90,7 +90,10 @@ def test_main_writes_the_manifest_and_appends_the_summary(tmp_path, monkeypatch)
 
 def test_both_lanes_record_their_images_whatever_the_outcome():
     yaml = __import__("pytest").importorskip("yaml")
-    for lane, images in (("pipeline", 5), ("digital", 2)):
+    # Since record schema 2.0 (atrium-project#84): the scanned lane runs page-classification,
+    # ocr-postprocess, nlp-enrich and keyword-extract (no translator); the born-digital lane
+    # digital-convert's two images and ocr-postprocess's two.
+    for lane, images in (("pipeline", 4), ("digital", 4)):
         workflow = yaml.safe_load((_HUB_ROOT / ".github" / "workflows" / f"e2e-{lane}-smoke.yml").read_text("utf-8"))
         steps = [step for job in workflow["jobs"].values() for step in job["steps"]]
         record = [s for s in steps if "tools/e2e/e2e_manifest.py" in s.get("run", "")]

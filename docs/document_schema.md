@@ -56,18 +56,20 @@ by name, and `DocumentRecord` refuses to write one: `add_derived_from()`, `add_r
 
 **New or changed** (#84 §2):
 
-| Field                         | Values                                                   | Meaning                                                                                                                                                      |
-|-------------------------------|----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `source.origin`               | `digital` · `atr` · `legacy`                             | how the text was obtained; **descriptive only**, it selects no writer (#84 §1)                                                                               |
-| `pages[].page_index`          | integer ≥ 1, **required**                                | the physical page, the join key with docproc `pageNumber` (H2); `page` stays the printed label                                                               |
-| `pages[].content_status`      | `text` · `empty`                                         | an `empty` page has no lines and no page score, and is counted apart in `quality_summary` (D29)                                                              |
-| `pages[].canvas`              | `unit` `pt` (default) · `px`; `user_unit`, `pixel_ratio` | the unit of every box on the page (D28); `px` only for PCSS pages whose original cannot be matched; the two factor names are proposed by this implementation |
-| `lines[].line`                | integer ≥ 1                                              | numbered from 1 on every page                                                                                                                                |
-| `lines[].block`               | `p<page>-b<n>`, e.g. `p3-b7`                             | the docproc block the line belongs to (D26)                                                                                                                  |
-| `lines[].text_source`         | `text-layer` · `atr` · `legacy`                          | where this line's text came from (D25); a mixed document has more than one                                                                                   |
-| `lines[].bbox_precision`      | `measured` · `derived` · `absent`                        | a box the producer measured, one derived from the containing block, or none; required with `bbox` (D16)                                                      |
-| `lines[].categ`               | `Clear` · `Noisy` · `Trash` · `Non-text` · `Empty`       | the five text-quality categories of the line-quality model                                                                                                   |
-| `quality_summary.pages.empty` | integer                                                  | the empty pages, counted apart                                                                                                                               |
+| Field                               | Values                                                   | Meaning                                                                                                                                                                 |
+|-------------------------------------|----------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `source.origin`                     | `digital` · `atr` · `legacy`                             | how the text was obtained; **descriptive only**, it selects no writer (#84 §1)                                                                                          |
+| `pages[].page_index`                | integer ≥ 1, **required**                                | the physical page, the join key with docproc `pageNumber` (H2); `page` stays the printed label                                                                          |
+| `pages[].content_status`            | `text` · `empty`                                         | an `empty` page has no lines and no page score, and is counted apart in `quality_summary` (D29)                                                                         |
+| `pages[].canvas`                    | `unit` `pt` (default) · `px`; `user_unit`, `pixel_ratio` | the unit of every box on the page (D28); `px` only for PCSS pages whose original cannot be matched; the two factor names are proposed by this implementation            |
+| `lines[].line`                      | integer ≥ 1                                              | numbered from 1 on every page                                                                                                                                           |
+| `lines[].block`                     | `p<page>-b<n>`, e.g. `p3-b7`                             | the docproc block the line belongs to (D26)                                                                                                                             |
+| `lines[].text_source`               | `text-layer` · `atr` · `legacy`                          | where this line's text came from (D25); a mixed document has more than one                                                                                              |
+| `lines[].bbox_precision`            | `measured` · `derived` · `absent`                        | a box the producer measured, one derived from the containing block, or none; required with `bbox` (D16)                                                                 |
+| `lines[].categ`                     | `Clear` · `Noisy` · `Trash` · `Non-text` · `Empty`       | the five text-quality categories of the line-quality model                                                                                                              |
+| `lines[].unit`                      | `block`                                                  | a row holding a whole docproc block scored as one unit (D18 rule 5): scored, but kept out of the page score and `by_categ`; the name is proposed by this implementation |
+| `quality_summary.pages.empty`       | integer                                                  | the empty pages, counted apart                                                                                                                                          |
+| `quality_summary.lines.block_units` | integer                                                  | the `unit: block` rows, counted apart from `by_categ` (D18 rule 5)                                                                                                      |
 
 `entities`, `enrichment`, `keywords`, `page_categories` and `quality_summary` keep their 1.x shape.
 `translations` and `entities[].translation_en` stay declared and **reserved**: the pilot translates
@@ -212,14 +214,14 @@ page score. digital-convert writes docproc and no record block. So 1.x's origina
 (`source.origin` selecting the writer, the per-page OCR hand-off, the scoring co-contribution) has
 no role and is gone.
 
-| Tool                | Writes                                                                                                                                                                                                                                   |
-|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ocr-postprocess ¹   | `pages[]` *page, canvas, content_status, quality_score, quality_band* · `content` · `lines[]` *text, bbox, block, text_source, bbox_precision, categ, quality_score, lang* · `quality_summary` · `source` *language, page_count, origin* |
-| page-classification | `page_categories` · `pages[]` *category, category_confidence*                                                                                                                                                                            |
-| nlp-enrich          | `entities[]` · `lines[]` *lemma, upos, feats, teitok_ref* · `pages[]` *teitok_surface*                                                                                                                                                   |
-| keyword-extract ¹   | `enrichment` · `keywords` · `entities[]` *pid*                                                                                                                                                                                           |
-| translator          | `translations` · `entities[]` *translation_en* — **reserved**: granted, written by no tool in the pilot                                                                                                                                  |
-| digital-convert     | — (writes docproc, `atr/docproc-json`)                                                                                                                                                                                                   |
+| Tool                | Writes                                                                                                                                                                                                                                         |
+|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ocr-postprocess ¹   | `pages[]` *page, canvas, content_status, quality_score, quality_band* · `content` · `lines[]` *text, bbox, block, text_source, bbox_precision, unit, categ, quality_score, lang* · `quality_summary` · `source` *language, page_count, origin* |
+| page-classification | `page_categories` · `pages[]` *category, category_confidence*                                                                                                                                                                                  |
+| nlp-enrich          | `entities[]` · `lines[]` *lemma, upos, feats, teitok_ref* · `pages[]` *teitok_surface*                                                                                                                                                         |
+| keyword-extract ¹   | `enrichment` · `keywords` · `entities[]` *pid*                                                                                                                                                                                                 |
+| translator          | `translations` · `entities[]` *translation_en* — **reserved**: granted, written by no tool in the pilot                                                                                                                                        |
+| digital-convert     | — (writes docproc, `atr/docproc-json`)                                                                                                                                                                                                         |
 
 ¹ The successor of `alto-postprocess` and of `llm-enrich` respectively, since the repository moves of
 2026-10-01. Each predecessor id resolves to it — see [Program successors](#program-successors-2026-10-01).
@@ -1333,3 +1335,12 @@ On the hub's `test` branch; the tools adopt it each in its own repository.
   `lines[].text_source`; `--expect-layout` checks `lines[].block`; `--require-current-major` is new.
   The workflows are unchanged.
 - `ocr_text_layer` stays in the service reason codes as deprecated: a published code is not removed.
+
+## Changelog — 2026-11-14 (#84: `lines[].unit`, rule 5)
+
+- **`lines[].unit`** (record builder; additive, 2.0 is not frozen yet): `block` marks a row that holds a whole
+  docproc block scored as one unit, because the block came without lines and without a line break (D18 rule 5;
+  ask 7 to the ATR). The row keeps its `categ` and `quality_score` (rule 1).
+- **`quality_summary()`**: such rows stay out of `lines.by_categ` and are counted as `lines.block_units`;
+  ocr-postprocess leaves them out of `pages[].quality_score`. Both are the calibrated statistics rule 5 means.
+- The name is proposed by this implementation, as `canvas.user_unit` is.

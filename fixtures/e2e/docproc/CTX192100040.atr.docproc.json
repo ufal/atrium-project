@@ -1,0 +1,1402 @@
+{
+  "version": "1.0",
+  "pipeline": "pipeline-e2e/atrium-stand-in",
+  "processedAt": "2026-11-14T00:00:00Z",
+  "sourceFormat": "pdf-scanned",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "width": 1090.0,
+      "height": 1406.0,
+      "coordinateUnit": "px",
+      "blocks": []
+    },
+    {
+      "pageNumber": 2,
+      "width": 1265.0,
+      "height": 1752.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p2-b0",
+          "type": "text",
+          "bbox": [
+            2.0,
+            33.0,
+            1259.0,
+            1560.0
+          ],
+          "readingOrder": 0,
+          "content": "STÁTNÍ ARCHAEOLOGICKÝ ÚSTAV ‘o/2/\nDošlo dne 6/,1921 Lodenice , dne 7.února 1921.\nPočet příloh I\nP. T. Pan\nJos. A. Jíra ,\nkonservátor pro Čechy v P r a z e 1\nK ct.dopisu Vašemu ze dne 31.XII.m.r.dovoluji si\nodpověděti trochu obšírněji:\nSměrem sev.záp.od městyse Loděnice,1 hod.cesty - vzdušnou\nčarou as 4 km - za obcí Nenačovicemi při pravém břehu lodenického potoka\nzv.\" Kačák \" prostírají se v údolí luka a pole .Louka čí s. katastr. 222 jest\nmajetkem velkostatku v Chrustenicích - pole s ní sousedící čís.kat.218 jest\nv majetku rolníka p.Rabocha z Nenačovic. _\nLaskavostí tohoto pána bylo mi dovoleno již roku 1919 na\ne •\nPoli $om zv. \" Holonohy \" kopati.Název tento upoutal moji pozornost nejen\nsvým jménem, nýbrž i lidovým podáním,které tvrdí,že v místech těchto stávala\nkdysi obec,která byla za válek husitských zničena.\nPátral Jsem v první řadě po stříbrných penězích .které prý\nprý po dlouhé léta jmenovaný majetník vyorával, sám a děti poblíže pasoucí\nsbíral.Z těchto peněz viděl jsem pouze jeden kus,nebot ostatní z neznalosti'\nbyly pohozeny a jsou tudíž ztraceny.Počet Jich odhaduji více než na 100 kusí\nDne 27.IX. 1919. šel Jsem odpoledne opět na toto pole a štast\nnou náhodou jsem nalezl 1 peníz.Počal Jsem ihned pátrati na onom mistě a\npři opatrném odhrabání asi 20 cm ornice nalezl jsem celé \" hnízdy n: na\nhromádce bylo složeno celkem 120 kusů stříbrných těchto peržzů pouze v zemi.",
+          "language": "cs"
+        }
+      ]
+    },
+    {
+      "pageNumber": 3,
+      "width": 1265.0,
+      "height": 1752.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p3-b0",
+          "type": "text",
+          "bbox": [
+            16.0,
+            1563.0,
+            1230.0,
+            1590.0
+          ],
+          "readingOrder": 0,
+          "content": "/",
+          "language": "cs"
+        },
+        {
+          "id": "p3-b1",
+          "type": "text",
+          "bbox": [
+            944.0,
+            1587.0,
+            984.0,
+            1605.0
+          ],
+          "readingOrder": 1,
+          "content": "• /",
+          "language": "cs"
+        },
+        {
+          "id": "p3-b2",
+          "type": "text",
+          "bbox": [
+            2.0,
+            32.0,
+            1259.0,
+            1532.0
+          ],
+          "readingOrder": 2,
+          "content": ". ■■ . . 4/2/ .\nPři nich ani kolem nebyla žádná nádoba,neb střepina.Byly tudí*\nuložony prostě v zemi.Ten den pršelo stále od rána tak,že peníze ty byly\ncelé hlínou pomazané.Byly pa sobě složeny, takže jsem je musel jen nehtem\nodlupovat*.bych je nepoškodil .Ještě dnes jsou hlinou znečistěný,neb neznám\nzpůsobu,Jak je očistiti,sniž by se setřela krásně zelená patina,která mnohé\nz nich pokrývá.Na straně Jedné Jest dvojocasý lev s vyplazeným Jazykem,na\ndruhé koruna královská s nápisem kolem: WENZEZLAUS TERCLUS,\nnad ním neznatelný nápis - snad Del gratia dux v .\nDle studia 11 Památek arch.a místopisných \" soudím, že jsou\npeníze tyto raženy za krále Václava IV:\nDle \" Pamětí okresu Unhoštského * od Frt.Melichara,učitele\nměšt. školy z roku 1890 - Jiné prameny jsou mi zde nedostupné - byla již\nvesnice \" Holonohy * v první polovici 14. století' zašlá str.154 ./.la str.253\njest psáno,že * dle urbáře kláštera Strahovského z r.1416. /Erben, Reg. 106/\npatřily ke zmíněnému klšteru z nynějšího okresu Unhoštského Úhonice s blíz-\nskými Holonohy a Chýně. Na str.254 píše: \" v Holonozích byli dva lid\nz nichž jeden měl- půl lánu, druhý něco málo země, nepraví se,kolik. *\nZ toho soudím,že skutečně na počátku válek husitských,kdy\ndle lidového podání vesnice ta byla úplně zničena,byly peníze ty zakopány do\nzemě - snad od jednoho z těchto dvou obyvatelů - a to snad ve spěchu, nebot\nbyly asi pouze vhozeny do vykopané skrýše a opět zatézeny.Možné též,že byly\npřikryty shora nádobou, avšak, Jak Jsem se zmínil, nezůstalo po ní dnes již\nžádné památky .Místo nálezu jejich Jest u nejvyššího bodu onoho pole.které se\nsvužvje směrem k potoku.Půda ornice byla během času jistě splavena níže,takže",
+          "language": "cs"
+        }
+      ]
+    },
+    {
+      "pageNumber": 4,
+      "width": 1265.0,
+      "height": 1752.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p4-b0",
+          "type": "text",
+          "bbox": [
+            29.0,
+            150.0,
+            1145.0,
+            254.0
+          ],
+          "readingOrder": 0,
+          "content": "r. • r'' v\npeníze ony octly se blíže povrchu dnešního .Tím se ovšem dostatečně vysvět\nluje,Že špička pluhu při orání vždy Vynesla na povrch nějaký eníz.",
+          "language": "cs"
+        },
+        {
+          "id": "p4-b1",
+          "type": "text",
+          "bbox": [
+            193.0,
+            258.0,
+            1072.0,
+            304.0
+          ],
+          "readingOrder": 1,
+          "content": "loňského roku jsem pokrašorálma poli\\temto v nižší poloze",
+          "language": "cs"
+        },
+        {
+          "id": "p4-b2",
+          "type": "text",
+          "bbox": [
+            0.0,
+            318.0,
+            1169.0,
+            897.0
+          ],
+          "readingOrder": 2,
+          "content": "opět ve výzkumech a sice podél mezí, dosti vysoké,oddělu Jí cí pole toto od\ndolejšího s loukou velkoststku rověž mezujícíbo.Mez ona zdá se bíti\nTozŮstetkemjakésihradby kamenné.Pří mezi té jsem-nslezl pod ornici i vní\nspoustu střepin z nádob, popel dřevěnný a rozličné kůstky.Nádoby J soux\nrozmanítě zdobeny, buä čarami neb v’novkou, jedno duěpird vícenásobně .Jsou\ndo nádob vesměs ryty. Podobná jsem halezl 'i' na louce vblkostatku letos,\nkdež však Jsem nemohl pro dosti pokročilý čas ročhí důklsdněji pátrat! i\npro podmínku rchní správy v Jenči,že totiž musím uvésti louku do půvedního\nstavu.Podmínku onu bych byl- nemohl- dodržet!, neb ne vykopávky jsem byl\nsám s Jedním poúze ochotným děLníkem, který nezištně mi po oba roky pomáhal.",
+          "language": "cs"
+        },
+        {
+          "id": "p4-b3",
+          "type": "text",
+          "bbox": [
+            192.0,
+            912.0,
+            1156.0,
+            956.0
+          ],
+          "readingOrder": 3,
+          "content": "Chci letos opětně pekračovati Velvýzkumech na poli jak jmenované",
+          "language": "cs"
+        },
+        {
+          "id": "p4-b4",
+          "type": "text",
+          "bbox": [
+            12.0,
+            969.0,
+            1193.0,
+            1195.0
+          ],
+          "readingOrder": 4,
+          "content": "‘ p.Rsbocha tak '! na scusedním,kuvrlopatimí\"býlo rovněž po sklizni dovolen\nK o žn o-l i, dovodil byctši po pF. Vás navštíví €1 a přinésti typické'\nst řepíný, které sám netroufám sl blíže odhsdnouti.K ‘důkl adnému vzdělaní ve\nvědě tetp,po němž toužím, schází m1‘mžno‘st opatřití si neb vypůjčiti",
+          "language": "cs"
+        },
+        {
+          "id": "p4-b5",
+          "type": "text",
+          "bbox": [
+            49.0,
+            1213.0,
+            443.0,
+            1250.0
+          ],
+          "readingOrder": 5,
+          "content": "různé prameny.",
+          "language": "cs"
+        },
+        {
+          "id": "p4-b6",
+          "type": "text",
+          "bbox": [
+            859.0,
+            1203.0,
+            1120.0,
+            1232.0
+          ],
+          "readingOrder": 6,
+          "content": "\" ■ ■ 3 - b i",
+          "language": "cs"
+        },
+        {
+          "id": "p4-b7",
+          "type": "text",
+          "bbox": [
+            16.0,
+            1261.0,
+            1217.0,
+            1482.0
+          ],
+          "readingOrder": 7,
+          "content": "nt ■ \" o Zároveň bych přinesl stéž plének,kopii místa nálen vzatu z ckatastá\nmapy obce TTenalovic. '\nTěše se na laskavou odpovši * \" ' • • ■ ! - j odu ■ ■ - \" -\n5 -i - - 1 **: e r : • t • znamenám ae v úctě :n3nt",
+          "language": "cs"
+        }
+      ]
+    },
+    {
+      "pageNumber": 5,
+      "width": 833.0,
+      "height": 1204.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p5-b0",
+          "type": "text",
+          "bbox": [
+            448.0,
+            45.0,
+            735.0,
+            79.0
+          ],
+          "readingOrder": 0,
+          "content": "Dřívější spisy:. 469/20 • -",
+          "language": "cs"
+        },
+        {
+          "id": "p5-b1",
+          "type": "text",
+          "bbox": [
+            45.0,
+            45.0,
+            412.0,
+            191.0
+          ],
+          "readingOrder": 1,
+          "content": "č..49...1921.\nDatum. 7./. .1921 ,3...\nDošlo.9..11-21.-\nzasílá. ..J.. Chpc.. účeiní.. lodenics\n. n.",
+          "language": "cs"
+        },
+        {
+          "id": "p5-b2",
+          "type": "text",
+          "bbox": [
+            46.0,
+            231.0,
+            183.0,
+            261.0
+          ],
+          "readingOrder": 2,
+          "content": "Předmět; . .. <",
+          "language": "cs"
+        },
+        {
+          "id": "p5-b3",
+          "type": "text",
+          "bbox": [
+            448.0,
+            130.0,
+            684.0,
+            196.0
+          ],
+          "readingOrder": 3,
+          "content": "Pozdějěí spisy:......\nZúroveň sevyiizují ....",
+          "language": "cs"
+        },
+        {
+          "id": "p5-b4",
+          "type": "text",
+          "bbox": [
+            204.0,
+            226.0,
+            808.0,
+            260.0
+          ],
+          "readingOrder": 4,
+          "content": ". Josef. Ch99.. úřotní. äplp. ř.. y. .. y. Chlnstenicáoh.,. bytem ...",
+          "language": "cs"
+        },
+        {
+          "id": "p5-b5",
+          "type": "text",
+          "bbox": [
+            46.0,
+            261.0,
+            810.0,
+            296.0
+          ],
+          "readingOrder": 5,
+          "content": "lpděricích- ě- 35B-. Zpráva- D-jeho. -činnosti- arohaeolgie ké-",
+          "language": "cs"
+        },
+        {
+          "id": "p5-b6",
+          "type": "text",
+          "bbox": [
+            50.0,
+            303.0,
+            357.0,
+            342.0
+          ],
+          "readingOrder": 6,
+          "content": "CluwGwur - KCoolue-",
+          "language": "cs"
+        },
+        {
+          "id": "p5-b7",
+          "type": "text",
+          "bbox": [
+            450.0,
+            297.0,
+            809.0,
+            325.0
+          ],
+          "readingOrder": 7,
+          "content": "K nahl Sdnutí:",
+          "language": "cs"
+        },
+        {
+          "id": "p5-b8",
+          "type": "text",
+          "bbox": [
+            42.0,
+            1061.0,
+            393.0,
+            1193.0
+          ],
+          "readingOrder": 8,
+          "content": "Došlo do spisovny:\npopis spisu:\nZnečka.\nBudiž skartováno:9...",
+          "language": "cs"
+        },
+        {
+          "id": "p5-b9",
+          "type": "text",
+          "bbox": [
+            423.0,
+            503.0,
+            828.0,
+            1200.0
+          ],
+          "readingOrder": 9,
+          "content": "P.T. panu\nJosefu Chocovi,\núčetnímu dolu\nv Loděnicích u Berouna.\nVelectěný pane!\nDěkuji vám za milý váě list,\nkterým jste mně byl nadmíru potěšil.\nK jeho obsahu dovoluji si následující\nodpovědět!:\nMince , které jsetbyl vykopal\nna poli, zvaném\"Holonohy\", byly raže\nny za krále českého Václava Iv./syna\na nástupce Karla IV.7 Na nich je nápis\npokud se pamatuji, následující: Kolam\nkoruny v kruhu prvém WENCEZLAUS TER -\nCIUS - v kruhu druhém DEI GRACIA REX\nvýpravna:\nDoblonc: :3o/, 2;\nPodepsino.). .\nvypraveno/..\nB. • -přílohami.",
+          "language": "cs"
+        }
+      ]
+    },
+    {
+      "pageNumber": 6,
+      "width": 821.0,
+      "height": 1217.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p6-b0",
+          "type": "text",
+          "bbox": [
+            415.0,
+            3.0,
+            821.0,
+            1156.0
+          ],
+          "readingOrder": 0,
+          "content": "BOHEMIAB. Na druhé pak straně jest\nčeský lev a kolem něho v kruhu: GROSSI\nPRAGENSES,t. j.\"václav III\"/václava III.\nPřemyslovce; který byl zavražděn v 010-\nmouci roku 1306, nebrgli do počtu/,\n\"z Boží milusti krúl český\", a na\ndruhá straně\" Groša pražské.\" ■\nAž pojedete do Prehy, vez-\nměteyje s sebou, a zatím, než si poho\nvoříme, budou vám peníze v neší labo\nratoři vyčištěny, .Neb o přejete-li si,\npošlu vám návod, jak byste súm si je me\nhl vyčistiti .\nváš úsudek O obci samet-\nné jest správný.\nBude mne velice těšiti,\nnavštívíte-li uane, až zavítáte do Pra\nhy. Pokusím se ovšem, abych vís nepři\npravil o mnoho času.\nTěším se na ony střepy, '\nz nichž vezměte, prosím, nejen ty or- ■\nnamentované, ale i všechnyod okrajů, |\npříyadně též dna,jsou-li nanich něja\nké značky.\nTaxtéž na kopii plániu na-\nziště, rterou hoaláte s sebou vzíti, |\nse těším. .\nBudu vám velice povděčen, |\npodáte-li mi zprávy laskavě i o dal\nších svých plánech kopacích a núle- 7\nzech, případně o známých vÁn nalezištěc\n' v okolí,která,budou-li pro nás zajíma\nvá,dovolil bych si se pak za laakavéno\nVašeho průvodu ohledsti.",
+          "language": "cs"
+        }
+      ]
+    },
+    {
+      "pageNumber": 7,
+      "width": 721.0,
+      "height": 1096.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p7-b0",
+          "type": "text",
+          "bbox": [
+            329.0,
+            0.0,
+            721.0,
+            93.0
+          ],
+          "readingOrder": 0,
+          "content": "Budete-li sikdykollv“piastadsesess\nV . . X 40/24\nci nějakých informací,račte ae vŽdy ni\nmne obrátiti. Bude mí velikým potěše",
+          "language": "cs"
+        },
+        {
+          "id": "p7-b1",
+          "type": "text",
+          "bbox": [
+            331.0,
+            97.0,
+            712.0,
+            129.0
+          ],
+          "readingOrder": 1,
+          "content": "ním,budu-li moci v té věci vám něčím",
+          "language": "cs"
+        },
+        {
+          "id": "p7-b2",
+          "type": "text",
+          "bbox": [
+            331.0,
+            133.0,
+            494.0,
+            163.0
+          ],
+          "readingOrder": 2,
+          "content": "býti k službám.",
+          "language": "cs"
+        },
+        {
+          "id": "p7-b3",
+          "type": "text",
+          "bbox": [
+            465.0,
+            168.0,
+            702.0,
+            198.0
+          ],
+          "readingOrder": 3,
+          "content": "Děguje vám za laskavou",
+          "language": "cs"
+        },
+        {
+          "id": "p7-b4",
+          "type": "text",
+          "bbox": [
+            331.0,
+            200.0,
+            631.0,
+            233.0
+          ],
+          "readingOrder": 4,
+          "content": "Vaši zprávu, znamenám se vám",
+          "language": "cs"
+        },
+        {
+          "id": "p7-b5",
+          "type": "text",
+          "bbox": [
+            391.0,
+            238.0,
+            589.0,
+            269.0
+          ],
+          "readingOrder": 5,
+          "content": "v plné úctě oddaný",
+          "language": "cs"
+        },
+        {
+          "id": "p7-b6",
+          "type": "text",
+          "bbox": [
+            333.0,
+            341.0,
+            618.0,
+            371.0
+          ],
+          "readingOrder": 6,
+          "content": "v Praze, dne 30-dubna 1921.",
+          "language": "cs"
+        }
+      ]
+    },
+    {
+      "pageNumber": 8,
+      "width": 1265.0,
+      "height": 1877.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p8-b0",
+          "type": "text",
+          "bbox": [
+            45.0,
+            10.0,
+            1260.0,
+            1643.0
+          ],
+          "readingOrder": 0,
+          "content": "C. j. ApoSlodne2/-74o ' (0)., '\nPocet príloh —kresní správa politická na Kladně .\nameeyrtny--------------.-\nlis. 52.903./I. Dne 25. října 1920.\n. I .\n0%r\n‘ - I\n\"*! trí archeolcrickí vstav\nv\nPraze. .Strahovský klášter\nVzhledem ko přípisu ze dne .\"ra 1S20,čí8. 131 -i1s20, oznamuji,\nže účetní dolu čís. V.v Jhrusten icích Josef Jhoc z Lodenice čp.158 jest\nčlenem společnosti lusea Král.českého v Praze a skutečně pátrá po před-\nhistori cký ch parná t ká ch .\nMinulého roku vykopal na poli rolníka habocha v ilenačovicích par\ncela č.218,stodvacet kusů stříbrných českých grošů,na nichž je vyraže\nna česká koruna a lev na okraji těchto grošů jest ražen nápis \" Venzes-\nlaus\" .\nBěhem, tohoto roku vykopal Jhocwa louce v katastru obce nenačovic-\nká,parcela 222a 222 a/,patřící zdejšímu státnímu velkostatku několik\nstřepů z hliněných nádob, jejichž předhistorickou památnost nechá teprve\nzjistiti.\nPodobných namátek doufá lhoc ještě více nalezli a hodlá je hromadně\nMuseu Král, českého v Praze všnovati.\n। í । -\nTyto vyKopavKy pounina UnOC Sail většinou QO zeine 1 1/6 I niuDOKO,\nšíře 12- m, se svolerímajitelů těchto pozemků.\nTýž pátrá nyní na výše uvedené louce po předhistorické vesnici\n\" Holonohy\" a po bojišti bitvy u Lodenice / dle dějin Fi ant .ľalackého/\nz čehož si slibuje skvělý výsledek.\nPodotýká se,že účetní Jhoc jest horlivým sběr: Úlem starých pamá\ntek a velkým milovníkem vykopávek předhis tonických památek,nemá však\nhmotných prostředků a proto ve své práci pomalu pokračuje.",
+          "language": "cs"
+        }
+      ]
+    },
+    {
+      "pageNumber": 9,
+      "width": 1265.0,
+      "height": 1877.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p9-b0",
+          "type": "text",
+          "bbox": [
+            188.0,
+            53.0,
+            1245.0,
+            193.0
+          ],
+          "readingOrder": 0,
+          "content": "Jak důverně bylo zjištěno, vyjádřil se Jhoc,že kdyby byl někým\nodporován finančně, pokračoval by ve svém díle rychleji a tím,hlavně\nokolí Lodenice a Nenačovic,nalezlby spoustu předhistorických památek.",
+          "language": "cs"
+        },
+        {
+          "id": "p9-b1",
+          "type": "text",
+          "bbox": [
+            544.0,
+            252.0,
+            713.0,
+            282.0
+          ],
+          "readingOrder": 1,
+          "content": "Min isterský",
+          "language": "cs"
+        }
+      ]
+    },
+    {
+      "pageNumber": 10,
+      "width": 1058.0,
+      "height": 1613.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p10-b0",
+          "type": "text",
+          "bbox": [
+            1005.0,
+            269.0,
+            1051.0,
+            336.0
+          ],
+          "readingOrder": 0,
+          "content": "Ju1z[9",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b1",
+          "type": "text",
+          "bbox": [
+            21.0,
+            175.0,
+            270.0,
+            297.0
+          ],
+          "readingOrder": 1,
+          "content": "nos! KuogQARA q>tqo qo9sA\nI A W9PQAz 0z[ T41[q OgA\nouqíqopau nped A tunox 09 yo\ni pupzodo oqeu omnuauodo\n[UP[OA HKq nozy ez ‘oqo 97 n",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b2",
+          "type": "text",
+          "bbox": [
+            402.0,
+            170.0,
+            930.0,
+            361.0
+          ],
+          "readingOrder": 2,
+          "content": "mos( Ku>gaaKa q>toqo \\p9sA\nos v).*\" ‘yasvmAa z vontso.d rorsaur A WPPQAz oz[ WI •%A\nqup g op ze unuazqn gsouíqopu nprd A 10x09 ge\nnoywqued noqnsoa es yasoq yuasvyo quqpzodo oqou onuauodo\nnpoApo ( 1u9[oA Iíq no.94 uz ‘9>q091 n\nvuqfqood qsougnsud yxsaouop II-oftooqo 97940]) 948 n TuutAod nosl\nnsvuud ymu2nnzapz os qu1zio aW94( yuutaod nozEVIHd\noueussd",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b3",
+          "type": "text",
+          "bbox": [
+            32.0,
+            387.0,
+            268.0,
+            415.0
+          ],
+          "readingOrder": 3,
+          "content": "os MpKq •py *0>qo m",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b4",
+          "type": "text",
+          "bbox": [
+            85.0,
+            430.0,
+            233.0,
+            459.0
+          ],
+          "readingOrder": 4,
+          "content": "noxer Avzuya",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b5",
+          "type": "text",
+          "bbox": [
+            402.0,
+            383.0,
+            930.0,
+            457.0
+          ],
+          "readingOrder": 5,
+          "content": "os \"IIDKq opy *9040 m\nnupoy yoysqu A n7o. ouPpze\" yuAoxw gsouutod nxyaya\nop ge uouod qsť Kuuyaod uoxsuofoA noxen Apzuy",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b6",
+          "type": "text",
+          "bbox": [
+            21.0,
+            496.0,
+            269.0,
+            615.0
+          ],
+          "readingOrder": 6,
+          "content": ".) exsfoA z Oqzus ex qsoUdoqosU\nuxyueguoxn pejd 7opx\np ! „qezeuKA\" oqou „Kudouosu\n। ‘Apzuxf’ uepeApO [Rqeu J]S0U\nu oad Kxyx ‘oouU.q ÄPzuy",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b7",
+          "type": "text",
+          "bbox": [
+            402.0,
+            470.0,
+            930.0,
+            501.0
+          ],
+          "readingOrder": 7,
+          "content": "P(Kqon qqznys •x qsourqosudzu jo1nunpod •pUA y/p= uawgndoud [Äq",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b8",
+          "type": "text",
+          "bbox": [
+            402.0,
+            514.0,
+            896.0,
+            568.0
+          ],
+          "readingOrder": 8,
+          "content": "nouqtuerspoau o.d oxsueľoA Kqzn[s uruequoxn pajď Yop\" SPzEX\ne[sp !,yezeOAA\" oqau „udou",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b9",
+          "type": "text",
+          "bbox": [
+            21.0,
+            622.0,
+            233.0,
+            649.0
+          ],
+          "readingOrder": 9,
+          "content": "uuysod noxsuafoA noxuI",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b10",
+          "type": "text",
+          "bbox": [
+            642.0,
+            618.0,
+            896.0,
+            645.0
+          ],
+          "readingOrder": 10,
+          "content": ":sof ueuyaod noxsuoľoA noxuI"
+        },
+        {
+          "id": "p10-b11",
+          "type": "text",
+          "bbox": [
+            78.0,
+            733.0,
+            161.0,
+            758.0
+          ],
+          "readingOrder": 11,
+          "content": "0 Iu92n0A",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b12",
+          "type": "text",
+          "bbox": [
+            511.0,
+            726.0,
+            823.0,
+            755.0
+          ],
+          "readingOrder": 12,
+          "content": "oysuofos oxW • TSOUI[Aod 0 [uognoJ",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b13",
+          "type": "text",
+          "bbox": [
+            41.0,
+            817.0,
+            161.0,
+            846.0
+          ],
+          "readingOrder": 13,
+          "content": "taxo vojenské.",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b14",
+          "type": "text",
+          "bbox": [
+            511.0,
+            812.0,
+            822.0,
+            841.0
+          ],
+          "readingOrder": 14,
+          "content": "Pončeni o povinnosti ku taxo vojenské.",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b15",
+          "type": "text",
+          "bbox": [
+            440.0,
+            924.0,
+            692.0,
+            950.0
+          ],
+          "readingOrder": 15,
+          "content": "Taxon vojcuskou povinen jest:",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b16",
+          "type": "text",
+          "bbox": [
+            21.0,
+            960.0,
+            270.0,
+            1011.0
+          ],
+          "readingOrder": 16,
+          "content": "obilost k službě s konečnou plat-\nrém byl vydán nález nku zbrani",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b17",
+          "type": "text",
+          "bbox": [
+            21.0,
+            1071.0,
+            272.0,
+            1101.0
+          ],
+          "readingOrder": 17,
+          "content": "í nezpůsobilost ke službě nebyla",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b18",
+          "type": "text",
+          "bbox": [
+            404.0,
+            955.0,
+            931.0,
+            1098.0
+          ],
+          "readingOrder": 18,
+          "content": "Každý branac, ktorýž pro nezpůsobilost k službě s konečnou plat\nnosti nebyl odveden, t.j. každý, o kterém byl vydán nález nku zbrani\nneschopný 11 nebo „vymazati\" ; dále\nkaždý, kdož před ukončením služby vojenské pro neodstranitelnou\nneschopnost ke službě 7. vojska (válečného loďstva) ncbo zemské obrany\nbyl propuštěn, dyž vada podmiňující nezpůsobilost ke službě nebyla",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b19",
+          "type": "text",
+          "bbox": [
+            36.0,
+            1118.0,
+            272.0,
+            1148.0
+          ],
+          "readingOrder": 19,
+          "content": "povinný jest povinen až do",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b20",
+          "type": "text",
+          "bbox": [
+            407.0,
+            1114.0,
+            931.0,
+            1186.0
+          ],
+          "readingOrder": 20,
+          "content": "Maždý taxou vojenskou povinný jest povinen až do\nzániku povinnosti taxovní každého >\nu obce, kde bydli, se hlásiti.-----------------",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b21",
+          "type": "text",
+          "bbox": [
+            21.0,
+            1189.0,
+            272.0,
+            1215.0
+          ],
+          "readingOrder": 21,
+          "content": "nebo písemné s použitím přede-",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b22",
+          "type": "text",
+          "bbox": [
+            21.0,
+            1254.0,
+            273.0,
+            1283.0
+          ],
+          "readingOrder": 22,
+          "content": "li domovská příslušnost pochybna.",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b23",
+          "type": "text",
+          "bbox": [
+            21.0,
+            1301.0,
+            273.0,
+            1377.0
+          ],
+          "readingOrder": 23,
+          "content": "eni - trestá so pokutou penéžitou\nězenim až do 5 dnů.\nprosinci z vyhlášck, kteréž vo",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b24",
+          "type": "text",
+          "bbox": [
+            397.0,
+            1300.0,
+            933.0,
+            1350.0
+          ],
+          "readingOrder": 24,
+          "content": "Opomenulé nebo opozděné ohlášení trestú se pokutou peněžitou\n. až 50 korun; v pádu nedobytnosti vězením až do 5 dnů.",
+          "language": "cs"
+        },
+        {
+          "id": "p10-b25",
+          "type": "text",
+          "bbox": [
+            406.0,
+            1369.0,
+            621.0,
+            1396.0
+          ],
+          "readingOrder": 25,
+          "content": "všech obcích vyvéšeny jsou.",
+          "language": "cs"
+        }
+      ]
+    },
+    {
+      "pageNumber": 11,
+      "width": 1265.0,
+      "height": 1877.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p11-b0",
+          "type": "text",
+          "bbox": [
+            1138.0,
+            1815.0,
+            1209.0,
+            1842.0
+          ],
+          "readingOrder": 0,
+          "content": ". I.,",
+          "language": "sk"
+        },
+        {
+          "id": "p11-b1",
+          "type": "text",
+          "bbox": [
+            80.0,
+            42.0,
+            532.0,
+            177.0
+          ],
+          "readingOrder": 1,
+          "content": "STÁTNÍ ARCHAEOLOGICKÝ ÚSTAV\n, j Došlo ‘1,1920\nČ.[.|00...\nPočet príloh.... .",
+          "language": "sk"
+        },
+        {
+          "id": "p11-b2",
+          "type": "text",
+          "bbox": [
+            833.0,
+            47.0,
+            959.0,
+            72.0
+          ],
+          "readingOrder": 2,
+          "content": ": 131,13",
+          "language": "cs"
+        },
+        {
+          "id": "p11-b3",
+          "type": "text",
+          "bbox": [
+            1109.0,
+            36.0,
+            1196.0,
+            90.0
+          ],
+          "readingOrder": 3,
+          "content": "4/2/",
+          "language": "cs"
+        },
+        {
+          "id": "p11-b4",
+          "type": "text",
+          "bbox": [
+            67.0,
+            251.0,
+            600.0,
+            346.0
+          ],
+          "readingOrder": 4,
+          "content": "0 N Lovu’ / Mrara ryvo tW u a’ma Kladu,\nč $2.0 0 3. z oLvxt Ij S r 14 4420",
+          "language": "sk"
+        },
+        {
+          "id": "p11-b5",
+          "type": "text",
+          "bbox": [
+            702.0,
+            412.0,
+            834.0,
+            440.0
+          ],
+          "readingOrder": 5,
+          "content": "C krwH wl",
+          "language": "sk"
+        },
+        {
+          "id": "p11-b6",
+          "type": "text",
+          "bbox": [
+            249.0,
+            473.0,
+            331.0,
+            498.0
+          ],
+          "readingOrder": 6,
+          "content": "C A s 8.",
+          "language": "sk"
+        },
+        {
+          "id": "p11-b7",
+          "type": "text",
+          "bbox": [
+            349.0,
+            655.0,
+            375.0,
+            676.0
+          ],
+          "readingOrder": 7,
+          "content": "lo",
+          "language": "sk"
+        },
+        {
+          "id": "p11-b8",
+          "type": "text",
+          "bbox": [
+            68.0,
+            795.0,
+            385.0,
+            882.0
+          ],
+          "readingOrder": 8,
+          "content": "o ki < A U • ham AMK f%. 7\nZa&Xu .. qi tvxírU'"
+        },
+        {
+          "id": "p11-b9",
+          "type": "text",
+          "bbox": [
+            263.0,
+            958.0,
+            386.0,
+            985.0
+          ],
+          "readingOrder": 9,
+          "content": "! e., e-ťtAs o Y",
+          "language": "sk"
+        },
+        {
+          "id": "p11-b10",
+          "type": "text",
+          "bbox": [
+            74.0,
+            1015.0,
+            195.0,
+            1042.0
+          ],
+          "readingOrder": 10,
+          "content": "ouni UM .",
+          "language": "sk"
+        },
+        {
+          "id": "p11-b11",
+          "type": "text",
+          "bbox": [
+            1222.0,
+            1607.0,
+            1240.0,
+            1624.0
+          ],
+          "readingOrder": 11,
+          "content": "/2,",
+          "language": "sk"
+        }
+      ]
+    },
+    {
+      "pageNumber": 12,
+      "width": 1265.0,
+      "height": 1873.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p12-b0",
+          "type": "text",
+          "bbox": [
+            1219.0,
+            1826.0,
+            1265.0,
+            1843.0
+          ],
+          "readingOrder": 0,
+          "content": "a",
+          "language": "cs"
+        },
+        {
+          "id": "p12-b1",
+          "type": "text",
+          "bbox": [
+            934.0,
+            261.0,
+            1061.0,
+            292.0
+          ],
+          "readingOrder": 1,
+          "content": "V í nu tlasu ) I",
+          "language": "cs"
+        }
+      ]
+    },
+    {
+      "pageNumber": 13,
+      "width": 1265.0,
+      "height": 1727.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p13-b0",
+          "type": "text",
+          "bbox": [
+            98.0,
+            121.0,
+            569.0,
+            284.0
+          ],
+          "readingOrder": 0,
+          "content": "Ředitelství bývalých císařských\nstatků v Praze.\nč: 6694 /1920.",
+          "language": "cs"
+        },
+        {
+          "id": "p13-b1",
+          "type": "text",
+          "bbox": [
+            232.0,
+            404.0,
+            1264.0,
+            1071.0
+          ],
+          "readingOrder": 1,
+          "content": "P.T. .\nStátní archaeologický ústav\nrepubliky československé\nv Praze IV.\nv klášteře Strahovském.\nKlademe si za čest oznámiti, že jsme počátkem září t.r,\nudělili Josefu C h o c o v i , účetnímu dolu v Chrustenicích jako\nčlenu musea, na jeho žádost povolení k vykopávkam za účelem prozkou\nmání krajiny kolem potoka K a č á k u ■ na lukách č.kat. 222 a 222a?\nv obci chrustenické, náležejících velkostatku.\nChrustenice ( pošta Loděnice u Berouna ) léží při tra\nti dráhy Dušniky - Beroun.-",
+          "language": "cs"
+        },
+        {
+          "id": "p13-b2",
+          "type": "text",
+          "bbox": [
+            518.0,
+            1130.0,
+            923.0,
+            1169.0
+          ],
+          "readingOrder": 2,
+          "content": "V Praze, dne 8. října 1920.",
+          "language": "cs"
+        },
+        {
+          "id": "p13-b3",
+          "type": "text",
+          "bbox": [
+            592.0,
+            1207.0,
+            836.0,
+            1243.0
+          ],
+          "readingOrder": 3,
+          "content": "Řiditel statků :",
+          "language": "cs"
+        }
+      ]
+    },
+    {
+      "pageNumber": 14,
+      "width": 1265.0,
+      "height": 1908.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p14-b0",
+          "type": "text",
+          "bbox": [
+            192.0,
+            77.0,
+            279.0,
+            104.0
+          ],
+          "readingOrder": 0,
+          "content": "0420",
+          "language": "cs"
+        },
+        {
+          "id": "p14-b1",
+          "type": "text",
+          "bbox": [
+            824.0,
+            76.0,
+            868.0,
+            97.0
+          ],
+          "readingOrder": 1,
+          "content": "434.",
+          "language": "cs"
+        },
+        {
+          "id": "p14-b2",
+          "type": "text",
+          "bbox": [
+            82.0,
+            553.0,
+            588.0,
+            586.0
+          ],
+          "readingOrder": 2,
+          "content": "JedMM 24’. y. AAtkki-^lo y itKÁVJl^L^ \"Uvw! -",
+          "language": "cs"
+        },
+        {
+          "id": "p14-b3",
+          "type": "text",
+          "bbox": [
+            71.0,
+            660.0,
+            611.0,
+            809.0
+          ],
+          "readingOrder": 3,
+          "content": "elara t na vo Us M wvonovKam Kolu\nA~ooKA Kaeo’Au, MA CuKAd e.u 222 < 123,\n~ cl e Ua rwa 4 n eď MAu tuw ÍAVk AulvCdhihc. •",
+          "language": "cs"
+        },
+        {
+          "id": "p14-b4",
+          "type": "text",
+          "bbox": [
+            106.0,
+            881.0,
+            509.0,
+            926.0
+          ],
+          "readingOrder": 4,
+          "content": "V A‘lo vauzuoí kwl AAAAM ola4a",
+          "language": "cs"
+        },
+        {
+          "id": "p14-b5",
+          "type": "text",
+          "bbox": [
+            760.0,
+            1042.0,
+            1130.0,
+            1075.0
+          ],
+          "readingOrder": 5,
+          "content": "V Orau, 40- ,U/na 14 tú-",
+          "language": "cs"
+        }
+      ]
+    },
+    {
+      "pageNumber": 15,
+      "width": 1265.0,
+      "height": 1906.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p15-b0",
+          "type": "text",
+          "bbox": [
+            85.0,
+            76.0,
+            306.0,
+            113.0
+          ],
+          "readingOrder": 0,
+          "content": "C. 434 6 20",
+          "language": "cs"
+        },
+        {
+          "id": "p15-b1",
+          "type": "text",
+          "bbox": [
+            233.0,
+            143.0,
+            413.0,
+            176.0
+          ],
+          "readingOrder": 1,
+          "content": "imallo . /",
+          "language": "cs"
+        },
+        {
+          "id": "p15-b2",
+          "type": "text",
+          "bbox": [
+            703.0,
+            89.0,
+            842.0,
+            123.0
+          ],
+          "readingOrder": 2,
+          "content": "vt P A 51“"
+        },
+        {
+          "id": "p15-b3",
+          "type": "text",
+          "bbox": [
+            663.0,
+            202.0,
+            911.0,
+            239.0
+          ],
+          "readingOrder": 3,
+          "content": "Pozdější SIMa: 431",
+          "language": "cs"
+        },
+        {
+          "id": "p15-b4",
+          "type": "text",
+          "bbox": [
+            102.0,
+            572.0,
+            328.0,
+            609.0
+          ],
+          "readingOrder": 4,
+          "content": "D ů uč v VI o z p a ‘uz •",
+          "language": "cs"
+        },
+        {
+          "id": "p15-b5",
+          "type": "text",
+          "bbox": [
+            971.0,
+            831.0,
+            1103.0,
+            864.0
+          ],
+          "readingOrder": 5,
+          "content": "v- Kladot.",
+          "language": "cs"
+        }
+      ]
+    },
+    {
+      "pageNumber": 16,
+      "width": 1265.0,
+      "height": 1906.0,
+      "coordinateUnit": "px",
+      "blocks": [
+        {
+          "id": "p16-b0",
+          "type": "text",
+          "bbox": [
+            727.0,
+            73.0,
+            1163.0,
+            131.0
+          ],
+          "readingOrder": 0,
+          "content": "N.nadat. ,\n1 4altn ayA—* Wvra WHrt (MAA lAA w 00",
+          "language": "cs"
+        },
+        {
+          "id": "p16-b1",
+          "type": "text",
+          "bbox": [
+            738.0,
+            250.0,
+            1078.0,
+            295.0
+          ],
+          "readingOrder": 1,
+          "content": "1/ Irauje\".Y/nAlh%o-",
+          "language": "cs"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "routing": {
+      "pages": [
+        {
+          "page": 1,
+          "route": "empty",
+          "text_layer": false
+        },
+        {
+          "page": 2,
+          "route": "atr",
+          "text_layer": false
+        },
+        {
+          "page": 3,
+          "route": "atr",
+          "text_layer": false
+        },
+        {
+          "page": 4,
+          "route": "atr",
+          "text_layer": false
+        },
+        {
+          "page": 5,
+          "route": "atr",
+          "text_layer": false
+        },
+        {
+          "page": 6,
+          "route": "atr",
+          "text_layer": false
+        },
+        {
+          "page": 7,
+          "route": "atr",
+          "text_layer": false
+        },
+        {
+          "page": 8,
+          "route": "atr",
+          "text_layer": false
+        },
+        {
+          "page": 9,
+          "route": "atr",
+          "text_layer": false
+        },
+        {
+          "page": 10,
+          "route": "atr",
+          "text_layer": false
+        },
+        {
+          "page": 11,
+          "route": "atr",
+          "text_layer": false
+        },
+        {
+          "page": 12,
+          "route": "atr",
+          "text_layer": false
+        },
+        {
+          "page": 13,
+          "route": "atr",
+          "text_layer": false
+        },
+        {
+          "page": 14,
+          "route": "atr",
+          "text_layer": false
+        },
+        {
+          "page": 15,
+          "route": "atr",
+          "text_layer": false
+        },
+        {
+          "page": 16,
+          "route": "atr",
+          "text_layer": false
+        }
+      ]
+    }
+  },
+  "documentLanguage": "cs"
+}

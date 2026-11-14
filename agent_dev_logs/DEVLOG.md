@@ -3922,3 +3922,28 @@ candidates are six `.3` releases carrying #6's step 1.
   tools.
 * **`issues/` exports to regenerate:** #6 (31 of 33 comments).
 * **Not posted; not pushed.**
+
+## 2026-11-14 (afternoon) — round 6: doc-schema-v2 completed where no answer is pending
+
+* **Asked (K4TEL):** fetch the commits and PR states (GHA problems on the hub), complete the doc-schema-v2 update
+  in every repository, and give a markdown description per PR.
+* **Decided in session:** v2.0.0-beta as the unreleased version in every tool (a minor bump would fail #32's
+  release gate); no schedule on the two E2E lanes; this round covers the E2E lanes, rules 4 and 5, and no object
+  sampling.
+* **Found:** #86 merged, `v1` moved, the tools re-pinned. The E2E runs on `main` still followed the 1.x route.
+  ocr-postprocess#11 again lacked its fixtures, and nlp-enrich its exec bit.
+* **Written here (not pushed):**
+  * the two E2E workflows, with `tools/e2e/docproc_assert.py`, `tools/e2e/alto_to_docproc.py`,
+    `fixtures/e2e/docproc/` and their tests;
+  * `lines[].unit` and `quality_summary.lines.block_units` in the shared record, with
+    `docs/document_schema.md`;
+  * `docs/decisions/e2e-lanes.md`, `docs/ci_policy.md`, `docs_site/ecosystem/architecture.md`,
+    `fixtures/e2e/README.md`;
+  * logs: `plans/doc-schema-v2.plan.md` (Status — round 6, Q16), `digests/doc-schema-v2.digest.md`.
+* **Checked:**
+  * hub tests;
+  * workflow lint and shellcheck of every `run:` block in the two lanes;
+  * both lanes' command sequences on the round-6 tool code, with stand-ins for the models, the classifier and
+    LINDAT;
+  * the scanned chain's record crate, through roc-validator.
+* **Not posted; not pushed.**

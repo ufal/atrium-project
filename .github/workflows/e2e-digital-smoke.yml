@@ -1,26 +1,30 @@
-# atrium-project — E2E smoke for the BORN-DIGITAL branch (W10, issue #10 tail): digital-convert's
-# published images, the `-digital` CLI (Cases 1-6) and the `-api` service (Case 7).
+# atrium-project — E2E smoke for the BORN-DIGITAL route (record schema 2.0, atrium-project#84):
+# digital-convert's published images write docproc, ocr-postprocess's build the record from it.
 # Reasons and incident history: docs/decisions/e2e-lanes.md.
 #
-# A SIBLING of e2e-pipeline-smoke.yml, not a stage of it: no scanned stage can run on a
-# born-digital record. pc needs a page image, and a born-digital PDF has none. ocr-postprocess
-# MUST NOT run: atrium_document's `_assert_origin_consistent()` refuses its positional
-# `pages`/`lines` writes on a `digital-born-*` record (only the scoring-only merge,
-# `POST /score_record`, gets through). translator and nlp-enrich need ocr-postprocess's output.
-# digital-convert is this branch's ORIGINATOR: it takes no `--document-json` baseline.
-# keyword-extract's controlled kind is to join as a second stage (atrium-keyword-extract#1).
+# The route since ARÚP's contract of 12 November 2026: digital-convert reads the original and writes
+# its layout as docproc (`atr/docproc-json`) with a verdict for every page; it never refuses and
+# never writes the record. ocr-postprocess builds the record from docproc (`build_record.py`,
+# `POST /build_record`) and scores every line. A page digital-convert cannot use (an earlier OCR
+# layer, a layer that does not decode, no text) is routed to the ATR; its text comes in the ATR's
+# docproc, so building a record from digital-convert's docproc alone refuses it (`needs_atr`) until
+# the merge of a mixed document (H6) is built.
 #
-# What only this covers: the §1a arbitration. On a born-digital record the one thing that
-# re-authorises ocr-postprocess is the converter setting `needs_ocr: true` (Case 2; Case 7
-# through the service). Cases 4-6 smoke digital-convert#18's layout and refusal contract.
+# Two parts:
+#   * the CLI cases: the `-digital` image writes docproc from each fixture and its AMČR seed;
+#     tools/e2e/docproc_assert.py checks it (schema, routing, no run data); ocr-postprocess's batch
+#     image builds the record (`python3 /app/build_record.py`, the entrypoint's interpreter rule,
+#     not an override); tools/e2e/e2e_assert.py checks the record at schema 2.x;
+#   * the services: digital-convert's `-api` `/reformat` and ocr-postprocess's `-api`
+#     `/build_record`, chained, with both CreateActions checked (atrium_rocrate.action_problems).
 #
 # Fixtures are GENERATED, never committed, by digital-convert's deterministic, sha256-pinned
 # tests/fixtures/digital/make_fixtures.py, with `--manifest` in the work dir: the generator
-# rewrites its manifest, which would dirty the checkout (`assert-clean-tree`).
+# rewrites its manifest, which would dirty the checkout (`assert-clean-tree`). The docproc schema
+# comes from the same checkout (schemas/docproc/document.atrium-proposal.schema.json).
 #
-# Status: the images are ghcr.io/ufal/atrium-digital-convert-digital and -api. `:test` moves
-# on a push to digital-convert's `test` branch, `:latest` only on its release tag; until then
-# there is no image at that tag, and the preflight says MISSING.
+# Event-driven only (no schedule since 2026-11-14): a push to `main` that touches this lane runs
+# `:test`; a dispatch runs the tag it names.
 
 name: E2E Digital-Born Smoke Test
 
@@ -29,10 +33,9 @@ on:
     inputs:
       image-tag:
         description: >-
-          GHCR tag to exercise. `latest` = the last release of digital-convert; `test` = the
-          pre-release channel, which
-          may still be unpublished — see the STATUS note at the top of this file.
-          The preflight step reports which one is missing and what unblocks it.
+          GHCR tag to exercise. `latest` = the last releases of digital-convert and
+          ocr-postprocess; `test` = their pre-release channel. The preflight step reports a
+          missing image and what unblocks it.
         type: choice
         options: [latest, test]
         default: latest
@@ -41,11 +44,8 @@ on:
     paths:
       - ".github/workflows/e2e-digital-smoke.yml"
       - "tools/e2e/e2e_assert.py"
+      - "tools/e2e/docproc_assert.py"
       - "tools/e2e/requirements.txt"
-  schedule:
-    # 06:00, clear of e2e-pipeline-smoke.yml (02:00) and all-repos-smoke.yml (04:00), so heavy
-    # jobs do not contend for runners or interleave their failure reports.
-    - cron: '0 6 */3 * *'
 
 concurrency:
   group: e2e-digital-smoke-${{ github.ref }}
@@ -55,29 +55,29 @@ permissions:
   contents: read
 
 env:
-  # Channel by EVENT: a push runs `:test` ("does what we are about to release still hold?"),
-  # the schedule `:latest` ("does the artifact consumers pull still work?"), a dispatch what was
-  # chosen. A push must never run `:latest`: an edit to this file (on the `paths` filter) cannot
-  # have produced that image. History: docs/decisions/e2e-lanes.md#image-channel-by-event
-  IMAGE_TAG: ${{ inputs.image-tag || (github.event_name == 'push' && 'test' || 'latest') }}
+  # Channel by EVENT: a push runs `:test` ("does what we are about to release still hold?"), a
+  # dispatch what was chosen. A push must never run `:latest`: an edit to this file (on the `paths`
+  # filter) cannot have produced that image. History: docs/decisions/e2e-lanes.md#image-channel-by-event
+  IMAGE_TAG: ${{ inputs.image-tag || 'test' }}
   DIGITAL_IMAGE: ghcr.io/ufal/atrium-digital-convert-digital
   API_IMAGE: ghcr.io/ufal/atrium-digital-convert-api
+  OCR_IMAGE: ghcr.io/ufal/atrium-ocr-postprocess
+  OCR_API_IMAGE: ghcr.io/ufal/atrium-ocr-postprocess-api
 
 jobs:
   digital-branch:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
-      packages: read   # pull the -digital and -api images from GHCR
+      packages: read   # pull digital-convert's and ocr-postprocess's images from GHCR
       contents: read
-      issues: write    # open an issue when the SCHEDULED run fails
 
     steps:
       # The default checkout, on purpose: this workflow lives in the hub, so tools/e2e/ comes from
       # the commit under test. Never pin it to another ref such as `v1`: the lane would then assert
       # with tooling that does not ship with it. History:
       # docs/decisions/e2e-lanes.md#hub-checkout-born-digital-lane
-      - name: Checkout hub (fixtures, assert script)
+      - name: Checkout hub (assert scripts)
         uses: actions/checkout@v7
 
       - name: Set up Python for assertions
@@ -90,11 +90,10 @@ jobs:
       - name: Install e2e tooling dependencies
         run: pip install -r tools/e2e/requirements.txt
 
-      # digital-convert is checked out ONLY for its fixture generator; the converter under test is
-      # the published image. The ref follows the image channel: `test` for `:test`, else the
-      # default branch (an empty ref), which can run ahead of `:latest`, so Cases 4-6 also probe
-      # the image instead of trusting the fixture list.
-      - name: Checkout atrium-digital-convert (fixture generator only)
+      # digital-convert is checked out for its fixture generator and its docproc schema only; the
+      # converter under test is the published image. The ref follows the image channel: `test` for
+      # `:test`, else the default branch (an empty ref).
+      - name: Checkout atrium-digital-convert (fixture generator, docproc schema)
         uses: actions/checkout@v7
         with:
           repository: ufal/atrium-digital-convert
@@ -112,8 +111,8 @@ jobs:
 
       # ── Preflight: is there anything to test? ────────────────────────────────
       # A missing image would otherwise fail later as a daemon `denied`, which reads as a
-      # permissions problem and is not one. MISSING means: no release (for `latest`), no `test`
-      # push (for `test`), or a package visibility problem; the summary says how to fix each.
+      # permissions problem and is not one. An image from before record schema 2.0 has no
+      # `--docproc-out`: it writes the record, and this lane has nothing to check on it.
       # History: docs/decisions/e2e-lanes.md#preflight
       - name: Preflight - confirm the images exist at the requested tag
         run: |
@@ -129,53 +128,44 @@ jobs:
           }
           echo "Resolving images for tag '${IMAGE_TAG}':"
           check "${DIGITAL_IMAGE}:${IMAGE_TAG}"
+          check "${OCR_IMAGE}:${IMAGE_TAG}"
           if [ "$missing" -ne 0 ]; then
-            echo "::error::No image published at ':${IMAGE_TAG}'. The born-digital branch cannot be smoked until one exists."
+            echo "::error::An image is not published at ':${IMAGE_TAG}'. The born-digital route cannot be smoked until both exist."
             {
               echo "### E2E digital-born smoke — no image to test"
               echo ""
-              echo "\`${DIGITAL_IMAGE}:${IMAGE_TAG}\` could not be resolved after authenticating to GHCR."
-              echo ""
               echo "This is a publication gap, not a credentials problem. To unblock, either:"
               echo ""
-              echo "1. For \`image-tag: test\`: push \`atrium-digital-convert\`'s \`test\` branch (the"
+              echo "1. For \`image-tag: test\`: push the repository's \`test\` branch (the"
               echo "   \`build-and-push\` gate at \`v1\` publishes \`:test\` on it) and re-run; or"
-              echo "2. For \`latest\`: cut an \`atrium-digital-convert\` release, which publishes \`:latest\`."
+              echo "2. For \`latest\`: cut a release, which publishes \`:latest\`."
               echo ""
-              echo "Then mind the third gate, which bites immediately after the first two:"
-              echo "a GHCR package is PRIVATE on creation, and it is owned by"
-              echo "\`atrium-digital-convert\`, not by this repo. This job's \`GITHUB_TOKEN\` cannot"
-              echo "read a private package belonging to a different repository, so the pull"
-              echo "fails with \`denied\` even once the image exists. Fix it once, on the"
-              echo "package page: either set visibility to public (matching the other ATRIUM images"
-              echo "ATRIUM images), or under *Manage Actions access* grant"
-              echo "\`ufal/atrium-project\` at least Read."
+              echo "Then mind the third gate: a GHCR package is PRIVATE on creation and owned by its"
+              echo "tool repository, so this job's \`GITHUB_TOKEN\` cannot read it until the package is"
+              echo "public, or grants \`ufal/atrium-project\` Read under *Manage Actions access*."
             } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          if ! docker run --rm "${DIGITAL_IMAGE}:${IMAGE_TAG}" --help 2>/dev/null | grep -q -- '--docproc-out'; then
+            echo "::error::${DIGITAL_IMAGE}:${IMAGE_TAG} predates record schema 2.0 (no --docproc-out): it writes the record, not docproc (atrium-project#84)."
             exit 1
           fi
 
       - name: Create workspace
         run: |
           W="${{ github.workspace }}/work"
-          mkdir -p "$W/digital_in" "$W/doc_json"
-          # Every image runs as its own baked-in non-root user (atrium, uid 10001),
-          # unrelated to the runner uid that just created these directories. Without
-          # this, the first container write fails with EACCES.
-          chmod -R a+rwX "$W"
+          mkdir -p "$W/digital_in" "$W/docproc" "$W/doc_json" "$W/records" "$W/paradata" "$W/api" \
+                   "${{ github.workspace }}/hf-cache"
+          chmod -R a+rwX "$W" "${{ github.workspace }}/hf-cache"
 
       - name: Generate the digital fixtures
         working-directory: work/digital-convert-src
         run: |
           set -euo pipefail
           W="${{ github.workspace }}/work"
-          # --manifest into the WORK dir: the generator rewrites its manifest by
-          # default, which would dirty the checkout.
           python3 tests/fixtures/digital/make_fixtures.py \
             --outdir "$W/digital_in" \
             --manifest "$W/digital_in/MANIFEST.json"
-          # --verify re-derives every fixture and compares against the manifest, so a
-          # generator that silently changed its output fails HERE, with a sha256
-          # mismatch, rather than downstream as a confusing contract failure.
           python3 tests/fixtures/digital/make_fixtures.py \
             --outdir "$W/digital_in" \
             --manifest "$W/digital_in/MANIFEST.json" \
@@ -183,218 +173,112 @@ jobs:
           chmod -R a+rwX "$W/digital_in"
           ls -la "$W/digital_in"
 
-      # ── Case 1: the happy path ──────────────────────────────────────────────
-      # minimal.pdf — 2 pages, a clean embedded text layer, no diacritics.
-      #
-      # The output filename MUST end in `.document.json`: the converter's
-      # `doc_to_visual_md.py` dispatches on that exact suffix
-      # (`_DOCUMENT_JSON_SUFFIX`), so a record named `d1_digital.json` would be
-      # treated as an unknown input instead of a document record.
-      - name: Stage D1 - digital-convert (happy path)
-        run: >
-          docker run --rm -v ${{ github.workspace }}:/workspace
-          ${DIGITAL_IMAGE}:${IMAGE_TAG}
-          /workspace/work/digital_in/minimal.pdf
-          --document-json-out /workspace/work/doc_json/minimal.document.json
+      # ocr-postprocess scores every line with its perplexity model (D18 rule 1), downloaded from the
+      # Hub on first use. The cache spares the download on a warm run; HF_TOKEN raises the anonymous
+      # rate limit on a miss. History: docs/decisions/e2e-lanes.md#hugging-face-model-cache
+      - name: Cache HuggingFace models (ocr-postprocess scoring)
+        uses: actions/cache@v6
+        with:
+          path: ${{ github.workspace }}/hf-cache
+          key: e2e-hf-ocr-${{ env.IMAGE_TAG }}
+          restore-keys: e2e-hf-ocr-
 
-      - name: Assert the born-digital contract (happy path)
-        run: |
-          python tools/e2e/e2e_assert.py work/doc_json/minimal.document.json \
-            --llm-stage-ran false
+      - name: Prepare the HF cache mount
+        run: chmod -R a+rwX "${{ github.workspace }}/hf-cache"
 
-      # ── Case 1s: the happy path from an AMČR seed (atrium-project#71) ───────
-      # The converter is the first stage of the born-digital route, so it is the one that reads
-      # the seed: it must keep doc_id (an AMČR-style id unlike the file name) and the seed's
-      # sha512, file name and media type, and add the origin itself.
-      - name: Stage D1s - digital-convert (AMČR seed)
-        run: |
-          python tools/e2e/make_seed.py work/digital_in/minimal.pdf \
-            --doc-id AMCR-F-minimal --media-type application/pdf --out work/doc_json/minimal.seed.json
-          docker run --rm -v "${{ github.workspace }}:/workspace" \
-            "${DIGITAL_IMAGE}:${IMAGE_TAG}" \
-            /workspace/work/digital_in/minimal.pdf \
-            --document-json /workspace/work/doc_json/minimal.seed.json \
-            --document-json-out /workspace/work/doc_json/minimal.seeded.document.json
-
-      - name: Assert the seed survived the converter
-        run: |
-          python tools/e2e/e2e_assert.py work/doc_json/minimal.seeded.document.json \
-            --llm-stage-ran false --seed work/doc_json/minimal.seed.json
-
-      # ── Case 2: the needs_ocr handoff (§1a) ─────────────────────────────────
-      # garbled.pdf — CP1250 bytes declared WinAnsi with no /ToUnicode, so the text
-      # layer decodes to mojibake. The converter must NOTICE and say so, because
-      # that verdict is what re-authorises ocr-postprocess to re-originate.
-      #
-      # `--expect-needs-ocr` inverts the happy-path assertions, so this case cannot
-      # pass vacuously: run it against minimal.pdf and it fails.
-      - name: Stage D1b - digital-convert (garbled text layer)
-        run: >
-          docker run --rm -v ${{ github.workspace }}:/workspace
-          ${DIGITAL_IMAGE}:${IMAGE_TAG}
-          /workspace/work/digital_in/garbled.pdf
-          --document-json-out /workspace/work/doc_json/garbled.document.json
-
-      - name: Assert the needs_ocr handoff
-        run: |
-          python tools/e2e/e2e_assert.py work/doc_json/garbled.document.json \
-            --llm-stage-ran false \
-            --expect-needs-ocr
-
-      # ── Case 3: a record the semantic stage can actually read ───────────────
-      # enrichable.pdf — one page of diacritic-free Czech archaeological prose, for the semantic
-      # stage that follows the converter (keyword-extract's controlled kind): minimal.pdf's
-      # placeholder text has nothing to enrich (issue #49). minimal.pdf is deliberately NOT
-      # rewritten: its bytes are a geometry golden. Asserting the born-digital contract here proves
-      # the fixture is a clean input. History: docs/decisions/e2e-lanes.md#case-3-enrichable-content
-      - name: Stage D1c - digital-convert (enrichable content)
-        run: >
-          docker run --rm -v ${{ github.workspace }}:/workspace
-          ${DIGITAL_IMAGE}:${IMAGE_TAG}
-          /workspace/work/digital_in/enrichable.pdf
-          --document-json-out /workspace/work/doc_json/enrichable.document.json
-
-      - name: Assert the born-digital contract (enrichable fixture)
-        run: |
-          python tools/e2e/e2e_assert.py work/doc_json/enrichable.document.json \
-            --llm-stage-ran false
-
-      # ── Cases 4-6: the digital-convert#18 layout and refusal contract ─────────────
-      # Two things must both be true, and they come from different places:
-      #   * the IMAGE converts them — probed from its own `--help`, because `--engine`
-      #     arrived with #18 and a tag name says nothing about what is inside it;
-      #   * the GENERATOR made the fixtures — rich.docx, two_column.pdf and ocr_layer.pdf
-      #     exist only from digital-convert c3575f5 on.
-      # Either one missing SKIPS the case with a notice rather than failing: an image that predates
-      # #18 would be red for a reason no commit could fix. Once a release carries #18, the probe
-      # turns the cases on by itself — nothing here needs editing.
-      - name: Probe the converter for the digital-convert#18 contract
-        id: caps
-        run: |
-          set -uo pipefail
-          IN="${{ github.workspace }}/work/digital_in"
-          # Captured first, not piped: under pipefail, `grep -q` exiting on its first match
-          # can SIGPIPE the writer and turn a match into a failed condition.
-          help_text="$(docker run --rm "${DIGITAL_IMAGE}:${IMAGE_TAG}" --help 2>/dev/null || true)"
-          if grep -q -- '--engine' <<<"$help_text"; then
-            capable=true
-          else
-            capable=false
-            echo "::notice::${DIGITAL_IMAGE}:${IMAGE_TAG} predates digital-convert#18 (no --engine in its --help) — Cases 4-6 are skipped."
-          fi
-          case_for() {  # $1 = output name, $2 = fixture
-            if [ "$capable" = true ] && [ -f "$IN/$2" ]; then
-              echo "$1=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "$1=false" >> "$GITHUB_OUTPUT"
-              if [ "$capable" = true ]; then
-                echo "::notice::$2 was not generated (the digital-convert checkout predates #18) — its case is skipped."
-              fi
-            fi
-          }
-          case_for docx rich.docx
-          case_for columns two_column.pdf
-          case_for ocr_layer ocr_layer.pdf
-
-      # Case 4 — rich.docx: DOCX pages from three kinds of break, a title and localized
-      # headings, a running header and footer, a footnote, tracked changes and a table.
-      # `--expect-layout` requires a heading, a style.region and tables joined to
-      # lines[]; tests/test_e2e_assert.py pins that it fails on minimal.pdf's record,
-      # so this cannot pass vacuously.
-      - name: Stage D1d - digital-convert (DOCX layout)
-        if: steps.caps.outputs.docx == 'true'
-        run: >
-          docker run --rm -v ${{ github.workspace }}:/workspace
-          ${DIGITAL_IMAGE}:${IMAGE_TAG}
-          /workspace/work/digital_in/rich.docx
-          --document-json-out /workspace/work/doc_json/rich.document.json
-
-      - name: Assert the born-digital layout contract (DOCX)
-        if: steps.caps.outputs.docx == 'true'
-        run: |
-          python tools/e2e/e2e_assert.py work/doc_json/rich.document.json \
-            --llm-stage-ran false \
-            --expect-layout
-
-      # Case 5 — two_column.pdf: roman page labels, a running header and footer, a heading
-      # and two text columns that must come out in reading order.
-      - name: Stage D1e - digital-convert (two-column PDF)
-        if: steps.caps.outputs.columns == 'true'
-        run: >
-          docker run --rm -v ${{ github.workspace }}:/workspace
-          ${DIGITAL_IMAGE}:${IMAGE_TAG}
-          /workspace/work/digital_in/two_column.pdf
-          --document-json-out /workspace/work/doc_json/two_column.document.json
-
-      - name: Assert the born-digital layout contract (PDF)
-        if: steps.caps.outputs.columns == 'true'
-        run: |
-          python tools/e2e/e2e_assert.py work/doc_json/two_column.document.json \
-            --llm-stage-ran false \
-            --expect-layout
-
-      # Case 6 — ocr_layer.pdf: a page image under invisible (render mode 3) text, i.e. a
-      # prior OCR run. Not born-digital, so the converter must REFUSE it: exit 3 and no
-      # record. Its originator is ocr-postprocess (`--method text-lines`, source.origin
-      # `ocr:pdf-text-layer`). A record here would be the §1a arbitration broken the
-      # other way round — OCR text claimed as a digital text layer.
-      - name: Stage D1f - digital-convert refuses a prior OCR layer
-        if: steps.caps.outputs.ocr_layer == 'true'
-        run: |
-          set -uo pipefail
-          out="work/doc_json/ocr_layer.document.json"
-          set +e
-          docker run --rm -v ${{ github.workspace }}:/workspace \
-            "${DIGITAL_IMAGE}:${IMAGE_TAG}" \
-            /workspace/work/digital_in/ocr_layer.pdf \
-            --document-json-out "/workspace/$out"
-          code=$?
-          set -e
-          if [ "$code" -ne 3 ]; then
-            echo "::error::ocr_layer.pdf: expected exit 3 (ocr_text_layer — not born-digital), got $code."
-            exit 1
-          fi
-          if [ -e "$out" ]; then
-            echo "::error::ocr_layer.pdf was refused but a record was written anyway: $out"
-            exit 1
-          fi
-          echo "✅ ocr_layer.pdf refused with exit 3 and no record written"
-
-      # ── Case 7: the production service, digital-convert's `-api` image ─────────────
-      # Every case above runs the `-digital` CLI. AMČR's Temporal activity calls the `-api`
-      # image instead (`POST /reformat`; atrium-digital-convert#2 H.1, which closes #2 and #4
-      # once this is green on `latest`). Through the service:
-      #   * the AMČR seed survives, and the response's `paradata` is a valid CreateAction whose
-      #     `@id` is the run_uuid stamped into every block the converter wrote (#71 R2);
-      #   * garbled.pdf comes back with its page flagged `needs_ocr` and a `text_layer` verdict;
-      #   * a seed whose sha512 is not the file's is 422 `source_digest_mismatch`;
-      #   * a prior OCR layer is 422 `ocr_text_layer` (when the caps probe enabled Case 6).
-      # A missing image is a warning on a push or a dispatch and an error on the schedule, as in
-      # e2e-pipeline-smoke.yml's keyword step: `-api` reaches `:latest` only via a release.
-      - name: Stage D2 - digital-convert service (-api)
+      # ── The CLI cases ───────────────────────────────────────────────────────────
+      # Per fixture: its AMČR seed → digital-convert's docproc → docproc_assert.py → ocr-postprocess
+      # builds and scores the record → e2e_assert.py at schema 2.x. A fixture whose pages go to the
+      # ATR (garbled text layer, earlier OCR layer) is routed so and nothing refused; building the
+      # record from that docproc alone fails (`needs_atr`) and writes nothing (D13), until H6.
+      - name: Born-digital cases - docproc, then the record
         env:
-          EVENT_NAME: ${{ github.event_name }}
-          OCR_LAYER_CASE: ${{ steps.caps.outputs.ocr_layer }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           set -euo pipefail
-          IMAGE="${API_IMAGE}:${IMAGE_TAG}"
-          if ! docker pull "$IMAGE"; then
-            if [ "$EVENT_NAME" = "schedule" ]; then
-              echo "::error::$IMAGE is not published: digital-convert has no -api image at this tag."
-              exit 1
+          SCHEMA=work/digital-convert-src/schemas/docproc/document.atrium-proposal.schema.json
+          case_of() {  # $1 = fixture, $2 = media type, $3 = pages routed to the ATR (none/all), then e2e_assert flags
+            local fixture="$1" media="$2" atr="$3"
+            shift 3
+            local name="${fixture%.*}" doc="AMCR-F-${fixture%.*}"
+            echo "::group::${fixture}"
+            mkdir -p "work/records/$name" "work/paradata/dc_$name" "work/paradata/ocr_$name"
+            chmod a+rwX "work/records/$name" "work/paradata/dc_$name" "work/paradata/ocr_$name"
+            python tools/e2e/make_seed.py "work/digital_in/$fixture" \
+              --doc-id "$doc" --media-type "$media" --out "work/doc_json/$name.seed.json"
+            docker run --rm -v "$GITHUB_WORKSPACE:/workspace" "${DIGITAL_IMAGE}:${IMAGE_TAG}" \
+              "/workspace/work/digital_in/$fixture" \
+              --document-json "/workspace/work/doc_json/$name.seed.json" \
+              --docproc-out "/workspace/work/docproc/$name.docproc.json" \
+              --paradata-dir "/workspace/work/paradata/dc_$name"
+            python tools/e2e/docproc_assert.py "work/docproc/$name.docproc.json" \
+              --schema "$SCHEMA" --expect-atr-pages "$atr"
+            set +e
+            docker run --rm -v "$GITHUB_WORKSPACE:/workspace" \
+              -v "$GITHUB_WORKSPACE/hf-cache:/cache/huggingface" -e HF_TOKEN \
+              "${OCR_IMAGE}:${IMAGE_TAG}" \
+              python3 /app/build_record.py "/workspace/work/docproc/$name.docproc.json" \
+              --seed "/workspace/work/doc_json/$name.seed.json" \
+              --out-dir "/workspace/work/records/$name" \
+              --paradata-dir "/workspace/work/paradata/ocr_$name"
+            code=$?
+            set -e
+            if [ "$atr" = none ]; then
+              [ "$code" -eq 0 ] || { echo "::error::${fixture}: build_record exited $code"; exit 1; }
+              python tools/e2e/e2e_assert.py "work/records/$name/$doc.document.json" \
+                --llm-stage-ran false --seed "work/doc_json/$name.seed.json" --require-current-major "$@"
+            else
+              [ "$code" -eq 1 ] || { echo "::error::${fixture}: a docproc with ATR pages must not build alone (exit 1), got $code"; exit 1; }
+              [ ! -e "work/records/$name/$doc.document.json" ] || { echo "::error::${fixture}: a record was written anyway"; exit 1; }
+              echo "✅ ${fixture}: routed to the ATR; the record waits for the ATR's docproc (needs_atr)"
             fi
-            echo "::warning::$IMAGE is not published yet (no digital-convert release or test push at this tag); Case 7 is skipped."
-            echo "**Skipped:** $IMAGE is not published yet (no digital-convert release or test push at this tag); Case 7 is skipped." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          CID=$(docker run -d -e PORT=8080 -p 8080:8080 "$IMAGE")
-          trap 'docker logs "$CID" 2>&1 | tail -40; docker rm -f "$CID" >/dev/null 2>&1' EXIT
-          for _ in $(seq 1 90); do
-            if curl -fsS http://localhost:8080/ready >/dev/null 2>&1; then break; fi
-            sleep 2
+            echo "::endgroup::"
+          }
+          case_of minimal.pdf application/pdf none
+          case_of enrichable.pdf application/pdf none
+          case_of two_column.pdf application/pdf none --expect-layout
+          case_of rich.docx application/vnd.openxmlformats-officedocument.wordprocessingml.document none --expect-layout
+          case_of garbled.pdf application/pdf all
+          case_of ocr_layer.pdf application/pdf all
+
+      # ── The services: digital-convert `-api`, then ocr-postprocess `-api` ─────────
+      # What AMČR's Temporal activities call. Through the two services:
+      #   * the seed survives into the record, and each response's `paradata` is a valid
+      #     CreateAction naming its inputs and outputs by distribution name and SHA-512;
+      #   * garbled.pdf comes back routed to the ATR, and /build_record refuses it alone (422
+      #     `needs_atr`);
+      #   * a seed whose sha512 is not the file's is 422 `source_digest_mismatch`.
+      # A missing `-api` image is a warning: it reaches `:latest` only via a release.
+      - name: The services - /reformat, then /build_record
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+          for image in "${API_IMAGE}:${IMAGE_TAG}" "${OCR_API_IMAGE}:${IMAGE_TAG}"; do
+            if ! docker pull "$image"; then
+              echo "::warning::$image is not published yet (no release or test push at this tag); the service case is skipped."
+              echo "**Skipped:** $image is not published yet; the service case is skipped." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
           done
-          curl -fsS http://localhost:8080/ready && echo
-          mkdir -p work/api
+          DC=$(docker run -d -e PORT=8080 -p 8080:8080 "${API_IMAGE}:${IMAGE_TAG}")
+          OCR=$(docker run -d -e PORT=8081 -p 8081:8081 -e HF_TOKEN \
+            -v "$GITHUB_WORKSPACE/hf-cache:/cache/huggingface" "${OCR_API_IMAGE}:${IMAGE_TAG}")
+          cleanup() {
+            local container
+            for container in "$DC" "$OCR"; do
+              docker logs "$container" 2>&1 | tail -30
+              docker rm -f "$container" >/dev/null 2>&1
+            done
+          }
+          trap cleanup EXIT
+          for port in 8080 8081; do
+            for _ in $(seq 1 300); do
+              if curl -fsS "http://localhost:$port/ready" >/dev/null 2>&1; then break; fi
+              sleep 2
+            done
+            curl -fsS "http://localhost:$port/ready" && echo
+          done
 
           reformat() {  # $1 = response file, $2 = fixture, then extra -F parts; prints the HTTP status
             local out="$1" fixture="$2"
@@ -402,46 +286,62 @@ jobs:
             curl -sS -o "$out" -w '%{http_code}' -X POST http://localhost:8080/reformat \
               -F "file=@${fixture};type=application/pdf" "$@"
           }
-          record_of() {  # $1 = 200 response file, $2 = where its record goes
-            python -c 'import json, sys; json.dump(json.load(open(sys.argv[1], encoding="utf-8"))["document_json"], open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False)' "$1" "$2"
+          build() {  # $1 = response file, $2 = docproc, then extra -F parts; prints the HTTP status
+            local out="$1" docproc="$2"
+            shift 2
+            curl -sS -o "$out" -w '%{http_code}' -X POST http://localhost:8081/build_record \
+              -F "docproc=@${docproc};type=application/json" "$@"
           }
-          expect() {  # $1 = expected status, $2 = expected reason ("" for 200), $3 = response file, $4 = status answered
+          part() {  # $1 = 200 response file, $2 = its key, $3 = where it goes
+            python -c 'import json, sys; json.dump(json.load(open(sys.argv[1], encoding="utf-8"))[sys.argv[2]], open(sys.argv[3], "w", encoding="utf-8"), ensure_ascii=False)' "$1" "$2" "$3"
+          }
+          expect() {  # $1 = expected status, $2 = expected reason or cause ("" for 200), $3 = response file, $4 = status answered
             local reason=""
-            [ -z "$2" ] || reason=$(python -c 'import json, sys; print(json.load(open(sys.argv[1], encoding="utf-8")).get("reason"))' "$3")
+            [ -z "$2" ] || reason=$(python -c 'import json, sys; b = json.load(open(sys.argv[1], encoding="utf-8")); print(b.get("cause") or b.get("reason"))' "$3")
             if [ "$4" != "$1" ] || [ "$reason" != "$2" ]; then
               echo "::error::expected $1${2:+ $2}, got $4: $(head -c 800 "$3")"
               exit 1
             fi
             echo "✅ $3: $1${2:+ $2}"
           }
-
-          # The seeded happy path: the record, then the run's CreateAction against its stamps.
-          code=$(reformat work/api/minimal.json work/digital_in/minimal.pdf \
-            -F "document_json=@work/doc_json/minimal.seed.json;type=application/json")
-          expect 200 "" work/api/minimal.json "$code"
-          record_of work/api/minimal.json work/doc_json/api_minimal.seeded.document.json
-          python tools/e2e/e2e_assert.py work/doc_json/api_minimal.seeded.document.json \
-            --llm-stage-ran false --seed work/doc_json/minimal.seed.json
-          PYTHONPATH=docs/templates/shared python - <<'PY'
+          actions() {  # each response's CreateAction meets the shared contract; $@ = response files
+            PYTHONPATH=docs/templates/shared python - "$@" <<'PY'
           import json
+          import sys
 
           from atrium_rocrate import action_problems
 
-          body = json.load(open("work/api/minimal.json", encoding="utf-8"))
-          action, stamps = body.get("paradata"), body["document_json"]["assembled"]["blocks"]
-          problems = action_problems(action)
-          assert not problems, f"the response's CreateAction: {problems}"
-          ours = {name: stamp.get("run_uuid") for name, stamp in stamps.items() if stamp.get("program") == "digital-convert"}
-          assert ours and set(ours.values()) == {action["@id"]}, f"stamps {ours} vs the action {action['@id']}"
-          print(f"✅ paradata {action['@id']} = the run_uuid of {sorted(ours)}")
+          for path in sys.argv[1:]:
+              action = json.load(open(path, encoding="utf-8")).get("paradata")
+              problems = action_problems(action)
+              assert not problems, f"{path}: the response's CreateAction: {problems}"
+              names = sorted({e.get("name") for e in action.get("result") or []})
+              print(f"✅ {path}: CreateAction {action['@id']} writes {names}")
           PY
+          }
+          SCHEMA=work/digital-convert-src/schemas/docproc/document.atrium-proposal.schema.json
 
-          # The needs_ocr hand-off, with the text_layer verdict (e2e_assert checks the two agree).
+          # The seeded happy path: docproc, then the record built from it and the same seed.
+          code=$(reformat work/api/minimal.json work/digital_in/minimal.pdf \
+            -F "document_json=@work/doc_json/minimal.seed.json;type=application/json")
+          expect 200 "" work/api/minimal.json "$code"
+          part work/api/minimal.json docproc work/api/minimal.docproc.json
+          python tools/e2e/docproc_assert.py work/api/minimal.docproc.json --schema "$SCHEMA" --expect-atr-pages none
+          code=$(build work/api/minimal.record.json work/api/minimal.docproc.json \
+            -F "document_json=@work/doc_json/minimal.seed.json;type=application/json")
+          expect 200 "" work/api/minimal.record.json "$code"
+          part work/api/minimal.record.json document_json work/api/minimal.document.json
+          python tools/e2e/e2e_assert.py work/api/minimal.document.json \
+            --llm-stage-ran false --seed work/doc_json/minimal.seed.json --require-current-major
+          actions work/api/minimal.json work/api/minimal.record.json
+
+          # A page for the ATR: routed so, and not built alone.
           code=$(reformat work/api/garbled.json work/digital_in/garbled.pdf)
           expect 200 "" work/api/garbled.json "$code"
-          record_of work/api/garbled.json work/doc_json/api_garbled.document.json
-          python tools/e2e/e2e_assert.py work/doc_json/api_garbled.document.json \
-            --llm-stage-ran false --expect-needs-ocr
+          part work/api/garbled.json docproc work/api/garbled.docproc.json
+          python tools/e2e/docproc_assert.py work/api/garbled.docproc.json --schema "$SCHEMA" --expect-atr-pages all
+          code=$(build work/api/garbled.record.json work/api/garbled.docproc.json -F doc_id=AMCR-F-garbled)
+          expect 422 needs_atr work/api/garbled.record.json "$code"
 
           # A seed whose sha512 is not the file's digest.
           python - <<'PY'
@@ -456,12 +356,6 @@ jobs:
             -F "document_json=@work/api/wrong_digest.seed.json;type=application/json")
           expect 422 source_digest_mismatch work/api/wrong_digest.json "$code"
 
-          # A prior OCR layer: refused, so the route sends the document to OCR.
-          if [ "$OCR_LAYER_CASE" = true ]; then
-            code=$(reformat work/api/ocr_layer.json work/digital_in/ocr_layer.pdf)
-            expect 422 ocr_text_layer work/api/ocr_layer.json "$code"
-          fi
-
       # atrium-project#81 (policy rule 8) and #77: which build of each image ran, by digest.
       - name: Record the images of this run
         if: always()
@@ -471,6 +365,8 @@ jobs:
           python3 tools/e2e/e2e_manifest.py --lane digital --tag "$IMAGE_TAG" --status "$JOB_STATUS" \
             --image "${DIGITAL_IMAGE}:${IMAGE_TAG}" \
             --image "${API_IMAGE}:${IMAGE_TAG}" \
+            --image "${OCR_IMAGE}:${IMAGE_TAG}" \
+            --image "${OCR_API_IMAGE}:${IMAGE_TAG}" \
             --out work/e2e-manifest.json --summary "$GITHUB_STEP_SUMMARY"
 
       - name: Upload the image manifest
@@ -481,38 +377,16 @@ jobs:
           path: work/e2e-manifest.json
           if-no-files-found: warn
 
-      - name: Upload records on failure
+      - name: Upload the outputs on failure
         if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-digital-outputs
           path: |
+            work/docproc/*.json
+            work/records/
             work/doc_json/*.json
             work/api/*.json
+            work/paradata/
             work/digital_in/MANIFEST.json
           if-no-files-found: warn
-
-      # One open issue per ongoing breakage, through the shared action every scheduled lane uses
-      # (atrium-project#81); the legacy marker still finds an issue this step opened before.
-      - name: Open or update the lane's issue on scheduled failure
-        if: failure() && github.event_name == 'schedule'
-        uses: ./.github/actions/lane-failure-issue
-        with:
-          lane: e2e-digital-smoke
-          title: E2E digital-born smoke failed
-          labels: ci,pipeline
-          legacy-marker: "<!-- atrium:e2e-digital-smoke-failure -->"
-          body: |
-            Image tag exercised: `${{ env.IMAGE_TAG || 'latest' }}`
-
-            Where to look first:
-            - `MISSING` in the preflight step means the image was never published, not
-              that credentials are wrong. `-digital` reaches `:latest` only via a
-              digital-convert release tag, and `:test` only from a `test` push.
-            - A sha256 mismatch in the fixture step means `make_fixtures.py` changed its
-              output; the generator is the contract, so re-pin the manifest deliberately.
-            - A failure on the `--expect-needs-ocr` case means decode-sanity stopped
-              flagging the garbled fixture. That gate going quiet is worse than it going
-              red: it is the §1a arbitration becoming untested.
-            - A schema failure names the owning repo per block; `:latest` only moves on a
-              version tag, so a fix on `test` cannot green a `latest` run.
