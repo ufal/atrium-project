@@ -299,6 +299,10 @@ translating ALTO full text, could not reach LINDAT. Round 6 (local, delivered as
   release: compatible at v2.0.0-beta.
 - **Order:** this hub PR first, then `v1` and the pins again; ocr-postprocess#11; digital-convert's reader pin to
   ocr's merge commit, then #10 and the other four; a dispatch of both lanes on `:test`; the releases.
+- **#87 (11-14, evening):** pushed; one test red, ocr-postprocess's image declaration (cause B). ocr#11 holds the
+  declaration but waits on #87 for its drift check, so neither could merge first. Hub Self-Check now reads a PR
+  label `siblings:<branch>` and checks the tools out at that branch where they have it (`docs/ci_policy.md`).
+  #87 gets `siblings:doc-schema-v2`; the order above stands, and the label goes once the tools have merged.
 
 ## Proof gate (D12)
 
@@ -384,3 +388,4 @@ exists and `doc-schema-v1` (`544298b`) is untouched.
   points 1–3.
 - **11-14:** round 4 pushed; the seven PRs opened; round 5 (see Status — PRs).
 - **11-14 (afternoon):** #86 merged, `v1` moved, the tools pinned; round 6 (see Status — round 6).
+- **11-14 (evening):** #87 opened; the `siblings:` label for Hub Self-Check (see Status — round 6).

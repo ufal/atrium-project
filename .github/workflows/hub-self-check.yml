@@ -61,6 +61,8 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      # The PR's labels, read by the step that picks the tools' branch.
+      pull-requests: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -74,13 +76,65 @@ jobs:
       # the oasdiff version their release workflows install) and skipped without them. Their
       # `test` heads: a hub change the tools have not followed yet fails here, which is the sign
       # not to move `v1` yet.
-      - name: Check out the six tool repositories beside the hub (their test heads)
+      #
+      # A hub PR that the tool PRs follow (a schema change landing in all seven) cannot pass
+      # against the `test` heads before those PRs merge, and they cannot merge before it: their
+      # drift check reads the hub at `v1` (atrium-project#87). Label such a hub PR
+      # `siblings:<branch>`: the tools are cloned at that branch where they have it, at `test`
+      # where not. The label is read when the job runs, so re-run the job after adding it, and
+      # remove it once the tool PRs have merged. Pushes, the weekly run and dispatch clone `test`.
+      - name: Choose the tool repositories' branch (a PR's siblings label)
+        id: siblings
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          # From the API, not the event payload: a re-run reuses the payload of the run it
+          # repeats, which predates a label added since.
+          labels=$(gh api "repos/${REPO}/pulls/${PR}" --jq '.labels[].name')
+          picked=()
+          while IFS= read -r label; do
+            case "${label}" in siblings:*) picked+=("${label#siblings:}") ;; esac
+          done <<< "${labels}"
+          if [ "${#picked[@]}" -gt 1 ]; then
+            echo "::error::this PR has ${#picked[@]} siblings: labels; keep one"
+            exit 1
+          fi
+          branch="test"
+          if [ "${#picked[@]}" -eq 1 ]; then
+            branch="${picked[0]}"
+            if ! [[ "${branch}" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ ]]; then
+              echo "::error::the siblings: label on this PR does not name a branch"
+              exit 1
+            fi
+          fi
+          echo "branch=${branch}" >> "${GITHUB_OUTPUT}"
+
+      - name: Check out the six tool repositories beside the hub (their test heads, or the labelled branch)
         working-directory: ..
+        env:
+          WANTED: ${{ steps.siblings.outputs.branch || 'test' }}
         run: |
           set -euo pipefail
           for repo in atrium-page-classification atrium-ocr-postprocess atrium-digital-convert \
                       atrium-nlp-enrich atrium-keyword-extract atrium-translator; do
-            git clone --quiet --depth 1 --branch test "https://github.com/ufal/${repo}.git" "${repo}"
+            url="https://github.com/ufal/${repo}.git"
+            branch="test"
+            if [ "${WANTED}" != test ]; then
+              # 2: the repository has no such branch, so `test`; anything else is a failure.
+              found=0
+              git ls-remote --quiet --exit-code --heads "${url}" "refs/heads/${WANTED}" > /dev/null || found=$?
+              case "${found}" in
+                0) branch="${WANTED}" ;;
+                2) ;;
+                *) exit "${found}" ;;
+              esac
+            fi
+            git clone --quiet --depth 1 --branch "${branch}" "${url}" "${repo}"
+            echo "::notice title=${repo}::checked out at ${branch} ($(git -C "${repo}" rev-parse --short HEAD))"
           done
 
       - name: Set up Python

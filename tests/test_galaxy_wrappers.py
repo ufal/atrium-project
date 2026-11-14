@@ -153,7 +153,8 @@ def _citation_version(repo: Path) -> str | None:
 def test_the_pinned_release_is_in_the_tool_repository(rel):
     """Checked where the tool repository is checked out beside the hub (as tools/docs_check.py expects).
 
-    Hub Self-Check checks the tool repositories out at their `test` heads. The hub commit that moves a
+    Hub Self-Check checks the tool repositories out at their `test` heads (on a PR labelled
+    `siblings:<branch>`, at that branch where a tool has it). The hub commit that moves a
     pin is often pushed first, because the tools' pin sweep needs it on GitHub; on 2026-11-05 and
     11-06 the check went red for that alone. So a tool repository still at an OLDER version than the
     pin is reported as a skip, with the reason; at the pinned version or later, the release history

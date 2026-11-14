@@ -3947,3 +3947,16 @@ candidates are six `.3` releases carrying #6's step 1.
     LINDAT;
   * the scanned chain's record crate, through roc-validator.
 * **Not posted; not pushed.**
+
+## 2026-11-14 (evening) — #87: Hub Self-Check against the tool PRs
+
+* **Asked (K4TEL):** fix #87's failing check before the squash merge.
+* **Found:** one test red, ocr-postprocess's image declaration. Hub Self-Check clones the tools' `test` heads, and the
+  declaration is in ocr-postprocess#11, which needs #87 merged for its drift check.
+* **Decided in session:** a PR label picks the tools' branch.
+* **Written here (not pushed):** `.github/workflows/hub-self-check.yml` (a PR labelled `siblings:<branch>` has each
+  tool cloned at that branch where it exists, else `test`; the labels are read at run time, so a re-run sees a new
+  one), `docs/ci_policy.md`, the docstring of `tests/test_galaxy_wrappers.py`; `plans/doc-schema-v2.plan.md`.
+* **Checked:** workflow lint, shellcheck, the label step on stubbed labels and the clone fallback; the hub tests
+  with the six tools at their `doc-schema-v2` heads.
+* **Not posted; not pushed.**
