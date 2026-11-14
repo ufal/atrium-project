@@ -79,7 +79,7 @@ jobs:
       #
       # A hub PR that the tool PRs follow (a schema change landing in all seven) cannot pass
       # against the `test` heads before those PRs merge, and they cannot merge before it: their
-      # drift check reads the hub at `v1` (atrium-project#87). Label such a hub PR
+      # drift check reads the hub at `v1` (atrium-project#87). Label such hub PRs
       # `siblings:<branch>`: the tools are cloned at that branch where they have it, at `test`
       # where not. The label is read when the job runs, so re-run the job after adding it, and
       # remove it once the tool PRs have merged. Pushes, the weekly run and dispatch clone `test`.
