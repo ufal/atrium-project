@@ -3960,3 +3960,22 @@ candidates are six `.3` releases carrying #6's step 1.
 * **Checked:** workflow lint, shellcheck, the label step on stubbed labels and the clone fallback; the hub tests
   with the six tools at their `doc-schema-v2` heads.
 * **Not posted; not pushed.**
+
+## 2026-11-15 — atrium-digital-convert#9 in the hub: the E2E cases, the docs, Q9 answered
+
+* **Asked (K4TEL):** adapt the other repositories to digital-convert#9 (office documents as native text on rendered
+  pages; TXT, CSV, TSV and JSON extracted as they are).
+* **Written here (not pushed):**
+  * `.github/workflows/e2e-digital-smoke.yml`: four CLI cases:
+    * `scan_page.docx` (page 2 alone to the ATR, no record alone);
+    * `photo_text.docx` (no ATR, `--expect-layout`);
+    * `sample.csv`, `sample.txt` (textual, `origin: digital`).
+
+    A case's work name now carries the extension (`sample-csv`), since the textual fixtures share a stem.
+  * `docs/k8s_deployment.md`: LibreOffice renders office documents; `RENDER_TEXT_COVERAGE` and `MAX_LINE_CHARS`.
+  * `docs_site/workflows/digital-convert.md`: the inputs and the two workflows, step 1, LibreOffice listed.
+  * `plans/doc-schema-v2.plan.md`: the status, Q9 answered, Q17–Q20 for the next meeting.
+* **Checked:** the lane's CLI cases replayed without Docker on the local tools (digital-convert `a564646` and
+  ocr-postprocess with the new formats), with a stand-in classifier: all eight pass. Also the hub tests.
+* **Order:** ocr-postprocess, then digital-convert, then this hub change with `siblings:<branch>`.
+* **Not posted; not pushed.**

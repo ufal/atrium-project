@@ -191,16 +191,22 @@ jobs:
       # builds and scores the record → e2e_assert.py at schema 2.x. A fixture whose pages go to the
       # ATR (garbled text layer, earlier OCR layer) is routed so and nothing refused; building the
       # record from that docproc alone fails (`needs_atr`) and writes nothing (D13), until H6.
+      # atrium-digital-convert#9: an office document is its native text on the pages of its
+      # LibreOffice rendering, so scan_page.docx sends its picture page (2) alone to the ATR and
+      # photo_text.docx none; sample.csv and sample.txt take the textual workflow (no geometry,
+      # never the ATR) and need ocr-postprocess with their `sourceFormat`s as born-digital.
       - name: Born-digital cases - docproc, then the record
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           set -euo pipefail
           SCHEMA=work/digital-convert-src/schemas/docproc/document.atrium-proposal.schema.json
-          case_of() {  # $1 = fixture, $2 = media type, $3 = pages routed to the ATR (none/all), then e2e_assert flags
+          case_of() {  # $1 = fixture, $2 = media type, $3 = pages routed to the ATR (none/all/a list), then e2e_assert flags
             local fixture="$1" media="$2" atr="$3"
             shift 3
-            local name="${fixture%.*}" doc="AMCR-F-${fixture%.*}"
+            # the extension too: the textual fixtures share a stem (sample.csv, sample.txt)
+            local name="${fixture%.*}-${fixture##*.}"
+            local doc="AMCR-F-${name}"
             echo "::group::${fixture}"
             mkdir -p "work/records/$name" "work/paradata/dc_$name" "work/paradata/ocr_$name"
             chmod a+rwX "work/records/$name" "work/paradata/dc_$name" "work/paradata/ocr_$name"
@@ -240,6 +246,10 @@ jobs:
           case_of rich.docx application/vnd.openxmlformats-officedocument.wordprocessingml.document none --expect-layout
           case_of garbled.pdf application/pdf all
           case_of ocr_layer.pdf application/pdf all
+          case_of scan_page.docx application/vnd.openxmlformats-officedocument.wordprocessingml.document 2
+          case_of photo_text.docx application/vnd.openxmlformats-officedocument.wordprocessingml.document none --expect-layout
+          case_of sample.csv text/csv none
+          case_of sample.txt text/plain none
 
       # ── The services: digital-convert `-api`, then ocr-postprocess `-api` ─────────
       # What AMČR's Temporal activities call. Through the two services:

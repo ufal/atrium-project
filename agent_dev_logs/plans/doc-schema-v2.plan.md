@@ -12,6 +12,16 @@
 > on ARÚP's output contract of 12 November; written **2026-11-11** before the issue existed (one record built by
 > every tool, one `run_uuid` per block, ALTO from the ATR, the D14 merge by decode verdict; superseded)._
 
+**Status (2026-11-15)**: 🟡 **digital-convert#9 done locally (not pushed):
+- office documents are read as native text on the pages of their LibreOffice rendering, which closes "the DOCX
+  rendering";
+- TXT, CSV, TSV and JSON are extracted into a docproc without geometry, which answers Q9;
+- ocr-postprocess builds those as `origin: digital`;
+- this hub's digital E2E lane gains four cases.
+
+Left: H6 (Q15), the coordinates (ask 10), Q6, Q17–Q20, the cluster run, then the tag. PR order: ocr-postprocess,
+then digital-convert, then the hub with `siblings:<branch>`.**
+
 **Status (2026-11-14, afternoon)**: 🟡 **#86 is merged (`2f6c82f`, also on `main`), `v1` moved to it and the six
 tools are pinned to it. Round 6 completes the code that needs no outside answer: the E2E lanes on the docproc
 route (task 7), rule 5's mark (`lines[].unit`, Q16), rules 4 and 5 in ocr-postprocess, no object sampling in
@@ -331,6 +341,9 @@ New, for the next meeting (not posted):
   files only. Out of the pipeline, or a docproc with no geometry? _(11-13: in the pipeline, without the visual
   steps, straight to scoring — [digital-convert#9](https://github.com/ufal/atrium-digital-convert/issues/9#issuecomment-6838301982)
   point 4; still open: whether digital-convert writes them a docproc without geometry or ocr-postprocess reads them)_
+  _(11-14, answered by K4TEL: digital-convert extracts TXT, CSV, TSV and JSON as they are, every CSV column and every
+  JSON string, into a docproc without geometry (`sourceFormat` `txt`, `csv`, `tsv`, `json`); spreadsheets join
+  them in the textual workflow, never routed to the ATR. ocr-postprocess reads the four as born-digital.)_
 - **Q10** — digital-convert's line-level docproc for a mixed document is not stored (H14): is its SHA-512 in the
   record builder's `object`, marked, enough to reproduce the merge, or does the ATR's docproc carry the kept lines?
 - **Q11** — AMČR's distribution name for the original file. The tools name it `original` (one constant each) until
@@ -352,6 +365,20 @@ New, for the next meeting (not posted):
   and kept out of the page score and `quality_summary.lines.by_categ` (counted as `block_units`). The name is
   proposed by this implementation. Until the ATR keeps a line break per visual line (ask 7), a one-line heading
   cannot be told from a paragraph that lost its breaks, so both are marked.
+
+New from [digital-convert#9](https://github.com/ufal/atrium-digital-convert/issues/9) (11-15, for the next meeting,
+not posted):
+
+- **Q17** — The rendered PDF of an office document. Its text is the document's own, placed on the pages of a
+  LibreOffice rendering, so the docproc's page numbers and boxes are that PDF's. The ATR and page-classification must
+  read that PDF, not the DOCX, for a page that needs the ATR (H2, D28). It is not stored; the paradata name it by
+  SHA-512 with `stored: false` (D23), and a rerun with the same image gives the same digest. Is that enough, or is it
+  stored? AMČR's distribution name for it? The tools say `rendered-pdf` until AMČR names it.
+- **Q18** — `sourceFormat` `txt`, `csv`, `tsv`, `json` in the docproc schema: an addition to ask 13, for Ronald.
+- **Q19** — The record of a text-only input is `origin: digital`, `text_source: text-layer` (the file's own text):
+  agreed?
+- **Q20** — A textual input's line over 1000 characters (`MAX_LINE_CHARS`) is wrapped at a word boundary and the
+  wrap recorded as a `split` in the paradata `limits` (D13), as ocr-postprocess's own text path does. Agreed?
 
 ## Reply on #84 (posted 11-12)
 
