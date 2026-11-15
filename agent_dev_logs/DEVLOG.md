@@ -3960,3 +3960,47 @@ candidates are six `.3` releases carrying #6's step 1.
 * **Checked:** workflow lint, shellcheck, the label step on stubbed labels and the clone fallback; the hub tests
   with the six tools at their `doc-schema-v2` heads.
 * **Not posted; not pushed.**
+
+## 2026-11-15 — atrium-digital-convert#9 in the hub: the E2E cases, the docs, Q9 answered
+
+* **Asked (K4TEL):** adapt the other repositories to digital-convert#9 (office documents as native text on rendered
+  pages; TXT, CSV, TSV and JSON extracted as they are).
+* **Written here (not pushed):**
+  * `.github/workflows/e2e-digital-smoke.yml`: four CLI cases:
+    * `scan_page.docx` (page 2 alone to the ATR, no record alone);
+    * `photo_text.docx` (no ATR, `--expect-layout`);
+    * `sample.csv`, `sample.txt` (textual, `origin: digital`).
+
+    A case's work name now carries the extension (`sample-csv`), since the textual fixtures share a stem.
+  * `docs/k8s_deployment.md`: LibreOffice renders office documents; `RENDER_TEXT_COVERAGE` and `MAX_LINE_CHARS`.
+  * `docs_site/workflows/digital-convert.md`: the inputs and the two workflows, step 1, LibreOffice listed.
+  * `plans/doc-schema-v2.plan.md`: the status, Q9 answered, Q17–Q20 for the next meeting.
+* **Checked:** the lane's CLI cases replayed without Docker on the local tools (digital-convert `a564646` and
+  ocr-postprocess with the new formats), with a stand-in classifier: all eight pass. Also the hub tests.
+* **Order:** ocr-postprocess, then digital-convert, then this hub change with `siblings:<branch>`.
+* **Not posted; not pushed.**
+
+## 2026-11-15 — #88 round 2: the checks of the multiformat PRs
+
+* **Asked (K4TEL):** read the checks of the `multiformat` PRs and make the next round.
+* **Found:**
+  * #88's shared-module tests were red. Table B names digital-convert's new limits, while the self-check cloned it
+    at `test`; the cure is the label `siblings:multiformat`.
+  * ocr-postprocess#12 lacked a fixture, since committed.
+  * digital-convert#11's rendering test compared PDF bytes, which differ on the Ubuntu runner.
+  * Not caught by any check: round 1 renamed the digital lane's work files to `<stem>-<ext>`, but its service step
+    still read `minimal.seed.json`.
+* **Written here (not pushed):**
+  * `.github/workflows/e2e-digital-smoke.yml`: the seed path in the service step; `reformat()` takes the part's
+    media type (`MEDIA`);
+  * two service cases:
+    * `scan_page.docx`: `rendered_pdf` hashes to its SHA-512, the paradata name it so and not stored, and
+      `/build_record` answers 422;
+    * `sample.csv`: built, `origin: digital`;
+  * `plans/doc-schema-v2.plan.md`: the status and Q17's wording.
+* **Checked:**
+  * both steps of the lane replayed without Docker, on the round-2 tools: the CLI cases, then the services on
+    uvicorn with a stand-in scorer;
+  * actionlint and shellcheck;
+  * the hub tests.
+* **Not posted; not pushed.**

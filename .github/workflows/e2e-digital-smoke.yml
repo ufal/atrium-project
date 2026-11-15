@@ -191,16 +191,22 @@ jobs:
       # builds and scores the record → e2e_assert.py at schema 2.x. A fixture whose pages go to the
       # ATR (garbled text layer, earlier OCR layer) is routed so and nothing refused; building the
       # record from that docproc alone fails (`needs_atr`) and writes nothing (D13), until H6.
+      # atrium-digital-convert#9: an office document is its native text on the pages of its
+      # LibreOffice rendering, so scan_page.docx sends its picture page (2) alone to the ATR and
+      # photo_text.docx none; sample.csv and sample.txt take the textual workflow (no geometry,
+      # never the ATR) and need ocr-postprocess with their `sourceFormat`s as born-digital.
       - name: Born-digital cases - docproc, then the record
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           set -euo pipefail
           SCHEMA=work/digital-convert-src/schemas/docproc/document.atrium-proposal.schema.json
-          case_of() {  # $1 = fixture, $2 = media type, $3 = pages routed to the ATR (none/all), then e2e_assert flags
+          case_of() {  # $1 = fixture, $2 = media type, $3 = pages routed to the ATR (none/all/a list), then e2e_assert flags
             local fixture="$1" media="$2" atr="$3"
             shift 3
-            local name="${fixture%.*}" doc="AMCR-F-${fixture%.*}"
+            # the extension too: the textual fixtures share a stem (sample.csv, sample.txt)
+            local name="${fixture%.*}-${fixture##*.}"
+            local doc="AMCR-F-${name}"
             echo "::group::${fixture}"
             mkdir -p "work/records/$name" "work/paradata/dc_$name" "work/paradata/ocr_$name"
             chmod a+rwX "work/records/$name" "work/paradata/dc_$name" "work/paradata/ocr_$name"
@@ -240,6 +246,10 @@ jobs:
           case_of rich.docx application/vnd.openxmlformats-officedocument.wordprocessingml.document none --expect-layout
           case_of garbled.pdf application/pdf all
           case_of ocr_layer.pdf application/pdf all
+          case_of scan_page.docx application/vnd.openxmlformats-officedocument.wordprocessingml.document 2
+          case_of photo_text.docx application/vnd.openxmlformats-officedocument.wordprocessingml.document none --expect-layout
+          case_of sample.csv text/csv none
+          case_of sample.txt text/plain none
 
       # ── The services: digital-convert `-api`, then ocr-postprocess `-api` ─────────
       # What AMČR's Temporal activities call. Through the two services:
@@ -247,6 +257,10 @@ jobs:
       #     CreateAction naming its inputs and outputs by distribution name and SHA-512;
       #   * garbled.pdf comes back routed to the ATR, and /build_record refuses it alone (422
       #     `needs_atr`);
+      #   * scan_page.docx (atrium-digital-convert#9) comes back with its picture page routed to the
+      #     ATR and the rendered PDF the visual steps read (`rendered_pdf`), named in the paradata by
+      #     the same SHA-512 and not stored; /build_record refuses it alone;
+      #   * sample.csv, a text-only input, is built into a born-digital record;
       #   * a seed whose sha512 is not the file's is 422 `source_digest_mismatch`.
       # A missing `-api` image is a warning: it reaches `:latest` only via a release.
       - name: The services - /reformat, then /build_record
@@ -281,10 +295,11 @@ jobs:
           done
 
           reformat() {  # $1 = response file, $2 = fixture, then extra -F parts; prints the HTTP status
+            # The part's media type is MEDIA (default application/pdf); the service decides by content.
             local out="$1" fixture="$2"
             shift 2
             curl -sS -o "$out" -w '%{http_code}' -X POST http://localhost:8080/reformat \
-              -F "file=@${fixture};type=application/pdf" "$@"
+              -F "file=@${fixture};type=${MEDIA:-application/pdf}" "$@"
           }
           build() {  # $1 = response file, $2 = docproc, then extra -F parts; prints the HTTP status
             local out="$1" docproc="$2"
@@ -323,16 +338,16 @@ jobs:
 
           # The seeded happy path: docproc, then the record built from it and the same seed.
           code=$(reformat work/api/minimal.json work/digital_in/minimal.pdf \
-            -F "document_json=@work/doc_json/minimal.seed.json;type=application/json")
+            -F "document_json=@work/doc_json/minimal-pdf.seed.json;type=application/json")
           expect 200 "" work/api/minimal.json "$code"
           part work/api/minimal.json docproc work/api/minimal.docproc.json
           python tools/e2e/docproc_assert.py work/api/minimal.docproc.json --schema "$SCHEMA" --expect-atr-pages none
           code=$(build work/api/minimal.record.json work/api/minimal.docproc.json \
-            -F "document_json=@work/doc_json/minimal.seed.json;type=application/json")
+            -F "document_json=@work/doc_json/minimal-pdf.seed.json;type=application/json")
           expect 200 "" work/api/minimal.record.json "$code"
           part work/api/minimal.record.json document_json work/api/minimal.document.json
           python tools/e2e/e2e_assert.py work/api/minimal.document.json \
-            --llm-stage-ran false --seed work/doc_json/minimal.seed.json --require-current-major
+            --llm-stage-ran false --seed work/doc_json/minimal-pdf.seed.json --require-current-major
           actions work/api/minimal.json work/api/minimal.record.json
 
           # A page for the ATR: routed so, and not built alone.
@@ -343,11 +358,58 @@ jobs:
           code=$(build work/api/garbled.record.json work/api/garbled.docproc.json -F doc_id=AMCR-F-garbled)
           expect 422 needs_atr work/api/garbled.record.json "$code"
 
+          # An office document (atrium-digital-convert#9): its native text on the pages of its
+          # LibreOffice rendering. The picture page goes to the ATR, so the rendered PDF comes back:
+          # the bytes the visual steps read, named by the same SHA-512 in the paradata, not stored.
+          code=$(MEDIA=application/vnd.openxmlformats-officedocument.wordprocessingml.document \
+            reformat work/api/scan_page.json work/digital_in/scan_page.docx \
+            -F "document_json=@work/doc_json/scan_page-docx.seed.json;type=application/json")
+          expect 200 "" work/api/scan_page.json "$code"
+          part work/api/scan_page.json docproc work/api/scan_page.docproc.json
+          python tools/e2e/docproc_assert.py work/api/scan_page.docproc.json --schema "$SCHEMA" --expect-atr-pages 2
+          python - work/api/scan_page.json <<'PY'
+          import base64
+          import hashlib
+          import json
+          import sys
+
+          body = json.load(open(sys.argv[1], encoding="utf-8"))
+          rendered = body.get("rendered_pdf")
+          assert rendered, "a page needs the ATR: /reformat must hand over the rendered PDF"
+          data = base64.b64decode(rendered["data"])
+          assert data.startswith(b"%PDF"), "rendered_pdf is not a PDF"
+          digest = hashlib.sha512(data).hexdigest()
+          assert digest == rendered["sha512"], "rendered_pdf.sha512 is not the digest of its bytes"
+          named = [r for r in body["paradata"]["result"] if r.get("sha512") == digest]
+          assert named, "the paradata do not name the rendered PDF by its SHA-512"
+          assert all(r.get("stored") is False for r in named), "the rendered PDF is not stored (D23)"
+          print(f"✅ scan_page.docx: rendered PDF handed over ({len(data)} bytes), named {named[0]['name']}, not stored")
+          PY
+          code=$(build work/api/scan_page.record.json work/api/scan_page.docproc.json -F doc_id=AMCR-F-scan_page-docx)
+          expect 422 needs_atr work/api/scan_page.record.json "$code"
+          actions work/api/scan_page.json
+
+          # A text-only input (atrium-digital-convert#9): extracted as it is, no geometry, no ATR,
+          # and built into a born-digital record.
+          code=$(MEDIA=text/csv reformat work/api/sample_csv.json work/digital_in/sample.csv \
+            -F "document_json=@work/doc_json/sample-csv.seed.json;type=application/json")
+          expect 200 "" work/api/sample_csv.json "$code"
+          python -c 'import json, sys; b = json.load(open(sys.argv[1], encoding="utf-8")); assert "rendered_pdf" not in b, "a CSV has no rendering"' work/api/sample_csv.json
+          part work/api/sample_csv.json docproc work/api/sample_csv.docproc.json
+          python tools/e2e/docproc_assert.py work/api/sample_csv.docproc.json --schema "$SCHEMA" --expect-atr-pages none
+          code=$(build work/api/sample_csv.record.json work/api/sample_csv.docproc.json \
+            -F "document_json=@work/doc_json/sample-csv.seed.json;type=application/json")
+          expect 200 "" work/api/sample_csv.record.json "$code"
+          part work/api/sample_csv.record.json document_json work/api/sample_csv.document.json
+          python tools/e2e/e2e_assert.py work/api/sample_csv.document.json \
+            --llm-stage-ran false --seed work/doc_json/sample-csv.seed.json --require-current-major
+          actions work/api/sample_csv.json work/api/sample_csv.record.json
+
           # A seed whose sha512 is not the file's digest.
           python - <<'PY'
           import json
 
-          seed = json.load(open("work/doc_json/minimal.seed.json", encoding="utf-8"))
+          seed = json.load(open("work/doc_json/minimal-pdf.seed.json", encoding="utf-8"))
           digest = seed["source"]["sha512"]
           seed["source"]["sha512"] = ("1" if digest[0] == "0" else "0") + digest[1:]
           json.dump(seed, open("work/api/wrong_digest.seed.json", "w", encoding="utf-8"))
