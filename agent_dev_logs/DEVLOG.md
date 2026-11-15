@@ -3979,3 +3979,28 @@ candidates are six `.3` releases carrying #6's step 1.
   ocr-postprocess with the new formats), with a stand-in classifier: all eight pass. Also the hub tests.
 * **Order:** ocr-postprocess, then digital-convert, then this hub change with `siblings:<branch>`.
 * **Not posted; not pushed.**
+
+## 2026-11-15 — #88 round 2: the checks of the multiformat PRs
+
+* **Asked (K4TEL):** read the checks of the `multiformat` PRs and make the next round.
+* **Found:**
+  * #88's shared-module tests were red. Table B names digital-convert's new limits, while the self-check cloned it
+    at `test`; the cure is the label `siblings:multiformat`.
+  * ocr-postprocess#12 lacked a fixture, since committed.
+  * digital-convert#11's rendering test compared PDF bytes, which differ on the Ubuntu runner.
+  * Not caught by any check: round 1 renamed the digital lane's work files to `<stem>-<ext>`, but its service step
+    still read `minimal.seed.json`.
+* **Written here (not pushed):**
+  * `.github/workflows/e2e-digital-smoke.yml`: the seed path in the service step; `reformat()` takes the part's
+    media type (`MEDIA`);
+  * two service cases:
+    * `scan_page.docx`: `rendered_pdf` hashes to its SHA-512, the paradata name it so and not stored, and
+      `/build_record` answers 422;
+    * `sample.csv`: built, `origin: digital`;
+  * `plans/doc-schema-v2.plan.md`: the status and Q17's wording.
+* **Checked:**
+  * both steps of the lane replayed without Docker, on the round-2 tools: the CLI cases, then the services on
+    uvicorn with a stand-in scorer;
+  * actionlint and shellcheck;
+  * the hub tests.
+* **Not posted; not pushed.**

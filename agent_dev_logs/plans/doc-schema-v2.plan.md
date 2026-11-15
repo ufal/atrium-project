@@ -12,6 +12,15 @@
 > on ARÚP's output contract of 12 November; written **2026-11-11** before the issue existed (one record built by
 > every tool, one `run_uuid` per block, ALTO from the ATR, the D14 merge by decode verdict; superseded)._
 
+**Status (2026-11-15, round 2)**: 🟡 **In review as digital-convert#11, ocr-postprocess#12 and #88 (all from
+`multiformat`).
+- ocr-postprocess#12 is green since its fixture was committed.
+- #88 needs the label `siblings:multiformat` (Table B names digital-convert's new limits).
+- digital-convert#11's rendering test now checks the layout a rerun keeps, not the PDF's bytes.
+- Fixed here: the digital lane's service step read `minimal.seed.json`, which round 1 renamed
+  `minimal-pdf.seed.json`.
+- Added: service cases for `scan_page.docx` (`rendered_pdf` named in the paradata, not stored) and `sample.csv`.**
+
 **Status (2026-11-15)**: 🟡 **digital-convert#9 done locally (not pushed):
 - office documents are read as native text on the pages of their LibreOffice rendering, which closes "the DOCX
   rendering";
@@ -372,7 +381,8 @@ not posted):
 - **Q17** — The rendered PDF of an office document. Its text is the document's own, placed on the pages of a
   LibreOffice rendering, so the docproc's page numbers and boxes are that PDF's. The ATR and page-classification must
   read that PDF, not the DOCX, for a page that needs the ATR (H2, D28). It is not stored; the paradata name it by
-  SHA-512 with `stored: false` (D23), and a rerun with the same image gives the same digest. Is that enough, or is it
+  SHA-512 with `stored: false` (D23): the PDF this run handed over. A rerun keeps the layout, so the docproc, but
+  not always the PDF's bytes (the Ubuntu CI runner, 11-15). Is that enough, or is it
   stored? AMČR's distribution name for it? The tools say `rendered-pdf` until AMČR names it.
 - **Q18** — `sourceFormat` `txt`, `csv`, `tsv`, `json` in the docproc schema: an addition to ask 13, for Ronald.
 - **Q19** — The record of a text-only input is `origin: digital`, `text_source: text-layer` (the file's own text):
