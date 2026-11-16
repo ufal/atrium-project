@@ -323,6 +323,30 @@ translating ALTO full text, could not reach LINDAT. Round 6 (local, delivered as
   label `siblings:<branch>` and checks the tools out at that branch where they have it (`docs/ci_policy.md`).
   #87 gets `siblings:doc-schema-v2`; the order above stands, and the label goes once the tools have merged.
 
+## Status — round 7 (11-16)
+
+Asked (K4TEL): check the `test` heads against #84 and the contract of 12 November, and close the gaps. All seven
+`test` heads carried #86–#88 and the tool PRs; the vendored shared files had no drift. Decided in session: D28 is
+implemented now (Kate agreed point 2 of #84; Ronald's ask 10 concerns the ATR's side); blank pages by a render check;
+a merged record's `origin` is `digital` while it keeps a text-layer line; docs_site only on the two changed steps.
+
+| Repository      | Done (local)                                                                                                                                                                                                                              | Tests       |
+|-----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|
+| ocr-postprocess | H6: `docproc_merge.py`; `build_record.py --text-layer-docproc`, `/build_record` `text_layer_docproc`; digital-convert's docproc `stored: false` in `object`, `atr_pages`; `pixel_ratio`; `baseline_pages`; `/score_record` 422 on a limit | 2363 passed |
+| digital-convert | D28 at write time (`digital_ir.PageFrame`, checked against pdfium's rendering), `userUnit`; D29 blank pages; proposal asks 5 and 10; `blank_page.pdf`                                                                                     | 1029 passed |
+| nlp-enrich      | `canvas.user_unit` in the TEITOK `IMAGE_DPI` scale; README                                                                                                                                                                                | 1090 passed |
+| hub             | `atr_standin.py`; the mixed and blank cases in the digital lane; `e2e_assert.py --docproc` in both lanes; H3 on a born-digital record; H5 in `docproc_assert.py` and the stand-ins; docs                                                  | 748 passed  |
+
+- **Local chain, passed:** `scan_page.docx` → digital-convert's docproc (page 2 `needsAtr`) → `atr_standin.py` →
+  `build_record.py` with both (stand-in scorer) → `e2e_assert.py --require-current-major --expect-atr-pages
+  --expect-layout --docproc`: pages 1 and 3 keep the text layer, page 2 the ATR's OCR. Alone, the docproc is still
+  refused (`needs_atr`). `blank_page.pdf`: no ATR, page 2 `empty`. `two_column.pdf` and the scanned stand-ins pass
+  `--docproc`.
+- **Order:** digital-convert (the hub's digital lane generates its fixtures, `blank_page.pdf` included) and
+  ocr-postprocess (the lane builds the mixed record with its image), then nlp-enrich, then the hub with
+  `siblings:<branch>`; then a dispatch of both lanes on `:test`.
+- **Not done here:** the cluster run (proof gate), the PCSS converter (Q8), page labels (Q13).
+
 ## Proof gate (D12)
 
 `doc-schema-v2` is tagged only when all three hold: the validator accepts every tool's output and the migrated

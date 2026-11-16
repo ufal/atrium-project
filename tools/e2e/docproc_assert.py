@@ -7,9 +7,11 @@ built, against the hand-over rules of ARÚP's contract of 12 November 2026:
 
   * the schema: digital-convert's `schemas/docproc/document.atrium-proposal.schema.json` (#84
     comment 1's schema with asks 3 and 13), passed with `--schema` from the lane's checkout;
-  * the routing lists every page, each `text-layer`, `atr` or `empty` (H5); in digital-convert's
+  * the routing lists every page, each `text-layer`, `atr` or `empty`, and a page routed `empty` has no
+    `pages[]` entry (H5, D29); in digital-convert's
     docproc (its pages carry `needsAtr`) a page's `needsAtr` agrees with its route `atr` (H4). The ATR's
-    own docproc routes its pages `atr` and carries no `needsAtr`;
+    own docproc routes its pages `atr` and carries no `needsAtr`; its echo of the forced pages (`forced`,
+    ask 5) must name exactly the pages it was forced to read (`--expect-forced`);
   * nothing is refused (H12): a page the converter cannot use is routed to the ATR;
   * no run data and no licence anywhere in it (D1, D2): no `run_uuid`, `provenance`, `license`;
   * `--expect-atr-pages`: `none`, `all` (every page not routed `empty`), or a comma-separated list of
@@ -57,7 +59,10 @@ def _expected(spec: Optional[str], pages: List[int], empty: Set[int]) -> Optiona
 
 
 def check(
-    document: Dict[str, Any], schema: Optional[Dict[str, Any]] = None, expect_atr: Optional[str] = None
+    document: Dict[str, Any],
+    schema: Optional[Dict[str, Any]] = None,
+    expect_atr: Optional[str] = None,
+    expect_forced: Optional[str] = None,
 ) -> List[str]:
     """The failures of `document` (empty when every check holds)."""
     problems: List[str] = []
@@ -83,6 +88,8 @@ def check(
             problems.append(f"page {number} is routed {routes[number]!r}, not one of {list(ROUTES)}")
         if routes.get(number) != "empty" and number not in pages:
             problems.append(f"page {number} is routed {routes.get(number)!r} but has no pages[] entry")
+        if routes.get(number) == "empty" and number in pages:
+            problems.append(f"page {number} is routed 'empty' but has a pages[] entry (H5: an empty page has none)")
         page = pages.get(number)
         if flags_atr and page is not None and bool(page.get("needsAtr")) != (routes.get(number) == "atr"):
             problems.append(
@@ -98,6 +105,11 @@ def check(
         atr = {n for n, route in routes.items() if route == "atr"}
         if atr != wanted:
             problems.append(f"pages routed to the ATR are {sorted(atr)}, expected {sorted(wanted)}")
+    forced_wanted = _expected(expect_forced, numbers, set())
+    if forced_wanted is not None:
+        forced = {row.get("page") for row in routing if isinstance(row, dict) and row.get("forced") is True}
+        if forced != forced_wanted:
+            problems.append(f"the routing echoes forced pages {sorted(forced)}, expected {sorted(forced_wanted)} (D27)")
     return problems
 
 
@@ -110,6 +122,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         default=None,
         help="`none`, `all`, or comma-separated page numbers that must be routed to the ATR",
     )
+    parser.add_argument(
+        "--expect-forced",
+        default=None,
+        help="the ATR's docproc: `none` or comma-separated page numbers its routing must echo as forced (ask 5)",
+    )
     args = parser.parse_args(argv)
     try:
         document = json.loads(args.docproc.read_text(encoding="utf-8"))
@@ -117,7 +134,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     except (OSError, json.JSONDecodeError) as exc:
         print(f"docproc_assert: {exc}", file=sys.stderr)
         return 2
-    problems = check(document, schema, args.expect_atr_pages)
+    problems = check(document, schema, args.expect_atr_pages, args.expect_forced)
     for problem in problems:
         print(f"❌ {args.docproc.name}: {problem}")
     if problems:

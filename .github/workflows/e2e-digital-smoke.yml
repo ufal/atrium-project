@@ -232,7 +232,8 @@ jobs:
             if [ "$atr" = none ]; then
               [ "$code" -eq 0 ] || { echo "::error::${fixture}: build_record exited $code"; exit 1; }
               python tools/e2e/e2e_assert.py "work/records/$name/$doc.document.json" \
-                --llm-stage-ran false --seed "work/doc_json/$name.seed.json" --require-current-major "$@"
+                --llm-stage-ran false --seed "work/doc_json/$name.seed.json" --require-current-major \
+                --docproc "work/docproc/$name.docproc.json" "$@"
             else
               [ "$code" -eq 1 ] || { echo "::error::${fixture}: a docproc with ATR pages must not build alone (exit 1), got $code"; exit 1; }
               [ ! -e "work/records/$name/$doc.document.json" ] || { echo "::error::${fixture}: a record was written anyway"; exit 1; }
@@ -241,6 +242,7 @@ jobs:
             echo "::endgroup::"
           }
           case_of minimal.pdf application/pdf none
+          case_of blank_page.pdf application/pdf none
           case_of enrichable.pdf application/pdf none
           case_of two_column.pdf application/pdf none --expect-layout
           case_of rich.docx application/vnd.openxmlformats-officedocument.wordprocessingml.document none --expect-layout

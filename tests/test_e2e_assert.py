@@ -899,3 +899,80 @@ def test_cli_accepts_the_73_flags(tmp_path, record):
         )
         == 0
     )
+
+
+# ── the record against its stored docproc (`--docproc`; D26, D29, H6) and H3 ────────────────────
+
+
+def _stored_docproc(empty_page=None):
+    """The stored docproc `_digital_record()` was built from: the ATR's own blocks, as for a mixed
+    document (H6), with every page routed."""
+    pages = [
+        {
+            "pageNumber": 1,
+            "width": 595,
+            "height": 842,
+            "blocks": [{"id": f"p1-b{n}", "type": "text", "bbox": [0, 0, 1, 1], "readingOrder": n} for n in (1, 2, 3)],
+        },
+        {
+            "pageNumber": 2,
+            "width": 595,
+            "height": 842,
+            "blocks": [{"id": "p2-b1", "type": "text", "bbox": [0, 0, 1, 1], "readingOrder": 0}],
+        },
+    ]
+    routing = [{"page": 1, "route": "atr"}, {"page": 2, "route": "atr"}]
+    if empty_page:
+        routing.append({"page": empty_page, "route": "empty"})
+    return {"version": "1.0", "pages": pages, "metadata": {"routing": {"pages": routing}}}
+
+
+def test_a_record_that_matches_its_stored_docproc_passes(tmp_path, capsys):
+    final = _write(tmp_path, "mixed.json", _with_atr_page(_digital_record()))
+    docproc = _write(tmp_path, "mixed.atr.docproc.json", _stored_docproc())
+    e2e_assert.assert_document_contract(final, llm_stage_ran=False, expect_atr_pages=True, docproc=docproc)
+    assert "every line's block is the stored docproc's" in capsys.readouterr().out
+
+
+def test_a_line_naming_a_block_the_stored_docproc_lacks_fails(tmp_path):
+    record = _digital_record()
+    record["lines"][0]["block"] = "p1-b9"
+    final = _write(tmp_path, "rich.json", record)
+    docproc = _write(tmp_path, "rich.docproc.json", _stored_docproc())
+    with pytest.raises(AssertionError, match="block the stored docproc does not have"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=False, docproc=docproc)
+
+
+def test_a_page_routed_empty_needs_its_empty_row(tmp_path):
+    """D29: the docproc routes page 3 empty, so the record keeps a row for it; one without fails."""
+    docproc = _write(tmp_path, "rich.docproc.json", _stored_docproc(empty_page=3))
+    final = _write(tmp_path, "rich.json", _digital_record())
+    with pytest.raises(AssertionError, match="a row for every page of the original"):
+        e2e_assert.assert_document_contract(final, llm_stage_ran=False, docproc=docproc)
+    record = _digital_record()
+    record["source"]["page_count"] = 3
+    record["pages"].append({"page": "3", "page_index": 3, "content_status": "empty"})
+    final = _write(tmp_path, "rich3.json", record)
+    e2e_assert.assert_document_contract(final, llm_stage_ran=False, docproc=docproc)
+
+
+def test_page_categories_on_a_mixed_record_only_on_the_atrs_pages(tmp_path, capsys):
+    """H3: page-classification runs on the pages that need the ATR, so a born-digital record may
+    carry categories there, and never on a page whose text layer was kept."""
+    record = _with_atr_page(_digital_record())
+    record["page_categories"] = {"2": "TEXT_T"}
+    record["pages"][1].update(category="TEXT_T", category_confidence=0.9)
+    final = _write(tmp_path, "mixed.json", record)
+    e2e_assert.assert_document_contract(final, llm_stage_ran=False, expect_atr_pages=True)
+    assert "page categories on the ATR's pages only: ['2']" in capsys.readouterr().out
+    record["pages"][0].update(category="TEXT_T", category_confidence=0.9)
+    with pytest.raises(AssertionError, match="kept their text layer"):
+        e2e_assert.assert_document_contract(
+            _write(tmp_path, "wrong.json", record), llm_stage_ran=False, expect_atr_pages=True
+        )
+
+
+def test_cli_accepts_docproc(tmp_path):
+    final = _write(tmp_path, "rich.json", _digital_record())
+    docproc = _write(tmp_path, "rich.docproc.json", _stored_docproc())
+    assert e2e_assert.main([final, "--llm-stage-ran", "false", "--docproc", docproc]) == 0

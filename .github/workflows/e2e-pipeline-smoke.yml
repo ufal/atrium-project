@@ -225,6 +225,9 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          # The stand-in holds to the hand-over rules first: every page routed, an empty page with
+          # no pages[] entry (H5), no run data (D1).
+          python tools/e2e/docproc_assert.py "work/docproc/${E2E_DOC}.atr.docproc.json" --expect-atr-pages all
           ID_ARGS=(--doc-id "${E2E_DOC}")
           if [ "$E2E_SEED" = "true" ]; then
             ID_ARGS=(--seed /workspace/work/doc_json/0_seed.json)
@@ -290,6 +293,7 @@ jobs:
             --stages $STAGES \
             --teitok-dir work/nlp_out/TEITOK \
             --require-current-major \
+            --docproc "work/docproc/${E2E_DOC}.atr.docproc.json" \
             "${SEED_ARGS[@]}"
 
       # ── Keyword Extract (atrium-keyword-extract#1) ───────────────────────────────────────
@@ -373,6 +377,7 @@ jobs:
             --stages $STAGES \
             --teitok-dir work/nlp_out/TEITOK \
             --require-current-major \
+            --docproc "work/docproc/${E2E_DOC}.atr.docproc.json" \
             "${SEED_ARGS[@]}"
 
       # ── Keyword Extract, the controlled kind (atrium-keyword-extract#1, #2) ─────────────────
@@ -481,6 +486,7 @@ jobs:
             --stages $STAGES \
             --teitok-dir work/nlp_out/TEITOK \
             --require-current-major \
+            --docproc "work/docproc/${E2E_DOC}.atr.docproc.json" \
             "${SEED_ARGS[@]}"
 
       - name: Install the RO-Crate validator
