@@ -4,7 +4,7 @@
         <!-- The release of ufal/atrium-translator whose batch image this wrapper runs: the first whose
              entry point runs Galaxy's job script (v1.7.8-beta). -->
         <token name="@TOOL_VERSION@">1.7.8-beta</token>
-        <token name="@VERSION_SUFFIX@">0</token>
+        <token name="@VERSION_SUFFIX@">1</token>
         <xml name="languages">
             <option value="cs">Czech (cs)</option>
             <option value="en">English (en)</option>
@@ -56,11 +56,7 @@ python3 /app/main.py 'input/${stem}${suffix}'
         $mode.fast_align
     #else:
         --formats xml
-        #if $mode.fields.source == 'amcr':
-            --xpaths /app/amcr-fields.txt
-        #else:
-            --xpaths '$mode.fields.xpaths'
-        #end if
+        --xpaths '$mode.xpaths'
         #if $mode.xsd:
             --xsd '$mode.xsd'
             $mode.xsd_strict
@@ -96,17 +92,8 @@ mv record.json '$record'
                 <option value="alto">ALTO page: translate every text line</option>
             </param>
             <when value="metadata">
-                <conditional name="fields">
-                    <param name="source" type="select" label="Fields to translate">
-                        <option value="amcr" selected="true">The AMČR free-text fields (bundled list)</option>
-                        <option value="own">My own XPath list</option>
-                    </param>
-                    <when value="amcr"/>
-                    <when value="own">
-                        <param name="xpaths" type="data" format="txt" label="XPath list"
-                            help="One XPath per line, with the record's namespace prefixes."/>
-                    </when>
-                </conditional>
+                <param name="xpaths" type="data" format="txt" label="Fields to translate (XPath list)"
+                    help="The job's own list: one XPath per line, with the record's namespace prefixes; lines starting with # are ignored. There is no default list. AMČR's list comes from AMČR; the translator repository's amcr-fields.example.txt is a template of one, not that list."/>
                 <param name="xsd" type="data" format="xml" optional="true" label="XML schema to validate the result against"/>
                 <param name="xsd_strict" type="boolean" truevalue="--xsd-strict" falsevalue="" checked="false"
                     label="Fail when the result does not validate" help="Otherwise a warning only; the translation is still written."/>
@@ -173,9 +160,13 @@ mv record.json '$record'
         <data name="record" format="json" label="${tool.name} on ${on_string}: document record"/>
     </outputs>
     <tests>
-        <!-- An AMČR metadata record, Czech to English, with the bundled field list and vocabulary. -->
+        <!-- An AMČR metadata record, Czech to English, with the template field list and the bundled vocabulary. -->
         <test expect_num_outputs="4">
             <param name="document" value="sample_amcr.xml" ftype="xml"/>
+            <conditional name="mode">
+                <param name="kind" value="metadata"/>
+                <param name="xpaths" value="amcr-fields.example.txt" ftype="txt"/>
+            </conditional>
             <conditional name="source">
                 <param name="source_lang" value="cs"/>
             </conditional>
@@ -228,6 +219,10 @@ mv record.json '$record'
         <!-- A pair the service has no model for is refused before anything is translated: exit 1. -->
         <test expect_exit_code="1" expect_failure="true">
             <param name="document" value="sample_amcr.xml" ftype="xml"/>
+            <conditional name="mode">
+                <param name="kind" value="metadata"/>
+                <param name="xpaths" value="amcr-fields.example.txt" ftype="txt"/>
+            </conditional>
             <conditional name="source">
                 <param name="source_lang" value="de"/>
             </conditional>
@@ -247,7 +242,8 @@ release @TOOL_VERSION@, with the LINDAT translation service (CUBBITT) of ÚFAL, 
 **Input**
 
 - *A metadata record*, such as an AMČR OAI-PMH record: the fields an XPath list names are translated.
-  The bundled list holds AMČR's free-text fields.
+  The list comes with the job; there is no default. AMČR's list comes from AMČR; the translator
+  repository's ``amcr-fields.example.txt`` is a template of one, not that list.
 - *An ALTO page*, for example from OCR: every text line is translated, and the translated words are
   spread back over the lines of each block.
 

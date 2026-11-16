@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0] - 2026-11-16
+
+`ATRIUM_translate_xml` takes the fields to translate as an input, *XPath list*: the translator steps run
+`1.7.8-beta+galaxy1`, whose metadata mode needs the job's own list and no longer offers the image's
+`/app/amcr-fields.txt` as a bundled AMČR list (D34; ufal/atrium-translator#61). The other workflows are unchanged
+but for their release and, in `ATRIUM_classify_ocr_translate`, the translator's version.
+
 ## [0.2.0] - 2026-11-07
 
 Added `ATRIUM_ocr_nlp_keywords` (ALTO → OCR post-processing → NLP enrichment → keyword extraction) and
