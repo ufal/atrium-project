@@ -8,218 +8,117 @@ issue: 57
 
 # The document contract
 
-> **Pending: record schema 2.0 and paradata 3.0** ([atrium-project#84](https://github.com/ufal/atrium-project/issues/84)).
-> This page describes the 1.x record the released tools write today. On the hub's `test` branch the record
-> holds content only (no `provenance`, `assembled`, `derived_from`, `regenerable` or licence), ocr-postprocess is the one
-> writer of `pages`, `content` and `lines`, and the paradata name each input and output by distribution name and SHA-512.
-> Each tool adopts it in its own repository; see the hub's `docs/document_schema.md` and `docs/paradata_schema.md`.
+> **Record schema 2.0 and paradata 3.0** ([atrium-project#84](https://github.com/ufal/atrium-project/issues/84)),
+> on the hub's and the tools' `test` branches. It is released as `doc-schema-v2` once it has passed the validator,
+> the end-to-end checks and a run through the assembled chain; `doc-schema-v1`, the 1.x record, stays as published.
 
 The `atrium_document` record is the one thing that travels through the whole pipeline. This
 page says what it holds, who may write which part of it, how it is built up stage by stage,
-and how page-classification and the translator write it.
+and where the history of each run is kept.
 
 !!! info "Normative text lives in the hub"
     [`docs/document_schema.md`](https://github.com/ufal/atrium-project/blob/main/docs/document_schema.md)
-    is the specification. This page explains it, with page-classification and the translator
-    as the worked cases.
+    is the specification. This page explains it, with page-classification as the worked case.
 
 ## The object
 
-One JSON file per document, named `<doc_id>.document.json`, schema version **`1.0`** (frozen as
-[`doc-schema-v1`](https://github.com/ufal/atrium-project/releases/tag/doc-schema-v1)).
-The module that writes it, `atrium_document.py`, is vendored byte-identically into every tool, so
-every tool writes the record the same way; what differs is which calls each tool makes.
+One JSON file per document, named `<doc_id>.document.json`, schema version **`2.0`**. The module
+that writes it, `atrium_document.py`, is vendored byte-identically into every tool, so every tool
+writes the record the same way; what differs is which calls each tool makes.
 
-| Part                                                                                                                                       | What it holds                                                                                                   |
-|--------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
-| `schema_version`, `record_type`, `doc_id`                                                                                                  | identity — `record_type` is `atrium-document`, or `atrium-document-merged` for a merge of parallel branches     |
-| `source`                                                                                                                                   | the original input: its identifier, checksum and how it was acquired (`source.origin`)                          |
-| `provenance`                                                                                                                               | `contributors[]` — every run that wrote to it — and the components each run used, with their licences (below)   |
-| `assembled`                                                                                                                                | one **stamp** per block: who wrote it last, in which run                                                        |
-| `page_categories`, `pages`, `content`, `lines`, `tables`, `quality_summary`, `entities`, `translations`, `enrichment`, `keywords`, `forms` | the tool blocks — one authorised writer each, see [Repository map](repository-map.md#who-may-write-which-block) |
-| `derived_from`                                                                                                                             | references to **persistent** outputs a stage produced                                                           |
-| `regenerable`                                                                                                                              | **recipes** for disposable outputs, never their paths                                                           |
+| Part                                                                                                 | What it holds                                                                                                                                                                           | Written by                                         |
+|------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------|
+| `schema_version`, `record_type`, `doc_id`                                                            | identity; `doc_id` is the AMČR file id                                                                                                                                                  | intake                                             |
+| `source`                                                                                             | the original: `sha512`, `filename`, `media_type`; then `language`, `page_count` and `origin` (`digital`, `atr`, `legacy`: how the text was obtained)                                    | intake; the record builder                         |
+| `pages`, `content`, `lines`                                                                          | a row for every page (`page_index`, the label `page`, `canvas`, `content_status`), the text in reading order, and every line with its box, docproc block, text source and box precision | the record builder (ocr-postprocess), from docproc |
+| `page_categories`, `pages[].category`, `category_confidence`                                         | the page type of the pages that needed the ATR                                                                                                                                          | page-classification                                |
+| `lines[].categ`, `quality_score`, `lang`; `pages[].quality_score`, `quality_band`; `quality_summary` | line quality: one model and one scale for every line                                                                                                                                    | scoring (ocr-postprocess)                          |
+| `lines[].lemma`, `upos`, `feats`, `teitok_ref`; `pages[].teitok_surface`; `entities`                 | the linguistic layer and the named entities                                                                                                                                             | nlp-enrich                                         |
+| `enrichment`, `keywords`, `entities[].pid`                                                           | keywords from the AMČR and TEATER vocabularies, statistical keywords, links of entities                                                                                                 | keyword-extract                                    |
+| `translations`, `entities[].translation_en`                                                          | reserved: no tool writes them in the pilot                                                                                                                                              | —                                                  |
 
-Five keys are required: `schema_version`, `record_type`, `doc_id`, `provenance`, `assembled`.
-Six are reserved — no tool can `set_block()` them: those five and `source`. The schema adds one
-consistency rule worth knowing: **any block named in `assembled.blocks` must exist at the top
-level**, so a record cannot claim a contribution it does not contain.
+The record holds content only. It carries no run data, no licence and no layout: `provenance`,
+`assembled`, `derived_from`, `regenerable`, `forms`, `tables`, `content.reading_order`, the line
+styles and the page verdicts are gone, and the schema refuses each of them by name. The layout is
+docproc's (`atr/docproc-json`); a line names its docproc block in `lines[].block`. A record must
+have `schema_version`, `record_type`, `doc_id`, and `source` or a content block.
 
-### The stamp, and the contributor list
-
-Every write stamps the block it touched:
-
-```json
-"assembled": { "blocks": { "<block>": {
-  "program": "…", "run_id": "…", "paradata_ref": "…", "updated_at": "…" } } }
-```
-
-and every run that wrote anything appends itself once:
-
-```json
-"provenance": { "contributors": [ {
-  "program": "…", "run_id": "…", "paradata_ref": "…",
-  "blocks": "page_categories,pages", "at": "…" } ] }
-```
-
-`blocks` is a **comma-separated string**, not a list. The stamp names only the *most recent*
-writer of a block, so for a block several programs write fields of — `pages[]`, `entities[]` —
-`contributors[]` is the only complete account.
+**One line key.** A line is named by `page` and `line`. An `entities[]` row and an
+`enrichment.items[]` row name their line by the same pair, and when the record has `lines[]` the
+validator checks that the line exists. A writer that cannot name a line of the record leaves `line`
+out.
 
 ### The life of a record
 
-1. **Load.** A stage opens the record it was given with `--document-json` — the *baseline* —
-   or starts a new one. A baseline written by a newer major schema version is refused; an
-   older one is migrated.
-2. **Write.** The stage writes only the blocks it owns: `set_block()` replaces a whole block,
-   `merge_block()` updates chosen fields inside a keyed list such as `pages[]`. Everything
+1. **Load.** A stage opens the record it was given — the *baseline* — or starts a new one. A record
+   of a newer major schema version is refused; a 1.x record is migrated as it is read.
+2. **Write.** The stage writes only the blocks and fields it owns: `set_block()` replaces a whole
+   block, `merge_block()` updates chosen fields inside a keyed list such as `pages[]`. Everything
    else in the baseline is carried through untouched.
-3. **Stamp.** Each written block gets its `assembled.blocks` stamp, the run is added to
-   `provenance.contributors[]`, and the run's list of components with their licences is added to
-   the record's.
-4. **Validate.** The finished record is checked against `atrium_document.schema.json`; a
-   stage never emits a record that fails its own schema.
-5. **Write out.** The file is written atomically — to a temporary name, then renamed — so a
+3. **Validate.** The finished record is checked against `atrium_document.schema.json` and its line
+   references; a stage never emits a record that fails.
+4. **Write out.** The file is written atomically — to a temporary name, then renamed — so a
    reader never sees half a record.
 
-The next stage repeats the cycle with this file as its baseline.
+The next stage repeats the cycle with this file as its baseline. What each run read and wrote is in
+its paradata, not in the record (below).
 
-## The six rules, per tool
+## The six rules, for page-classification
 
-The rules are the hub's; the right-hand columns show how each tool applies them.
+The rules are the hub's; page-classification applies them so:
 
-| Rule                                | page-classification                                                                                                                                                                                             | translator                                                                                                                                                                  |
-|-------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **1 · Baseline in, record out**     | **Opt-in.** No record is written unless `--document-json-out` or `--document-json-out-dir` is set (or their `[DOCUMENT]` config keys). Writes the file itself, atomically, rather than through `finalize()`     | **Always writes one**, by default as `<doc_id>.document.json` next to its output, baseline or not                                                                           |
-| **2 · Own block only**              | `set_block("page_categories", …)` **merged with the baseline's categories** — page keys from an earlier run survive — plus a keyed `merge_block("pages", …)` restricted to `category` and `category_confidence` | `set_block("translations", …)` and `add_derived_from("translated_xml", …)`                                                                                                  |
-| **3 · No baseline → own part only** | derives `doc_id` from the filename: a trailing `-N` or `_N` is the page, the rest is the document (`scan_0007.png` → document `scan`, page `"7"`); no suffix means page `1`, with a warning                     | **inherits `doc_id` from the baseline** — its input is a page, `<doc>-1.alto.xml`, so deriving it would re-key the document — and derives it only when there is no baseline |
-| **4 · Per-block provenance**        | stamps `page_categories`, `pages`, and `derived_from` when it records a result table                                                                                                                            | stamps `translations` and `derived_from`                                                                                                                                    |
-| **5 · Licences accrete**            | contributes the components its run used; see below                                                                                                                                                              | contributes the components its run used; see below                                                                                                                          |
-| **6 · Unknown blocks preserved**    | ✓ through the shared module                                                                                                                                                                                     | ✓ through the shared module                                                                                                                                                 |
+| Rule                                | page-classification                                                                                                                                                                    |
+|-------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **1 · Baseline in, record out**     | **Opt-in.** No record is written unless `--document-json-out` or `--document-json-out-dir` is set (or their `[DOCUMENT]` config keys)                                                  |
+| **2 · Own block only**              | `set_block("page_categories", …)` merged with the baseline's categories, plus a `merge_block("pages", …)` keyed by `page_index` and restricted to `category` and `category_confidence` |
+| **3 · No baseline → own part only** | derives `doc_id` from the filename: a trailing `-N` or `_N` is the page, the rest is the document (`scan_0007.png` → document `scan`, page `"7"`)                                      |
+| **4 · No run data in the record**   | what the run read and wrote is in its paradata                                                                                                                                         |
+| **5 · Facts, not a licence**        | the run lists its components with their own terms in its paradata; nothing is computed into a licence                                                                                  |
+| **6 · Unknown blocks preserved**    | ✓ through the shared module                                                                                                                                                            |
 
-<a id="how-the-records-licence-is-computed"></a>
-
-### What the record says about licences
-
-Each run adds to the record the list of components it used (models, data, vocabularies, services),
-each with its own licence or terms of use, as its paradata recorded them. `provenance.license_detail`
-keeps the lists. A component's licence does not become the licence of what the component produced,
-and the rights in a record depend first on the source document: [Licences and paradata](licences.md)
-explains this in plain words ([#6](https://github.com/ufal/atrium-project/issues/6)).
-
-`provenance.license` and `license_url` beside it are an older calculated field, not a licence; do not
-use them ([an old field to ignore](licences.md#an-old-field-to-ignore)). The record says so in
-`provenance.license_basis: "calculated"`.
-
-For the two tools of this page: a page-classification inference run lists `vit_models` (CC BY-NC 4.0)
-as its only always-used component (the training dataset counts only for `--train`, which writes no
-record). A translator run with the default backend and vocabulary lists CUBBITT, UDPipe, AMČR and
-TEATER, with the UDPipe models under CC BY-NC-SA 4.0.
+The translator writes nothing into the record since its v2.0.0-beta: its pilot job is the
+record-level `metadata-en`, run when a record is archived, with its own paradata.
 
 ### What the references point at
 
-Only `source` and `derived_from` may reference files, and only persistent ones. What the
-two tools put there:
-
-| Field          | page-classification                                                                                                                      | translator                                                                                             |
-|----------------|------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| `derived_from` | `classification` — the run's result table, one CSV for the whole run (or one per day when `--chunk` is on); absent for a single-file run | `translated_xml` — the translated file's name, such as `CTX000000003-1_en.alto.xml`                    |
-| `paradata_ref` | the run's paradata file; empty for records written by the service, which keeps no paradata file                                          | the run's paradata file under `<output>/paradata/`; in the service, the per-request paradata, not kept |
+The record names no file. The original is `source`, by `doc_id` and SHA-512; every other input and
+output of a run — docproc, the TEITOK file, the record version read — is named in that run's
+paradata by its AMČR distribution name and SHA-512. The TEITOK ids in the record (`teitok_surface`,
+`teitok_ref`) are local to that document's TEITOK file.
 
 ## Over HTTP
 
-Both services can accrete onto a record uploaded with the request — as a multipart part named
-`document_json` — and they return it differently:
-
-|                                                  | page-classification                                                  | translator                                                                    |
-|--------------------------------------------------|----------------------------------------------------------------------|-------------------------------------------------------------------------------|
-| Returns the record                               | inside its JSON response, as `document_json`                         | as the second part of a `multipart/mixed` response, after the translated XML  |
-| Without a baseline                               | only if `document_json_out=true` is sent — it can originate a record | only with a baseline — over HTTP it extends records rather than starting them |
-| Its own output fails the schema (baseline valid) | refused with a **500**                                               | refused with a **500**                                                        |
+The services that write to the record take it as a multipart part named `document_json` and return
+it in their JSON response as `document_json`; every service returns its run as `paradata`, one
+Process Run Crate `CreateAction`. A service whose own output fails the schema, on a valid baseline,
+answers **500** and returns no record.
 
 ## A worked example
 
-What the record looks like after page-classification and then the translator have written to it
-— generated by running the shared module with the calls each tool makes, and validated
-against `atrium_document.schema.json`. ocr-postprocess, which runs between them in the real
-chain, is left out so that only these two tools' writes are visible; in the real chain its blocks
-and licence components would be here too.
-
-The example was generated on 2026-09-22. `provenance.license` and `license_detail` are the
-[old calculated field](licences.md#an-old-field-to-ignore): records written since the pilot releases of
-4 November also carry `"license_basis": "calculated"` beside it, as in `fixtures/atrium_document.example.json`.
-
-After **page-classification** (`-f CTX000000003-1.png --document-json-out 1_pc.json`, no
-baseline):
+The committed example record,
+[`fixtures/atrium_document.example.json`](https://github.com/ufal/atrium-project/blob/test/fixtures/atrium_document.example.json),
+has the blocks of every step for a two-page document. Its first page row:
 
 ```json
-{
-  "schema_version": "1.0",
-  "record_type": "atrium-document",
-  "doc_id": "CTX000000003",
-  "provenance": {
-    "license": "CC BY-NC 4.0",
-    "license_url": "https://creativecommons.org/licenses/by-nc/4.0/",
-    "license_detail": {
-      "effective_license": "CC BY-NC 4.0",
-      "determined_by": ["vit_models"],
-      "components": [{"name": "vit_models", "license": "CC BY-NC 4.0", "rank": 5}],
-      "…": "…"
-    },
-    "contributors": [{
-      "program": "page-classification",
-      "run_id": "260922-220516",
-      "paradata_ref": "paradata/260922-220516_page-classification.json",
-      "blocks": "page_categories,pages",
-      "at": "2026-09-22T22:05:16.866272+00:00"
-    }]
-  },
-  "assembled": {
-    "blocks": {
-      "page_categories": {"program": "page-classification", "run_id": "260922-220516", "…": "…"},
-      "pages":           {"program": "page-classification", "run_id": "260922-220516", "…": "…"}
-    },
-    "had_baseline": false,
-    "note": "Blocks reflect CONTRIBUTED steps only; a block is absent until its tool has run."
-  },
-  "page_categories": {"1": "TEXT_P"},
-  "pages": [{"page": "1", "category": "TEXT_P", "category_confidence": 0.981}]
-}
+{"page": "1", "page_index": 1, "canvas": {"width": 612, "height": 792, "unit": "pt", "user_unit": 1},
+ "content_status": "text", "quality_score": 0.98, "quality_band": "Clear",
+ "category": "TEXT", "category_confidence": 0.97, "teitok_surface": "facs-1"}
 ```
 
-Then the **translator** takes that record as `--document-json` and writes:
+`page`, `page_index`, `canvas` and `content_status` are the record builder's, the quality fields
+scoring's and `teitok_surface` nlp-enrich's; page-classification writes `category`,
+`category_confidence` and the `page_categories` map, and passes every other field through. The values
+are the
+[eleven labels](https://github.com/ufal/atrium-page-classification/blob/test/docs/reference/categories.md#definitions).
 
-```json
-{
-  "derived_from": {"translated_xml": "CTX000000003-1_en.alto.xml"},
-  "translations": {"source_lang": "cs", "target_lang": "en", "backend": "lindat", "output_mode": "replace"},
-  "assembled":  {"blocks": {"translations": {"program": "translator", "…": "…"},
-                            "derived_from": {"program": "translator", "…": "…"}},
-                 "had_baseline": true},
-  "provenance": {"license": "…", "license_detail": "…",
-                 "contributors": [ "…page-classification…",
-                                   {"program": "translator", "blocks": "translations,derived_from", "…": "…"} ]}
-}
-```
+## Where the run history is
 
-`page_categories` and `pages` pass through untouched (rule 2); the translator adds its
-blocks, its stamps and itself to `contributors[]`, and its component list joins
-page-classification's in `provenance.license_detail` (rule 5). The values in
-`page_categories` are the [eleven labels](https://github.com/ufal/atrium-page-classification/blob/test/docs/reference/categories.md#definitions).
-
-## How paradata accumulates
-
-Every run writes its own **paradata** file: a log of that run. It says which program and version ran,
-when, with which settings, which components it used and with which licences, how long it took, and
-counts of what it processed.
-The record does not copy it; it points to it. Each run that writes to the record adds itself to
-`provenance.contributors[]` with a `paradata_ref`, and each block it wrote is stamped with the same
-reference. So a record's paradata accumulates as a list of pointers, one per run, and following them
-gives the whole history of the record.
-
-The file is written by the shared `atrium_paradata.py`, format version **`2.0`**: a flat JSON object
-with `tool_version`, `run_id`, `start_time`, `license_detail`, the configuration and statistics at the
-top level. Every field is in `docs/paradata_schema.md`.
+Every step writes **paradata**: one `CreateAction` per run, in RO-Crate 1.2 and Process Run Crate 0.5.
+It says which program and version ran, when, for which organisation, with which parameters, which
+inputs it read and which outputs it wrote (by distribution name and SHA-512; for the record, the blocks
+and fields written), and which components it used, each with its own terms, as facts. It never
+states a calculated licence ([Licences and paradata](licences.md)). The format is paradata **`3.0`**,
+in the hub's `docs/paradata_schema.md`; AMČR stores it as the distribution's `paradata/<distribution>`.
 
 Both formats follow the same rule for changes: an **additive** change keeps the version; a
 **breaking** one raises the major version and ships a `_migrate_X_to_Y()` function. A reader refuses
@@ -229,10 +128,8 @@ a file with a *newer* major version than it knows, and migrates an older one.
 
 This table records **provenance**: what this page was written from, not a build instruction.
 
-| Source                                                                                                                                                                 | What was taken from it                                         |
-|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------|
-| `atrium-project/docs/templates/shared/atrium_document.py`, `atrium_document.schema.json`, `atrium_paradata.py`, `para_licenses.py`                                     | the object, the stamp, the life cycle, the licence computation |
-| `atrium-project/docs/document_schema.md`, `docs/paradata_schema.md`                                                                                                    | the rules as specified                                         |
-| `atrium-page-classification@vit` `adee922` — `atrium_document_adapter.py`, `utils.py`, `run.py`, `service/document_json.py`, `service/api.py`, `setup/para_config.txt` | what page-classification writes                                |
-| `atrium-translator@master` `71feaef` — `main.py`, `utils.py`, `service/api.py`, `para_config.txt`                                                                      | what the translator writes                                     |
-| an in-memory run of the shared modules with each tool's calls, validated with `jsonschema`, 2026-09-22                                                                 | the worked example                                             |
+| Source                                                                                                                  | What was taken from it                   |
+|-------------------------------------------------------------------------------------------------------------------------|------------------------------------------|
+| `atrium-project/docs/templates/shared/atrium_document.py`, `atrium_document.schema.json`, `atrium_paradata.py` (`test`) | the object, the life cycle, the paradata |
+| `atrium-project/docs/document_schema.md`, `docs/paradata_schema.md`, `fixtures/atrium_document.example.json` (`test`)   | the rules as specified, the example      |
+| `atrium-page-classification@test` — `atrium_document_adapter.py`, `service/document_json.py`                            | what page-classification writes          |

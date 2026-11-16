@@ -56,7 +56,7 @@ apart in the output, and every statistical keyword says which method produced it
 
 | # | Step                 | What happens                                                                                                                                                                                                                                                                                                                        | In → out          | Activity                    |
 |---|----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------|-----------------------------|
-| 1 | Select the text      | The lines of the record are gathered per document and per page. Lines categorised `Trash`, `Garbage`, `Inverted` (a born-digital text layer that does not decode) or `Empty` are left out. Methods that need linguistic annotation use the lemmas and part-of-speech tags that nlp-enrich wrote.                                    | JSON → text       | —                           |
+| 1 | Select the text      | The lines of the record are gathered per document and per page. Lines categorised `Trash` or `Empty` are left out. Methods that need linguistic annotation use the lemmas and part-of-speech tags that nlp-enrich wrote.                                                                                                            | JSON → text       | —                           |
 | 2 | Statistical keywords | KeyBERT (the default) ranks candidate phrases by their similarity to the document's embedding; YAKE ranks them without a model; the legacy method counts nouns, proper nouns and adjectives by lemma. Scores differ in meaning per method.                                                                                          | text → keywords   | Keyword extraction          |
 | 3 | Build the vocabulary | The AMČR keyword lists and the TEATER thesaurus are harvested and nested into one term list, each term pointing back to the records it came from. This is done once, not per run: each release carries the built vocabulary as a CC0 asset, `atrium-vocabulary-<version>.zip`, with its `.sha256`.                                  | → JSON, CSV, SKOS | Collecting                  |
 | 4 | Controlled keywords  | A language model reads each line among its neighbours on the page and answers with the term that describes it (with the AMČR and TEATER records behind it), the Czech keywords found in it with their English translations, and a confidence. Its answer must fit a schema whose allowed categories are the vocabulary's terms.     | text → JSON       | Enriching, Content Analysis |
@@ -88,11 +88,12 @@ controlled run records the model's id. None of these licences is the licence of 
 [Licences and paradata](../ecosystem/licences.md).
 
 In the [document record](../ecosystem/document-contract.md) the tool is the successor of
-llm-enrich as a writer: the contract lets it write the `enrichment` and `forms` blocks and
-`entities[].pid`, and, since v1.2.0-beta, the `keywords` block (atrium-project#73). It writes
-`keywords` when the statistical kind ran — the keywords of the document and of each page, every
-one with its method, score and rank — and `enrichment` with `entities[].pid` when the controlled
-kind contributed; it writes no `forms`. The two kinds stay in their own blocks and never share a
+llm-enrich as a writer: the contract lets it write the `enrichment` block and `entities[].pid`,
+and, since v1.2.0-beta, the `keywords` block (atrium-project#73). It writes `keywords` when the
+statistical kind ran — the keywords of the document and of each page, every one with its method,
+score and rank — and `enrichment` with `entities[].pid` when the controlled kind contributed; an
+`enrichment` item names its record line by `page` and `line`, the record's line key, and keeps
+only its page when it cannot name one. The two kinds stay in their own blocks and never share a
 list, and a re-run replaces each block whole. Records already written keep the program id
 `llm-enrich`; the contract accepts both names for the one writer.
 

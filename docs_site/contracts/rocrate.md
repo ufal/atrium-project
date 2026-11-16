@@ -40,9 +40,8 @@ program and version, when, under which licence — without running any ATRIUM co
 
 ## What happens to these two tools' blocks
 
-Exporting the [worked-example record](../ecosystem/document-contract.md#a-worked-example) —
-page-classification's `page_categories` and `pages`, then the translator's `translations` and
-`derived_from` — with each run's paradata gives 22 entities:
+Exporting a 1.x record — page-classification's `page_categories` and `pages`, then the 1.x
+translator's `translations` and `derived_from` — with each run's paradata gives 22 entities:
 
 | In the record                                     | In the crate                                                                                                                                   | What the crate carries                                                                                                                                                                                         |
 |---------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

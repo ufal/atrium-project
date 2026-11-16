@@ -124,14 +124,15 @@ an AMCR term to migrate off, because one was never created.
 Hub-canonical, in `docs/templates/shared/`, vendored to all five tool repos and byte-enforced by
 `para-drift.reusable.yml`. **Standard library only.** Contents:
 
-| Scheme          | Concepts                  | Declared by                                                                    |
-|-----------------|---------------------------|--------------------------------------------------------------------------------|
-| `page-category` | 11 (+5 facet collections) | `atrium-page-classification/model_registry.py`                                 |
-| `line-category` | 7 (5 + 2, by originator)  | `ocr-postprocess/text_util.py` + `digital-convert/api_util/digital_to_json.py` |
-| `quality-band`  | 3                         | `ocr-postprocess/document_hook.py`                                             |
-| `entity-type`   | 4                         | `nlp-enrich/api_util/teitok_alto.py`                                           |
-| `cnec`          | 28                        | the subset `_CNEC_TO_CONLL` maps                                               |
-| `theme`         | 11                        | `keyword-extract/data_samples/taxonomy_config.json`                            |
+| Scheme           | Concepts                  | Declared by                                                                   |
+|------------------|---------------------------|-------------------------------------------------------------------------------|
+| `page-category`  | 11 (+5 facet collections) | `atrium-page-classification/model_registry.py`                                |
+| `line-category`  | 5                         | `ocr-postprocess/text_util.py`                                                |
+| `decode-verdict` | 2                         | `digital-convert/api_util/digital_to_json.py` (docproc line flags `decode:*`) |
+| `quality-band`   | 3                         | `ocr-postprocess/document_hook.py`                                            |
+| `entity-type`    | 4                         | `nlp-enrich/api_util/teitok_alto.py`                                          |
+| `cnec`           | 28                        | the subset `_CNEC_TO_CONLL` maps                                              |
+| `theme`          | 11                        | `keyword-extract/data_samples/taxonomy_config.json`                           |
 
 Plus 74 mapping assertions: 28 CNEC→coarse type, 19 TEATER branch→theme, 26 heslář→theme, and one
 `closeMatch` (see V-1). Renders to Turtle and JSON-LD; both are produced from **one** triple
@@ -269,6 +270,11 @@ the relationship machine-readable: `a-line-category:Trash skos:closeMatch
 a-line-category:Garbage` — `closeMatch`, not `exactMatch`, because one is an OCR judgement over a
 rendered image and the other a decode-sanity judgement over an embedded text layer. Close, not
 identical, and deliberately not transitive.
+
+*Since 2026-11-16 (atrium-project#84, round 8)* the two are fully apart: the decode verdicts left
+`line-category` for their own scheme, `decode-verdict` (`garbled`, `inverted`; docproc line flags
+`decode:garbled`, `decode:inverted`), `UNTRUSTWORTHY_LINE_CATEGORIES` is `("Trash",)`, and the
+closeMatch is gone: no mapping joins line quality and a decode verdict.
 
 ### V-2 — `collect_images()` broke on its own shipped sample data fixed
 

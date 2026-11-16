@@ -39,8 +39,7 @@ so that later stages can work on the readable text and send the rest back for an
 attempt. ALTO is its main input; the other OCR formats, and text-bearing files such as PDF or
 DOCX, are labelled the same way. It also scores the lines of a born-digital record, so that
 scanned and born-digital documents get one quality answer. It is the point where the ATRIUM
-pipeline fans out: the per-page ALTO feeds the translator, the line tables feed the NLP
-enrichment, and the record feeds keyword extraction.
+pipeline fans out: the record it builds feeds the NLP enrichment and keyword extraction.
 
 ## At a glance
 

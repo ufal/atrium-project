@@ -40,15 +40,16 @@ moved; 1.x records stay readable (see [Reading 1.x records](#reading-1x-records)
 **Content only.** The record holds what is known about the document. It holds no run data, no
 licence and no layout:
 
-| Removed in 2.0                                                                  | Where it is now                                                                                              |
-|---------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
-| `provenance` (contributors, `license`, `license_url`, `license_basis`)          | the run's paradata `components` (facts only, no calculated licence) and its RO-Crate `CreateAction` (D1, D2) |
-| `assembled` (block stamps, `had_baseline`)                                      | the paradata output entry: `record_fields`, the blocks and fields the run wrote (`DocumentRecord.written()`) |
-| `derived_from`, `regenerable`                                                   | the paradata inputs and outputs, by AMČR distribution name and SHA-512                                       |
-| `forms`, `tables`, `content.reading_order`, `lines[].group_id`, `lines[].style` | docproc (`atr/docproc-json`), the layout's one home (D26); `lines[].block` joins a line to it                |
-| `pages[].text_layer`, `needs_ocr`, `needs_ocr_reason`, `ocr`                    | the route step's decision and docproc; a line says where its text came from (`text_source`)                  |
-| `source.sha256`                                                                 | `source.sha512` only: one digest, of the original                                                            |
-| the `Garbage` and `Inverted` line categories                                    | docproc line flags (`atrium_vocab.DECODE_FLAGS`): decode verdicts, not text quality (D18 rule 2)             |
+| Removed in 2.0                                                         | Where it is now                                                                                              |
+|------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| `provenance` (contributors, `license`, `license_url`, `license_basis`) | the run's paradata `components` (facts only, no calculated licence) and its RO-Crate `CreateAction` (D1, D2) |
+| `assembled` (block stamps, `had_baseline`)                             | the paradata output entry: `record_fields`, the blocks and fields the run wrote (`DocumentRecord.written()`) |
+| `derived_from`, `regenerable`                                          | the paradata inputs and outputs, by AMČR distribution name and SHA-512                                       |
+| `tables`, `content.reading_order`, `lines[].group_id`, `lines[].style` | docproc (`atr/docproc-json`), the layout's one home (D26); `lines[].block` joins a line to it                |
+| `forms`                                                                | nowhere: removed, with no other home (D19)                                                                   |
+| `pages[].text_layer`, `needs_ocr`, `needs_ocr_reason`, `ocr`           | the route step's decision and docproc; a line says where its text came from (`text_source`)                  |
+| `source.sha256`                                                        | `source.sha512` only: one digest, of the original                                                            |
+| the `Garbage` and `Inverted` line categories                           | docproc line flags `decode:garbled`, `decode:inverted` (`atrium_vocab.DECODE_FLAGS`; D18 rule 2)             |
 
 The schema declares each removed name with `not: {}`, so a record that carries one fails validation
 by name, and `DocumentRecord` refuses to write one: `add_derived_from()`, `add_regenerable()` and
@@ -71,7 +72,8 @@ by name, and `DocumentRecord` refuses to write one: `add_derived_from()`, `add_r
 | `quality_summary.pages.empty`       | integer                                                                     | the empty pages, counted apart                                                                                                                                                                                               |
 | `quality_summary.lines.block_units` | integer                                                                     | the `unit: block` rows, counted apart from `by_categ` (D18 rule 5)                                                                                                                                                           |
 
-`entities`, `enrichment`, `keywords`, `page_categories` and `quality_summary` keep their 1.x shape.
+`entities`, `enrichment`, `keywords`, `page_categories` and `quality_summary` keep their 1.x shape, but for the
+line key below.
 `translations` and `entities[].translation_en` stay declared and **reserved**: the pilot translates
 only the record-level metadata, into its own distribution (`metadata-en`), never the full text.
 
@@ -117,7 +119,8 @@ licence and layout do not:
   `legacy`; `ocr:…`, `vlm:…` → `atr`; anything else is dropped. Each line's `text_source` follows
   from it;
 * a page whose lines were numbered from 0 (1.x digital-convert) is renumbered from 1, and the
-  entities on it follow;
+  entities and enrichment items on it follow; a `line` still below 1 (1.x's "unknown") is dropped
+  from an entity or enrichment item, which keeps its page;
 * a `Garbage` or `Inverted` `categ` is dropped with its `quality_score`;
 * a missing `page_index` is the numeric page label, else the row's position; a missing
   `content_status` follows from whether the page has lines (when the record has `lines`), and an
@@ -183,6 +186,15 @@ only for PCSS pages whose original cannot be matched (D28). A born-digital PDF w
 from PDF user space, which puts the origin bottom-left (with pdfplumber, use `top`/`bottom`,
 never `y0`/`y1`). `bbox_precision` says whether a line's box was measured or derived from its
 block.
+
+**One line key** (`$defs/line_key`). A line is named by `page` and `line`, the key `lines[]` rows
+carry and merge on. `entities[]` rows and `enrichment.items[]` rows name their line by the same pair:
+`line` is an integer from 1 and needs its `page`. When the record has `lines[]`, `validate_document()`
+also checks that every such reference names an existing row (`line_key_problems()`); a record without
+`lines[]` (a seed, a text enriched without the record builder) has no line to name and is not checked.
+A writer that cannot name the record's line leaves `line` out: keyword-extract does for an item of a
+file sent beside a record. The services answer in the record's field names too (`line`, `categ`,
+`page_index`, `page` as the label).
 
 The TEITOK references are **local ids inside that document's TEITOK file** (nlp-enrich), in
 TEITOK's own scheme: `pages[].teitok_surface` = the page's `<surface id>` (`facs-1`),
@@ -1345,3 +1357,16 @@ On the hub's `test` branch; the tools adopt it each in its own repository.
 - **`quality_summary()`**: such rows stay out of `lines.by_categ` and are counted as `lines.block_units`;
   ocr-postprocess leaves them out of `pages[].quality_score`. Both are the calibrated statistics rule 5 means.
 - The name is proposed by this implementation, as `canvas.user_unit` is.
+
+## Changelog — 2026-11-16 (#84 round 8: one line key; decode verdicts apart; `forms` gone)
+
+- **`$defs/line_key`** replaces the unused `$defs/line_ref`; `lines[]`, `entities[]` and `enrichment.items[]` refer
+  to it, and `enrichment.items[].line` is declared. `validate_document()` adds `line_key_problems()`: a reference
+  to a line the record does not have is refused. The 1.x migration shifts enrichment items with their page and
+  drops a `line` below 1.
+- **`$defs/entity_ref`** is gone: nothing referred to it since 2.0 dropped `forms` (D19).
+- **Decode verdicts apart** (D18 rules 2 and 3): `atrium_vocab`'s `decode-verdict` scheme (`garbled`,
+  `inverted`) holds digital-convert's verdicts, spelled `decode:garbled` and `decode:inverted` as docproc line flags
+  (`DECODE_FLAGS`; `LEGACY_DECODE_FLAGS` maps `Garbage`/`Inverted`); `line-category` keeps the five record
+  categories, and no mapping joins the two. `REGISTRY_VERSION` 2.0. `lines[].categ` is unchanged.
+- 2.0 is not frozen yet, so none of this is a post-freeze change.

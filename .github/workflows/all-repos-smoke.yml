@@ -16,7 +16,7 @@
 #     is now ocr-postprocess, llm-enrich is now digital-convert, and the keyword stage that
 #     nlp-enrich and llm-enrich shared is keyword-extract.)
 #   * `llm-enrich` (today digital-convert + keyword-extract) was missing from the matrix — the one repo whose engine had no
-#     direct tests until 2026-07-22, and the owner of `enrichment`/`forms`.
+#     direct tests until 2026-07-22, and the owner of `enrichment`.
 #   * No `-m "not slow"`, so it tried to run model/GPU/network tests that no runner
 #     here can serve. Every repo's own `docker.yml` filters them; this did not.
 #   * `--maxfail=1` stopped at the first failure, so one broken repo hid the state of

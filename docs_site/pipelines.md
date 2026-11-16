@@ -109,7 +109,7 @@ Who may write what is declared once, in the hub-canonical `BLOCK_OWNERS`:
 | `page_categories`                     | `page-classification`                                                  |
 | `translations`                        | `translator`                                                           |
 | `entities`                            | `nlp-enrich`                                                           |
-| `enrichment`, `forms`                 | `keyword-extract` (`llm-enrich` in older records)                      |
+| `enrichment`                          | `keyword-extract` (`llm-enrich` in older records)                      |
 
 That table authorises **writes**. The read-time answer to "who wrote this block in *this*
 record" is `assembled.blocks[<block>].program`, and for a field-split block
