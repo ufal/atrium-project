@@ -188,13 +188,9 @@ jobs:
 
       # ── The CLI cases ───────────────────────────────────────────────────────────
       # Per fixture: its AMČR seed → digital-convert's docproc → docproc_assert.py → ocr-postprocess
-      # builds and scores the record → e2e_assert.py at schema 2.x, joined to the docproc it was built
-      # from (--docproc). A fixture whose pages go to the ATR (garbled text layer, earlier OCR layer) is
-      # routed so and nothing refused; building the record from that docproc alone fails (`needs_atr`)
-      # and writes nothing (D13). blank_page.pdf's blank verso is routed `empty`, not to the ATR (D29).
-      # The mixed document (H6): scan_page.docx's docproc and an ATR stand-in built from it
-      # (tools/e2e/atr_standin.py: the ATR's own blocks, page 2 read as figure OCR from
-      # fixtures/e2e/mixed/, the force echoed) give one record, the text layer kept on pages 1 and 3.
+      # builds and scores the record → e2e_assert.py at schema 2.x. A fixture whose pages go to the
+      # ATR (garbled text layer, earlier OCR layer) is routed so and nothing refused; building the
+      # record from that docproc alone fails (`needs_atr`) and writes nothing (D13), until H6.
       # atrium-digital-convert#9: an office document is its native text on the pages of its
       # LibreOffice rendering, so scan_page.docx sends its picture page (2) alone to the ATR and
       # photo_text.docx none; sample.csv and sample.txt take the textual workflow (no geometry,
@@ -257,30 +253,6 @@ jobs:
           case_of sample.csv text/csv none
           case_of sample.txt text/plain none
 
-          # The mixed document (H6): the ATR's docproc (the stand-in) is the stored one, and
-          # digital-convert's comes beside it, not stored.
-          echo "::group::scan_page.docx, mixed"
-          name=scan_page-docx
-          doc="AMCR-F-${name}"
-          python tools/e2e/atr_standin.py "work/docproc/$name.docproc.json" \
-            --ocr-text 2=fixtures/e2e/mixed/scan_page.page2.txt --out "work/docproc/$name.atr.docproc.json"
-          python tools/e2e/docproc_assert.py "work/docproc/$name.atr.docproc.json" \
-            --schema "$SCHEMA" --expect-atr-pages all --expect-forced 2
-          mkdir -p "work/records/$name-mixed" "work/paradata/ocr_$name-mixed"
-          chmod a+rwX "work/records/$name-mixed" "work/paradata/ocr_$name-mixed"
-          docker run --rm -v "$GITHUB_WORKSPACE:/workspace" \
-            -v "$GITHUB_WORKSPACE/hf-cache:/cache/huggingface" -e HF_TOKEN \
-            "${OCR_IMAGE}:${IMAGE_TAG}" \
-            python3 /app/build_record.py "/workspace/work/docproc/$name.atr.docproc.json" \
-            --text-layer-docproc "/workspace/work/docproc/$name.docproc.json" \
-            --seed "/workspace/work/doc_json/$name.seed.json" \
-            --out-dir "/workspace/work/records/$name-mixed" \
-            --paradata-dir "/workspace/work/paradata/ocr_$name-mixed"
-          python tools/e2e/e2e_assert.py "work/records/$name-mixed/$doc.document.json" \
-            --llm-stage-ran false --seed "work/doc_json/$name.seed.json" --require-current-major \
-            --expect-atr-pages --expect-layout --docproc "work/docproc/$name.atr.docproc.json"
-          echo "::endgroup::"
-
       # ── The services: digital-convert `-api`, then ocr-postprocess `-api` ─────────
       # What AMČR's Temporal activities call. Through the two services:
       #   * the seed survives into the record, and each response's `paradata` is a valid
@@ -289,8 +261,7 @@ jobs:
       #     `needs_atr`);
       #   * scan_page.docx (atrium-digital-convert#9) comes back with its picture page routed to the
       #     ATR and the rendered PDF the visual steps read (`rendered_pdf`), named in the paradata by
-      #     the same SHA-512 and not stored; /build_record refuses it alone, and builds it with the
-      #     ATR stand-in's docproc (H6), naming digital-convert's docproc as not stored (D23);
+      #     the same SHA-512 and not stored; /build_record refuses it alone;
       #   * sample.csv, a text-only input, is built into a born-digital record;
       #   * a seed whose sha512 is not the file's is 422 `source_digest_mismatch`.
       # A missing `-api` image is a warning: it reaches `:latest` only via a release.
@@ -419,29 +390,6 @@ jobs:
           code=$(build work/api/scan_page.record.json work/api/scan_page.docproc.json -F doc_id=AMCR-F-scan_page-docx)
           expect 422 needs_atr work/api/scan_page.record.json "$code"
           actions work/api/scan_page.json
-          # ... and the mixed document from both docprocs (H6).
-          python tools/e2e/atr_standin.py work/api/scan_page.docproc.json \
-            --ocr-text 2=fixtures/e2e/mixed/scan_page.page2.txt --out work/api/scan_page.atr.docproc.json
-          code=$(build work/api/scan_page.mixed.json work/api/scan_page.atr.docproc.json \
-            -F "text_layer_docproc=@work/api/scan_page.docproc.json;type=application/json" \
-            -F "document_json=@work/doc_json/scan_page-docx.seed.json;type=application/json")
-          expect 200 "" work/api/scan_page.mixed.json "$code"
-          part work/api/scan_page.mixed.json document_json work/api/scan_page.document.json
-          python tools/e2e/e2e_assert.py work/api/scan_page.document.json \
-            --llm-stage-ran false --seed work/doc_json/scan_page-docx.seed.json --require-current-major \
-            --expect-atr-pages --expect-layout --docproc work/api/scan_page.atr.docproc.json
-          python - work/api/scan_page.mixed.json work/api/scan_page.docproc.json <<'PY'
-          import hashlib
-          import json
-          import sys
-
-          action = json.load(open(sys.argv[1], encoding="utf-8"))["paradata"]
-          digest = hashlib.sha512(open(sys.argv[2], "rb").read()).hexdigest()
-          named = [e for e in action["object"] if e.get("sha512") == digest]
-          assert named and all(e.get("stored") is False for e in named), "digital-convert's docproc: not stored (D23)"
-          print("✅ scan_page.docx, mixed: digital-convert's docproc named by its SHA-512, not stored")
-          PY
-          actions work/api/scan_page.mixed.json
 
           # A text-only input (atrium-digital-convert#9): extracted as it is, no geometry, no ATR,
           # and built into a born-digital record.
