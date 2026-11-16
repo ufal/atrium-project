@@ -4076,3 +4076,20 @@ candidates are six `.3` releases carrying #6's step 1.
   reader without the per-run digest; these logs.
 * **Next:** after #91 is squash-merged and `v1` moved, the six tools' pins (`scripts/pin_hub_reusables.py --sha`).
 * **Not posted; not pushed.**
+
+## 2026-11-16 (late) — #84 round 9: what landed on `test`
+
+* **Asked (K4TEL):** confirm that doc-schema-v2 landed in all seven repositories and its gaps are closed; the next
+  #84 comment.
+* **Found:** #91 and the six tools' PRs squash-merged, `v1` at `02cbd01`, every tool pinned there, no PR open;
+  rounds 8 and 8b on `test` as delivered. Every `test` push check green except keyword-extract's live controlled
+  lane: its opt-in test still sent a 1.0 record. The hub's E2E ran on #91's push, before nlp-enrich, translator and
+  keyword-extract had published their merged `test` images.
+* **Written here (not pushed):** keyword-extract's live test on record 2.0; these logs.
+* **Checked on the `test` heads:** hub 970 passed (with the shared modules); digital-convert 1028,
+  ocr-postprocess 2359, page-classification 878, nlp-enrich 1091, keyword-extract 1085, translator 1163;
+  `revendor_shared.sh --check` (157 in parity); the local chain (every record valid, line keys resolving,
+  `decode:garbled`).
+* **Next (K4TEL):** after keyword-extract's fix merges, dispatch `e2e-pipeline-smoke.yml` and `e2e-digital-smoke.yml`
+  with `image-tag: test`, and its `controlled-live.yml`; then the #84 comment.
+* **Not posted; not pushed.**
