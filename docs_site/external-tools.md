@@ -60,9 +60,10 @@ for what preserving that structure actually costs.
 investigations, finds and sites. Records describe a field investigation: its location,
 circumstances, finds and free-text notes.
 
-**Where ATRIUM uses it.** The translator's second input mode. Ten XPath targets in
-`amcr-fields.txt` name the free-text fields that get translated — `popis`, `poznamka`,
-`lokalizace`, `lokalizace_okolnosti`, `souhrn_upresneni` and the protected-data fields.
+**Where ATRIUM uses it.** The translator's second input mode. AMČR names the free-text fields to
+translate — `popis`, `poznamka`, `lokalizace`, `lokalizace_okolnosti`, `souhrn_upresneni` and the
+protected-data fields — in its own XPath list, which it sends with each job; the translator has no
+default list. Its `amcr-fields.example.txt` is a template of such a list, not AMČR's list.
 `load_vocab.py` also harvests AMCR's controlled vocabulary (*heslář*) to build the
 translation glossary.
 

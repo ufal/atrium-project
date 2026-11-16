@@ -26,19 +26,19 @@ absolute path, so it runs under Docker (`docker run IMAGE /bin/sh tool_script.sh
 that script as given) and where the destination replaces the image's command (Kubernetes). No job writes into the
 image: every path is in the job directory, so any user id works.
 
-| Tool id                      | Image                                                     | Inputs → outputs                                                                         | Network                         | Compute |
-|------------------------------|-----------------------------------------------------------|------------------------------------------------------------------------------------------|---------------------------------|---------|
-| `atrium_page_classification` | `ghcr.io/ufal/atrium-page-classification:1.12.3-beta`     | page images or a PDF → Top-N table, votes, paradata, record(s), pages to route           | Hugging Face Hub, unless staged | CPU     |
-| `atrium_translator`          | `ghcr.io/ufal/atrium-translator:1.7.8-beta`               | an ALTO page or an XML record → translated XML, log, paradata, record                    | LINDAT translation and UDPipe   | CPU     |
-| `atrium_ocr_postprocess`     | `ghcr.io/ufal/atrium-ocr-postprocess:1.15.4-beta`         | ALTO, OCR JSON or a text-bearing file → line table, page texts, ALTO pages, stats, record | none                            | CPU     |
-| `atrium_ocr_line_quality`    | `ghcr.io/ufal/atrium-ocr-postprocess:1.15.4-beta`         | the same → lines with Clear/Noisy/Trash/Non-text/Empty, categories per page              | Hugging Face Hub, unless staged | **GPU** |
-| `atrium_nlp_enrich`          | `ghcr.io/ufal/atrium-nlp-enrich:1.3.4-beta`               | a line table (+ ALTO) → CoNLL-U, tokens, entities, TEITOK, record                        | LINDAT UDPipe and NameTag       | CPU     |
-| `atrium_keyword_extract`     | `ghcr.io/ufal/atrium-keyword-extract:1.6.5-beta`          | many documents per job → keyword table, per document and page, records                   | KeyBERT only, unless staged     | CPU     |
-| `atrium_digital_convert`     | `ghcr.io/ufal/atrium-digital-convert-digital:1.4.5-beta`  | a PDF, DOCX or XLSX → record (pages needing OCR flagged), Markdown                       | none                            | CPU     |
+| Tool id                      | Image                                                    | Inputs → outputs                                                                          | Network                         | Compute |
+|------------------------------|----------------------------------------------------------|-------------------------------------------------------------------------------------------|---------------------------------|---------|
+| `atrium_page_classification` | `ghcr.io/ufal/atrium-page-classification:1.12.3-beta`    | page images or a PDF → Top-N table, votes, paradata, record(s), pages to route            | Hugging Face Hub, unless staged | CPU     |
+| `atrium_translator`          | `ghcr.io/ufal/atrium-translator:1.7.8-beta`              | an ALTO page, or an XML record + its XPath list → translated XML, log, paradata, record   | LINDAT translation and UDPipe   | CPU     |
+| `atrium_ocr_postprocess`     | `ghcr.io/ufal/atrium-ocr-postprocess:1.15.4-beta`        | ALTO, OCR JSON or a text-bearing file → line table, page texts, ALTO pages, stats, record | none                            | CPU     |
+| `atrium_ocr_line_quality`    | `ghcr.io/ufal/atrium-ocr-postprocess:1.15.4-beta`        | the same → lines with Clear/Noisy/Trash/Non-text/Empty, categories per page               | Hugging Face Hub, unless staged | **GPU** |
+| `atrium_nlp_enrich`          | `ghcr.io/ufal/atrium-nlp-enrich:1.3.4-beta`              | a line table (+ ALTO) → CoNLL-U, tokens, entities, TEITOK, record                         | LINDAT UDPipe and NameTag       | CPU     |
+| `atrium_keyword_extract`     | `ghcr.io/ufal/atrium-keyword-extract:1.6.5-beta`         | many documents per job → keyword table, per document and page, records                    | KeyBERT only, unless staged     | CPU     |
+| `atrium_digital_convert`     | `ghcr.io/ufal/atrium-digital-convert-digital:1.4.5-beta` | a PDF, DOCX or XLSX → record (pages needing OCR flagged), Markdown                        | none                            | CPU     |
 
-| Data manager                     | Image                                                 | Stages                                                                                         | Table                |
-|----------------------------------|-------------------------------------------------------|------------------------------------------------------------------------------------------------|----------------------|
-| `data_manager_atrium_page_models` | `ghcr.io/ufal/atrium-page-classification:1.12.3-beta` | the five revisions of `ufal/vit-historical-page` (about 2.5 GB)                                 | `atrium_page_models` |
+| Data manager                      | Image                                                 | Stages                                                                                                                | Table                |
+|-----------------------------------|-------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|----------------------|
+| `data_manager_atrium_page_models` | `ghcr.io/ufal/atrium-page-classification:1.12.3-beta` | the five revisions of `ufal/vit-historical-page` (about 2.5 GB)                                                       | `atrium_page_models` |
 | `data_manager_atrium_hf_models`   | `ghcr.io/ufal/atrium-keyword-extract:1.6.5-beta`      | `paraphrase-multilingual-MiniLM-L12-v2` (KeyBERT, 0.5 GB); `Qwen/Qwen2.5-0.5B` (line quality, 1 GB), pinned revisions | `atrium_hf_models`   |
 
 Each tool folder has a README with its inputs, parameters, outputs, tests and licences. The workflows:

@@ -12,7 +12,7 @@ wrapper can run.**
 
 ## Inputs, parameters, outputs
 
-| Inputs     | the document (`xml`); for metadata, an optional XPath list (`txt`) and XML schema (`xml`); an optional vocabulary (`csv`); an optional baseline record (`json`)                       |
+| Inputs     | the document (`xml`); for metadata, the XPath list (`txt`, required) and an optional XML schema (`xml`); an optional vocabulary (`csv`); an optional baseline record (`json`)         |
 |------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Parameters | metadata or ALTO; source language (detected, or named) and the fallback for detection; target language; replace or append; the vocabulary (bundled, own, none); fast alignment (ALTO) |
 | Outputs    | the translated document (`xml`); the translation log (`csv`); paradata (`json`); the document record (`json`)                                                                         |
@@ -22,6 +22,12 @@ wrapper can run.**
   after it.
 - **Settings.** Every setting is passed on the command line, with an empty `--config`: the image's `config.txt`
   names paths relative to `/app`, and Galaxy starts the job in its own directory.
+- **Fields.** In metadata mode the XPath list is a required input: the list comes with each job, and the tool has no
+  default (D34, [atrium-project#84](https://github.com/ufal/atrium-project/issues/84)). AMČR's list comes from AMČR;
+  the translator's [`amcr-fields.example.txt`](https://github.com/ufal/atrium-translator/blob/test/amcr-fields.example.txt)
+  is a template of one, not that list ([translator#61](https://github.com/ufal/atrium-translator/issues/61)). Up to
+  `1.7.8-beta+galaxy0` the wrapper offered the image's `/app/amcr-fields.txt` as a bundled list; images from v2.0.0
+  ship none.
 - **Backend.** Only `lindat` (LINDAT CUBBITT, no key). The `openai_compatible` backend needs an API key, which would
   come through Galaxy's user credentials; not offered yet.
 
@@ -37,9 +43,10 @@ planemo lint translator.xml
 planemo test --docker --galaxy_branch v26.1.1 translator.xml
 ```
 
-Three tests: an AMČR record, Czech to English, with the bundled fields and vocabulary; an ALTO page, the language
-detected, the translation appended (`ALTERNATIVE PURPOSE="translation:en"`); German to Polish, a pair LINDAT has
-no model for (exit 1, nothing translated). `test-data/` holds the translator's own test fixtures (MIT).
+Three tests: an AMČR record, Czech to English, with the template field list and the bundled vocabulary; an ALTO
+page, the language detected, the translation appended (`ALTERNATIVE PURPOSE="translation:en"`); German to Polish,
+a pair LINDAT has no model for (exit 1, nothing translated). `test-data/` holds the translator's own test fixtures
+and its template field list, `amcr-fields.example.txt` (MIT).
 
 ## Licences
 

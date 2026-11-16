@@ -1,4 +1,4 @@
-- doc: One AMČR metadata record, Czech to English.
+- doc: One AMČR metadata record, Czech to English, with the template field list.
   job:
     XML documents:
       class: Collection
@@ -7,6 +7,9 @@
         - class: File
           identifier: sample_amcr
           path: ../../tools/atrium_translator/test-data/sample_amcr.xml
+    XPath list:
+      class: File
+      path: ../../tools/atrium_translator/test-data/amcr-fields.example.txt
   outputs:
     Translated documents:
       element_tests:

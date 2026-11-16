@@ -5,14 +5,14 @@ with *Workflows → Import* on a Galaxy that has the tools; on DARIAH's test ins
 (<https://galaxy.acdh-dev.oeaw.ac.at/galaxy/>) they become usable once the wrappers are installed. This folder sits
 in `workflows/atrium_ufal/` of DARIAH-ERIC/atrium-galaxy-tools, beside DARIAH's own workflows.
 
-| Workflow                               | Input                     | Steps                                                                                                         | Main outputs                                              |
-|----------------------------------------|---------------------------|---------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------|
-| `ATRIUM_page_classification_images.ga` | a list of page images     | page classification (one job for all pages)                                                                   | Top-N table, document records, text pages, paradata       |
-| `ATRIUM_page_classification_pdfs.ga`   | a list of PDFs            | page classification, one job per PDF                                                                          | a Top-N table and a document record per PDF, paradata     |
-| `ATRIUM_translate_xml.ga`              | a list of XML records     | translation, one job per record (AMČR fields, cs→en, vocabulary)                                              | translated records, translation logs, records, paradata   |
-| `ATRIUM_classify_ocr_translate.ga`     | a list of page images     | classification → keep the text pages → Tesseract (Czech, ALTO) → translation (ALTO, English beside the Czech) | Top-N table, ALTO pages, translated ALTO pages, logs      |
-| `ATRIUM_ocr_nlp_keywords.ga`           | a list of ALTO documents  | OCR post-processing (text lines) → NLP enrichment (UDPipe, NameTag, TEITOK) → keyword extraction (YAKE)       | line tables, CoNLL-U, TEITOK, entities, keywords, records |
-| `ATRIUM_born_digital_keywords.ga`      | a list of PDF, DOCX, XLSX | born-digital conversion → keyword extraction (YAKE)                                                           | Markdown, keywords, records with the `keywords` block     |
+| Workflow                               | Input                      | Steps                                                                                                         | Main outputs                                              |
+|----------------------------------------|----------------------------|---------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------|
+| `ATRIUM_page_classification_images.ga` | a list of page images      | page classification (one job for all pages)                                                                   | Top-N table, document records, text pages, paradata       |
+| `ATRIUM_page_classification_pdfs.ga`   | a list of PDFs             | page classification, one job per PDF                                                                          | a Top-N table and a document record per PDF, paradata     |
+| `ATRIUM_translate_xml.ga`              | XML records, an XPath list | translation, one job per record (the listed fields, cs→en, vocabulary)                                        | translated records, translation logs, records, paradata   |
+| `ATRIUM_classify_ocr_translate.ga`     | a list of page images      | classification → keep the text pages → Tesseract (Czech, ALTO) → translation (ALTO, English beside the Czech) | Top-N table, ALTO pages, translated ALTO pages, logs      |
+| `ATRIUM_ocr_nlp_keywords.ga`           | a list of ALTO documents   | OCR post-processing (text lines) → NLP enrichment (UDPipe, NameTag, TEITOK) → keyword extraction (YAKE)       | line tables, CoNLL-U, TEITOK, entities, keywords, records |
+| `ATRIUM_born_digital_keywords.ga`      | a list of PDF, DOCX, XLSX  | born-digital conversion → keyword extraction (YAKE)                                                           | Markdown, keywords, records with the `keywords` block     |
 
 The scanned-pages chain and the text chain:
 
@@ -43,8 +43,9 @@ enrichment and the keywords.
 
 - classifier: model `v4.4` downloaded in the job (*Staged* once the data manager has run), three categories per
   page; text pages are `TEXT_P`, `TEXT_T` and `TEXT`;
-- translator: source language detected with Czech as the fallback, English target, the bundled AMČR fields and
-  vocabulary;
+- translator: source language detected with Czech as the fallback, English target, the bundled vocabulary; the
+  fields come from the *XPath list* input of `ATRIUM_translate_xml` (AMČR's list comes from AMČR; the tests use
+  the translator's template, `amcr-fields.example.txt`, which is not that list);
 - keywords: YAKE, 20 per document, up to 3 words, Czech, per page too.
 
 **Network.** The classifier's *Download* mode fetches its model from the Hugging Face Hub; the translator and NLP

@@ -4033,3 +4033,17 @@ candidates are six `.3` releases carrying #6's step 1.
 * **Checked:** actionlint and the hub's workflow lint; the hub tests with the tools at their `test` heads; the
   restored steps replayed without Docker on the merged tool code.
 * **Not posted; not pushed.**
+
+## 2026-11-16 (evening) — the meeting's follow-ups; #84 subtask E: the translator's pages and the Galaxy wrapper
+
+* **Asked (K4TEL):** sort the meeting's tasks into issues; then the hub side of translator#61 — the translator's
+  pages and the Galaxy wrapper that still passed `/app/amcr-fields.txt`.
+* **Opened by K4TEL:** ufal/atrium-ocr-postprocess#14 (the ATR's docproc), ufal/atrium-translator#61 (the field list
+  a template). Comments posted on #84, #6, #22. The Docker test-runs issue was skipped.
+* **Written here (not pushed):** `plans|digests/doc-schema-v2.*` (round 8, subtasks A–F; E prepared), `6.*`, `22.*`;
+  the Galaxy wrapper and workflows (`1.7.8-beta+galaxy1`, workflows `0.3.0`: the XPath list a required input); the
+  translator's workflow page, external tools, the acceptance runbook, the glossary.
+* **Checked:** the hub's suite, 957 passed, 51 skipped; `mkdocs build --strict`; `tools/docs_check.py` (hub and
+  translator); `planemo lint translator.xml` clean; `planemo workflow_lint --iwc` clean but for the ToolShed lookup
+  of IUC Tesseract, which this sandbox cannot reach. The planemo tests need Docker and LINDAT: not run.
+* **Not posted; not pushed.**

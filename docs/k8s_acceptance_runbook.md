@@ -244,15 +244,16 @@ The smoke request above translates ALTO, which the pilot does not use. What the 
 metadata file, `metadata-en` ([translator#46](https://github.com/ufal/atrium-translator/issues/46)), so it
 is accepted on its own, with real AMČR records:
 
-- the free-text fields of `amcr-fields.txt`, in `replace` mode, with `--source_lang cs`; vocabulary fields
-  are not sent, since AMČR fills them from its own English labels;
+- the free-text fields of AMČR's own field list for the job, mounted as `data/fields.txt` (the translator
+  has no default list, and its `amcr-fields.example.txt` is only a template), in `replace` mode, with
+  `--source_lang cs`; vocabulary fields are not sent, since AMČR fills them from its own English labels;
 - validated against the AMČR 2.2 schema with `--xsd … --xsd-strict` (a record that fails makes the run exit
   `3`). `--xsd` is an option of the **batch** image, not of `/translate`, so this run uses
   `ghcr.io/ufal/atrium-translator:<version>` at the same release as the `-api` image:
 
 ```bash
 docker run --rm --user "$(id -u):0" -v "$PWD/data:/data" ghcr.io/ufal/atrium-translator:<version> \
-  /data/input --xpaths amcr-fields.txt --formats xml --source_lang cs --target_lang en \
+  /data/input --xpaths /data/fields.txt --formats xml --source_lang cs --target_lang en \
   --output-mode replace --xsd https://api.aiscr.cz/schema/amcr/2.2/amcr.xsd --xsd-strict -o /data/output
 ```
 
