@@ -11,6 +11,14 @@ authored: true
 
 # Reading born-digital documents into the document record, without OCR
 
+> **Pending: record schema 2.0** ([atrium-project#84](https://github.com/ufal/atrium-project/issues/84)).
+> This page describes the 1.x tool the releases carry today. On the `test` branches digital-convert writes docproc
+> (`atr/docproc-json`), not the record, and refuses nothing: a page it cannot use is `needsAtr`, a page whose
+> rendering shows nothing is routed `empty` (D29), and every box is on the displayed page, origin top-left of the
+> CropBox, after `/Rotate`, in 1/72 inch × UserUnit (D28). When a page needs the ATR the whole document goes
+> through it, and ocr-postprocess builds the record from the ATR's docproc and this one, keeping the text layer's
+> lines on the other pages (H6).
+
 *The digital-convert workflow.* Tool: [atrium-digital-convert](https://ufal.github.io/atrium-digital-convert/).
 The tool was part of **llm-enrich** until 1 October 2026; it continues in a new repository under
 its own name, and the keyword extraction that llm-enrich also did moved to

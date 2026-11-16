@@ -49,8 +49,9 @@ stage record carries one, no later stage changes it. See `assert_seed_identity()
 
 The branch follows ``source.origin``: ``digital`` is the born-digital branch
 (`assert_digital_contract()`), anything else the scanned one. ``--expect-atr-pages`` asks for a
-born-digital record some of whose pages the ATR re-acquired; ``--expect-layout`` for lines that
-keep the docproc block they came from (``lines[].block``), from more than one block. A 1.x record
+born-digital record some of whose pages the ATR re-acquired (a mixed document, H6); ``--expect-layout``
+for lines that keep the docproc block they came from (``lines[].block``), from more than one block;
+``--docproc`` joins the record to the stored docproc it was built from (`assert_against_docproc()`). A 1.x record
 is checked on its own evidence (``needs_ocr`` pages; ``style`` and ``tables``), which 2.0 moved out
 of the record.
 
@@ -680,13 +681,68 @@ def assert_positional_blocks(doc):
     print(f"✅ positional: {len(lines)} line(s), text_source {sources}; content_status agrees with lines[]")
 
 
+def assert_against_docproc(doc, docproc_path):
+    """The record against the stored docproc it was built from (`--docproc`; D26, D29, H2, H15).
+
+    The schema checks the record and docproc_assert.py the docproc; these checks join the two, as
+    AMČR receives them together. Every page the docproc routes has a page row (`page_index` =
+    `pageNumber`, H2) and no other page has one; a page routed `empty` has `content_status: empty`
+    and no line (D29); every line's `block` is a block of that page in the docproc (D26). For a mixed
+    document the stored docproc is the ATR's, so a kept text-layer line names an ATR block too (H6).
+    """
+    docproc = json.loads(Path(docproc_path).read_text(encoding="utf-8"))
+    routes = {
+        row["page"]: row.get("route")
+        for row in ((docproc.get("metadata") or {}).get("routing") or {}).get("pages") or []
+        if isinstance(row, dict) and isinstance(row.get("page"), int)
+    }
+    blocks = {
+        (page["pageNumber"], block.get("id"))
+        for page in docproc.get("pages") or []
+        for block in page.get("blocks") or []
+        if isinstance(page, dict) and isinstance(block, dict)
+    }
+    numbers = set(routes) | {page["pageNumber"] for page in docproc.get("pages") or [] if isinstance(page, dict)}
+    rows = {row.get("page_index"): row for row in doc.get("pages") or [] if isinstance(row, dict)}
+    assert set(rows) == numbers, (
+        f"❌ --docproc: page rows {sorted(map(str, rows))} for the docproc's pages {sorted(numbers)}: the record "
+        "keeps a row for every page of the original and none other (H2, D29)."
+    )
+    index_of = {str(row.get("page", page_index)): page_index for page_index, row in rows.items()}
+    lines_on = {}
+    for line in doc.get("lines") or []:
+        lines_on.setdefault(index_of.get(str(line.get("page"))), []).append(line)
+    for number, route in sorted(routes.items()):
+        if route == "empty":
+            assert rows[number].get("content_status") == "empty" and not lines_on.get(number), (
+                f"❌ --docproc: page {number} is routed empty, but its row is "
+                f"{rows[number].get('content_status')!r} with {len(lines_on.get(number) or [])} line(s) (D29)."
+            )
+    foreign = [
+        (line.get("page"), line.get("line"), line.get("block"))
+        for number, lines in lines_on.items()
+        for line in lines
+        if line.get("block") and (number, line["block"]) not in blocks
+    ]
+    assert not foreign, (
+        f"❌ --docproc: {len(foreign)} line(s) name a block the stored docproc does not have on their page "
+        f"(page, line, block): {foreign[:5]} (D26)."
+    )
+    sources = sorted({str(line.get("text_source")) for line in doc.get("lines") or []})
+    print(
+        f"✅ --docproc: {len(rows)} page row(s) for {len(numbers)} page(s), the empty ones empty; every line's "
+        f"block is the stored docproc's (text_source {sources})"
+    )
+
+
 def assert_digital_contract(doc, json_path, written=None):
     """The born-digital branch (`source.origin: digital`).
 
     W10. This is NOT a shorter version of the scanned contract — it is a different
-    one, and the difference is the point. A born-digital record can never carry
-    `page_categories` (no page image exists to classify) or `translations` (the translator
-    needs the scanned branch's output). A 1.x record can carry no `entities` either; since 2.0
+    one, and the difference is the point. A born-digital record carries no `translations`
+    (reserved since 2.0, contract §5), and `page_categories` only for the pages the ATR read:
+    page-classification runs on the pages that need the ATR, beside it (H3), never on a page
+    whose text layer was kept. A 1.x record carries neither. A 1.x record can carry no `entities` either; since 2.0
     nlp-enrich enriches the record builder's lines whatever their source (D20, nlp-enrich#42),
     so a 2.x record may, and they are then checked as on the scanned branch. Asserting the
     scanned blocks here would not be "stricter", it would be wrong.
@@ -706,11 +762,13 @@ def assert_digital_contract(doc, json_path, written=None):
     # Blocks that CANNOT exist here. A record carrying them means either the branch
     # was fed a scanned document, or a tool wrote a block it does not own.
     forbidden_blocks = [
-        ("page_categories", "no page image exists to classify on this branch"),
-        ("translations", "the translator needs the scanned branch's PAGE_ALTO output"),
+        ("translations", "it is reserved since 2.0 (contract §5): metadata-en is a record-level job"),
     ]
     if _major(written) < 2:
+        forbidden_blocks.append(("page_categories", "a 1.x born-digital record has no page image to classify"))
         forbidden_blocks.append(("entities", "nlp-enrich needs the DOC_LINE_CATEG classify CSV and INPUT_ALTO_DIR"))
+    else:
+        _assert_categories_on_atr_pages(doc)
     for forbidden, why in forbidden_blocks:
         assert forbidden not in doc, (
             f"❌ '{forbidden}' present on a born-digital record — {why}. Either the fixture "
@@ -718,6 +776,21 @@ def assert_digital_contract(doc, json_path, written=None):
         )
 
     return doc.get("pages") or [], _atr_pages(doc, written)
+
+
+def _assert_categories_on_atr_pages(doc):
+    """H3 on a born-digital record: page categories only on the pages the ATR read (no text-layer line)."""
+    text_layer = {str(ln.get("page")) for ln in doc.get("lines") or [] if ln.get("text_source") == "text-layer"}
+    classified = sorted(
+        str(row.get("page", row.get("page_index"))) for row in doc.get("pages") or [] if "category" in row
+    )
+    kept = [page for page in classified if page in text_layer]
+    assert not kept, (
+        f"❌ page(s) {kept} carry a page category but kept their text layer: page-classification runs on the "
+        "pages that need the ATR only (H3)."
+    )
+    if "page_categories" in doc or classified:
+        print(f"✅ page categories on the ATR's pages only: {classified}")
 
 
 def _assert_layout_1x(written):
@@ -810,6 +883,7 @@ def assert_document_contract(
     keywords_stage_ran=False,
     quality_summary_expected="auto",
     require_current_major=False,
+    docproc=None,
 ):
     written, doc = _read(json_path)
     written_major = _major(written)
@@ -824,6 +898,9 @@ def assert_document_contract(
     if seed:
         assert_seed_identity(seed, list(stage_paths), doc, json_path)
     assert_positional_blocks(doc)
+    if docproc:
+        assert written_major == _CURRENT_MAJOR, f"❌ --docproc needs a record written at {_CURRENT_MAJOR}.x"
+        assert_against_docproc(doc, docproc)
 
     # 0b. W10: which contract applies is derived from the RECORD, not from a flag:
     #     `source.origin` says how the text was obtained, and only the born-digital branch
@@ -1002,6 +1079,13 @@ def main(argv=None):
         help=f"every record (--stages and the final one) must be written at schema {SCHEMA_VERSION.split('.')[0]}.x, "
         "not only valid after migrate_document(): the E2E half of the doc-schema-v2 proof gate (D12).",
     )
+    parser.add_argument(
+        "--docproc",
+        default=None,
+        metavar="DOCPROC",
+        help="the stored docproc the record was built from (the ATR's for a mixed document): a page row for "
+        "every routed page and no other, the empty ones empty, every line's block one of its blocks (D26, D29).",
+    )
     args = parser.parse_args(argv)
 
     assert_document_contract(
@@ -1015,6 +1099,7 @@ def main(argv=None):
         keywords_stage_ran=args.keywords_stage_ran,
         quality_summary_expected=args.quality_summary,
         require_current_major=args.require_current_major,
+        docproc=args.docproc,
     )
     return 0
 

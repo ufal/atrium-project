@@ -11,6 +11,13 @@ authored: true
 
 # Turning OCR output into clean, classified text lines
 
+> **Pending: record schema 2.0** ([atrium-project#84](https://github.com/ufal/atrium-project/issues/84)).
+> This page describes the 1.x tool the releases carry today. On the `test` branches ocr-postprocess is the record
+> builder: `build_record.py` and `POST /build_record` build every record from the stored docproc and score every
+> line. For a mixed document they take the ATR's docproc with digital-convert's beside it, keep the text layer's
+> exact lines on the pages that did not need the ATR, each linked to the ATR block that holds it, and take the
+> ATR's lines elsewhere (H6). ALTO is no longer read in the pipeline (D24).
+
 *The ocr-postprocess workflow.* Tool: [atrium-ocr-postprocess](https://ufal.github.io/atrium-ocr-postprocess/).
 The tool was named **alto-postprocess** until 1 October 2026; it continues in a new repository
 under the new name, with its code, its pipeline and its categories unchanged.

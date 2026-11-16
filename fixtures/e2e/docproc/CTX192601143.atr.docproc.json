@@ -1028,13 +1028,6 @@
       ]
     },
     {
-      "pageNumber": 4,
-      "width": 1697.0,
-      "height": 2339.0,
-      "coordinateUnit": "px",
-      "blocks": []
-    },
-    {
       "pageNumber": 5,
       "width": 1325.0,
       "height": 1669.0,
@@ -2848,13 +2841,6 @@
           "language": "sk"
         }
       ]
-    },
-    {
-      "pageNumber": 13,
-      "width": 2806.0,
-      "height": 1975.0,
-      "coordinateUnit": "px",
-      "blocks": []
     }
   ],
   "metadata": {

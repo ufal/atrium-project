@@ -15,6 +15,24 @@ a quote are as of when it was written; the workflow is the authority on what hol
 What each lane proves, and its gaps, is in the responsibility map of [`ci_policy.md`](../ci_policy.md);
 the image side of both lanes is in [`docker-tool-reusable.md`](docker-tool-reusable.md).
 
+## 2026-11-16 — the mixed document and the record joined to its docproc (atrium-project#84)
+
+- **The mixed document (H6).** ocr-postprocess builds a record from the ATR's docproc and digital-convert's
+  together (`--text-layer-docproc`, `/build_record`'s `text_layer_docproc`). CI has no ATR, so
+  `tools/e2e/atr_standin.py` writes one from digital-convert's docproc of `scan_page.docx`: its own blocks
+  (two of digital-convert's per block, new ids, no `lines[]`), the forced page 2 read as a figure with an
+  OCR child from `fixtures/e2e/mixed/scan_page.page2.txt`, the force echoed in routing (ask 5). The
+  born-digital lane builds that record on the command line and through the services; it keeps the text
+  layer's lines on pages 1 and 3, each linked to a stand-in block, and the services' CreateAction names
+  digital-convert's docproc as not stored (D23). Building from digital-convert's docproc alone still fails.
+- **The record joined to its docproc.** `e2e_assert.py --docproc` checks that every page the stored docproc
+  routes has a row and no other page has one, that an empty page is `empty` with no line (D29), and that
+  every line names a block of the stored docproc (D26). Both lanes pass it; `blank_page.pdf` (a blank
+  verso, routed `empty`, no ATR) joins the born-digital cases. The scanned lane runs `docproc_assert.py` on
+  its stand-in first; `alto_to_docproc.py` no longer writes a `pages[]` entry for an empty page (H5).
+- **H3 on a born-digital record.** Page categories are allowed where the ATR read the page, and refused on a
+  page whose text layer was kept.
+
 ## 2026-11-14 — both lanes on the route of record schema 2.0 (atrium-project#84)
 
 Since ARÚP's contract of 12 November 2026, digital-convert writes docproc and never the record, the ATR
@@ -29,7 +47,7 @@ is history.
   image builds the record (`python3 /app/build_record.py`, through the entrypoint's interpreter rule, so
   no entrypoint override); `e2e_assert.py --require-current-major` checks it. The garbled and OCR-layer
   fixtures are routed to the ATR, and building their record from digital-convert's docproc alone fails
-  (`needs_atr`) until the merge of a mixed document (H6) is built. The service case chains `/reformat`
+  (`needs_atr`); the merge of a mixed document (H6) came on 11-16 (above). The service case chains `/reformat`
   and ocr-postprocess's `/build_record` and checks both CreateActions.
 - **Scanned lane.** No ATR runs in CI, so `tools/e2e/alto_to_docproc.py` wrote a stand-in in the ATR's
   shape for each fixture (`fixtures/e2e/docproc/`, from the same ALTO the page image is rendered from).

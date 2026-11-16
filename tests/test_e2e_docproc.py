@@ -108,3 +108,129 @@ def test_a_stale_stand_in_is_reported(tmp_path):
     alto = _FIXTURES / "ALTO" / "CTX000000003.alto.xml"
     (tmp_path / "CTX000000003.atr.docproc.json").write_text("{}\n", encoding="utf-8")
     assert a2d.main([str(alto), "--out-dir", str(tmp_path), "--check"]) == 1
+
+
+def test_an_empty_page_with_a_pages_entry_fails():
+    """H5, D29: a page routed `empty` has no `pages[]` entry."""
+    doc = _digital()
+    doc["metadata"]["routing"]["pages"][1]["route"] = "empty"
+    doc["pages"][1]["needsAtr"] = False
+    assert any("routed 'empty' but has a pages[] entry" in p for p in da.check(doc))
+
+
+def test_the_stand_in_leaves_an_empty_page_out_of_pages():
+    doc = a2d.convert(_FIXTURES / "ALTO" / "CTX192601143.alto.xml")
+    empty = [row["page"] for row in doc["metadata"]["routing"]["pages"] if row["route"] == "empty"]
+    assert empty and not {page["pageNumber"] for page in doc["pages"]} & set(empty)
+    assert da.check(doc, expect_atr="all") == []
+
+
+# ── the ATR's stand-in on a mixed document (`atr_standin.py`, H6) ───────────────────────────────
+
+ats = _load("atr_standin")
+
+
+def _mixed_digital():
+    """digital-convert's docproc of a three-page report: page 2 a pasted scan for the ATR."""
+
+    def block(page, n, text, box):
+        return {
+            "id": f"p{page}-b{n}",
+            "type": "paragraph",
+            "bbox": box,
+            "readingOrder": n,
+            "content": text,
+            "lines": [{"text": text, "bbox": box, "bboxPrecision": "measured"}],
+        }
+
+    return {
+        "version": "1.1",
+        "sourceFormat": "docx",
+        "documentLanguage": "cs",
+        "pages": [
+            {
+                "pageNumber": 1,
+                "width": 595.3,
+                "height": 841.9,
+                "coordinateUnit": "pt",
+                "textLayer": "digital",
+                "blocks": [
+                    block(1, 0, "Nálezová zpráva", [72, 70, 250, 90]),
+                    block(1, 1, "Na následující straně je plán.", [72, 100, 400, 112]),
+                    block(1, 2, "Strana 1", [280, 800, 320, 810]),
+                ],
+            },
+            {
+                "pageNumber": 2,
+                "width": 595.3,
+                "height": 841.9,
+                "coordinateUnit": "pt",
+                "textLayer": "none",
+                "needsAtr": True,
+                "needsAtrReason": "the rendered page shows text the document's text does not place there",
+                "blocks": [],
+            },
+        ],
+        "metadata": {
+            "routing": {
+                "pages": [
+                    {"page": 1, "route": "text-layer", "text_layer": True},
+                    {"page": 2, "route": "atr", "text_layer": False},
+                    {"page": 3, "route": "empty", "text_layer": False},
+                ]
+            }
+        },
+    }
+
+
+def test_the_stand_in_has_the_atrs_own_blocks_and_echoes_the_force():
+    doc = ats.standin(_mixed_digital(), {2: ["Plán sondy S1", "M 1:50"]})
+    assert doc["pipeline"].startswith("pipeline-e2e") and doc["sourceFormat"] == "pdf-digital"
+    page1, page2 = doc["pages"]
+    assert [b["id"] for b in page1["blocks"]] == ["p1-b0", "p1-b1"], "two text blocks become one ATR block"
+    assert page1["blocks"][0]["content"] == "Nálezová zpráva\nNa následující straně je plán."
+    assert page1["blocks"][0]["bbox"] == [72, 70, 400, 112]
+    assert all("lines" not in b for b in page1["blocks"]), "the ATR writes no block lines"
+    assert (page1["width"], page1["height"], page1["coordinateUnit"]) == (595.3, 841.9, "pt")
+    figure, child = page2["blocks"]
+    assert (figure["type"], child["id"], child["parent"]) == ("figure", "p2-b0.t0", "p2-b0")
+    assert child["content"] == "Plán sondy S1\nM 1:50"
+    assert doc["metadata"]["routing"]["pages"] == [
+        {"page": 1, "route": "atr", "text_layer": True},
+        {
+            "page": 2,
+            "route": "atr",
+            "text_layer": False,
+            "forced": True,
+            "forced_reason": "the rendered page shows text the document's text does not place there",
+        },
+        {"page": 3, "route": "empty", "text_layer": False},
+    ]
+    assert da.check(doc, expect_atr="all", expect_forced="2") == []
+
+
+def test_a_forced_page_without_ocr_text_comes_out_empty():
+    doc = ats.standin(_mixed_digital(), {})
+    assert [p["pageNumber"] for p in doc["pages"]] == [1]
+    assert doc["metadata"]["routing"]["pages"][1] == {
+        "page": 2,
+        "route": "empty",
+        "text_layer": False,
+        "forced": True,
+        "forced_reason": "the rendered page shows text the document's text does not place there",
+    }
+
+
+def test_the_stand_in_refuses_a_document_with_no_page_for_the_atr(tmp_path, capsys):
+    digital = _mixed_digital()
+    del digital["pages"][1]
+    del digital["metadata"]["routing"]["pages"][1]
+    path = tmp_path / "d.docproc.json"
+    path.write_text(json.dumps(digital), encoding="utf-8")
+    assert ats.main([str(path), "--out", str(tmp_path / "out.json")]) == 1
+    assert "no mixed document" in capsys.readouterr().err
+
+
+def test_the_expected_forced_pages_are_checked():
+    doc = ats.standin(_mixed_digital(), {2: ["Plán"]})
+    assert any("forced pages [2], expected []" in p for p in da.check(doc, expect_forced="none"))

@@ -14,7 +14,8 @@ It is a FIXTURE tool, not the converter of D31 (PCSS ALTO into docproc, unassign
   * one `text` block per `TextBlock`, in document order (`readingOrder`), its id `p<page>-b<n>`, its box
     the block's, its `content` the lines joined by a line break, one per visual line (ask 7), so the
     record gets visual lines, not one-unit blocks (D18 rule 5);
-  * the routing lists every page as `atr` (H5), a page with no text block as `empty`;
+  * the routing lists every page as `atr` (H5), a page with no text block as `empty`, and an empty page
+    has no `pages[]` entry (H5, D29);
   * `processedAt` is fixed (the schema requires it; a fixture must not change on every run).
 
 Usage:
@@ -85,17 +86,18 @@ def convert(alto_path: Path) -> Dict[str, Any]:
                 entry["language"] = lang
                 languages[lang] += len(lines)
             blocks.append(entry)
-        pages.append(
-            {
-                "pageNumber": number,
-                "width": _num(page, "WIDTH"),
-                "height": _num(page, "HEIGHT"),
-                "coordinateUnit": "px",
-                "blocks": blocks,
-            }
-        )
+        if blocks:
+            pages.append(
+                {
+                    "pageNumber": number,
+                    "width": _num(page, "WIDTH"),
+                    "height": _num(page, "HEIGHT"),
+                    "coordinateUnit": "px",
+                    "blocks": blocks,
+                }
+            )
         routing.append({"page": number, "route": "atr" if blocks else "empty", "text_layer": False})
-    if not pages:
+    if not routing:
         raise ValueError(f"{alto_path}: no ALTO Page")
     document: Dict[str, Any] = {
         "version": "1.0",
