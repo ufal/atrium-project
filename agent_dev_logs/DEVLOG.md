@@ -4004,3 +4004,32 @@ candidates are six `.3` releases carrying #6's step 1.
   * actionlint and shellcheck;
   * the hub tests.
 * **Not posted; not pushed.**
+
+## 2026-11-16 — #84 round 7: the mixed document, one coordinate space, the record joined to its docproc
+
+* **Asked (K4TEL):** check the `test` heads and #84 against ARÚP's contract of 12 November, and close the gaps in
+  per-repository archives.
+* **Found:** the merge of a mixed document (H6) not built; digital-convert's boxes in pdfplumber's MediaBox frame
+  (D28) and its blank PDF pages sent to the ATR (D29); the proposal without the forced echo (ask 5) or `pixelRatio`;
+  no mixed E2E case, no record↔docproc check, the stand-ins with `pages[]` entries for empty pages (H5).
+* **Written here (not pushed):** `tools/e2e/atr_standin.py`, `fixtures/e2e/mixed/`, `e2e_assert.py --docproc` and
+  H3, `docproc_assert.py` H5 and `--expect-forced`, `alto_to_docproc.py` and its regenerated stand-ins, both lanes,
+  `docs/document_schema.md`, `docs/decisions/e2e-lanes.md`, `fixtures/e2e/README.md`, two docs_site workflow pages;
+  `plans/doc-schema-v2.plan.md` ("Status — round 7").
+* **Checked:** hub tests 748 passed, shared 210; actionlint and the hub's workflow lint; the local chain.
+* **Tools:** ocr-postprocess, digital-convert, nlp-enrich (their own logs).
+* **Merged 11-16** as ufal/atrium-project#89 with the tools' PRs (ocr-postprocess#13, digital-convert#12,
+  nlp-enrich#46). The mixed case of `e2e-digital-smoke.yml` (CLI and service) did not land with #89; it is
+  restored by the follow-up below.
+
+## 2026-11-16 (later) — #84 round 7b: what landed checked; the mixed E2E case restored
+
+* **Asked (K4TEL):** fetch the `test` heads, confirm the round-7 PRs landed, draft the issue comments.
+* **Found:** every delivered file is on `test` byte for byte, or differs only by table padding (four Markdown
+  files), except in the hub: the mixed `scan_page.docx` case of `e2e-digital-smoke.yml`, this file's 11-16 entry
+  and the plan's status line. CI green on all `test` heads; the E2E lanes not dispatched yet.
+* **Written here (not pushed):** `e2e-digital-smoke.yml` (the mixed case, CLI and service, as delivered on 11-16);
+  this entry; `plans/doc-schema-v2.plan.md` (status).
+* **Checked:** actionlint and the hub's workflow lint; the hub tests with the tools at their `test` heads; the
+  restored steps replayed without Docker on the merged tool code.
+* **Not posted; not pushed.**

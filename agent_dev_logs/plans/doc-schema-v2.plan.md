@@ -12,6 +12,16 @@
 > on ARÚP's output contract of 12 November; written **2026-11-11** before the issue existed (one record built by
 > every tool, one `run_uuid` per block, ALTO from the ATR, the D14 merge by decode verdict; superseded)._
 
+**Status (2026-11-16, round 7)**: 🟡 **Merged 11-16: #89 and ocr-postprocess#13, digital-convert#12,
+nlp-enrich#46 (see "Status — round 7"):
+- H6, the merge of a mixed document, in ocr-postprocess (`docproc_merge.py`, `--text-layer-docproc`, `text_layer_docproc`);
+- D28 in digital-convert (boxes on the displayed page, `userUnit`), D29 there too (a blank PDF page routed `empty`);
+- the proposal's asks 5 and 10 (`forced`, `forced_reason`, `pixelRatio`); `canvas.pixel_ratio` and `user_unit` read;
+- the E2E lanes: `blank_page.pdf`, `e2e_assert.py --docproc`, H3 and H5. The mixed case (`tools/e2e/atr_standin.py`)
+  did not land in `e2e-digital-smoke.yml` with #89; a follow-up restores it.
+Left: dispatching both lanes on `:test`, Ronald's asks (10 for the ATR's side), Q6–Q8, Q10–Q20, the cluster run,
+then the tag.**
+
 **Status (2026-11-15, round 2)**: 🟡 **In review as digital-convert#11, ocr-postprocess#12 and #88 (all from
 `multiformat`).
 - ocr-postprocess#12 is green since its fixture was committed.
