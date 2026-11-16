@@ -4064,3 +4064,15 @@ candidates are six `.3` releases carrying #6's step 1.
 * **Tools:** all six (their own logs).
 * **Not posted; not pushed.**
 
+## 2026-11-16 (night, later) — #84 round 8b: the checks of the seven `doc-schema-v2-fix` PRs
+
+* **Asked (K4TEL):** read the PRs opened from `doc-schema-v2-fix` (#91 here; digital-convert#13, ocr-postprocess#15,
+  page-classification#74, nlp-enrich#47, keyword-extract#6, translator#63) and fix what fails.
+* **Found:** pre-commit's end-of-file check on `agent_dev_logs/DEVLOG.md` (#91, ocr-postprocess#15,
+  page-classification#74: round 8's entries ended with a blank line); digital-convert#13's CLI–`/describe` parity
+  test comparing `reader.rendering.sha512`, which differs between two LibreOffice runs on the runner; the six tools'
+  canonical drift check, red until #91 merges and the pins move. No review comments.
+* **Written here (not pushed):** the DEVLOG endings in six repositories; digital-convert's parity test compares the
+  reader without the per-run digest; these logs.
+* **Next:** after #91 is squash-merged and `v1` moved, the six tools' pins (`scripts/pin_hub_reusables.py --sha`).
+* **Not posted; not pushed.**
