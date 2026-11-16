@@ -12,8 +12,9 @@ How ATRIUM names its controlled labels with stable identifiers, what the `page-c
 vocabulary contains in full, and how page-classification and the translator use it.
 
 !!! info "Scope"
-    The registry holds six vocabularies; one of them belongs to page-classification, and the
-    translator uses none. The other five belong to ocr-postprocess and nlp-enrich.
+    The registry holds seven vocabularies; one of them belongs to page-classification, and the
+    translator uses none. The others belong to ocr-postprocess, nlp-enrich, keyword-extract and
+    digital-convert.
     [`docs/skos_strategy.md`](https://github.com/ufal/atrium-project/blob/main/docs/skos_strategy.md)
     is the normative text.
 
@@ -73,16 +74,17 @@ a-page-category:TEXT_HW rdf:type skos:Concept ;
     skos:prefLabel "TEXT_HW"@en .
 ```
 
-## The six vocabularies at a glance
+## The seven vocabularies at a glance
 
-| Scheme              | Concepts | Authority                                              | Record field                                        |
-|---------------------|----------|--------------------------------------------------------|-----------------------------------------------------|
-| **`page-category`** | **11**   | page-classification — `model_registry.py` `CATEGORIES` | `page_categories`, `pages[].category`               |
-| `line-category`     | 7        | ocr-postprocess and digital-convert                    | `lines[].categ`                                     |
-| `quality-band`      | 3        | ocr-postprocess                                        | `pages[].quality_band`                              |
-| `entity-type`       | 4        | nlp-enrich                                             | `entities[].type_teitok`                            |
-| `cnec`              | 28       | nlp-enrich (CNEC 2.0)                                  | `entities[].type_cnec`                              |
-| `theme`             | 11       | keyword-extract's taxonomy                             | none: a derived classification (#51)                |
+| Scheme              | Concepts | Authority                                              | Record field                                                 |
+|---------------------|----------|--------------------------------------------------------|--------------------------------------------------------------|
+| **`page-category`** | **11**   | page-classification — `model_registry.py` `CATEGORIES` | `page_categories`, `pages[].category`                        |
+| `line-category`     | 5        | ocr-postprocess                                        | `lines[].categ`                                              |
+| `decode-verdict`    | 2        | digital-convert                                        | none: docproc line flags `decode:garbled`, `decode:inverted` |
+| `quality-band`      | 3        | ocr-postprocess                                        | `pages[].quality_band`                                       |
+| `entity-type`       | 4        | nlp-enrich                                             | `entities[].type_teitok`                                     |
+| `cnec`              | 28       | nlp-enrich (CNEC 2.0)                                  | `entities[].type_cnec`                                       |
+| `theme`             | 11       | keyword-extract's taxonomy                             | none: a derived classification (#51)                         |
 
 **The translator appears in none of them** — see [below](#the-translator-and-its-glossary).
 
@@ -185,9 +187,9 @@ what [`atrium_vocab.schema.json`](schemas.md#atrium_vocabschemajson) describes.
 
 This table records **provenance**: what this page was written from, not a build instruction.
 
-| Source                                                                                                       | What was taken from it                                                                                                        |
-|--------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
-| `atrium-project/docs/templates/shared/atrium_vocab.py` — run, not only read                                  | `SKOS_BASE`, the minting rules, the six schemes, the concepts and collections, the Turtle excerpt, `validate_labels()` output |
-| `atrium-project/docs/skos_strategy.md` §§0, 5.2, 6, 7                                                        | the design decisions                                                                                                          |
-| `atrium-page-classification@vit` `adee922` — `model_registry.py`, `utils.py`                                 | the authority list, the advisory comparison, `category_uri`                                                                   |
-| `atrium-translator@master` `71feaef` — `load_vocab.py`, `data_samples/vocabulary.csv`, `processors/vocab.py` | the glossary, its columns and its harvester                                                                                   |
+| Source                                                                                                       | What was taken from it                                                                                                          |
+|--------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
+| `atrium-project/docs/templates/shared/atrium_vocab.py` — run, not only read                                  | `SKOS_BASE`, the minting rules, the seven schemes, the concepts and collections, the Turtle excerpt, `validate_labels()` output |
+| `atrium-project/docs/skos_strategy.md` §§0, 5.2, 6, 7                                                        | the design decisions                                                                                                            |
+| `atrium-page-classification@vit` `adee922` — `model_registry.py`, `utils.py`                                 | the authority list, the advisory comparison, `category_uri`                                                                     |
+| `atrium-translator@master` `71feaef` — `load_vocab.py`, `data_samples/vocabulary.csv`, `processors/vocab.py` | the glossary, its columns and its harvester                                                                                     |

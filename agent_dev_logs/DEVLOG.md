@@ -4047,3 +4047,20 @@ candidates are six `.3` releases carrying #6's step 1.
   translator); `planemo lint translator.xml` clean; `planemo workflow_lint --iwc` clean but for the ToolShed lookup
   of IUC Tesseract, which this sandbox cannot reach. The planemo tests need Docker and LINDAT: not run.
 * **Not posted; not pushed.**
+
+## 2026-11-16 (night) — #84 round 8: the meeting's follow-ups A, B, D and E
+
+* **Asked (K4TEL):** implement the follow-ups of comment 3's update that the meeting decided and that need no
+  outside answer, after fetching the `test` heads; per-repository archives.
+* **Fetched:** the hub at `68e8aad` (#90: the translator's pages and the Galaxy wrapper); the six tools unchanged.
+* **Decided in session:** paradata per distribution (C) deferred to the next meeting with Q23; the chain pages keep
+  #90's deferral to the route's redraw.
+* **Written here (not pushed):** the record schema's `$defs/line_key` and `line_key_problems()`; `atrium_vocab`'s
+  `decode-verdict` scheme; `tests/test_document_line_key.py`; `document_schema.md`, `skos_strategy.md`,
+  `k8s_deployment.md`, `document-contract.md` (rewritten for 2.0), `skos.md`, five workflow and ecosystem pages,
+  `all-repos-smoke.yml` (a comment); re-vendored into the six tools.
+* **Checked:** hub 760 passed, shared 210; `mkdocs build --strict`; the docs and workflow lints; every tool's suite
+  and spec; the local chain. Details: `plans/84.plan.md`, "Status — round 8 (implemented)".
+* **Tools:** all six (their own logs).
+* **Not posted; not pushed.**
+
