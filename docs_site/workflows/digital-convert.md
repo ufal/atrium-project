@@ -17,7 +17,9 @@ authored: true
 > rendering shows nothing is routed `empty` (D29), and every box is on the displayed page, origin top-left of the
 > CropBox, after `/Rotate`, in 1/72 inch × UserUnit (D28). When a page needs the ATR the whole document goes
 > through it, and ocr-postprocess builds the record from the ATR's docproc and this one, keeping the text layer's
-> lines on the other pages (H6).
+> lines on the other pages (H6). A spreadsheet keeps every non-empty cell, numbers and dates in the form the sheet
+> displays them: an ODS as its file stored them, an XLSX or XLS as LibreOffice shows it in cs-CZ
+> ([#9](https://github.com/ufal/atrium-digital-convert/issues/9)).
 
 *The digital-convert workflow.* Tool: [atrium-digital-convert](https://ufal.github.io/atrium-digital-convert/).
 The tool was part of **llm-enrich** until 1 October 2026; it continues in a new repository under
