@@ -1,6 +1,6 @@
 # 🔎 ATRIUM cross-repo state — 19 November 2026: Ronald's answers, the pilot's dates
 
-> _Supersedes [`project_state_1211.md`](project_state_1211.md) where they differ; the contract of 12 November stays
+> _Supersedes `project_state_1211.md` where they differ; the contract of 12 November stays
 > the base (D1–D36, H1–H15 as numbered there). Sources: the seven `test` heads of 11-19, every open issue's thread
 > (exports regenerated where behind), and the ARÚP issues they link: ARUP-CAS/aiscr-docs-pipeline (#13, #15, #17,
 > #18–#20), ARUP-CAS/aiscr-atr PR #5, ARUP-CAS/aiscr-webamcr (#3570, the storage contract `9e62a43`). The CAA
