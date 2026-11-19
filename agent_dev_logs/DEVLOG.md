@@ -1,6 +1,6 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #77, #78, #79, #83, #84); #72 and #81 closed 11-16. The starting set of the pilot phase (11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Released since, the starting set unchanged: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5 and v1.4.7, keyword-extract v1.6.5, page-classification v1.13.0 and v1.14.2, translator v1.7.8-beta; each tool's `test` is 13–22 commits past its last tag and declares the unreleased v2.0.0-beta (record 2.0). Hub workflows pinned to `02cbd01` (`v1`, 11-16), which all six tools call by commit; `test` = `main` = `a7e440b` (11-19). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-19 (log round), at the end of the file (this file is not in date order)._
-> _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` (#84: `84.*` since 11-16; the CAA manuscript checked: `digests/13.findings.md`) · `issues/` exports (source of truth). Pairs of closed issues removed 2026-11-19: #51, #72, #81, #82; kept: #18, #31, #32, #53, #55, #57 (cited elsewhere). Cross-repo snapshot: `digests/project_state_1911.md` (prior: `project_state_1111.md`, `project_state_0411.md`, `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #77, #78, #79, #83, #84); #72 and #81 closed 11-16. The starting set of the pilot phase (11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Released since, the starting set unchanged: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5 and v1.4.7, keyword-extract v1.6.5, page-classification v1.13.0 and v1.14.2, translator v1.7.8-beta; each tool's `test` is 13–22 commits past its last tag and declares the unreleased v2.0.0-beta (record 2.0). Hub workflows pinned to `02cbd01` (`v1`, 11-16), which all six tools call by commit; `test` = `main` = `a7e440b` (11-19). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-19 (later: #13, the second review of the manuscript), at the end of the file (this file is not in date order)._
+> _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` (#84: `84.*` since 11-16; the CAA manuscript checked: `digests/13.findings.md`) · `issues/` exports (source of truth). Pairs of closed issues removed 2026-11-19: #51, #72, #81, #82; kept: #18, #31, #32, #53, #55, #57 (cited elsewhere). Cross-repo snapshot: `digests/project_state_1911.md` (prior: `project_state_1211.md`, `project_state_1111.md`, `project_state_0411.md`, `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
 - **#4 SSH Open Marketplace records** — Opened by stranak: create SSHOMP records for every tool in our workflows (UDPipe ✅,
@@ -3814,7 +3814,7 @@ candidates are six `.3` releases carrying #6's step 1.
 * **Asked (K4TEL):** align the logs with ARÚP's output contract of 12 November (the .docx of that day, replacing the
   meeting document of 10 November) and with David Novák's comments of 11-12 (atrium-project#84 opened, #13, #16,
   #78); `test` fetched first (all seven working branches = `test`).
-  Anchor: contract digest · [hub plan of #84](https://github.com/ufal/atrium-project/blob/test/agent_dev_logs/plans/84.plan.md).
+  Anchor: [contract digest](https://github.com/ufal/atrium-project/blob/test/agent_dev_logs/digests/project_state_1211.md) · [hub plan of #84](https://github.com/ufal/atrium-project/blob/test/agent_dev_logs/plans/84.plan.md).
 * **Decided in session:** the tool slices are named `plans/84.plan.md`; the translator keeps `amcr-fields.txt` as a
   documented example that nothing loads (no default list, D34); the hub's #84 plan carries a reply draft agreeing on
   points 1 and 2.
@@ -4153,3 +4153,19 @@ candidates are six `.3` releases carrying #6's step 1.
   triggers), #84 (the routing wording in two tool READMEs); the release batch (#77); the CAA findings, entered by
   hand (#13).
 * Logs only; no code changed. Files delivered as full files.
+
+## 2026-11-19 (later) — #13: the second review of the manuscript
+
+* **Asked (K4TEL):** review the Overleaf export of 13:52 once more, against the code, the seven repositories' logs,
+  the contract of 12 November and the PCJ/PCI rules; report what is left, in chat and in the logs.
+* **Found:** 13 of the round-1 items applied; the figures, the `.bib` and the compiled PDF byte-identical to the
+  morning upload. Left: l.141 (must); the six software `version` lines, plus an entry of its own for the evaluation
+  commit `f14bc4b` (one commit after `v1.9.8-beta`), which l.333 and l.424 cite; l.267; l.422, which now contradicts
+  the corrected l.311; the AI statement (Figures 1–2 are hand-drawn now); the figure items; the handwriting question.
+  The style prints `version` as "Version x." and sorts citations itself (`sortcites=true`).
+* **PCI and CAA:** about 5,200 words for the main text with captions and tables (limit 5,000 without the
+  bibliography); no DOI or SWHID for the cited code; two `% CHECK` comments left in the source.
+* **Written here:** `digests/13.findings.md` (round 2; round 1's items marked where applied), `digests/13.digest.md`,
+  `plans/13.plan.md`, this entry and the header.
+* **Next:** K4TEL enters the items by hand in suggestion mode; the figures this week; the deposits.
+* Logs only; nothing in the manuscript changed here. Files delivered as full files.
