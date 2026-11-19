@@ -12,7 +12,7 @@
   The record gets its own paradata file, `paradata/atrium/document-json`.
 - **One common line representation** (K4TEL): every tool reads and writes `lines[]` in one shape; today the row is
   split by field across four tools, numbered from 0 or 1, and boxed by one tool only. This is the core of
-  doc-schema-v2 ([`../plans/doc-schema-v2.plan.md`](../plans/doc-schema-v2.plan.md)).
+  doc-schema-v2 ([`../plans/84.plan.md`](../plans/84.plan.md)).
 - **SHA-512 and distribution names** identify every input and output in the paradata; `ni:///sha-256` identifiers
   and unstored files go.
 - **Licences: three layers, nothing computed** (below).
@@ -111,7 +111,7 @@ written, stored outputs only; `parameters` that shaped the output; `limits` (sam
 
 ## Questions batched for the next meeting
 
-Not posted on GitHub (working agreement); collected in [`../plans/doc-schema-v2.plan.md`](../plans/doc-schema-v2.plan.md#questions).
+Not posted on GitHub (working agreement); collected in [`../plans/84.plan.md`](../plans/84.plan.md#questions).
 Answers ÚFAL can already give:
 
 - **Which unit do digital-convert's lines use?** pt, top-left origin, from pdfplumber
@@ -123,7 +123,7 @@ Answers ÚFAL can already give:
 
 | Issue                                                                                    | What the meeting changes                                                    | Log                                                                |
 |------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|--------------------------------------------------------------------|
-| doc-schema-v2 (to be opened)                                                             | §8 changes 1–11, the common line representation, SHA-512, docproc alignment | [`../plans/doc-schema-v2.plan.md`](../plans/doc-schema-v2.plan.md) |
+| doc-schema-v2 (to be opened)                                                             | §8 changes 1–11, the common line representation, SHA-512, docproc alignment | [`../plans/84.plan.md`](../plans/84.plan.md)                       |
 | #13 CAA paper                                                                            | minimal corrections C1–C9 and K4TEL's points                                | [`../plans/13.corrections.md`](../plans/13.corrections.md)         |
 | #6 licences                                                                              | three layers; nothing computed                                              | `plans/6.plan.md`                                                  |
 | #77 pilot handover                                                                       | the pilot is a phase; the set is its starting point                         | `plans/77.plan.md`                                                 |

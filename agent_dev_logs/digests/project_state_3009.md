@@ -87,7 +87,7 @@ Consequences, each carried by one plan:
 - **The nlp/llm duplication disappears by construction.** Both copies of the LLM engine and the vocabulary code
   (`llm_utils.py`, `llm_run.py`, `vocab_*.py`, `prompt_template.py`, `corpus_review.py`, `llm_config.txt`: ~360 KB per
   copy; `llm_utils.py` differs by 404 diff lines, `vocab_build.py` by 43, `llm_run.py` by 11, the rest identical) leave
-  both repositories for one: keyword-extractor ([`../plans/72.plan.md`](../plans/72.plan.md) B).
+  both repositories for one: keyword-extractor ([#72](https://github.com/ufal/atrium-project/issues/72), its plan's B).
 - **nlp-enrich becomes a CPU-only LINDAT client**: `yake`, `keybert`, `sentence-transformers` leave
   `requirements.txt:7-9`, and with them torch. Removing `kw_method` from `/enrich` is a breaking spec change, so
   under #32's rule nlp-enrich's next release is **1.0.0** (atrium-nlp-enrich `40.plan.md`).
