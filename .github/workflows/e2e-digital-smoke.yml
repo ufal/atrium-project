@@ -199,6 +199,8 @@ jobs:
       # LibreOffice rendering, so scan_page.docx sends its picture page (2) alone to the ATR and
       # photo_text.docx none; sample.csv and sample.txt take the textual workflow (no geometry,
       # never the ATR) and need ocr-postprocess with their `sourceFormat`s as born-digital.
+      # sample.xlsx keeps every cell as the sheet displays it (#9, motyc 2026-11-18): LibreOffice
+      # shows it in cs-CZ, and the record's lines carry its numbers, dates and booleans in that form.
       - name: Born-digital cases - docproc, then the record
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -256,6 +258,17 @@ jobs:
           case_of photo_text.docx application/vnd.openxmlformats-officedocument.wordprocessingml.document none --expect-layout
           case_of sample.csv text/csv none
           case_of sample.txt text/plain none
+          case_of sample.xlsx application/vnd.openxmlformats-officedocument.spreadsheetml.sheet none
+          python - work/records/sample-xlsx/AMCR-F-sample-xlsx.document.json <<'PY'
+          import json
+          import sys
+
+          record = json.load(open(sys.argv[1], encoding="utf-8"))
+          text = "\n".join(line["text"] for line in record["lines"])
+          for shown in ("1,50", "12 345", "25 %", "15.3.2021", "13:30", "PRAVDA", "-744123,45"):
+              assert shown in text, f"sample.xlsx: {shown!r} is not in the record as the sheet displays it"
+          print("✅ sample.xlsx: every cell, numbers and dates as cs-CZ displays them")
+          PY
 
           # The mixed document (H6): the ATR's docproc (the stand-in) is the stored one, and
           # digital-convert's comes beside it, not stored.

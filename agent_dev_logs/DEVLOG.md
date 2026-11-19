@@ -4093,3 +4093,18 @@ candidates are six `.3` releases carrying #6's step 1.
 * **Next (K4TEL):** after keyword-extract's fix merges, dispatch `e2e-pipeline-smoke.yml` and `e2e-digital-smoke.yml`
   with `image-tag: test`, and its `controlled-live.yml`; then the #84 comment.
 * **Not posted; not pushed.**
+
+## 2026-11-19 — atrium-digital-convert#9: every cell of a sheet in the digital lane
+
+* **Asked:** motyc on atrium-digital-convert#9 (11-18): a spreadsheet keeps every non-empty cell, numbers and dates
+  as the sheet displays them. K4TEL (11-19): digital-convert has LibreOffice display an XLSX or XLS in cs-CZ and
+  reads it as ODS; ocr-postprocess's shared reader keeps every ODS cell.
+* **Written here (not pushed):** `e2e-digital-smoke.yml` gains a CLI case `sample.xlsx` (digital-convert's new
+  fixture) and a check that the record's lines hold its cells as cs-CZ displays them (`1,50`, `12 345`, `25 %`,
+  `15.3.2021`, `13:30`, `PRAVDA`, `-744123,45`); `docs/k8s_deployment.md` (LibreOffice row) and the digital-convert
+  workflow page.
+* **Checked:** actionlint with shellcheck; the lane's two steps replayed locally from the YAML with the tools'
+  branches (every case green, `sample.xlsx` included); the hub tests with the siblings at those branches.
+* **Order:** ocr-postprocess, then digital-convert (it pins ocr-postprocess's merge commit), then this repository;
+  then dispatch the lane with `image-tag: test`.
+* **Not posted; not pushed.**
