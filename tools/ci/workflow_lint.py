@@ -706,6 +706,53 @@ def check_job_hygiene(path: Path, doc: dict, findings: Findings) -> int:
     return checked
 
 
+#: Workflows whose `schedule:` is the agreed exception: the weekly security scans (docs/ci_policy.md).
+SCHEDULE_ALLOWED = {"codeql.yml", "security.yml", "codeql.caller.example.yml", "security.caller.example.yml"}
+#: A branch push that is deployment, not CI: the hub site publishes on a merge into `main`.
+PUSH_BRANCHES_ALLOWED = {"pages.yml": {"main"}}
+
+
+def check_triggers(path: Path, doc: dict, findings: Findings) -> int:
+    """Check -- CI runs on pull requests and releases only (docs/ci_policy.md).
+
+    The working agreement of 11 November 2026: no CI run on a branch push, and no scheduled run
+    when the code has not changed, apart from security. A version tag push (`push: tags:`) is the
+    release event and stays; `workflow_dispatch` and `workflow_call` are not automatic. The two
+    exceptions are SCHEDULE_ALLOWED and PUSH_BRANCHES_ALLOWED. Returns the triggerable workflows
+    checked. Off unless `--event-driven`, which workflow-lint.reusable.yml passes.
+    """
+    if not (doc.get("jobs") or {}):
+        return 0  # dependabot config or similar -- not a workflow
+    triggers = doc.get(True) or doc.get("on") or {}
+    if isinstance(triggers, str):
+        triggers = {triggers: None}
+    elif isinstance(triggers, list):
+        triggers = {name: None for name in triggers}
+    if not isinstance(triggers, dict) or set(triggers) <= {"workflow_call"}:
+        return 0
+    if "push" in triggers:
+        spec = triggers.get("push") or {}
+        branches = spec.get("branches") if isinstance(spec, dict) else None
+        tags = spec.get("tags") if isinstance(spec, dict) else None
+        ignored = spec.get("branches-ignore") if isinstance(spec, dict) else None
+        allowed = PUSH_BRANCHES_ALLOWED.get(path.name, set())
+        if branches is not None or ignored is not None or tags is None:
+            if not (branches is not None and set(branches) <= allowed and ignored is None):
+                findings.error(
+                    path,
+                    "runs on a branch push. CI runs on pull requests and releases only "
+                    "(docs/ci_policy.md): use `pull_request:` (with the same `paths:` if any); a "
+                    "version tag push (`push: tags:`) is the release event and may stay.",
+                )
+    if "schedule" in triggers and path.name not in SCHEDULE_ALLOWED:
+        findings.error(
+            path,
+            "has a `schedule:`. Scheduled runs are allowed for the weekly security scans only "
+            "(codeql.yml, security.yml; docs/ci_policy.md); run this one by `workflow_dispatch`.",
+        )
+    return 1
+
+
 def _step_uses(doc: dict):
     """Yield (job name, `uses:` value) for every STEP of a parsed workflow.
 
@@ -1131,6 +1178,12 @@ def main(argv: list[str] | None = None) -> int:
         "scripts/pin_hub_reusables.py sweep, atrium-project#72 E.2)",
     )
     parser.add_argument(
+        "--event-driven",
+        action="store_true",
+        help="refuse branch-push triggers and schedules outside the security scans: CI runs on pull "
+        "requests and releases only (docs/ci_policy.md). workflow-lint.reusable.yml passes it",
+    )
+    parser.add_argument(
         "--repo-name",
         default=os.environ.get("GITHUB_REPOSITORY"),
         help="owner/repo the linted tree belongs to, used to resolve `${{ github.repository }}` in "
@@ -1148,7 +1201,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"::error::no workflow files found under {root}", file=sys.stderr)
         return 1
 
-    pins = perms = inputs = 0
+    pins = perms = inputs = triggers = 0
     shapes = refs = hygiene = required = floors = releases = optional = 0
     docs: dict[Path, dict] = {}
     for path in paths:
@@ -1172,6 +1225,9 @@ def main(argv: list[str] | None = None) -> int:
         floors += check_action_floor(rel, doc, findings)
         # #81.
         optional += check_optional_markers(rel, text, findings)
+        # The CI agreement of 11 November 2026.
+        if args.event_driven:
+            triggers += check_triggers(rel, doc, findings)
     check_duplicate_names(docs, findings)
     compose = check_compose(root, hub_root, args.repo_name, findings)
 
@@ -1191,6 +1247,7 @@ def main(argv: list[str] | None = None) -> int:
             f"{shapes} caller templates contain a `uses:`; "
             f"{floors} floor-listed actions at or above the floor; "
             f"{optional} optional exits marked `# ci-optional:`; "
+            f"{triggers} workflows trigger on pull requests, releases or dispatch only; "
             f"{compose['files']} compose files: {compose['published']} GHCR images published by docker.yml, "
             f"{compose['local']} local-only images pinned to `pull_policy: build`, "
             f"{compose['data']} services writing ./data as a set user; "

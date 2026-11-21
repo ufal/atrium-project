@@ -1,8 +1,10 @@
-# atrium-project — generic scheduled "slow lane" smoke tests
+# atrium-project — generic on-demand "slow lane" smoke tests
 # Drops into: .github/workflows/scheduled-smoke.yml
 #
-# PR CI runs `pytest -m "not slow"`. This nightly job catches upstream breakage
-# (moved/renamed HF models, vanishing external APIs, reachability issues).
+# PR CI runs `pytest -m "not slow"`. This job, run by dispatch (before a release, say),
+# catches upstream breakage (moved/renamed HF models, vanishing external APIs,
+# reachability issues). It has no schedule: the CI agreement allows scheduled runs for
+# security scans only (docs/ci_policy.md).
 #
 # No `pip-audit` step (atrium-project#69). This template used to run
 # `pip-audit || true`, which can never fail: a gate in name only, copied into every
@@ -10,14 +12,12 @@
 # docs/docker_gha_roadmap.md §10; the image-level gate is Trivy's fixable-CRITICAL
 # check in docker-tool.reusable.yml. Add an audit here only as a step that can fail.
 
-name: Scheduled Smoke Tests
+name: Fresh-environment Smoke Tests (manual)
 
 on:
-  schedule:
-    - cron: "0 3 * * *"    # daily 03:00 UTC
   workflow_dispatch:
 
-# A nightly that overlaps its own previous run (a slow external API, a stuck model
+# A run that overlaps its own previous run (a slow external API, a stuck model
 # download) doubles the load on the very upstream it is probing. Serialise, but do
 # not cancel: a partial smoke reports nothing useful.
 concurrency:
@@ -39,7 +39,6 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
-      issues: write
     steps:
       - uses: actions/checkout@v7
 
@@ -77,16 +76,3 @@ jobs:
           PYTHONPATH: .
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: python -m pytest -m slow -v --tb=short
-
-      # One open issue per failing lane, commented on by each later failure; scheduled runs only
-      # (atrium-project#81, docs/ci_policy.md, Noise).
-      - name: Open or update the lane's issue on scheduled failure
-        if: failure() && github.event_name == 'schedule'
-        uses: ufal/atrium-project/.github/actions/lane-failure-issue@v1
-        with:
-          lane: scheduled-smoke
-          title: Scheduled smoke tests failed
-          labels: ci,upstream
-          body: |
-            The scheduled `slow` test run failed. Likely an upstream change (Hugging Face model or
-            revision, an external dependency, or the network).

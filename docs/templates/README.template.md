@@ -1,12 +1,13 @@
 # «atrium-tool»: «one line: what it produces from what»
 
 <!--
-README skeleton for an ATRIUM tool repository (atrium-project#79). The rules are in
+README skeleton for an ATRIUM tool repository. The rules are in
 atrium-project/docs/documentation-style.md. Aim for 100-250 lines; link to deeper pages instead of
 growing this one. Leave out a section that does not matter for this tool rather than filling it.
 The H1 above feeds the hub's landing card (_generators/repos.py): keep it to the tool's name and one
 plain clause. Write the opening for a reader who is not a programmer: an archivist or a project manager
-should understand it. No issue numbers, release numbers or repository history above the last section.
+should understand it. No issue numbers, decision codes, release numbers or repository history above the
+last section. Use the standard sentences of the style guide where their facts appear.
 Delete this comment.
 -->
 
@@ -27,14 +28,25 @@ belong in docs/reference/, not here.»
 
 ## Quick start
 
-**What you need:** «Docker, or Python X.Y and a checkout»; «network access to … (model downloads on the
+**What you need:** «Python X.Y and a checkout, or Docker»; «network access to … (model downloads on the
 first start, LINDAT, an LLM backend), or none»; «a GPU, or not».
 
-«The shortest path to a real result: the published image, or the CLI.»
+«The shortest path to a real result, from a checkout of this branch:»
 
 ```bash
-docker run --rm -p 8000:8000 ghcr.io/ufal/atrium-«tool»-api:«X.Y.Z»
-curl --fail-with-body -sS -X POST localhost:8000/«endpoint» -F "file=@«sample in this repo»"
+git clone https://github.com/ufal/atrium-«tool».git && cd atrium-«tool»
+pip install -r requirements.txt
+python3 «cli».py «sample in this repo» -o out
+```
+
+«The same as a service, from the published image. Start it in the background, wait until it is ready,
+call it, and stop it:»
+
+```bash
+docker run -d --name atrium-«tool» -p 8000:8000 ghcr.io/ufal/atrium-«tool»-api:<version>   # «first release that does this, e.g. 2.0.0-beta», without its v
+until curl -fsS localhost:8000/ready >/dev/null; do sleep 5; done
+curl --fail-with-body -sS -X POST localhost:8000/«endpoint» -F "file=@«sample in this repo»" -o out.json
+docker rm -f atrium-«tool»
 ```
 
 Expected result (abridged):
@@ -43,11 +55,15 @@ Expected result (abridged):
 {«the few fields a reader should check»}
 ```
 
-«What the reader should see, in one sentence, and what happens when an external service is missing.»
+«What the reader should see, in one sentence, and what happens when an external service is missing.
+If an older release behaves differently, one line: "Releases before «X.Y.Z» are described by the README at
+their tag."»
 
 ## Where it fits in ATRIUM
 
-«One paragraph: the stage before and after this one, linking the hub's workflow page for this tool.»
+«One paragraph: this tool's step in the AMČR pipeline, what it reads and what it hands on, linking the
+route on the hub's [Pipelines](https://ufal.github.io/atrium-project/pipelines/) page and this tool's
+workflow page. Do not retell the whole route.»
 
 ## Limits and maturity
 
@@ -75,9 +91,12 @@ Terms used across the tools are explained in the
 ## Licence, citation and acknowledgements
 
 «The code licence; the licences of models and data it uses, linked to their inventory (`para_config.txt`);
-how to cite (`CITATION.cff`). Acknowledgements name ATRIUM (GA 101132163), the LINDAT/CLARIAH-CZ research
-infrastructure and the AIS CR infrastructure (LM2023031); keep both infrastructures named (#79). The exact
-wording of the LINDAT/CLARIAH-CZ acknowledgement is agreed with its coordinator.»
+the standard licences sentence; how to cite (`CITATION.cff`).»
+
+Developed by [ÚFAL](https://ufal.mff.cuni.cz/), Charles University. Funded by the European Union under
+Horizon Europe ([ATRIUM](https://atrium-research.eu/), GA 101132163), with the support of the
+LINDAT/CLARIAH-CZ (LM2023062) and AIS CR (LM2023031) research infrastructures, funded by the Ministry of
+Education, Youth and Sports of the Czech Republic. Contact: the [issue tracker](«issues link»).
 
 «If the repository had another name: "Formerly `«old name»`; its history is in
 [docs/development.md](docs/development.md)." One line.»

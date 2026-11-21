@@ -1,31 +1,47 @@
 ---
 title: Schemas
 nav_order: 9
-status: partial
-round: 6
-issue: 57
+status: published
+round: 8
+issue: 79
 ---
 
 # Schemas
 
-The two JSON Schemas the ecosystem ships, read field by field for the parts page-classification
-and the translator write.
+This page lists the schemas the ATRIUM tools write and check against, their versions and how they
+change, and how to validate a file by hand. It is for integrators. What each field of the record means,
+and who writes it, is on [The document contract](../ecosystem/document-contract.md).
 
-!!! info "Scope"
-    The schemas cover every block. The annotations below cover the fields owned by
-    page-classification and the translator; the blocks of ocr-postprocess, nlp-enrich,
-    keyword-extract and digital-convert are described in the schema itself.
+## The schema files
 
-Both files are canonical in the hub (`docs/templates/shared/`) and vendored byte-identically into
-every tool, where `para-drift` checks them.
+| Schema                                      | What it validates                                                      | Version                          | Home                                                                                                                                                       |
+|---------------------------------------------|------------------------------------------------------------------------|----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `atrium_document.schema.json`               | the ATRIUM document record (`atrium/document-json`)                    | `2.0`                            | the hub's `docs/templates/shared/`, copied into every tool                                                                                                 |
+| `atrium_document.schema.doc-schema-v1.json` | records of the published 1.x schema                                    | `1.0`, frozen as `doc-schema-v1` | the same, never edited                                                                                                                                     |
+| `atrium_vocab.schema.json`                  | the JSON-LD export of the vocabulary registry                          | `1.0`                            | the same                                                                                                                                                   |
+| the docproc schema                          | the layout that digital-convert and the ATR write (`atr/docproc-json`) | as ARÚP versions it              | ARÚP's contract, kept in the aiscr-docs-pipeline repository under an ARUP-CAS identifier; digital-convert validates against its copy in `schemas/docproc/` |
+| `teitok.xsd`                                | nlp-enrich's TEITOK files (`atr/teitok-xml`)                           | `teitok-2`                       | nlp-enrich's `schemas/teitok/`                                                                                                                             |
+
+The paradata have no JSON Schema of their own: their format, version 3.0, is defined by the shared
+`atrium_paradata.py` and described in the hub's
+[`paradata_schema.md`](https://github.com/ufal/atrium-project/blob/main/docs/paradata_schema.md). The
+shared files are canonical in the hub and copied byte for byte into every tool, where the `para-drift`
+check keeps them identical.
 
 ## `atrium_document.schema.json`
 
-The schema of the [document record](../ecosystem/document-contract.md) — JSON Schema, version
-`1.0` (`2.0` on the hub's `test` branch, atrium-project#84: content only, see the version
-policy below). It validates with `additionalProperties: true` at the top level and on most blocks,
-by design: rule 6 of the contract says a stage must carry blocks it does not recognise forward
-untouched.
+The schema of the [document record](../ecosystem/document-contract.md), JSON Schema, version `2.0`. What it
+enforces:
+
+- **Identity.** `schema_version`, `record_type` and `doc_id` are required, and so is either `source` or at
+  least one content block: a step that ran and wrote nothing is refused.
+- **Content only.** The blocks and fields that schema 2.0 removed — `provenance`, `assembled`,
+  `derived_from`, `regenerable`, `forms`, `tables`, `content.reading_order`, the line styles and the page
+  verdicts — are refused by name.
+- **Unknown blocks pass.** The top level and most blocks allow additional properties, by design: a step
+  must carry blocks it does not recognise forward untouched.
+- **One line key.** A line is named by `page` and `line`; when the record has `lines[]`, the shared module
+  checks that every entity and every `enrichment` item names a line that exists.
 
 ### `page_categories` — written by page-classification
 
@@ -37,55 +53,18 @@ untouched.
 | `enum`   | **none, on purpose**                                                         |
 | Examples | `{"1": "TEXT", "2": "DRAW"}`                                                 |
 
-**`x-atrium-scheme`** is an ATRIUM annotation, not a JSON Schema keyword: validators ignore
-it, and it tells a reader which controlled vocabulary the values come from. A consumer turns
-a value into its SKOS URI with `atrium_vocab.concept_uri("page-category", value)` — for
-`TEXT_HW`, `https://w3id.org/atrium/page-category/TEXT_HW`. See
-[SKOS & the ATRIUM vocabulary](skos.md).
-
-### `pages[]` — shared, keyed by `page`
-
-| Field                                                                                                         | Type                 | Written by                                          |                                                                                  |
-|---------------------------------------------------------------------------------------------------------------|----------------------|-----------------------------------------------------|----------------------------------------------------------------------------------|
-| `page`                                                                                                        | string, **required** | whoever creates the row                             | a label, so `iv` or `A-1` survive; never derive order from it — use `page_index` |
-| `category`                                                                                                    | string               | page-classification                                 | the same label as `page_categories` for that page                                |
-| `category_confidence`                                                                                         | number, 0–1          | page-classification                                 | the top-1 score, `SCORE-1` of the result table                                   |
-| `page_index`, `quality_score`, `quality_band`, `needs_ocr`, `needs_ocr_reason`, `ocr`, `canvas`, `text_layer` |                      | the originator (`text_layer`: digital-convert only) | not written by either documented tool                                            |
-
-Items allow additional properties. page-classification writes `category` and
-`category_confidence` through a **keyed merge** on `page`, so a row another stage created is
-extended, never replaced.
-
-### `translations` — written by the translator
-
-| Field                      | Type   | What the translator writes                                                                                                                                                                                                                                                                                                                |
-|----------------------------|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `source_lang`              | string | the source language as requested — a code such as `"cs"`, or `"auto"` when it was detected per block or field                                                                                                                                                                                                                             |
-| `target_lang`              | string | e.g. `"en"`                                                                                                                                                                                                                                                                                                                               |
-| `backend`                  | string | the backend's registry name: `lindat`, `openai_compatible` or `ct2`                                                                                                                                                                                                                                                                       |
-| `output_mode`              | string | `replace` or `append` — carried as an additional property, which the block allows                                                                                                                                                                                                                                                         |
-| `detected_source_lang`     | string | with `source_lang: "auto"` only: the language the document resolved to, e.g. `"cs"` — also an additional property                                                                                                                                                                                                                         |
-| `unsupported_source_langs` | object | with `source_lang: "auto"` only, and only when it happened: language codes identified with confidence but not translatable, each with its number of segments, e.g. `{"la": 1}`; those segments were translated from the fallback language and their `_log.csv` rows say `unsupported_lang` (since `v1.4.0-beta`) — an additional property |
-
-No field is required. The translated text itself is not in this block: the file is referenced
-from `derived_from.translated_xml`.
-
-### `entities[].translation_en`
-
-Declared as a string and assigned to the translator. Entities are created by nlp-enrich, which
-runs after the translator, so the field is reserved rather than filled in the current
-pipeline order.
-
-### `derived_from`
-
-An object of strings, with no owner check: any program can write any key. The two tools write
-`classification` (page-classification) and `translated_xml` (the translator) — see
-[what they point at](../ecosystem/document-contract.md#what-the-references-point-at).
+**`x-atrium-scheme`** is an ATRIUM annotation, not a JSON Schema keyword: validators ignore it, and it
+tells a reader which controlled vocabulary the values come from. The line categories carry it too
+(`line-category`). A consumer turns a value into its SKOS URI with
+`atrium_vocab.concept_uri("page-category", value)` — for `TEXT_HW`,
+`https://w3id.org/atrium/page-category/TEXT_HW`. There is no `enum`, because page-classification derives
+its label list from its training folders at run time; a naming slip gives an advisory note from the
+registry rather than a failed pipeline. See [SKOS & the ATRIUM vocabulary](skos.md).
 
 ### Validating a record
 
-Every tool validates the record it writes before writing it. To check one by hand, against
-the vendored schema:
+Every tool validates the record it writes before writing it. To check one by hand, against the vendored
+schema:
 
 ```python
 import json, jsonschema
@@ -95,62 +74,52 @@ record = json.load(open("CTX000000003.document.json"))
 jsonschema.validate(record, schema)  # raises ValidationError on failure
 ```
 
-or through the shared module, which also applies the version rules below:
+or through the shared module, which also applies the version rules below and checks the line references:
 `atrium_document.load_document(path)` refuses a newer major version and migrates an older one.
 
 ## `atrium_vocab.schema.json`
 
-A structural schema for the **JSON-LD export** of the vocabulary registry
-(`atrium_vocab.py --jsonld`) — not for the record. It pins the `@context` prefixes (`skos`, `dct`,
-`rdfs`, and the source vocabularies), requires a `registry_version`, and allows three node types in
-`@graph`: `skos:Concept` (must have `inScheme`, `prefLabel`, `notation`), `skos:ConceptScheme`
-(must have a title, description and comment) and `skos:Collection` (must have a `prefLabel`).
+A structural schema for the **JSON-LD export** of the vocabulary registry (`atrium_vocab.py --jsonld`) — not
+for the record. It pins the `@context` prefixes (`skos`, `dct`, `rdfs`, and the source vocabularies),
+requires a `registry_version`, and allows three node types in `@graph`: `skos:Concept` (must have
+`inScheme`, `prefLabel`, `notation`), `skos:ConceptScheme` (must have a title, description and comment) and
+`skos:Collection` (must have a `prefLabel`).
 
 It is vendored into every tool and byte-checked by `para-drift`. See
 [SKOS & the ATRIUM vocabulary](skos.md).
 
 ## Version policy
 
-| Contract            | Version                                                                                                                      | On a newer major          | On an older major                          |
-|---------------------|------------------------------------------------------------------------------------------------------------------------------|---------------------------|--------------------------------------------|
-| document record     | `1.0`, frozen as [`doc-schema-v1`](https://github.com/ufal/atrium-project/releases/tag/doc-schema-v1); `2.0` pending (below) | `load_document()` refuses | migrated                                   |
-| paradata            | `2.0`; `3.0` pending (below)                                                                                                 | refused                   | migrated (`1.0 → 2.0` adds `docker_image`) |
-| vocabulary registry | `1.0`                                                                                                                        | —                         | —                                          |
-| RO-Crate            | `1.1` (the RO-Crate specification's version)                                                                                 | —                         | —                                          |
+| Contract            | Version the tools write                                                                                                | On a newer major          | On an older major                                                  |
+|---------------------|------------------------------------------------------------------------------------------------------------------------|---------------------------|--------------------------------------------------------------------|
+| document record     | `2.0`; the published reference is [`doc-schema-v1`](https://github.com/ufal/atrium-project/releases/tag/doc-schema-v1) | `load_document()` refuses | migrated on read (`1.x → 2.0` drops the removed blocks and fields) |
+| paradata            | `3.0`                                                                                                                  | refused                   | migrated on read (`2.x → 3.0` drops the calculated licence)        |
+| vocabulary registry | `1.0`                                                                                                                  | —                         | —                                                                  |
+| RO-Crate            | `1.2`, with the Process Run Crate profile `0.5`                                                                        | —                         | —                                                                  |
 
-An **additive** change — a new optional field, a new block — does not bump a version. A
-**breaking** change bumps the major and ships a `_migrate_X_to_Y()` function. A record missing
-`schema_version` is read as `1.0`.
+An **additive** change — a new optional field, a new block — does not bump a version. A **breaking** change
+bumps the major and ships a `_migrate_X_to_Y()` function. A record missing `schema_version` is read as
+`1.0`. Files on disk are never rewritten: migration happens in memory, when a file is read.
 
-**Pending: record `2.0` and paradata `3.0`** (atrium-project#84, the hub's `test` branch). The
-record holds content only — no `provenance`, `assembled`, `derived_from`, `regenerable`, licence or
-layout — and the paradata name every input and output by AMČR distribution name and SHA-512, with
-no licence fields. Both migrate older records on read. `doc-schema-v2` is tagged only after the
-validator, the E2E checks and a run through the assembled chain; until then `doc-schema-v1` is the
-published reference. See the hub's
-[`document_schema.md`](https://github.com/ufal/atrium-project/blob/main/docs/document_schema.md) and
-[`paradata_schema.md`](https://github.com/ufal/atrium-project/blob/main/docs/paradata_schema.md).
+**`doc-schema-v2`.** The tools write record schema 2.0. It is published as the tag `doc-schema-v2` once it
+has passed the validator, the end-to-end checks and a run through the assembled chain; until then
+`doc-schema-v1` is the published reference.
 
-The document record's freeze is a tag, one per major: `doc-schema-v1` is commit `544298b`, and it
-never moves. An additive change after it keeps that tag as the reference, but has to be registered.
-Every tool carries the frozen copy, `atrium_document.schema.doc-schema-v1.json`, and a vendored
-`tests/test_schema_freeze.py` that checks its own schema against it: nothing declared at the freeze
-removed, and every constraint added since listed in one register (eleven entries by 13 October,
-from `lines[].style.region` to `teater_category_ids`; the table is in `document_schema.md`
-§"Post-freeze register"). The hub also checks that every record shape the tools write validates
-against both the frozen schema and the current one. The rule and the procedure for a new major are
-in the hub's
+**The freeze.** A record schema's freeze is a tag, one per major: `doc-schema-v1` is commit `544298b`, and it
+never moves. Every tool carries the frozen copy, `atrium_document.schema.doc-schema-v1.json`, and a vendored
+`tests/test_schema_freeze.py` that pins it by its git blob id. The hub also checks that every record shape the
+tools write validates against the current schema. The rule and the procedure for a new major are in the hub's
 [`document_schema.md`](https://github.com/ufal/atrium-project/blob/main/docs/document_schema.md#freeze--conformance).
 
 ## Sources
 
 This table records **provenance**: what this page was written from, not a build instruction.
 
-| Source                                                                                                                  | What was taken from it                                       |
-|-------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------|
-| `atrium-project/docs/templates/shared/atrium_document.schema.json`                                                      | every field definition quoted above                          |
-| `atrium-project/docs/templates/shared/atrium_vocab.schema.json`                                                         | the registry schema                                          |
-| `atrium-project/docs/templates/shared/test_schema_freeze.py`, tag `doc-schema-v1` (`544298b`)                           | the freeze tag, the post-freeze register                     |
-| `atrium-project/docs/templates/shared/atrium_document.py`, `atrium_paradata.py`, `atrium_vocab.py`, `atrium_rocrate.py` | version constants, the load/migrate behaviour, `concept_uri` |
-| `atrium-page-classification@vit` `adee922` — `run.py`, `atrium_document_adapter.py`                                     | what page-classification writes                              |
-| `atrium-translator` `v1.2.1-beta` — `utils.py`, `processors/backend.py`                                                 | what the translator writes, and the backend names            |
+| Source                                                                                                                  | What was taken from it                                           |
+|-------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------|
+| `atrium-project/docs/templates/shared/atrium_document.schema.json` (`test`)                                             | what the record schema enforces, `page_categories`               |
+| `atrium-project/docs/templates/shared/atrium_vocab.schema.json`                                                         | the registry schema                                              |
+| `atrium-project/docs/templates/shared/test_schema_freeze.py`, tag `doc-schema-v1` (`544298b`)                           | the freeze                                                       |
+| `atrium-project/docs/templates/shared/atrium_document.py`, `atrium_paradata.py`, `atrium_vocab.py`, `atrium_rocrate.py` | version constants, the load and migrate behaviour, `concept_uri` |
+| `atrium-digital-convert/schemas/docproc/`, `atrium-nlp-enrich/schemas/teitok/` (`test`)                                 | the docproc and TEITOK schemas                                   |
+| ARÚP's output contract of 12 November 2026, section 4                                                                   | the home of the docproc schema                                   |

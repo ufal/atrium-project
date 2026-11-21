@@ -4,24 +4,23 @@
 # repo's real branches, and adjust the `with:` inputs. The values below are
 # atrium-page-classification's; every input except `image-name` is optional.
 #
-# Builds, tests, scans and publishes to GHCR. On a tag push it additionally runs
-# the Trivy digest scan and uploads SARIF to code scanning.
+# Builds, tests and probes the images of every pull request. When a pull request is
+# merged into `test` (its `closed` event), it does the same on the merge commit and
+# publishes the `:test` image. A version tag is release.yml's: it calls the same
+# reusable, which then also runs the Trivy digest scan and promotes the release tags.
 
 name: Docker Build & Publish
 
 on:
-  push:
-    branches: [vit, test, clip, master]   # use THIS repo's real branches
-    tags: ['v*']
   pull_request:
-    branches: [vit, test, clip, master]   # keep identical to push, or PRs skip the check
-  release:
-    types: [published]
+    branches: [vit, test, clip, master]
+    # `closed` lets a merge into `test` publish `:test`; an unmerged close runs nothing.
+    types: [opened, synchronize, reopened, closed]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  # Tag pushes are EXEMPT from cancellation: a release build must never be
-  # cancelled by a later push, or the tag publishes a partial image set.
+  # A tag build is EXEMPT from cancellation (in release.yml, which shares this rule):
+  # a release build must never be cancelled, or the tag publishes a partial image set.
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:

@@ -17,10 +17,8 @@
 name: Security & Supply-chain
 
 on:
-  push:
-    branches: [test, master]     # use THIS repo's real branches
   pull_request:
-    branches: [test, master]     # keep identical to push, or PRs skip the check
+    branches: [test, master]     # use THIS repo's real branches
   schedule:
     - cron: "0 5 * * 1"          # weekly re-scan; stagger across repos
   workflow_dispatch:

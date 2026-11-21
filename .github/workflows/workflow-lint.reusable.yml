@@ -106,7 +106,7 @@ jobs:
           # shellcheck disable=SC2086 — OFFLINE and REQUIRE_SHA_PINS are single optional flags
           python hub-repo/tools/ci/workflow_lint.py \
             --repo-root tool-repo \
-            --hub-root hub-repo $OFFLINE $REQUIRE_SHA_PINS
+            --hub-root hub-repo --event-driven $OFFLINE $REQUIRE_SHA_PINS
 
       # atrium-project#72 A.3: a production image holds its stage and the approved shared
       # components, nothing else. The caller's .github/production-image.json lists the stage's

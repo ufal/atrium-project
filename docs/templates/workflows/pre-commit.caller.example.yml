@@ -14,10 +14,8 @@
 name: pre-commit
 
 on:
-  push:
-    branches: [test, master]     # use THIS repo's real branches
   pull_request:
-    branches: [test, master]     # keep identical to push, or PRs skip the check
+    branches: [test, master]     # use THIS repo's real branches
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

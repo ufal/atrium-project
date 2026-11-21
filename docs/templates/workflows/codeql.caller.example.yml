@@ -10,10 +10,8 @@
 name: CodeQL
 
 on:
-  push:
-    branches: [test, master]     # use THIS repo's real branches
   pull_request:
-    branches: [test, master]     # keep identical to push, or PRs skip the check
+    branches: [test, master]     # use THIS repo's real branches
   schedule:
     # Weekly, to catch advisories published since the last push. The schedule
     # lives here, not in the reusable — `on:` can only be declared by the caller.

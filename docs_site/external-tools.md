@@ -575,8 +575,9 @@ here; their building blocks are BY (attribution), NC (non-commercial) and SA (sh
 
 **Where ATRIUM uses it.** The paradata lists every component a run used with its licence, as an
 SPDX identifier or a display name; `para_licenses.py`, vendored into every tool, normalises the
-names. The module also still writes an older calculated field; it is not a licence and is not to be
-used ([an old field to ignore](ecosystem/licences.md#an-old-field-to-ignore)).
+names. It computes no licence: records and paradata of the older schemas carried a calculated field,
+which is not a licence and is not to be used
+([older records and crates](ecosystem/licences.md#older-records-and-crates)).
 
 **Worth knowing.**
 

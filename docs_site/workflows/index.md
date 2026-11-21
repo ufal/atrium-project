@@ -18,19 +18,19 @@ tool at a time and describe it the way a person using only that tool meets it.
 
 ## The six narratives
 
-| Tool                                          | Depth       | What the workflow does                                                                                                                                           | SSH Open Marketplace                                                                                                                                   |
-|-----------------------------------------------|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [page-classification](page-classification.md) | full        | sorts scanned archive pages into eleven categories that decide how each page is processed next                                                                   | tool [`RER7Fw`](https://marketplace.sshopencloud.eu/tool-or-service/RER7Fw)                                                                            |
-| [ocr-postprocess](ocr-postprocess.md)         | stable core | turns OCR output into per-page text and a table of text lines labelled by language and OCR quality                                                               | tool [`YParYU`](https://marketplace.sshopencloud.eu/tool-or-service/YParYU)                                                                            |
-| [translator](translator.md)                   | full        | translates the text inside XML documents and writes it back without changing their structure                                                                     | tool [`CizIUW`](https://marketplace.sshopencloud.eu/tool-or-service/CizIUW) · workflow [`13eHAZ`](https://marketplace.sshopencloud.eu/workflow/13eHAZ) |
-| [nlp-enrich](nlp-enrich.md)                   | stable core | adds lemmas, part-of-speech tags, syntax and named entities to text lines, and writes TEITOK XML                                                                 | tool [`EMhu3X`](https://marketplace.sshopencloud.eu/tool-or-service/EMhu3X)                                                                            |
-| [keyword-extract](keyword-extract.md)         | stable core | finds statistical keywords, and maps text onto the AMČR and TEATER vocabularies with a language model                                                            | tool [`j9fqxo`](https://marketplace.sshopencloud.eu/tool-or-service/j9fqxo)                                                                            |
-| [digital-convert](digital-convert.md)         | stable core | reads born-digital PDF, DOCX, ODT, ODS, XLSX and RTF files (DOC and XLS through LibreOffice) into the document record without OCR, and flags pages that need OCR | tool [`jGxgQI`](https://marketplace.sshopencloud.eu/tool-or-service/jGxgQI)                                                                            |
+| Tool                                          | Depth       | What the workflow does                                                                                                | SSH Open Marketplace                                                                                                                                   |
+|-----------------------------------------------|-------------|-----------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [page-classification](page-classification.md) | full        | sorts scanned archive pages into eleven categories that describe their content, for review and later analysis         | tool [`RER7Fw`](https://marketplace.sshopencloud.eu/tool-or-service/RER7Fw)                                                                            |
+| [ocr-postprocess](ocr-postprocess.md)         | stable core | builds the record of a document from its layout (docproc), and labels every text line with its language and quality   | tool [`YParYU`](https://marketplace.sshopencloud.eu/tool-or-service/YParYU)                                                                            |
+| [translator](translator.md)                   | full        | translates the free-text fields of AMČR metadata records into English, in place; other XML for research and batch use | tool [`CizIUW`](https://marketplace.sshopencloud.eu/tool-or-service/CizIUW) · workflow [`13eHAZ`](https://marketplace.sshopencloud.eu/workflow/13eHAZ) |
+| [nlp-enrich](nlp-enrich.md)                   | stable core | adds lemmas, part-of-speech tags, syntax and named entities to text lines, and writes TEITOK XML                      | tool [`EMhu3X`](https://marketplace.sshopencloud.eu/tool-or-service/EMhu3X)                                                                            |
+| [keyword-extract](keyword-extract.md)         | stable core | finds statistical keywords, and maps text onto the AMČR and TEATER vocabularies with a language model                 | tool [`j9fqxo`](https://marketplace.sshopencloud.eu/tool-or-service/j9fqxo)                                                                            |
+| [digital-convert](digital-convert.md)         | stable core | reads born-digital PDF and office files into docproc without OCR, with a verdict on every page's text layer           | tool [`jGxgQI`](https://marketplace.sshopencloud.eu/tool-or-service/jGxgQI)                                                                            |
 
 The six tools are also steps of one chain: the AMČR text workflow, which ARÚP curates on the
 SSH Open Marketplace as [`0xSpVP`](https://marketplace.sshopencloud.eu/workflow/0xSpVP).
-[Pipelines → W1](../pipelines.md#w1--scanned--ocr-document-pipeline) draws the same chain from
-the tools' side.
+[Pipelines → The route through the pipeline](../pipelines.md#the-route-through-the-pipeline) draws
+the same chain from the tools' side.
 
 ## What every narrative contains
 
@@ -55,13 +55,15 @@ next.
    part in, and its step in the AMČR chain.
 8. **On other platforms** — its SSH Open Marketplace records and a Galaxy sheet: the Galaxy
    datatypes of its inputs and outputs, the container, compute and network needs, test data,
-   and the closest tools already available in Galaxy.
+   and the closest tools already available in Galaxy. The Galaxy wrappers were handed to DARIAH
+   for testing; further Galaxy work is parked during the AMČR pilot.
 9. **Sources** — what the page was written from, and at which release.
 
 ## Two depths
 
 **Full** narratives cover all nine sections. They are written for tools whose workflow has
-settled: page-classification and the translator.
+settled: page-classification and the translator. Both describe the tool's role in the AMČR pilot
+first, then what the tool can do on its own.
 
 **Stable-core** narratives are written for tools whose rules, defaults or inputs change from
 release to release: ocr-postprocess, nlp-enrich, keyword-extract and digital-convert. They give the purpose, the order of
@@ -109,7 +111,8 @@ Galaxy](../external-tools.md#galaxy) explains the Galaxy terms.
 * **On every release** — the version field of the SSH Open Marketplace record, and the release
   named in the narrative's Sources.
 * **When a step, a format or a licence component changes** — the narrative first, then the
-  matching step of the SSH Open Marketplace record, then the Galaxy workflow's annotation.
+  matching step of the SSH Open Marketplace record, then, once Galaxy work resumes after the
+  pilot, the Galaxy workflow's annotation.
 * **Licence rows** always come from the tool's `para_config.txt`, the machine-readable
   declaration of the components each run lists.
 

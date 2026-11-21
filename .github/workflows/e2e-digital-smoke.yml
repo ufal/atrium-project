@@ -23,7 +23,7 @@
 # rewrites its manifest, which would dirty the checkout (`assert-clean-tree`). The docproc schema
 # comes from the same checkout (schemas/docproc/document.atrium-proposal.schema.json).
 #
-# Event-driven only (no schedule since 2026-11-14): a push to `main` that touches this lane runs
+# Event-driven only (no schedule, no push trigger): a hub pull request that touches this lane runs
 # `:test`; a dispatch runs the tag it names.
 
 name: E2E Digital-Born Smoke Test
@@ -39,8 +39,8 @@ on:
         type: choice
         options: [latest, test]
         default: latest
-  push:
-    branches: [main]
+  pull_request:
+    branches: [main, test]
     paths:
       - ".github/workflows/e2e-digital-smoke.yml"
       - "tools/e2e/e2e_assert.py"
@@ -55,9 +55,9 @@ permissions:
   contents: read
 
 env:
-  # Channel by EVENT: a push runs `:test` ("does what we are about to release still hold?"), a
-  # dispatch what was chosen. A push must never run `:latest`: an edit to this file (on the `paths`
-  # filter) cannot have produced that image. History: docs/decisions/e2e-lanes.md#image-channel-by-event
+  # Channel by EVENT: a pull request runs `:test` ("does what we are about to release still
+  # hold?"), a dispatch what was chosen. A pull request must never run `:latest`: an edit to this
+  # file (on the `paths` filter) cannot have produced that image. History: docs/decisions/e2e-lanes.md#image-channel-by-event
   IMAGE_TAG: ${{ inputs.image-tag || 'test' }}
   DIGITAL_IMAGE: ghcr.io/ufal/atrium-digital-convert-digital
   API_IMAGE: ghcr.io/ufal/atrium-digital-convert-api

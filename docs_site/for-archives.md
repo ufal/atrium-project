@@ -88,7 +88,7 @@ while they work:
   [terms of use](https://lindat.mff.cuni.cz/en/terms-of-use).
 - **Planned:** each document will carry its own permission, and a document without one will not be
   sent to an external service. AMČR agreed to this on 22 October 2026; the tools do not enforce it
-  yet ([Licences and paradata](ecosystem/licences.md#what-changes)).
+  yet ([Licences and paradata](ecosystem/licences.md#what-may-leave-the-archive)).
 
 ## Who holds the rights in the results
 

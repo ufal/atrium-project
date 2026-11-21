@@ -37,22 +37,20 @@
 # repoint this repository; one owner-level dropdown change does. PAGES_SETUP.md has
 # the exact step.
 #
-# Every event builds with `--strict`; only a push to `main` deploys. The daily cron
-# is the 07:00 slot 57.plan.md A.4 reserved, staggered off the existing 02:00 /
-# 04:00 / 05:15 / 05:30 / 05:45 / 06:00 slots -- a tool repo's docs change cannot
-# notify the hub (no cross-repo token exists here), so the hub re-reads on a timer.
+# Every event builds with `--strict`; only a push to `main` -- a merged pull request --
+# deploys. That push is deployment, not CI: it is the one push trigger the hub keeps
+# (docs/ci_policy.md). There is no schedule: the site is written in this repository and
+# reads nothing from the tool repositories, so nothing changes between merges.
 
 name: Documentation Site
 
 on:
   workflow_dispatch:
+  # Deployment: a merge into `main` publishes the site.
   push:
-    branches: [main, test]
+    branches: [main]
   pull_request:
     branches: [main, test]
-  schedule:
-    # 07:00 daily. Staggered off every other scheduled slot in this repository.
-    - cron: "0 7 * * *"
 
 permissions:
   contents: read

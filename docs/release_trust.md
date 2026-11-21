@@ -24,14 +24,19 @@ keys, but no single user. Admin alone would not do: the maintainer who pushes an
 in the hub, nlp-enrich, page-classification and translator (read on 2026-11-06). What that means per person, once
 the planned rulesets are on:
 
-| Who                                     | Push to the default branch or `test`                        | Push a `v*` tag, move the hub's `v1` | Delete or force-push those branches, move a release tag |
-|-----------------------------------------|-------------------------------------------------------------|--------------------------------------|---------------------------------------------------------|
-| A maintainer (Maintain or Admin)        | directly; GitHub reports it as a bypass in the push output  | yes                                  | no                                                      |
-| A collaborator with Write               | by a pull request, after one approval and the checks        | no                                   | no                                                      |
-| Dependabot, `vocab-refresh` (their PRs) | by a pull request, merged by a maintainer or after approval | —                                    | no                                                      |
+| Who                                     | Push to the default branch or `test`                                                      | Push a `v*` tag, move the hub's `v1` | Delete or force-push those branches, move a release tag |
+|-----------------------------------------|-------------------------------------------------------------------------------------------|--------------------------------------|---------------------------------------------------------|
+| A maintainer (Maintain or Admin)        | technically, as a bypass the push output reports; under the working agreement, not at all | yes                                  | no                                                      |
+| A collaborator with Write               | by a pull request, after one approval and the checks                                      | no                                   | no                                                      |
+| Dependabot, `vocab-refresh` (their PRs) | by a pull request, merged by a maintainer or after approval                               | —                                    | no                                                      |
 
 A rule with an empty bypass list holds for admins too: one who has to break it disables the ruleset first, which
 the organisation's audit log records.
+
+**The working agreement goes further than the planned rulesets.** Everybody, maintainers included, changes `test`
+and the default branch by a reviewed pull request, squash-merged, one per issue; nobody pushes to them directly.
+The pull-request ruleset as `release_trust.py branch-rules` writes it still lets maintainers bypass it, so the rule
+holds by agreement until an admin drops that bypass.
 
 ## Tag identity
 
@@ -40,13 +45,13 @@ the organisation's audit log records.
 | Source release (tool) | Git tag `vX.Y.Z[-suffix]`, e.g. `v1.2.0-beta`                                 | yes: tag ruleset and immutable release                                       |
 | Image tag             | the same version without the `v`: `ghcr.io/ufal/atrium-<tool>-api:1.2.0-beta` | no: a registry tag can be pushed again                                       |
 | Image identity        | the image digest, `…-api@sha256:<64 hex>`                                     | yes                                                                          |
-| Development channels  | images `test` and `latest`                                                    | no, by design                                                                |
+| Development channels  | images `test` (moved by a pull request merged into `test`) and `latest`       | no, by design                                                                |
 | Hub workflow pointer  | `v1`                                                                          | no: it moves with every hub change; only maintainers are to move it (step 4) |
 | Hub schema freezes    | `doc-schema-v*`                                                               | not yet: no hub ruleset (step 4)                                             |
 
 Protecting a Git tag does not make an image tag immutable. A release is identified by its source
 tag and commit and by the digest of each image built from it, so release evidence records all three,
-and the S2 pilot names its six images by digest (`k8s_acceptance_runbook.md` §"Image identity").
+and the AMČR pilot names each image by digest (`k8s_acceptance_runbook.md` §"Image identity").
 `test` and `latest` are never a reproducible baseline.
 
 **The hub is the exception.** Its `v1` is a compatibility pointer for the tool repositories'
@@ -56,87 +61,12 @@ following it when they call the hub's reusables by commit (step 7). The hub's ge
 references, the `doc-schema-v*` freezes, are to get their own rule (step 4); on 2026-11-06 the hub has no
 ruleset, so `doc-schema-v1` is fixed by convention only.
 
-## State on 2026-11-06
+## The recorded states
 
-The five releases of 11-06 (#66) change only the batch image's entry point (the hub-canonical
-`container_entrypoint.py`) and the version stamps; page-classification stays at `v1.12.3-beta`. Every caller and
-`hub-ref` in the six tool repositories is pinned to `da7a066` (`v1`). No repository has a branch ruleset or branch
-protection, and the hub has no ruleset at all (`GET /repos/ufal/atrium-project/rulesets` returns `[]`).
-
-| Repository          | Tag ruleset on `v*` | Latest release, immutable, with `images.json` | Hub references by commit (`da7a066`) |
-|---------------------|---------------------|-----------------------------------------------|--------------------------------------|
-| page-classification | yes                 | yes (`v1.12.3-beta`, 11-04)                   | all callers and action steps         |
-| ocr-postprocess     | yes                 | yes (`v1.15.4-beta`)                          | all                                  |
-| digital-convert     | yes                 | yes (`v1.4.5-beta`)                           | all                                  |
-| nlp-enrich          | yes                 | yes (`v1.3.4-beta`)                           | all                                  |
-| keyword-extract     | yes                 | yes (`v1.6.5-beta`)                           | all                                  |
-| translator          | yes                 | yes (`v1.7.8-beta`)                           | all                                  |
-| hub                 | `doc-schema-v*`: no | —                                             | —                                    |
-
-The pilot set on [#77](https://github.com/ufal/atrium-project/issues/77) is the 11-04 one below.
-
-## State on 2026-11-04
-
-Read on 11-04 with the public API (the pilot releases' `immutable` flag and assets) and the `test` trees (the
-callers). These are the six pilot releases, final on [#77](https://github.com/ufal/atrium-project/issues/77). The
-callers' column assumes the 11-04 pin sweep of page-classification, ocr-postprocess and nlp-enrich to `51aad6c`
-(`v1`); the other three were pinned there with their releases.
-
-| Repository          | Tag ruleset on `v*` | Pilot release, immutable, with `images.json` | Hub references by commit (`51aad6c`) |
-|---------------------|---------------------|----------------------------------------------|--------------------------------------|
-| page-classification | yes                 | yes (`v1.12.3-beta`)                         | 8 of 8 callers, 1 of 1 action steps  |
-| ocr-postprocess     | yes                 | yes (`v1.15.3-beta`)                         | 8 of 8, 1 of 1                       |
-| digital-convert     | yes                 | yes (`v1.4.4-beta`)                          | 8 of 8, 1 of 1                       |
-| nlp-enrich          | yes                 | yes (`v1.3.3-beta`)                          | 8 of 8, 2 of 2                       |
-| keyword-extract     | yes                 | yes (`v1.6.4-beta`)                          | 8 of 8, 3 of 3                       |
-| translator          | yes                 | yes (`v1.7.5-beta`)                          | 8 of 8, 2 of 2                       |
-
-**Tags without a release.** Seven `v*` tags of the pilot round exist that no GitHub Release certifies, and by
-`ci_policy.md` they are not releases (older tags without a release, such as page-classification
-`v1.10.0-beta`–`v1.10.4-beta` or the `v0.*` history, predate immutable releases and are not listed):
-- digital-convert `v1.4.3-beta`: its tag push started no workflow run;
-- keyword-extract `v1.6.3.-beta`: a mistyped tag, which started no run;
-- keyword-extract `v1.6.3-beta`: its CVE gate stopped on a registry error;
-- translator `v1.7.3-beta`: Trivy's own download failed;
-- translator `v1.7.4-beta`: its tag push started no workflow run.
-- translator `v1.7.6-beta` (11-05): created on `5b25f83`, the commit before its version bump, and pushed
-  with that commit; Release Bundle 42103826703 stopped at the version gate (tag 1.7.6, CITATION 1.7.5).
-  `v1.7.8-beta` carries it ([Tagging a release](#tagging-a-release)).
-- translator `v1.7.7-beta` (11-06): tagged on `ec694d3`, three minutes after Docker Build & Push had failed there
-  on a leftover test; Release Bundle 42200410454 stopped in the same test job. `v1.7.8-beta` carries it.
-
-The next patch number shipped the same code each time. Some of their images were published before the failure
-(translator's `:latest` pointed at the `1.7.3-beta` image until `v1.7.5-beta` replaced it on 11-04). The tag rule
-refuses their deletion to everyone: its bypass list is empty, so an admin would have to disable it first, which the
-organisation's audit log records.
-
-## State on 2026-10-29
-
-Read with the public API and the `test` trees (no admin rights needed): the rulesets with
-`GET /repos/ufal/<repo>/rulesets`, the releases' `immutable` flag, and the callers in each
-`.github/workflows/`. The four rulesets stranak added on 10-29 (10:18–10:19 UTC,
-[#72](https://github.com/ufal/atrium-project/issues/72)) came before that day's six tags, so every pilot
-release is covered. The callers' column is the pin sweep of 10-29 (12:15–12:17 UTC): every caller and
-action step at the hub commit `b07090f` (`v1` then), with `require-sha-pins` on; no reference to `@v1` is
-left.
-
-| Repository          | Tag ruleset on `v*`                  | Latest release immutable, with `images.json` | Hub references by commit (`b07090f`) |
-|---------------------|--------------------------------------|----------------------------------------------|--------------------------------------|
-| page-classification | yes (`Protect v* Tags`, 10-19)       | yes (`v1.12.0-beta`)                         | 8 of 8 callers, 1 of 1 action steps  |
-| ocr-postprocess     | yes (`Protect v* Tags`, 10-29)       | yes (`v1.15.0-beta`)                         | 8 of 8, 1 of 1                       |
-| digital-convert     | yes (`Protect v* Tags`, 10-29)       | yes (`v1.4.0-beta`)                          | 8 of 8, 1 of 1                       |
-| nlp-enrich          | yes (`Protect v* Tags`, 10-19)       | yes (`v1.3.0-beta`)                          | 8 of 8, 2 of 2                       |
-| keyword-extract     | yes (`Protect v* Tags`, 10-29)       | yes (`v1.6.0-beta`)                          | 8 of 8, 3 of 3                       |
-| translator          | yes (`Protect v* Tags`, 10-29)       | yes (`v1.7.0-beta`)                          | 8 of 8, 2 of 2                       |
-| hub                 | `doc-schema-v*`: **no**              | —                                            | —                                    |
-
-An action step is a step that runs one of the hub's composite actions
-(`ufal/atrium-project/.github/actions/lane-failure-issue`, #81); step 7 pins it with the callers.
-
-Releases from before immutability was switched on stay mutable (page-classification up to
-`v1.9.4-beta`, nlp-enrich up to `v1.1.0-beta`, translator up to `v1.4.0-beta`); AMČR mirrors only
-the immutable ones. The six hand-made rulesets refuse update, deletion and non-fast-forward on
-`refs/tags/v*`, so `tag-rules` keeps them and updates them in place.
+What the rulesets, the releases and the pins were on 29 October, 4 November and 6 November 2026, with the tags
+that no release certifies, is kept in
+[`decisions/release-trust-log.md`](decisions/release-trust-log.md#state-on-2026-11-06). Read the current state
+with `python3 scripts/release_trust.py status`.
 
 ## What the release workflows need — nothing
 
@@ -177,8 +107,8 @@ GitHub creates no push event for tags when more than three are pushed at once, w
 checkout with stale local tags does without a word; the filters (`tags: ['v*']` in all six) and the pinned hub
 commits were not the cause.
 
-**Tag with [`scripts/tag_release.py`](../scripts/tag_release.py)**, from the tool checkout, after the release
-commit is pushed:
+**Tag with [`scripts/tag_release.py`](../scripts/tag_release.py)**, from the tool checkout, once the pull request
+with the version bump is merged into `test` and its checks have passed:
 
 ```bash
 python3 ../atrium-project/scripts/tag_release.py v1.7.8-beta            # --dry-run to only check
@@ -186,7 +116,8 @@ python3 ../atrium-project/scripts/tag_release.py v1.7.8-beta            # --dry-
 
 It refuses a malformed tag (`v1.6.3.-beta`), uncommitted changes, a HEAD that is not `origin/test`, a tag the
 version gate would fail (the repository's own `check_version.py --require-tag`), a tag that exists on the remote,
-and, with `gh`, a commit whose push runs failed or are still going (`v1.7.7-beta`; `--no-ci-check` skips that). A
+and, with `gh`, a commit whose checks failed or are still going: the runs of the pull request merged as that
+commit, and the commit's own runs (`v1.7.7-beta`; `--no-ci-check` skips that). A
 tag that exists only locally was never pushed, so its version is unused: delete it with `git tag -d` and run again.
 It then creates an annotated tag on HEAD and pushes that one ref. With `gh` it waits for the Release Bundle run of
 the tag and prints its URL.
@@ -225,12 +156,12 @@ jobs test `startsWith(github.ref, 'refs/tags/v')`. A dry run is a dispatch on a 
 
    The hub's `v1` keeps moving with each hub change (§"Tag identity"), but only a maintainer moves it.
 
-5. **Branch rules.** First read the names of the checks that run on `test`, then choose which to
-   require. Require only checks that run on `pull_request` and need no secret, or a pull request from a fork
+5. **Branch rules.** First read the names of the checks that run on pull requests into `test`, then choose
+   which to require. Require only checks that run on `pull_request` and need no secret, or a pull request from a fork
    never merges: in the tool repositories `pre-commit / Lint`, `workflow-lint / Verify Workflow and Caller
    Policy`, `check-drift / Verify Canonical Paradata Integration` and `build-and-push / test`; in the hub
    `pre-commit / Lint`, `workflow-lint / Verify Workflow and Caller Policy`, `Test canonical shared modules` and
-   `Build the aggregate site`. Not the hub's fast lanes (`all-repos-smoke` runs on push only). A check name must
+   `Build the aggregate site`. Not the hub's fast lanes (`all-repos-smoke` runs by dispatch only). A check name must
    match exactly, including the caller's job name:
 
    ```bash

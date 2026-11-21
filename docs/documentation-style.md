@@ -1,9 +1,7 @@
 # Documentation style and structure
 
-> **Status:** guide, added 2026-10-20 for [#79](https://github.com/ufal/atrium-project/issues/79); readers,
-> plain language, summaries and working records added 2026-10-29.
-> **Scope:** the six tool repositories' documentation, and the hub's. A guide, not a template:
-> reuse a file that already does the job, and leave out a layer a tool does not need.
+> **Scope:** the documentation of the six ATRIUM tool repositories and of this hub. A guide, not a
+> template: reuse a file that already does the job, and leave out a layer a tool does not need.
 
 The hub explains the whole ATRIUM chain; each tool repository explains its own tool. A reader should
 know where to look for a kind of information in any of the six, and reach it quickly.
@@ -16,10 +14,10 @@ path to the answers.
 | Reader                       | Their first questions                                                                                                             | Their path (hub → tool)                                                                                                                                                                                                            |
 |------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Archive and collection staff | What happens to my documents? What comes back? How reliable is it? What must a person check? Does anything leave the institution? | [For archives](../docs_site/for-archives.md), the [glossary](../docs_site/glossary.md), [Licences and paradata](../docs_site/ecosystem/licences.md) → the README's opening and limits                                              |
-| Operators                    | Which image? What resources? Which settings? Which hosts does it call? Is it healthy? What does an error mean?                    | [Operations](../docs_site/operations.md), [S2 pilot handover](../docs_site/pilot.md) → `service/README.md`                                                                                                                         |
+| Operators                    | Which image? What resources? Which settings? Which hosts does it call? Is it healthy? What does an error mean?                    | [Operations](../docs_site/operations.md), [Production pilot](../docs_site/pilot.md) → `service/README.md`                                                                                                                          |
 | Integrators                  | How do I make a first call? What goes in and out? Where is the contract? What do the errors mean?                                 | [the document contract](../docs_site/ecosystem/document-contract.md), [Schemas](../docs_site/contracts/schemas.md) → the README's quick start, `docs/usage.md`, `service/openapi.json`                                             |
 | Developers                   | How is it built? How do I test and release? Why is it this way? Where is the history?                                             | [Architecture](../docs_site/ecosystem/architecture.md), [Contributing standards](../docs_site/contributing-standards.md), [Development history](../docs_site/development-history.md) → `docs/development.md`, reference, decisions |
-| Project managers             | What exists? How mature is it? What is measured, what is experimental? What depends on whom?                                      | [Status](../docs_site/status.md), [S2 pilot handover](../docs_site/pilot.md) → the README's "Limits and maturity"                                                                                                                  |
+| Project managers             | What exists? How mature is it? What is measured, what is experimental? What depends on whom?                                      | [Status](../docs_site/status.md), [Production pilot](../docs_site/pilot.md) → the README's "Limits and maturity"                                                                                                                   |
 | Researchers and evaluators   | What is the method? What was measured, on which data? How do I reproduce or cite it?                                              | → `docs/evaluation/`, `docs/how-it-works.md`, the README's citation                                                                                                                                                                |
 
 A page serves one or two of these readers. Its first sentence says what it answers, so a reader knows at
@@ -56,13 +54,17 @@ site. A tool's documentation links to them and does not restate them.
 5. **Keep levels of certainty apart:** released behaviour, optional or research features, plans, measured
    results and known limits. A limit stands next to the instruction it affects.
 6. **Every tool has a copy-and-run example** with its input, its expected result and any external
-   service it needs, checked against a released version.
+   service it needs, checked against the code it describes (see [Examples](#examples)).
 7. **One home per contract.** OpenAPI, JSON Schema, the configuration reference and the shared contracts
    each have one authoritative file; other pages link to it.
 8. **Current guidance and its history live apart.** Calibration rounds, superseded methods and dated
    decisions move to evaluation pages, decision records or the changelog. Evidence is moved, not dropped.
 9. **Documentation is edited.** Generated or code-synchronised text is an input. Each major page is read
    for order, length and clarity by a person before it ships.
+10. **Parked features stay out of the user path.** A feature parked during the AMČR pilot is not
+    introduced in a README, a usage page or a how-it-works page. Its reference section stays, and opens
+    with the [parked notice](#standard-sentences); an endpoint that still exists stays in the runbook's
+    endpoint table, marked parked.
 
 ### Plain language
 
@@ -70,27 +72,32 @@ site. A tool's documentation links to them and does not restate them.
   per sentence; the subject and the verb come first.
 - **Asides become sentences.** A parenthesis that needs a comma inside it is a second sentence.
 - **Define a term where a page first uses it,** or link it to the
-  [glossary](../docs_site/glossary.md). Readers outside ÚFAL do not know
-  "held-out", "fold", "paradata" or "TEITOK".
+  [glossary](../docs_site/glossary.md). Readers outside ÚFAL do not know "ATR", "docproc", "held-out",
+  "fold", "paradata", "seed" or "TEITOK".
 - **A number carries its unit and its base:** "95.8 % of 4,795 held-out pages", not "95.8 %".
 - **One name per thing,** everywhere:
 
-  | Write                                              | Not                         |
-  |----------------------------------------------------|-----------------------------|
-  | AMČR, ARÚP, ARÚB                                   | AMCR, ARUP, ARUB            |
-  | born-digital                                       | digital-born                |
-  | the record (first use: the ATRIUM document record) | the JSON, the document file |
-  | paradata (first use: the run's paradata log)       | run log, run record         |
-  | behaviour, licence (noun)                          | behavior, license (noun)    |
+  | Write                                                                          | Not                         |
+  |--------------------------------------------------------------------------------|-----------------------------|
+  | AMČR, ARÚP, ARÚB                                                               | AMCR, ARUP, ARUB, ARÚ/B     |
+  | born-digital                                                                   | digital-born                |
+  | the record (first use: the ATRIUM document record)                             | the JSON, the document file |
+  | paradata (first use: the paradata of a run)                                    | run log, run record         |
+  | the ATR (first use: the ATR, AIS CR's text-recognition service)                | OCR, when the ATR is meant  |
+  | docproc (first use: docproc, the layout format of digital-convert and the ATR) | the docproc JSON            |
+  | the AMČR pilot                                                                 | the S2 pilot, S2            |
+  | behaviour, licence (noun)                                                      | behavior, license (noun)    |
 
-  Code identifiers keep their spelling (`provenance.license`, `categ`).
+  Code identifiers keep their spelling (`categ`, `needsAtr`, `license_url`).
 
 ### Shorthand and history
 
-- **No tracker shorthand in the user and operator path.** A README, usage page, runbook or how-it-works
-  page states the fact, not the issue, work package or round it came from. Link an issue only for an open
-  problem the reader may want to follow, at the end of the sentence. A heading never carries an issue
-  number.
+- **No tracker shorthand in the user and operator path.** A README, usage page, runbook, configuration
+  page or how-it-works page states the fact, not the issue, work package, meeting or round it came from.
+  Shorthand includes issue numbers, decision and hand-off codes from meeting documents ("D13", "H3"),
+  numbered requests ("ask 3"), section signs that point into internal documents ("§4.4"), and dated
+  phrases such as "since the output contract of 12 November". Link an issue only for an open problem the
+  reader may want to follow, once, at the end of the sentence. A heading never carries an issue number.
 - **No version history in the user path.** "Since v1.10.0-beta", "formerly" and "until" belong in
   CONTRIBUTING's Release History or `docs/development.md`. A README keeps one line about a former name,
   in its last section.
@@ -100,6 +107,42 @@ site. A tool's documentation links to them and does not restate them.
 - **Evaluation and decision pages open with "In short":** what was measured or decided, the main figure or
   choice, what it means for a user, and what it does not show. Five lines at most.
 - **A decision page** then states Decision · Status · Why · Consequence, before the dated record.
+
+### Standard sentences
+
+Some facts appear on many pages. Each has one wording, and a page that states the fact uses it, adapted
+only in its grammar. The route itself is told once, on the hub's
+[Pipelines](../docs_site/pipelines.md) page; a tool's "Where it fits in ATRIUM" says its own step in one
+paragraph and links there.
+
+| Fact            | Wording                                                                                                                                                                                                                                                       |
+|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| record version  | The tools write record schema 2.0. The published schema is `doc-schema-v1`; 2.0 is published as `doc-schema-v2` once the pilot has proven it.                                                                                                                 |
+| failure         | A step that cannot finish fails the job and writes nothing: there is no partial output.                                                                                                                                                                       |
+| licences        | Each run lists the components it used, each with its own licence or terms. No licence of an output is computed: the rights in an output follow the source document.                                                                                           |
+| LINDAT hold     | Until the terms of LINDAT's services are settled ([atrium-project#78](https://github.com/ufal/atrium-project/issues/78)), AMČR does not publish outputs made through them: the linguistic layer, the entities, the TEITOK file and the English metadata.      |
+| parked notice   | Parked during the AMČR pilot: not part of the pipeline or the service.                                                                                                                                                                                        |
+| acknowledgement | Funded by the European Union under Horizon Europe (ATRIUM, GA 101132163), with the support of the LINDAT/CLARIAH-CZ (LM2023062) and AIS CR (LM2023031) research infrastructures, funded by the Ministry of Education, Youth and Sports of the Czech Republic. |
+
+### Examples
+
+- **Run from a checkout first.** A quick start shows the command line or the service from a checkout of
+  the branch it documents; the published image follows, with its tag written `<version>`. Until a
+  release carries what the page describes, the page names the first release that does, and sends readers
+  of older tags to the README at that tag.
+- **A server runs in the background.** Start it with `docker run -d --name …` or in a second terminal,
+  wait for `/ready`, then call it; stop it at the end. Never put a foreground server and the `curl` that
+  calls it in one code block.
+- **Write into a scratch folder.** An example writes into `out/` or a temporary folder, never into a
+  tracked samples folder whose files would then prove nothing.
+- **Show the expected result,** abridged to the fields a reader should check, and say what happens when
+  an external service it calls is missing.
+
+### Links
+
+Inside a repository, links are relative. The hub links its own documents at `blob/main` (the branch the
+site is built from), and a tool's documentation at `blob/test` (the branch the next release is cut
+from). `python3 tools/docs_check.py` checks both kinds of link and their anchors.
 
 ### Working records
 
@@ -120,19 +163,22 @@ leaves out, is not a pointer.
 4. Its role in the ATRIUM workflow (link to the [hub site](https://ufal.github.io/atrium-project/)).
 5. Limits and maturity: one sentence per limit, then what it means for the reader, then the link.
 6. Documentation map, grouped by reader: use it, run the service, judge the results, change the code.
-7. Licence, citation and acknowledgements; a former name, if any, in one line.
+7. Licence, citation and acknowledgements (the [standard wording](#standard-sentences)); a former name,
+   if any, in one line.
 
 Adapt it: a section that does not matter for a tool is left out, not filled.
 
 ## Checklist for a documentation pull request
 
 - [ ] The current behaviour and its limits are stated, next to the instructions they affect.
-- [ ] The quick start or example works from a clean checkout or the published image, and shows its
-      expected result.
+- [ ] The quick start or example works as written from a clean checkout or the published image, and
+      shows its expected result.
 - [ ] Each page sits in its layer; nothing in the README needs the reference to be understood.
 - [ ] Each page's first sentence says what it answers; its terms are defined or linked to the glossary.
-- [ ] Sentences average about 20 words; one spelling per name.
-- [ ] No issue numbers, codes or version history in README, usage, runbook or how-it-works text.
+- [ ] Sentences average about 20 words; one spelling per name; the standard sentences are used.
+- [ ] No issue numbers, decision codes or version history in README, usage, runbook, configuration or
+      how-it-works text.
+- [ ] Parked features are out of the user path, and their reference sections carry the parked notice.
 - [ ] Evaluation and decision pages open with "In short".
 - [ ] Links and anchors resolve (`python3 tools/docs_check.py --repo <repo>` in the hub).
 - [ ] No contract is copied: the API, schemas and configuration are linked to their one home.
@@ -154,11 +200,11 @@ reports:
 - a README without a documentation map or without a link to this guide (errors);
 - a README longer than 250 lines (a warning).
 
-All six tools and the hub pass it since 2026-10-25. It runs in every repository's Workflow Policy
-Lint (`workflow-lint.reusable.yml`), on pull requests and pushes, with its report in the run's summary.
-It is advisory until the newcomer review (#79 D) is in, and blocking after it
+All six tools and the hub pass it. It runs in every repository's Workflow Policy Lint
+(`workflow-lint.reusable.yml`) on pull requests, with its report in the run's summary. It is advisory
+until an independent reader has reviewed the tools' documentation, and blocking after that
 ([`ci_policy.md`](ci_policy.md)).
 
-Planned additions (#79 F9): a warning for a page whose sentences average over 25 words, and one for
-tracker references in the user and operator path. An error when more than one Markdown file points into
+Planned additions: a warning for a page whose sentences average over 25 words, and one for tracker
+shorthand in the user and operator path; an error when more than one Markdown file points into
 `agent_dev_logs/`. Like the length warning, the sentence figure is a prompt for an editor, not a target.
