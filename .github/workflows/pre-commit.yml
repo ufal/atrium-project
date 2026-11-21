@@ -17,24 +17,20 @@
 name: pre-commit
 
 on:
-  push:
-    branches: [main, test]
   pull_request:
     branches: [main, test]
-  schedule:
-    # Staggered away from CodeQL (5:15) and workflow-lint (5:45).
-    - cron: "30 5 * * 1"
-  # A manual re-run path (roadmap E11, atrium-project#69): a scheduled run that failed
-  # on something outside this repo (a missing secret, a force-pushed action tag) can be
-  # re-run once that is fixed, without an empty commit. The concurrency group below
-  # already keys on `github.event_name`, so a dispatch never cancels a push run.
+  # A manual run path (roadmap E11, atrium-project#69): a check that failed on something
+  # outside this repo (a missing secret, a force-pushed action tag) can be re-run once
+  # that is fixed, without an empty commit. The concurrency group below keys on
+  # `github.event_name`, so a dispatch never cancels a pull-request run. There is no
+  # schedule and no push trigger (docs/ci_policy.md).
   workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
-  # `github.event_name` keeps a push from cancelling the scheduled run: this group was
-  # keyed by ref alone, so both landed in ONE group and the push won -- and a cancelled
-  # nightly reports no failure rather than a result. (issue atrium-project#10)
+  # `github.event_name` keeps the trigger classes apart, so one never cancels the other:
+  # when this group was keyed by ref alone, a push cancelled a scheduled run, and a
+  # cancelled run reports no failure rather than a result. (issue atrium-project#10)
   cancel-in-progress: true
 
 jobs:

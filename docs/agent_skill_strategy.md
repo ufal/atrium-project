@@ -1,35 +1,15 @@
 # ATRIUM Agent-Skill Strategy — API services as LLM Agent Skills
 
-> **Repository names (2026-10-01).** This document predates the repository moves of atrium-project#72 and
-> uses the names of its time: `alto-postprocess` is now `ocr-postprocess`; `llm-enrich` split into
-> `keyword-extract` (its keyword stage, with the keyword extraction of `nlp-enrich`) and `digital-convert`
-> (the born-digital converter). The old repositories are superseded and, since 2026-10-19, archived (read-only). Read the names below through that map;
-> the current ones are in [`docs_site/ecosystem/repository-map.md`](../docs_site/ecosystem/repository-map.md).
-
-_Issue: [ufal/atrium-project#31](https://github.com/ufal/atrium-project/issues/31) · Status: **implemented on all five `agent-skill` branches** (2026-07-18) → refinement stage (validation CI · acceptance · consistency · release); Appendices A–D promoted to [`templates/skill/`](templates/skill/) · Date: 2026-07-17_
-_Scope: normative for the `agent-skill` branches of the five service repos
-(atrium-page-classification · atrium-translator · atrium-alto-postprocess ·
-atrium-nlp-enrich · atrium-llm-enrich). Per-repo implementation is tracked in
-sub-issues lifted from [§10](#10-per-repo-work-plans)._
-_Round 2 of [#32](https://github.com/ufal/atrium-project/issues/32) (2026-09-28): the typed
-contract and the spec as a release artefact — §2.2 reversed, §4.1 `openapi_sha256`, §4.4 reason
-registry, new [§4.8](#48-typed-contract-and-the-spec-as-a-release-artefact-normative), §12.1._
-
-Decisions fixed at planning time:
-
-1. **llm-enrich gains a minimal FastAPI `service/` layer first** (mirroring nlp-enrich), so all
-   five repos follow one server–client standard.
-2. **Standardization covers the meta-contract only** — `GET /info`, `GET /health`, upload
-   conventions, error codes, env vars, versioning. Every service **keeps its domain primary
-   endpoint** (`/predict_*`, `/translate`, `/process`, `/enrich`, `/extract_keywords`).
-   No breaking API changes.
-3. Defaults chosen for open points: llm-enrich endpoint named `/extract_keywords` (over
-   `/enrich_llm`); hosted (LINDAT) base URLs unknown → docs use `http://localhost:8000` with
-   placeholders; translator's `400`→`422` alignment is a silent additive fix.
+> **Status:** normative for the service contract every ATRIUM service meets (§4) and for the `agent-skill`
+> branches of the six tool repositories (§§5–9, §12). The July 2026 work plans, their rollout and the
+> sub-issue tracking (§§10, 11 and 13) are history, kept in
+> [`decisions/agent-skills.md`](decisions/agent-skills.md).
+> **Scope:** atrium-page-classification · atrium-ocr-postprocess · atrium-digital-convert ·
+> atrium-nlp-enrich · atrium-keyword-extract · atrium-translator.
 
 ## 1. Purpose & scope
 
-Each ATRIUM tool already ships (or will ship) a FastAPI service. This strategy wraps every
+Each ATRIUM tool ships a FastAPI service. This strategy wraps every
 service in an **Agent Skill**: a `SKILL.md` folder an LLM agent can install and use to drive the
 tool. The pattern is **server–client**: the heavy model server keeps running as today's
 `service/` FastAPI app, and the skill adds a **zero-dependency client script** that is the only
@@ -109,16 +89,16 @@ The `agent-skill` branch is a **flattened, trimmed derivative** of the default b
 modules hoisted to the repo root, development-only material removed (tests, lint configs,
 supplementary data/analysis), and the skill layer added (`SKILL.md`, `scripts/`, samples).
 It is kept current by **porting default-branch `service/` changes forward by hand** — for three
-of the five repos the branches share no history, so there is nothing to merge
+of the six repos the branches share no history, so there is nothing to merge
 ([§12.2](#122-branch-sync-policy--manual-landing-scripted-diagnosis)); skill-only fixes happen
 directly on the branch.
 
 Precedent: the existing
 [`agent-skill` branch of atrium-page-classification](https://github.com/ufal/atrium-page-classification/tree/agent-skill)
 established this pattern (SKILL.md + `scripts/atrium_classify.py` + `scripts/server.sh` +
-trimmed tree + `small_data_samples/`). It is the exemplar — including four defects catalogued in
-[§10.1](#101-atrium-page-classification--exemplar-hardening) that the standard below turns into
-explicit rules so they are fixed there and never replicated.
+trimmed tree + `small_data_samples/`). It is the exemplar — including four defects of its first
+version ([decisions/agent-skills.md](decisions/agent-skills.md#101-atrium-page-classification--exemplar-hardening))
+that the standard below turns into explicit rules, so they are never replicated.
 
 ## 4. Standardized service contract (normative)
 
@@ -143,11 +123,10 @@ window) is reported with `env: null` and `derived_from`. Both maps come from the
 `tool_limits.py` `LimitSet` (`atrium_limits.py`, atrium-project#53), so what `/info` reports is
 what the code enforces.
 
-Reference implementation: `atrium-nlp-enrich/service/api.py` (`info()`; note it already nails
-`service` + `limits`). Current drift to harmonize: translator keys the id as `"name"`,
-alto-postprocess as `"status"`; neither reports `endpoints` or `limits` today.
+All six services build `/info` through the shared `service/atrium_service.py`; the first reference
+implementation was `atrium-nlp-enrich/service/api.py` (`info()`).
 
-**`GET /health`** — liveness/readiness (today only nlp-enrich has it; required everywhere):
+**`GET /health`** — liveness, in all six services:
 
 - Shallow (`GET /health`): cheap self-check → `{"status": "ok"}` HTTP 200, or
   `{"status": "degraded", "detail": …}` HTTP 503.
@@ -159,14 +138,14 @@ HEAD checks of the LINDAT UDPipe/NameTag URLs).
 
 ### 4.2 Primary endpoints stay domain-specific
 
-| Service             | Primary endpoint(s)                                                                                                                                                   | Input                                                                                                             | Output                                                |
-|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------|
-| page-classification | `POST /predict_image`, `POST /predict_document`                                                                                                                       | PNG/JPEG · PDF                                                                                                    | JSON top-N labels (per page)                          |
-| digital-convert     | `POST /reformat`, `POST /describe`                                                                                                                                    | born-digital PDF/DOCX (+ AMČR seed record)                                                                        | the document record (+ per-page assessment)           |
-| ocr-postprocess     | `POST /process`, `POST /score_record`                                                                                                                                 | ALTO XML · TXT · JSON · any text-bearing document (`task_type=document`: PDF, DOCX, PAGE XML, hOCR, …) · a record | JSON per-line lang/quality; the record scored         |
-| nlp-enrich          | `POST /enrich`, `POST /enrich_text`, `POST /rescale`, `POST /project_record`, jobs API (`POST /jobs`, `GET /jobs/{id}`, `GET /jobs/{id}/result`, `DELETE /jobs/{id}`) | lines file (+ ALTO) / JSON lines / converted TEITOK / a finished record                                           | TEITOK XML; the record projected onto it              |
-| keyword-extract     | `POST /extract_keywords`, `POST /extract_keywords_text`                                                                                                               | TXT/MD/CSV/TEITOK / JSON lines / a record                                                                         | statistical `keywords` and/or controlled `enrichment` |
-| translator          | `POST /translate`                                                                                                                                                     | ALTO/metadata XML                                                                                                 | translated XML attachment                             |
+| Service             | Primary endpoint(s)                                                                                                                                                   | Input                                                                                                     | Output                                                  |
+|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|---------------------------------------------------------|
+| page-classification | `POST /predict_image`, `POST /predict_document`                                                                                                                       | PNG/JPEG · PDF                                                                                            | JSON top-N labels (per page)                            |
+| digital-convert     | `POST /reformat`; `POST /describe` (parked during the AMČR pilot)                                                                                                     | born-digital PDF and office files (+ the AMČR seed)                                                       | docproc, with a verdict for every page                  |
+| ocr-postprocess     | `POST /build_record`, `POST /score_record`, `POST /process`                                                                                                           | docproc (+ the seed) · a record · ALTO XML, TXT, JSON or any text-bearing document (`task_type=document`) | the record built and scored; JSON per-line lang/quality |
+| nlp-enrich          | `POST /enrich`, `POST /enrich_text`, `POST /rescale`, `POST /project_record`, jobs API (`POST /jobs`, `GET /jobs/{id}`, `GET /jobs/{id}/result`, `DELETE /jobs/{id}`) | lines file (+ ALTO) / JSON lines / converted TEITOK / a finished record                                   | TEITOK XML; the record projected onto it                |
+| keyword-extract     | `POST /extract_keywords`, `POST /extract_keywords_text`                                                                                                               | TXT/MD/CSV/TEITOK / JSON lines / a record                                                                 | statistical `keywords` and/or controlled `enrichment`   |
+| translator          | `POST /translate`                                                                                                                                                     | an AMČR metadata record and its field list; ALTO pages for research                                       | translated XML attachment                               |
 
 **No renames.** Uniformity lives in the meta-contract, not the paths. (A rejected alternative —
 one `/process` everywhere — would break every existing client and frontend for cosmetic gain.)
@@ -182,15 +161,15 @@ one `/process` everywhere — would break every existing client and frontend for
 
 ### 4.4 Error codes (normative table)
 
-| Code        | Meaning                                                                                                                                                                                                                                                                                                                                                 | Client behavior (§6)                                                                                |
-|-------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
-| 413         | the request content is over a limit (`reason: limit_exceeded`: upload, pages, words, tokens, pixels)                                                                                                                                                                                                                                                    | report the limit; split the input or raise the setting                                              |
-| 415         | unsupported media type (`reason: unsupported_media_type`, with `accepted`)                                                                                                                                                                                                                                                                              | report expected types                                                                               |
-| 422         | unusable/invalid input (wrong format, bad params); `reason: invalid_record` for a record that cannot be opened or added to, `ocr_text_layer` (deprecated, #84), `source_digest_mismatch` for a seed whose `source.sha512` is not the uploaded file's; also `reason: limit_exceeded` when a parameter or a per-input processing budget is over its limit | report; no retry                                                                                    |
-| 429         | busy (`reason: busy`: every slot or queue place is taken), with `Retry-After`                                                                                                                                                                                                                                                                           | retry after `Retry-After` seconds                                                                   |
-| 500         | processing failure                                                                                                                                                                                                                                                                                                                                      | report server detail; no blind retry                                                                |
-| 501         | this deployment cannot read the input: a reader's optional dependency is not installed (ocr-postprocess `dependency_missing`)                                                                                                                                                                                                                           | report; the operator installs it                                                                    |
-| 502/503/504 | not ready / warming up / proxy; 502 with `reason: upstream_unavailable` is a backing service that did not answer after the tool's retries; 504 with `reason: limit_exceeded` is a time limit that depends on an upstream service                                                                                                                        | **retry 3× with backoff**; a 502 only with `upstream_unavailable` (without a reason, read `detail`) |
+| Code        | Meaning                                                                                                                                                                                                                                                                                                                                                                | Client behavior (§6)                                                                                |
+|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| 413         | the request content is over a limit (`reason: limit_exceeded`: upload, pages, words, tokens, pixels)                                                                                                                                                                                                                                                                   | report the limit; split the input or raise the setting                                              |
+| 415         | unsupported media type (`reason: unsupported_media_type`, with `accepted`)                                                                                                                                                                                                                                                                                             | report expected types                                                                               |
+| 422         | unusable/invalid input (wrong format, bad params); `reason: invalid_record` for a record that cannot be opened or added to, `ocr_text_layer` (deprecated, sent by no service), `source_digest_mismatch` for a seed whose `source.sha512` is not the uploaded file's; also `reason: limit_exceeded` when a parameter or a per-input processing budget is over its limit | report; no retry                                                                                    |
+| 429         | busy (`reason: busy`: every slot or queue place is taken), with `Retry-After`                                                                                                                                                                                                                                                                                          | retry after `Retry-After` seconds                                                                   |
+| 500         | processing failure                                                                                                                                                                                                                                                                                                                                                     | report server detail; no blind retry                                                                |
+| 501         | this deployment cannot read the input: a reader's optional dependency is not installed (ocr-postprocess `dependency_missing`)                                                                                                                                                                                                                                          | report; the operator installs it                                                                    |
+| 502/503/504 | not ready / warming up / proxy; 502 with `reason: upstream_unavailable` is a backing service that did not answer after the tool's retries; 504 with `reason: limit_exceeded` is a time limit that depends on an upstream service                                                                                                                                       | **retry 3× with backoff**; a 502 only with `upstream_unavailable` (without a reason, read `detail`) |
 
 **Error body (atrium-project#32 item 2, landed with #53).** Every error a service returns —
 `HTTPException`, the router's 404/405, request validation, an uncaught failure — has one
@@ -210,15 +189,15 @@ JSON shape, installed by `atrium_service.attach_error_handlers(app)`:
   `x-atrium-reason-codes` (§4.8), where `atrium_openapi.py compare` fails a release that drops
   one:
 
-  | `reason`                 | Statuses      | Since     | Sent for                                                                                                                                                                                                                                                                                                                                   |
-  |--------------------------|---------------|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-  | `limit_exceeded`         | 413, 422, 504 | #53       | an input over a limit; the body's `limit` names it                                                                                                                                                                                                                                                                                         |
-  | `busy`                   | 429           | #53       | every slot or queue place taken; `Retry-After`                                                                                                                                                                                                                                                                                             |
-  | `unsupported_media_type` | 415           | #32 rnd 2 | a type the endpoint does not read; the body's `accepted` lists what it reads                                                                                                                                                                                                                                                               |
-  | `invalid_record`         | 422           | #32 rnd 2 | the record sent with the request cannot be opened (not UTF-8 JSON, not an object, a newer `schema_version` major), or a block the tool adds rows to (`pages`, `lines`, `tables`, `entities`) is not a list of objects (#72) — a record that opens but does not validate is otherwise accepted and reported in `document_json_schema_error` |
-  | `ocr_text_layer`         | 422           | #32 rnd 2 | **deprecated** since doc-schema-v2 (#84, H12), sent by no service: digital-convert marks such pages `needs_atr` in docproc instead. Was: a PDF whose text layer is an earlier OCR run's (digital-convert#4 W6)                                                                                                                             |
-  | `source_digest_mismatch` | 422           | dc#2      | the seed's `source.sha512` is not the uploaded file's digest, checked before anything is read (atrium-digital-convert#2; raised by `api-digital`)                                                                                                                                                                                          |
-  | `upstream_unavailable`   | 502           | nlp#41    | a backing service named at the start of `detail` (LINDAT UDPipe, NameTag) did not answer after the tool's retries; its timeout is a 504 `limit_exceeded` instead, and a 502 with `reason: null` is not an outage                                                                                                                           |
+  | `reason`                 | Statuses      | Since     | Sent for                                                                                                                                                                                                                                                                                                                                |
+  |--------------------------|---------------|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+  | `limit_exceeded`         | 413, 422, 504 | #53       | an input over a limit; the body's `limit` names it                                                                                                                                                                                                                                                                                      |
+  | `busy`                   | 429           | #53       | every slot or queue place taken; `Retry-After`                                                                                                                                                                                                                                                                                          |
+  | `unsupported_media_type` | 415           | #32 rnd 2 | a type the endpoint does not read; the body's `accepted` lists what it reads                                                                                                                                                                                                                                                            |
+  | `invalid_record`         | 422           | #32 rnd 2 | the record sent with the request cannot be opened (not UTF-8 JSON, not an object, a newer `schema_version` major), or a block the tool adds rows to (`pages`, `lines`, `entities`) is not a list of objects (#72)        — a record that opens but does not validate is otherwise accepted and reported in `document_json_schema_error` |
+  | `ocr_text_layer`         | 422           | #32 rnd 2 | **deprecated** with record schema 2.0, sent by no service: digital-convert routes such pages to the ATR instead (`needsAtr` in docproc). Was: a PDF whose text layer is an earlier OCR run's                                                                                                                                            |
+  | `source_digest_mismatch` | 422           | dc#2      | the seed's `source.sha512` is not the uploaded file's digest, checked before anything is read (atrium-digital-convert#2; raised by `api-digital`)                                                                                                                                                                                       |
+  | `upstream_unavailable`   | 502           | nlp#41    | a backing service named at the start of `detail` (LINDAT UDPipe, NameTag) did not answer after the tool's retries; its timeout is a 504 `limit_exceeded` instead, and a 502 with `reason: null` is not an outage                                                                                                                        |
 
 - `detail` is always a human-readable string — the same text as before the envelope existed, so
   a client reading `detail` needs no change. Structured data goes into extra members: `limit`
@@ -248,13 +227,13 @@ artifacts implement; it does not enumerate variables, and a variable named here 
 there is a bug in this section. atrium-project#60's CI guard (`tests/test_env_contract.py`,
 hub-local and vendored into all six tool repos) is what keeps that true.
 
-| Variable          | Scope  | Standard                                                                                                                                                                                                                                                                                                                                                  |
-|-------------------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ALLOWED_ORIGINS` | server | CSV of CORS origins, code default `*`. Compose files may supply a narrower default of their own for local development; Kubernetes never reads one, so the k8s-facing reference (`docs/k8s_deployment.md`) always states the code default.                                                                                                                 |
-| `MAX_UPLOAD_MB`   | server | canonical upload limit, resolved by `atrium_service.resolve_max_upload_mb`. **The number is per-service, not shared** — translator 50, digital-convert 50, ocr-postprocess 25, keyword-extract 10, page-classification 10, nlp-enrich 5 (see `docs/k8s_deployment.md`). `MAX_UPLOAD_BYTES` remains a deprecated fallback and loses whenever both are set. |
-| service-specific  | server | keep as-is; enumerated per repo in that repo's `.env.example` §5 ("Service knobs — operator") and in `docs/k8s_deployment.md`'s Table B.                                                                                                                                                                                                                  |
-| **limits**        | server | **every limit is a setting** (atrium-project#53, below): declared once in the repo's `tool_limits.py`, tagged `[limit]` in `.env.example`, listed in the service README's `## Limits` table and in `docs/k8s_deployment.md`'s Table B, and reported in `/info` (§4.1).                                                                                    |
-| `ATRIUM_<XX>_URL` | client | per-tool base-URL override, [§6](#6-zero-dependency-client-contract) / [Appendix E](#appendix-e--naming-tables).                                                                                                                                                                                                                                          |
+| Variable          | Scope  | Standard                                                                                                                                                                                                                                                                                                                                                                     |
+|-------------------|--------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ALLOWED_ORIGINS` | server | CSV of CORS origins, code default `*`. Compose files may supply a narrower default of their own for local development; Kubernetes never reads one, so the k8s-facing reference (`docs/k8s_deployment.md`) always states the code default.                                                                                                                                    |
+| `MAX_UPLOAD_MB`   | server | canonical upload limit, resolved by `atrium_service.resolve_max_upload_mb`. **The number is per-service, not shared** — digital-convert 250, translator 50, ocr-postprocess 25, keyword-extract 10, page-classification 10, nlp-enrich 5 (`tool_limits.py`; see `docs/k8s_deployment.md`). `MAX_UPLOAD_BYTES` remains a deprecated fallback and loses whenever both are set. |
+| service-specific  | server | keep as-is; enumerated per repo in that repo's `.env.example` §5 ("Service knobs — operator") and in `docs/k8s_deployment.md`'s Table B.                                                                                                                                                                                                                                     |
+| **limits**        | server | **every limit is a setting** (atrium-project#53, below): declared once in the repo's `tool_limits.py`, tagged `[limit]` in `.env.example`, listed in the service README's `## Limits` table and in `docs/k8s_deployment.md`'s Table B, and reported in `/info` (§4.1).                                                                                                       |
+| `ATRIUM_<XX>_URL` | client | per-tool base-URL override, [§6](#6-zero-dependency-client-contract) / [Appendix E](#appendix-e--naming-tables).                                                                                                                                                                                                                                                             |
 
 **What counts as a limit (atrium-project#53, factor III).** A *limit* is a value that
 (a) refuses an input; (b) cuts, samples or splits an input or a prompt; (c) caps an output; or
@@ -268,11 +247,13 @@ itself and calls the services from its own workers, so each one must be a settin
   CLIs import `atrium_limits`, never the FastAPI-bound `service/atrium_service.py`.
 - **Over a limit, the service refuses** with `reason: limit_exceeded` (§4.4), **or processes the
   input in full.** It never cuts an input quietly.
-- **Where a limit shapes a result without refusing it**, the run records a note in
-  `limits_applied` — `{limit, value, effect, count, detail}`, `effect` ∈ `sampled`, `split`,
-  `trimmed`, `skipped`, `stopped` (published; never renamed) — in its paradata
-  (`docs/paradata_schema.md`) and in the response (a top-level `limits_applied` list in a JSON
-  response; the `X-Atrium-Limits-Applied` header where the response is not JSON).
+- **Where a limit shapes a result without refusing it** — explicit sampling or splitting, where a
+  tool specifies them — the run records a note `{limit, value, effect, count, detail}`, `effect` ∈
+  `sampled`, `split`, in its paradata (`limits`, `docs/paradata_schema.md`) and in the response (a
+  top-level `limits_applied` list in a JSON response; the `X-Atrium-Limits-Applied` header where the
+  response is not JSON). A limit that would trim, skip or stop content fails the run instead: there
+  is no partial output. The older effect names `trimmed`, `skipped` and `stopped` stay readable in
+  older paradata.
 - **Not limits**, and so not in `/info` `limits`: algorithmic thresholds (alto-postprocess's
   `ATRIUM_TEXT_UTILS_*`, the translator's `LANG_ID_MIN_CONFIDENCE`); batch sizes that do not
   change the result; bounds on a request parameter (those belong in the OpenAPI schema, #32);
@@ -296,8 +277,8 @@ that branch. (Generalized from exemplar defect (b): the page-classification skil
 
 ### 4.8 Typed contract and the spec as a release artefact (normative)
 
-atrium-project#32 round 2 (2026-09-28), K4TEL's three additions to David Motyčka's 09-26 request,
-accepted 09-27. Implemented in `docs/templates/shared/atrium_service.py` (gen 3),
+Added in round 2 of atrium-project#32 (2026-09-28). Implemented in
+`docs/templates/shared/atrium_service.py` (gen 3),
 `atrium_openapi.py` and `test_openapi_contract.py`, vendored into all six repos.
 
 **Typed responses.** Every primary endpoint's JSON 200 is a named model (`$ref`), and so is
@@ -324,10 +305,10 @@ against the **published** schema (`atrium_openapi.validate_response`). page-clas
   opens a sent record through `parse_record_part()` (§4.4 `invalid_record`) and names it
   `document_json`, in and out (ocr-postprocess keeps `document_record` / `document_json_out`
   as deprecated aliases);
-- every primary response declares an optional `paradata: CreateAction` (#67 §E), and since
-  atrium-project#71 every successful response fills it: the call's Process Run Crate
-  `CreateAction`, from `atrium_rocrate.create_action()`, whose `@id` is the `run_uuid` the call
-  stamped into the record it returned (`docs/rocrate_export.md` §5). An error body carries none.
+- every primary response declares an optional `paradata: CreateAction`, and every successful
+  response fills it: the call's Process Run Crate `CreateAction`, from
+  `atrium_rocrate.create_action()`, whose `@id` is the run's `run_uuid` (`docs/rocrate_export.md`
+  §5). An error body carries none.
 
 **Declared errors.** `FastAPI(responses=error_responses(422, 500), generate_unique_id_function=
 operation_id, root_path_in_servers=False)` and `attach_openapi_contract(app, SERVICE)` in every
@@ -368,7 +349,7 @@ spent. The gate runs the vendored script, not a cross-repo `uses:` (docker_gha_r
 
 **CI.** `api-contract.reusable.yml` runs the canonical test too (and no longer reads pytest's
 exit 5 as a failure, 07-23 defect 4), and its `openapi-compat` job compares the committed spec
-with the latest release's on every push, so a breaking change shows on the PR that makes it.
+with the latest release's on every pull request, so a breaking change shows on the PR that makes it.
 `docker-tool.reusable.yml`'s container smoke checks that the served `/openapi.json` is the
 committed spec and that `/info` `openapi_sha256` is its digest — the check AMČR runs against a
 deployed image, and the container-level proof for page-classification. Both skip in a repo that
@@ -476,8 +457,8 @@ Required body sections, in order:
    (model downloads, minutes not seconds — *do not treat slow first start as failure*); upload
    limits.
 2. **Domain reference** — the tool's vocabulary: categories table (page-classification,
-   alto-postprocess), language/format matrix (translator), stage plan + keyword methods
-   (nlp-enrich), vocabularies + backends (llm-enrich).
+   ocr-postprocess), the docproc verdicts (digital-convert), language/format matrix (translator),
+   stage plan (nlp-enrich), keyword kinds, methods and vocabularies (keyword-extract).
 3. **Workflows** — numbered: ① ensure server (`bash scripts/server.sh`, idempotent) ② call the
    client (copy-paste command examples covering the main variants) ③ interpret output (row
    format, when to use which `--format`).
@@ -521,168 +502,21 @@ as `README.md` in the `service` directories":
 - **Every `service/frontend*/index.html` gets an API section/footer** with: ① a copy-paste
   `curl` example of the primary endpoint, ② links to the running server's `/docs` (Swagger UI)
   and `/openapi.json`, ③ a link to `service/README.md` on GitHub.
-- **`service/README.md` is required in every repo** (today missing only in translator),
-  following the alto-postprocess/nlp-enrich standard: endpoint table · curl examples · response
-  schema with field descriptions · env-var table · run instructions (uvicorn +
+- **`service/README.md` is required in every repo** (all six have one): endpoint table · curl
+  examples · response schema with field descriptions · env-var table · run instructions (uvicorn +
   `docker compose --profile api up`). Outline in [Appendix D](#appendix-d--servicereadmemd-outline).
 - Both artifacts must match `api.py` reality (defect (d) rule) — checked by the contract test
   ([§12.1](#121-per-repo-contract-test)).
 
 ## 10. Per-repo work plans
 
-Each subsection is self-contained and liftable verbatim into a sub-issue ([§13](#13-sub-issue-creation--tracking)).
-
-> **Status (2026-07-18):** ✅ all §10 build items implemented and verified on the five
-> `agent-skill` branches (frontmatter valid · clients `--help` clean · import closures intact ·
-> `/info`+`/health` conform · no dangling refs · no false paradata claims). Two caveats noted
-> inline: (i) the "default-branch pre-work" items landed on the `agent-skill` branches — carrying
-> them back onto each default branch is the manual merge-forward tracked in §12.2; (ii) llm-enrich
-> ships **synchronous** (async jobs is the conditional W5 fast-follow). Remaining #31 work is the
-> **refinement stage** (validation CI §12.3 · contract-test audit §12.1 · acceptance · release),
-> not §10.
-
-### 10.1 atrium-page-classification — exemplar hardening
-
-**Goal:** make the existing `agent-skill` branch fully conform to this standard, so it is a
-trustworthy reference for the other four.
-**Current state:** branch exists with SKILL.md, `scripts/atrium_classify.py`,
-`scripts/server.sh`, trimmed tree, `small_data_samples/`. Four known defects; no `/health`;
-default branch is `vit`.
-
-- [x] Fix (a): all references say `scripts/server.sh` (SKILL.md Workflows and the client's
-      error message currently say `serve.sh`).
-- [x] Fix (b): remove the `atrium_paradata.py` provenance claim from SKILL.md — or wire the
-      module in `service/` on the branch; default: remove the claim (§4.7).
-- [x] Fix (c): drop the `frontend-lindat/` references from `service/README.md` (or restore the
-      directory).
-- [x] Fix (d): reconcile `service/README.md` + `frontend/script.js` documented response fields
-      (`model_version`, `filename`, `thumbnail`, …) with what `service/api.py` returns.
-- [x] Add `GET /health` (+`?deep=true` model-loaded probe) per §4.1 on the default branch
-      (`vit`), then merge forward to `agent-skill`; extend `/info` with `service`, `endpoints`,
-      `limits` keys (§4.1).
-- [x] Align SKILL.md section order to §7; add the anti-pattern checklist to the branch's PR
-      template or review notes.
-- [x] Add the contract test (§12.1) on the default branch.
-
-**Acceptance:** anti-pattern checklist passes; `atrium_classify.py` smoke-tested against
-`small_data_samples/` via a locally started server; `/info` and `/health` conform to §4.1.
-
-### 10.2 atrium-nlp-enrich — first full skill run (template validation)
-
-**Goal:** create the `agent-skill` branch for the most mature service; validate the templates.
-**Current state:** richest API (enrich/enrich_text/rescale + async jobs, `/info` + `/health`
-already conforming), two frontends, excellent `service/README.md`. No skill layer.
-
-- [x] Create `agent-skill` branch from the default branch head; flatten/trim per §5.
-- [x] Write `SKILL.md` per §7 (`name: atrium-nlp-enrich`; domain reference = stage plan,
-      keyword methods, limits).
-- [x] Write `scripts/atrium_enrich.py` per §6: covers `/enrich` (file), `/enrich_text` (JSON
-      lines), `--jobs` async mode (submit → poll → result, 429-aware messaging), `--info`;
-      flags: `--kw-method keybert|yake|legacy|none`, `--num-keywords N`, `--zip` (workspace
-      download).
-- [x] Write `scripts/server.sh` per Appendix C (compose `api` profile).
-- [x] Add `small_data_samples/` (a few small text-line files + a small TEITOK page + LICENSE).
-- [x] Branch `README.md` per §8.
-- [x] Frontends (`frontend/`, `frontend-lindat/`): API footer per §9.
-- [x] Extend `/info` with the `endpoints` list (§4.1 — the one missing required field).
-- [x] Afterwards (hub repo): promote Appendices A–D to `docs/templates/skill/` with any
-      corrections this run surfaced.
-
-**Acceptance:** skill installed in a clean `~/.claude/skills/` drives a full enrich round-trip
-against a locally composed server using only SKILL.md instructions.
-
-### 10.3 atrium-alto-postprocess
-
-**Goal:** contract alignment + skill branch.
-**Current state:** solid API (`/process`, `/info`), two frontends, best-in-family
-`service/README.md`. No `/health`; CORS default is a localhost list; no skill layer.
-
-- [x] Default-branch pre-work: add `GET /health` (+`?deep` → models loaded); align
-      `ALLOWED_ORIGINS` default to `*` (§4.5); adopt `MAX_UPLOAD_MB` (§4.5); extend `/info`
-      with `service`, `endpoints`, `limits` (currently keys the id as `"status"`).
-- [x] Create `agent-skill` branch per §5 (drop `frontend-lindat/` from the branch or keep it —
-      but docs must match, defect (c) rule).
-- [x] `SKILL.md` per §7 (domain reference = five quality categories + `line_fields`).
-- [x] `scripts/atrium_postprocess.py` per §6: `--task-type auto|alto|text`, table/csv/json of
-      per-line `lang`/`quality_score`/`category`.
-- [x] `scripts/server.sh`, `small_data_samples/` (1 small ALTO XML + 1 TXT), branch README.
-- [x] Both frontends: API footer per §9; verify `service/README.md` against `api.py` reality.
-
-**Acceptance:** as 10.2, with a `/process` round-trip on the ALTO sample.
-
-### 10.4 atrium-translator — biggest documentation gap
-
-**Goal:** bring the service up to family documentation standard, then the skill branch.
-**Current state:** working API (`/translate`, `/info`) but **no frontend, no
-`service/README.md`**; `MAX_UPLOAD_BYTES` naming; `400` for non-XML; no `/health`.
-
-- [x] Default-branch pre-work:
-  - [x] **Write `service/README.md`** (Appendix D): `/translate` + `/info` table, curl with
-        `source_lang`/`target_lang`/`is_alto`, XML-attachment response semantics
-        (`Content-Disposition`), env vars (`TRANSLATION_BACKEND`, limits), compose run.
-  - [x] **Add minimal `service/frontend/`** (file picker + lang selectors + result download +
-        API footer per §9), mounted like the siblings.
-  - [x] Add `GET /health` (+`?deep` → backend reachability probe, e.g. LINDAT HEAD).
-  - [x] `400`→`422` for non-XML uploads (§4.4); `MAX_UPLOAD_MB` with `MAX_UPLOAD_BYTES`
-        fallback (§4.5); extend `/info` with `service`, `endpoints`, `limits` (currently
-        `"name"`).
-- [x] Create `agent-skill` branch per §5; `SKILL.md` per §7 (domain reference = ALTO vs
-      metadata-XML modes, language matrix, backend selection).
-- [x] `scripts/atrium_translate.py` per §6: `--source-lang` (default `auto`), `--target-lang`
-      (default `en`), `--alto/--no-alto`, output translated XML to stdout or `-o FILE`.
-- [x] `scripts/server.sh`, `small_data_samples/` (tiny ALTO + tiny metadata XML), branch README.
-
-**Acceptance:** as 10.2, with a `/translate` round-trip producing valid XML from the ALTO sample.
-
-### 10.5 atrium-llm-enrich — new service layer + skill
-
-**Goal:** give the CLI-only repo the standard FastAPI `service/` layer (decision #1), then the
-skill branch. The service can be built any time after this doc merges; only the skill branch
-depends on it.
-**Current state:** no HTTP surface. Entry points `llm_run.py` (local transformers/vLLM),
-`openrouter_client.py` (remote), `ollama_client.py` (local Ollama) behind
-`llm_client_shared.py`; reusable input parsers in `api_util/` (`teitok_read.py`,
-`xml_to_md.py`, …); vocab via `vocab_manager.py`; Docker images are batch-only (no ports).
-
-- [x] Build `service/api.py` mirroring nlp-enrich's layout:
-  - `GET /info` — `service`, `version` (from `para_config.txt`), `endpoints`, available
-    backends, vocabulary info (TEATER/AMCR), `limits`.
-  - `GET /health` — shallow ok; `?deep=true` probes the selected backend (Ollama reachability /
-    OpenRouter key present / local model loaded).
-  - `POST /extract_keywords` — multipart `file` (TXT/CSV or TEITOK/ALTO XML; reuse
-    `api_util/teitok_read.py` + `api_util/xml_to_md.py` for parsing); params
-    `backend=openrouter|ollama|local` (default env-driven), `vocab=teater|amcr`, `top_k`.
-  - `POST /extract_keywords_text` — JSON `{"lines": [...]}` sibling (§4.3).
-  - Response rows: `{keyword_cs, keyword_en, category, confidence}` per line/document.
-  - Dispatch to the existing clients via `llm_client_shared.py`; **keep torch out of the
-    remote-only path** (the repo's established constraint).
-- [x] `service/requirements.txt`, `service/README.md` (Appendix D), minimal `service/frontend/`
-      with API footer (§9).
-- [x] Docker: `api` stage/profile, port 8000, python:3.11-slim non-root — match siblings. Env:
-      `OPENROUTER_API_KEY`, `OLLAMA_HOST`, `HF_TOKEN`, `MAX_UPLOAD_MB`, `ALLOWED_ORIGINS`.
-- [x] ⚠️ LLM calls are the slowest in the family: start synchronous; adopt nlp-enrich's
-      `service/jobs.py` async pattern as a fast-follow if sync proves impractical.
-      _(Shipped synchronous; async jobs deferred to the W5 fast-follow. Corrected 2026-09-27
-      (atrium-project#53): this note used to say "with a strict concurrency guard + `504`
-      timeout", but `service/` has neither — no semaphore, no 429, no request deadline; each
-      upstream call is bounded only by `LLM_TIMEOUT` × `LLM_MAX_RETRIES`, both reported in
-      `/info`.)_
-- [x] Then: `agent-skill` branch per §5; `SKILL.md` per §7; `scripts/atrium_keywords.py` per §6
-      (`--backend`, `--vocab`, `--top-k`); `scripts/server.sh`; text samples; branch README.
-
-**Acceptance:** as 10.2, with an `/extract_keywords_text` round-trip on sample lines against at
-least one backend (Ollama or OpenRouter with a test key).
+The per-repository work plans of July 2026, all done, are kept in
+[`decisions/agent-skills.md`](decisions/agent-skills.md#10-per-repo-work-plans), with the four defects of the
+first skill branch that §7's checklist guards against.
 
 ## 11. Rollout order
 
-1. **This doc** merged into atrium-project; sub-issues created from §10 (per §13).
-2. **page-classification hardening** (10.1) — small; makes the exemplar trustworthy.
-3. **nlp-enrich** (10.2) — validates the templates → **promote Appendices A–D to
-   `docs/templates/skill/`** in the hub repo.
-4. **alto-postprocess** (10.3) and **translator pre-work** (10.4 first block) — parallelizable.
-5. **translator skill branch** (10.4 rest); **llm-enrich** (10.5 — service first, skill after).
-6. **`skill-validate.yml`** reusable workflow in the hub (§12.3) once ≥2 skill branches exist;
-   callers wired into each repo's `agent-skill` branch.
+History: [`decisions/agent-skills.md`](decisions/agent-skills.md#11-rollout-order).
 
 ## 12. Maintenance & drift control
 
@@ -699,8 +533,8 @@ the endpoint set matches the documented list; `/info` returns the §4.1 required
 ### 12.2 Branch sync policy — **manual landing, scripted diagnosis**
 
 The `agent-skill` branches were hand-built as flattened/trimmed derivatives, so they do **not**
-share history cleanly with their default branches — for alto-postprocess, nlp-enrich and
-page-classification there is **no merge base at all**, so `git merge` is not available and
+share history cleanly with their default branches — for ocr-postprocess (then alto-postprocess),
+nlp-enrich and page-classification there is **no merge base at all**, so `git merge` is not available and
 "how stale is this branch?" cannot be answered from `git log`. Landing therefore stays
 **manual**. Diagnosing no longer is; two hub tools do that part:
 
@@ -727,7 +561,7 @@ After any `service/` change or release tag on the default branch, run this check
    fields match `api.py`.
 3. **Re-run the client smoke test** on `small_data_samples/` against a locally started server
    (`bash scripts/server.sh`), and re-check `/info`+`/health` against §4.1.
-4. **Let CI confirm**: the `skill-validate.yml` caller (§12.3) runs on the push and guards
+4. **Let CI confirm**: the `skill-validate.yml` caller (§12.3) runs on the pull request that lands the sync, and guards
    frontmatter, referenced paths, the zero-dependency client claim, and the endpoint/`/info`
    contract.
 5. **Bump the skill tag** (`skill-v<para_config version>`) so agents can pin the synced state.
@@ -735,6 +569,11 @@ After any `service/` change or release tag on the default branch, run this check
 
 Fully automating the *landing* (an auto forward-merge action) stays deferred: with three
 branches sharing no history there is nothing to merge, and the trim decisions need a human.
+
+**Where the branches stand.** The six branches were last synced on 21 October 2026, before record
+schema 2.0. Until the next sync they describe the services as they were then: digital-convert's
+skill still converts into the record, and the translator's client has no option for the field list
+that a metadata request now needs. Run `tools/skill_drift_check.py` before relying on one.
 
 ### 12.3 Skill-validation CI (reusable workflow — authored)
 
@@ -769,14 +608,7 @@ per-repo parameter table).
 
 ## 13. Sub-issue creation & tracking
 
-- One GitHub sub-issue per repo under #31, titled **`agent-skill: <repo-name>`**, body = the
-  repo's §10 subsection + a pinned-commit link to this doc. Labels/milestone per project
-  convention (`enhancement`, `development` · Q3 milestone).
-- Implementation happens on each repo's **`agent-skill`** branch: page-classification updates
-  the existing one; the others create it **from the default branch head** (translator: `master`;
-  alto-postprocess: `master`; nlp-enrich: `master`; llm-enrich: `main`).
-- Each implementation session is logged in that repo's working records, which its
-  `docs/development.md` links.
+History: [`decisions/agent-skills.md`](decisions/agent-skills.md#13-sub-issue-creation--tracking).
 
 ---
 
@@ -916,17 +748,20 @@ Start.
 
 ## Appendix E — naming tables
 
-Branch: **`agent-skill`** in all five repos. Skill `name:` = repo name.
+Branch: **`agent-skill`** in all six repos. Skill `name:` = repo name.
 Client = `atrium_<domain-verb>.py` (domain verb, not necessarily the endpoint path).
-Env var = `ATRIUM_<code>_URL`.
+Env var = `ATRIUM_<code>_URL`. The flags are those of the branches as last synced (§12.2).
 
-| Repo                       | skill `name:`                | client script                   | env var         | service-specific client flags                              |
-|----------------------------|------------------------------|---------------------------------|-----------------|------------------------------------------------------------|
-| atrium-page-classification | `atrium-page-classification` | `scripts/atrium_classify.py`    | `ATRIUM_PC_URL` | `--version`, `--topn`                                      |
-| atrium-translator          | `atrium-translator`          | `scripts/atrium_translate.py`   | `ATRIUM_TR_URL` | `--source-lang`, `--target-lang`, `--alto/--no-alto`, `-o` |
-| atrium-alto-postprocess    | `atrium-alto-postprocess`    | `scripts/atrium_postprocess.py` | `ATRIUM_AP_URL` | `--task-type`                                              |
-| atrium-nlp-enrich          | `atrium-nlp-enrich`          | `scripts/atrium_enrich.py`      | `ATRIUM_NE_URL` | `--kw-method`, `--num-keywords`, `--jobs`, `--zip`         |
-| atrium-llm-enrich          | `atrium-llm-enrich`          | `scripts/atrium_keywords.py`    | `ATRIUM_LE_URL` | `--backend`, `--vocab`, `--top-k`                          |
+| Repo                       | skill `name:`                | client script                   | env var         | service-specific client flags                                                       |
+|----------------------------|------------------------------|---------------------------------|-----------------|-------------------------------------------------------------------------------------|
+| atrium-page-classification | `atrium-page-classification` | `scripts/atrium_classify.py`    | `ATRIUM_PC_URL` | `--version`, `--topn`, `--document-json`, `--document-json-out`                     |
+| atrium-ocr-postprocess     | `atrium-ocr-postprocess`     | `scripts/atrium_postprocess.py` | `ATRIUM_AP_URL` | `--task-type`, `--document-record`, `--document-record-out-file`                    |
+| atrium-digital-convert     | `atrium-digital-convert`     | `scripts/atrium_convert.py`     | `ATRIUM_DC_URL` | `--markdown`, `--seed`, `--out-dir`, `--describe`, `--stages`, `--classify-pages`   |
+| atrium-nlp-enrich          | `atrium-nlp-enrich`          | `scripts/atrium_enrich.py`      | `ATRIUM_NE_URL` | `--lang`, `--doc-id`, `--document-json`, `--jobs`, `--zip`                          |
+| atrium-keyword-extract     | `atrium-keyword-extract`     | `scripts/atrium_keywords.py`    | `ATRIUM_KW_URL` | `--kind`, `--method`, `--num-keywords`, `--lang`, `--no-per-page`, `--out-dir`      |
+| atrium-translator          | `atrium-translator`          | `scripts/atrium_translate.py`   | `ATRIUM_TR_URL` | `--source-lang`, `--target-lang`, `--alto/--no-alto`, `--document-json`, `--output` |
+
+ocr-postprocess keeps its predecessor's env var code, `AP`.
 
 Considered and rejected: `atrium_process.py` for alto-postprocess (too generic as a skill-level
 verb); `atrium_llm_enrich.py` for llm-enrich (confusable with nlp-enrich's `atrium_enrich.py`);
@@ -935,7 +770,7 @@ Committed `openapi.json` snapshots were rejected on 07-23 (drift) and adopted on
 a freshness test that turns the drift into a red build (§2.2, §4.8).
 
 ---
-_Maintained in `atrium-project` next to the ecosystem record
-([`plan_repo_review.md`](plan_repo_review.md)). Templates graduate to `docs/templates/skill/`
-after validation (rollout step 3). Session log: issue #31's working records
+_Maintained in `atrium-project`. The templates of Appendices A–D live in `docs/templates/skill/`
+(`SKILL.template.md`, `atrium_client.skeleton.py`, `server.template.sh`, `serviceREADME.template.md`).
+Session log: issue #31's working records
 ([Development history](../docs_site/development-history.md#the-working-records))._

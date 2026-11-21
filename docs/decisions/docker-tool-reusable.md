@@ -15,6 +15,22 @@ The current workflow set is described in [`docker_gha.md`](../docker_gha.md), th
 workflow follows in [`ci_policy.md`](../ci_policy.md), and the dated plan in
 [`docker_gha_roadmap.md`](../docker_gha_roadmap.md).
 
+## 2026-11-21 — pull requests instead of branch pushes
+
+**Decision.** The workflow is called on pull requests and on version tags only. A pull request merged into
+`test` (its `closed` event) now does what a push to `test` did: it tests and probes the merge commit and
+publishes `:test`. An unmerged close runs nothing.
+**Status:** in the hub's `test` branch; it reaches a tool repository with that repository's pin move.
+**Why.** The working agreement of 11 November 2026 runs CI on pull requests and releases only, and every
+change reaches `test` through a reviewed pull request, so the push event no longer carries anything the
+pull request has not already shown, except the merge commit itself.
+**Consequence.** Every `actions/checkout` step checks out `github.event.pull_request.merge_commit_sha` on a
+merged close; `test` and `docker-build-smoke` skip an unmerged close; `build-and-push` and the `:test` tag
+of the metadata step test for a pull request merged into `test` instead of `refs/heads/test`. A fork's
+pull request still gets a read-only token, so its merge cannot publish; in-repository branches can. The
+sections [When the probe runs](#when-the-probe-runs), [When publishing runs](#when-publishing-runs) and
+[The test channel tag](#the-test-channel-tag) describe the push design this replaces.
+
 ## Secrets
 
 ### Declared secrets

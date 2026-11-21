@@ -1,14 +1,33 @@
 # Proposal: execution evidence, processing policy and output rights
 
-> **Status:** draft on [#6](https://github.com/ufal/atrium-project/issues/6), 2026-10-20; the approach approved by
-> AMČR (motyc) on 2026-10-22, with three adjustments made here: `scope` and `basis` are mandatory, the per-document
-> policy is described, and the document schema's migration is kept apart from paradata versioning. Step 1 shipped in
-> the pilot releases of 2026-11-04 ([#77](https://github.com/ufal/atrium-project/issues/77)): an RO-Crate root names
-> `#no-licence-asserted`, and a record marks the calculated value `provenance.license_basis: "calculated"`. The rest
-> is not implemented yet. It is a class (c) change under [`shared_components.md`](../shared_components.md). Draft schema:
-> [`atrium_rights.schema.json`](atrium_rights.schema.json).
+> **Status:** closed. Record schema 2.0, paradata 3.0 and ARÚP's output contract of 12 November 2026
+> settled its main points; what was not adopted is listed below. The draft schema,
+> [`atrium_rights.schema.json`](atrium_rights.schema.json), is kept with the record.
 
-## In plain words
+## In short
+
+- **Proposed** (October 2026, on [#6](https://github.com/ufal/atrium-project/issues/6)): three separate records
+  instead of one calculated licence label — the components a run used, the policy that allowed it, and the
+  rights in an output, written only when someone entitled asserts them.
+- **Adopted:** no licence is computed anywhere. Record schema 2.0 has no `provenance` block and paradata 3.0 no
+  `license` fields; the paradata list each component with its own terms (`components`), and an RO-Crate root
+  names `#no-licence-asserted`.
+- **Settled differently by the output contract:** the pipeline decides per job, from the job's licence flag,
+  what an external service may receive, so the tools evaluate no policy file. AMČR states the rights in the
+  content in its own systems (the document's licence, otherwise its default, CC BY-NC 4.0, inherited by the
+  derived outputs), so the record has no `rights` field.
+- **Not taken up:** a per-repository inventory of components with the evidence for each licence
+  (`components.json`, `REUSE.toml`). It is not scheduled.
+- **For a reader:** the current state, in plain words, is on the site's
+  [Licences and paradata](https://ufal.github.io/atrium-project/ecosystem/licences/) page.
+
+## The proposal as drafted (20–22 October 2026)
+
+The rest of this page is the proposal as it was approved on 22 October 2026, kept as the record of the
+design. Field names, file names and the migration plan below were not all implemented; the summary above
+says what holds.
+
+### In plain words
 
 **Before step 1.** Every run lists the components it used (models, datasets, vocabularies, web services), each with
 its licence. From that list it also computes one label, the most restrictive of those licences
@@ -38,7 +57,7 @@ finding out afterwards. Old records keep their values, marked as calculated.
 A short explanation for readers outside the project is on the documentation site:
 [Licences and paradata](https://ufal.github.io/atrium-project/ecosystem/licences/).
 
-## What AMČR decided (2026-10-22)
+### What AMČR decided (2026-10-22)
 
 1. **Who asserts output rights:** AMČR, for the outputs it publishes, on the basis of the source's rights and
    permissions. No processing tool makes an automatic or default licence assertion.
@@ -57,14 +76,14 @@ A short explanation for readers outside the project is on the documentation site
 The correction of the misleading output-licence assertions comes first, and historical evidence is kept. The
 inventories (`components.json`, REUSE) follow and do not hold it up.
 
-## For implementers
+### For implementers
 
 The rest of this page is the detailed design: the fields of each record, the RO-Crate mapping, the migration and
 the order of work.
 
-### The three records
+#### The three records
 
-#### 1. Execution evidence: the components a run used
+##### 1. Execution evidence: the components a run used
 
 One entry per component actually exercised, in the run's paradata (`components_used`), referenced from the
 record by the run's `run_uuid`:
@@ -84,7 +103,7 @@ The source is a per-repository inventory, `components.json`, replacing the `[com
 the REUSE way, in a `REUSE.toml` and SPDX headers; `components.json` covers what is outside it: dependencies,
 models, data and services.
 
-#### 2. Processing policy: what a deployment allows
+##### 2. Processing policy: what a deployment allows
 
 A deployment names a policy file (`ATRIUM_POLICY_PATH`, JSON, owned by the operator, i.e. AMČR for the pilot). Before
 a route that the policy covers (an external service, a model with restrictive terms), the tool evaluates it and
@@ -115,7 +134,7 @@ inside the image is not external and goes on. The decision is recorded per docum
 runs) the tools behave as today and the paradata records `"policy": null`, so such a record is never mistaken for
 one from AMČR's deployment.
 
-#### 3. Output rights: an assertion, not a calculation
+##### 3. Output rights: an assertion, not a calculation
 
 An optional `rights` list on a record (and on an exported collection), written only through an explicit call
 (`atrium_document.assert_rights()`), never by a processing stage. Every field is mandatory: an assertion without
@@ -131,7 +150,7 @@ its `scope` or its `basis` is refused.
 
 No tool fills it from component licences. An unknown status stays unknown.
 
-### RO-Crate 1.2 and Process Run Crate 0.5
+#### RO-Crate 1.2 and Process Run Crate 0.5
 
 - Each component becomes a contextual entity (`SoftwareApplication`, `Dataset`, `DefinedTermSet` or `WebAPI`) with
   **its own** `license` and `version`, listed as the `CreateAction`'s `instrument`, as Process Run Crate expects.
@@ -144,7 +163,7 @@ No tool fills it from component licences. An unknown status stays unknown.
 - For a collection of derived files, `atrium_rocrate` can also write a `REUSE.toml`, generated from the rights
   assertions of those files, never from component licences.
 
-### Migration
+#### Migration
 
 The document record and the paradata are versioned apart, and each keeps its own rules: the record's schema is
 1.0 (`atrium_document.SCHEMA_VERSION`, `migrate_document()`), the paradata's 2.0 (`atrium_paradata.SCHEMA_VERSION`,
@@ -172,7 +191,7 @@ then edited; `[components]` is removed when every tool reads `components.json`.
 Historical paradata and records stay as written: nothing rewrites a file on disk. Reading them, a consumer sees a
 calculated value labelled as such (`migrate_document()` in memory for a record; the version for paradata).
 
-### Order of work, once agreed
+#### Order of work, once agreed
 
 1. **The correction first:** the schema and the docs describe `provenance.license` and the paradata `license` as
    calculated from the components, not as the output's licence (done 2026-10-25: the record schema's

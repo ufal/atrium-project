@@ -158,16 +158,28 @@ def test_the_repository_slug_comes_from_the_remote(url, slug):
 # ── The commit's own CI (`check_ci`): v1.7.7-beta was tagged on a commit whose Docker Build had failed ──
 
 
-def _fake_gh(tmp_path: Path, monkeypatch, runs: list[dict]) -> str:
-    """A `gh` stand-in: `run list --commit` prints `runs`; every other call prints an empty list."""
+def _fake_gh(
+    tmp_path: Path, monkeypatch, runs: list[dict], pulls: list | None = None, pr_runs: list | None = None
+) -> str:
+    """A `gh` stand-in. `run list --commit <head of the pull request>` prints `pr_runs`, any other
+    `run list --commit` prints `runs`; `api repos/…/commits/…/pulls` prints `pulls`; every other call
+    prints an empty list."""
     import json
 
     monkeypatch.setenv("FAKE_GH_RUNS", json.dumps(runs))
+    monkeypatch.setenv("FAKE_GH_PULLS", json.dumps(pulls or []))
+    monkeypatch.setenv("FAKE_GH_PR_RUNS", json.dumps(pr_runs or []))
     script = tmp_path / "gh"
     script.write_text(
         "#!/usr/bin/env python3\n"
         "import os, sys\n"
-        "print(os.environ['FAKE_GH_RUNS'] if '--commit' in sys.argv else '[]')\n",
+        "a = sys.argv\n"
+        "if '--commit' in a:\n"
+        "    print(os.environ['FAKE_GH_PR_RUNS'] if a[a.index('--commit') + 1] == 'prhead' else os.environ['FAKE_GH_RUNS'])\n"
+        "elif len(a) > 2 and a[1] == 'api' and a[2].endswith('/pulls'):\n"
+        "    print(os.environ['FAKE_GH_PULLS'])\n"
+        "else:\n"
+        "    print('[]')\n",
         encoding="utf-8",
     )
     script.chmod(0o755)
@@ -176,6 +188,21 @@ def _fake_gh(tmp_path: Path, monkeypatch, runs: list[dict]) -> str:
 
 def _push_run(name: str, conclusion: str | None, status: str = "completed") -> dict:
     return {"name": name, "status": status, "conclusion": conclusion, "event": "push", "url": f"https://x/{name}"}
+
+
+def _pr_run(name: str, conclusion: str | None, status: str = "completed") -> dict:
+    return {
+        "name": name,
+        "status": status,
+        "conclusion": conclusion,
+        "event": "pull_request",
+        "url": f"https://x/pr/{name}",
+    }
+
+
+_MERGED_PR = [
+    {"number": 7, "merged_at": "2026-11-21T10:00:00Z", "merge_commit_sha": "ignored", "head": {"sha": "prhead"}}
+]
 
 
 def test_a_commit_with_a_failed_push_run_is_refused(tool, tmp_path, monkeypatch, capsys):
@@ -195,7 +222,7 @@ def test_a_commit_with_a_running_push_run_is_refused(tool, tmp_path, monkeypatch
     gh = _fake_gh(tmp_path, monkeypatch, [_push_run("Docker Build & Push", None, status="in_progress")])
     monkeypatch.setattr(tr, "repo_slug", lambda url: "ufal/demo")
     assert tr.main(["v1.0.0-beta", "--repo", str(repo), "--gh", gh, "--wait", "0"]) == 1
-    assert "still has push runs going" in capsys.readouterr().err
+    assert "still has runs going" in capsys.readouterr().err
 
 
 def test_a_commit_whose_push_runs_passed_is_tagged(tool, tmp_path, monkeypatch, capsys):
@@ -208,7 +235,7 @@ def test_a_commit_whose_push_runs_passed_is_tagged(tool, tmp_path, monkeypatch, 
     gh = _fake_gh(tmp_path, monkeypatch, runs)
     monkeypatch.setattr(tr, "repo_slug", lambda url: "ufal/demo")
     assert tr.main(["v1.0.0-beta", "--repo", str(repo), "--gh", gh, "--wait", "0"]) == 0
-    assert "CI green: 3 push run(s)" in capsys.readouterr().out
+    assert "CI green: 3 run(s)" in capsys.readouterr().out
     assert "refs/tags/v1.0.0-beta" in _remote_refs(origin)
 
 
@@ -236,3 +263,46 @@ def test_a_tag_that_exists_only_locally_is_explained(tool, capsys):
     assert "exists only locally" in err and "git tag -d v1.0.0-beta" in err
     _git(repo, "tag", "-d", "v1.0.0-beta")
     assert _run(repo, "v1.0.0-beta") == 0
+
+
+# ── CI runs on pull requests: a commit a pull request merged is checked by that pull request's runs ──
+
+
+def test_a_merged_pull_request_whose_runs_failed_is_refused(tool, tmp_path, monkeypatch, capsys):
+    repo, origin = tool
+    gh = _fake_gh(
+        tmp_path,
+        monkeypatch,
+        [],
+        pulls=_MERGED_PR,
+        pr_runs=[_pr_run("pre-commit", "success"), _pr_run("Docker Build & Publish", "failure")],
+    )
+    monkeypatch.setattr(tr, "repo_slug", lambda url: "ufal/demo")
+    assert tr.main(["v1.0.0-beta", "--repo", str(repo), "--gh", gh, "--wait", "0"]) == 1
+    err = capsys.readouterr().err
+    assert "pull request #7" in err and "Docker Build & Publish: failure" in err
+    assert "refs/tags/v1.0.0-beta" not in _remote_refs(origin)
+
+
+def test_a_merged_pull_request_whose_runs_passed_is_tagged(tool, tmp_path, monkeypatch, capsys):
+    repo, origin = tool
+    gh = _fake_gh(
+        tmp_path,
+        monkeypatch,
+        [_pr_run("Docker Build & Publish (merge)", "success")],
+        pulls=_MERGED_PR,
+        pr_runs=[_pr_run("pre-commit", "success"), _pr_run("API Contract", "success")],
+    )
+    monkeypatch.setattr(tr, "repo_slug", lambda url: "ufal/demo")
+    assert tr.main(["v1.0.0-beta", "--repo", str(repo), "--gh", gh, "--wait", "0"]) == 0
+    out = capsys.readouterr().out
+    assert "CI green: 3 run(s) of pull request #7" in out
+    assert "refs/tags/v1.0.0-beta" in _remote_refs(origin)
+
+
+def test_a_commit_with_no_run_at_all_is_reported_not_checked(tool, tmp_path, monkeypatch, capsys):
+    repo, _ = tool
+    gh = _fake_gh(tmp_path, monkeypatch, [])
+    monkeypatch.setattr(tr, "repo_slug", lambda url: "ufal/demo")
+    assert tr.main(["v1.0.0-beta", "--repo", str(repo), "--gh", gh, "--wait", "0", "--dry-run"]) == 0
+    assert "no pull-request or push run" in capsys.readouterr().out

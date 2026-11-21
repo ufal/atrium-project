@@ -1,21 +1,16 @@
 # ATRIUM GitHub Actions Strategy & Integration Report
 
-> **Status:** Active Document (Updated: 2026-09-29, roadmap round 5 / [#69](https://github.com/ufal/atrium-project/issues/69))
-> **Scope:** `atrium-translator`, `atrium-nlp-enrich`, `atrium-page-classification`, `atrium-ocr-postprocess`,
-> `atrium-keyword-extract`, `atrium-digital-convert`, and `atrium-project` (templates). The last
-> three tool repositories replaced `atrium-alto-postprocess` and `atrium-llm-enrich` on 2026-10-01
-> (atrium-project#72); the old repositories are superseded, archived since 2026-10-19, and no longer part of the federation. Where
-> this document describes what a workflow did in one of them, it names the repository as it was then.
+> **Status:** current-state reference for the ATRIUM GitHub Actions automation: what is deployed, what
+> conventions hold, and what the version floor is. Cited from all six tool repositories.
+> **Scope:** `atrium-page-classification`, `atrium-ocr-postprocess`, `atrium-digital-convert`, `atrium-nlp-enrich`,
+> `atrium-keyword-extract`, `atrium-translator`, and `atrium-project` (reusables and templates). Where a
+> section describes a workflow in a predecessor repository (`atrium-alto-postprocess`, `atrium-llm-enrich`,
+> archived since 2026-10-19), it names it as it was then.
 >
-> This document is the **current-state reference** for the ATRIUM GitHub Actions automation: what is
-> deployed, what conventions hold, and what the version floor is. It is cited from all six tool repos.
->
-> 📍 **The forward plan lives in [`docker_gha_roadmap.md`](docker_gha_roadmap.md)** — findings register,
-> cross-cutting decisions, and the W1–W6 wave sequence. Keep planning material there; keep this file
-> describing what is true today.
->
-> **The rules** — CI tiers, what a green or skipped result must mean, release semantics, and the checklist
-> for a new check — are in [`ci_policy.md`](ci_policy.md) (#81), with a map of what each check proves.
+> **The rules** — when CI runs (pull requests and releases), what a green or skipped result must mean,
+> release semantics, and the checklist for a new check — are in [`ci_policy.md`](ci_policy.md), with a map
+> of what each check proves. The forward plan of July–September 2026, now closed, is
+> [`docker_gha_roadmap.md`](docker_gha_roadmap.md); its finding codes (E7, H6, …) are cited below.
 
 ## 1. Current Deployment Status: Developed Workflows
 
@@ -26,21 +21,24 @@ thresholds.
 
 ### Standardized Baselines (Active in All Repositories)
 
-* **Automated Testing:** Fast suites run via `pytest -m "not slow"` with coverage reporting on push/PR.
+* **When CI runs:** on pull requests and releases only ([`ci_policy.md`](ci_policy.md), "The rule"). No
+workflow runs on a branch push, and the only schedules are the weekly CodeQL and image scans.
+* **Automated Testing:** Fast suites run via `pytest -m "not slow"` with coverage reporting on every pull request.
 * **Code Linting:** pre-commit runs in CI in every repo and is **blocking** — settled 2026-07-30. The
 advisory `ruff check .` that `docker-tool.reusable.yml` used to run beside it is gone (roadmap **E7**).
-* **Dependency Management:** Weekly `pip` and GitHub Action updates via Dependabot. **Not covered in the tool
-repos:** the `docker` and `pre-commit` ecosystems (roadmap **H6**, retired for now in roadmap §10) — so
-their base images and hook revisions do not auto-update. The hub's own `dependabot.yml` does track
-`docs/templates/Dockerfile`'s base digest. The Dockerfiles' `apt-get upgrade` layer is what keeps a floating
-`python:3.11-slim` patchable (§3).
+* **Dependency Management:** Dependabot opens **security updates only**: every `dependabot.yml` sets
+`open-pull-requests-limit: 0`, which stops routine version updates and leaves security updates alone (the
+repository setting "Dependabot security updates" must be on). The `docker` and `pre-commit` ecosystems are
+not configured in the tool repos (roadmap **H6**, retired for now in roadmap §10). The Dockerfiles'
+`apt-get upgrade` layer is what keeps a floating `python:3.11-slim` patchable (§3).
 * **Docker Operations:** Docker build smoke tests (and the opt-in container probe, §3.4) run on pull
-requests, on pushes to `test` and on version tags. Builds and pushes to the GitHub Container Registry (GHCR)
-run on version tags (`v*`), published releases **and pushes to `test`**, which publish the moving `:test`
-channel (§3.2), so CI can exercise an image built from the integration branch before a release.
+requests and version tags. Builds and pushes to the GitHub Container Registry (GHCR) run on version tags
+(`v*`, through `release.yml`) and **when a pull request is merged into `test`** (its `closed` event): the
+reusable checks out the merge commit and publishes the moving `:test` channel (§3.2), so CI can exercise an
+image built from the integration branch before a release. An unmerged close runs nothing.
 * **Health & lifecycle (issue #55):** every `-api` image declares `HEALTHCHECK`/`STOPSIGNAL` and every
 service handles `SIGTERM` with a bounded, in-flight-aware drain. `probe-targets` opts a Dockerfile stage
-into a real `docker run` + healthcheck-wait + `/health`/`/ready` + `SIGTERM` smoke on every PR. See §3.4.
+into a real `docker run` + healthcheck-wait + `/health`/`/ready` + `SIGTERM` smoke on every pull request. See §3.4.
 * **Version Syncing:** `CITATION.cff` files are synced with internal `para_config` versions across the board.
 * **Paradata Drift Guard:** Every repo calls `para-drift.reusable.yml` (pinned by commit) to diff its local canonical shared
 files against the hub copies. Parity currently holds byte-identically in all six repos. Note this enforces
@@ -49,8 +47,9 @@ that the copies are *identical*, not that they are *correct* — the largest can
 
 ### Reusable Templates (`atrium-project`)
 
-Seven reusable workflows are live in the tool repositories, consumed by **45 caller jobs** (42 in the six
-tool repositories + 3 hub-local; `skill-validate` runs on the `agent-skill` branches as well):
+Eight reusable workflows are live (`docker-tool`, `security`, `para-drift`, `api-contract`, `codeql`,
+`pre-commit`, `workflow-lint`, `skill-validate`); the tool repositories call them by commit, and the hub
+calls its own by path:
 
 * **Docker Tool** (`docker-tool.reusable.yml`) — environment setup, linting, testing with coverage,
 multi-target Docker builds, GHCR publish, and the post-publish container scan. Every `probe-targets` image
@@ -58,8 +57,8 @@ is also checked for forbidden packages before it is published (#72): `forbidden-
 `["pymupdf"]`, AGPL) and `forbidden-modules` (default `[]`). Publishing waits for the container probe; with `release-gate: true` a
 failed probe publishes nothing, and on a tag the `images` job hands the caller the promoted digests as
 `images-json` (#81; [`ci_policy.md`](ci_policy.md), Releases).
-* **Security** (`security.reusable.yml`) — version consistency check plus the periodic Trivy re-scan of the
-published image.
+* **Security** (`security.reusable.yml`) — version consistency check plus the weekly Trivy re-scan of the
+published image (one of the two allowed schedules).
 * **Paradata Drift** (`para-drift.reusable.yml`) — canonical shared-file parity diff. Reads the canonical
 files via a `hub-ref` input (default `v1`) rather than a hardcoded branch. Its `vendored-parity` job (#72)
 does the same for a layer one tool owns and another vendors: with `vendored-from: <owner repos>` it checks
@@ -68,29 +67,30 @@ each owner out beside the caller at the commit the caller's `tests/test_vendored
 files the owner has changed since, at `vendored-ref` (default `test`), go to the job summary as advice (#82).
 digital-convert runs it against nlp-enrich's TEITOK reader and ocr-postprocess's document reader.
 * **API Meta-Contract** (`api-contract.reusable.yml`) — the §4.1 service contract test.
-* **CodeQL** (`codeql.reusable.yml`) — Python, `build-mode: none`. The caller supplies the schedule (`on:`
-can only be declared by the caller) and **must** grant `security-events: write`.
+* **CodeQL** (`codeql.reusable.yml`) — Python, `build-mode: none`, on pull requests and weekly. The caller
+supplies the schedule (`on:` can only be declared by the caller) and **must** grant `security-events: write`.
 * **pre-commit** (`pre-commit.reusable.yml`) — blocking, with the hook-environment cache. The repo's own
 `.pre-commit-config.yaml` and `ruff.toml` still decide what runs.
 * **Workflow Policy Lint** (`workflow-lint.reusable.yml`) — runs the hub's `tools/ci/workflow_lint.py`
 against the caller's tree: parse, write-scoped SHA pins, caller/callee permissions and inputs, hub refs
 (`@v1`, or since #72 a commit of it with a matching `hub-ref`), `timeout-minutes`, `concurrency`, a
 `permissions:` block on every job of a workflow with none at the top, the action-version floor (§2), the
-compose rule (§3.5, round 5, #69) and — since #72 — release assets attached before publishing. A second
+compose rule (§3.5, round 5, #69), release assets attached before publishing (#72) and, with
+`--event-driven`, the triggers (no branch push, no schedule outside the security scans). A second
 step, `tools/ci/image_closure.py`, checks the production image's first-party files against the repo's
 `.github/production-image.json` ([`k8s_deployment.md`](k8s_deployment.md#which-image-to-deploy--one-production-image-per-stage-72)).
-⚠️ It has no published caller example, so its own caller shape is not policy-linted (roadmap **E4**).
+It has no published caller example, so its own caller shape is not policy-linted (roadmap **E4**).
 * **Skill Branch Validation** (`skill-validate.reusable.yml`) — for `agent-skill` branches; no
 default-branch callers.
-* **Dependabot / GPU Inference / Scheduled Smoke / Release:** caller examples in
-`docs/templates/workflows/`, localized per repo. These are **not** yet reusables — see §5.
+* **Dependabot / GPU Inference / Fresh-environment Smoke / Release:** caller examples in
+`docs/templates/workflows/`, localized per repo. These are **not** reusables — see §5.
 
 > The CodeQL and pre-commit reusables replaced ten near-identical local workflows (431 lines) on
 > 2026-07-30 (#18, T3). Their only real differences were an arbitrary weekly cron and whether the
 > pre-commit cache was present. They were deferred until the pins were on `@v1`, because collapsing them
 > while callers still pointed at a mutable branch would have raised coupling from 20 refs to 30.
 
-> 📌 **Ref-pin convention: two channels.**
+> **Ref-pin convention: two channels** (history; superseded by the commit pins below).
 >
 > | Channel     | Who uses it                                                  | Mutability                                       |
 > |-------------|--------------------------------------------------------------|--------------------------------------------------|
@@ -109,7 +109,7 @@ default-branch callers.
 > **Moving `v1`:** land the hub change on `main`, validate it via a caller temporarily pinned `@test`,
 > then `git tag -f v1 <sha> && git push -f origin v1`. Callers need no edit.
 >
-> ⚠️ **The trade-off, stated plainly** (superseded by the commit pins below since the sweep of 2026-10-25;
+> **The trade-off, stated plainly** (superseded by the commit pins below since the sweep of 2026-10-25;
 > the `v1.x.y` record it asks for was never kept, and the pins make it unnecessary):
 > `v1` is a **force-pushable tag**, and `workflow_lint.py`'s
 > `WRITE_SCOPED` allowlist deliberately exempts reusable-workflow refs from the SHA-pin rule. So the
@@ -118,14 +118,14 @@ default-branch callers.
 > only to a commit that passed `Hub Self-Check`**, and **every move is also recorded as an immutable
 > `v1.x.y` tag** so there is an audit trail.
 >
-> 🔁 **Commit pins (#72, #40).** AMČR's production gate needs a hub change to reach a tool repository only
+> **Commit pins (#72, #40).** AMČR's production gate needs a hub change to reach a tool repository only
 > through a reviewed change, so the trade-off above is closed: since 2026-10-25 all six are pinned, and
 > `--require-sha-pins` fails any caller left at `@v1`. The linter accepts `@<40-char sha>  # v1`, and fails
 > a pinned caller whose `hub-ref` differs from its pin; `scripts/pin_hub_reusables.py --sha <v1 commit>`
 > moves every caller of the six repos in one sweep, so a hub fix still ships centrally — as one scripted
 > pin move instead of a tag move. Order and settings: [`release_trust.md`](release_trust.md).
 >
-> ⚠️ `para-drift.reusable.yml` also reads the canonical `docs/templates/shared/*` files via its
+> `para-drift.reusable.yml` also reads the canonical `docs/templates/shared/*` files via its
 > **`hub-ref`** input (default `v1`). Keep it in step with the ref the workflow is called at — a caller
 > on `@test` should pass `hub-ref: test`, or it compares against the wrong generation of templates.
 
@@ -141,15 +141,15 @@ six (atrium-project#72).
 
 **The procedure (issue #10 G4, revised for the pins on 2026-10-28):**
 
-1. Edit the canonical file(s) under `docs/templates/shared/` on the hub, and land that on `test` and
-   `main`.
+1. Edit the canonical file(s) under `docs/templates/shared/` on the hub, in a pull request, and merge it
+   into `test` and `main`.
 2. Move `v1` to that commit. In the pinned repos this changes nothing yet.
 3. In each tool repo, make **one commit** with the copies and the pins:
    `scripts/revendor_shared.sh` writes the copies, and
    `python3 scripts/pin_hub_reusables.py --sha "$(git rev-parse 'v1^{commit}')"` moves the pins.
    `revendor_shared.sh` checks the pins as well (`pin_hub_reusables.py --print-pins`): it exits 1 while
    a tool's pin carries other canonical files than the hub checkout, and prints the sweep command.
-4. Push the six. Each repo is green on its own push, so there is no window to keep closed.
+4. Open the six pull requests. Each is green on its own, so there is no window to keep closed.
 
 **Before the pins** (until 2026-10-25), callers read `hub-ref: v1`, so moving `v1` changed what all six
 repos had to contain at the instant the tag moved. On 2026-08-03/04 the *same commit SHA* failed
@@ -164,29 +164,18 @@ To validate a hub change against real callers before it is on `v1`, pin **one** 
 
 ### Localized Repository Workflows
 
-* **`atrium-ocr-postprocess`** (until 2026-10-01 `atrium-alto-postprocess`): CodeQL, Docker Build & Publish, pre-commit, Automated Releases, Scheduled
-Smoke Tests, Paradata Drift, API Meta-Contract, Workflow Policy Lint, and Security & Supply-chain scanning
-(`para-config-path: setup/para_config.txt` — configs moved into `setup/`). Fully on the current
-action-version floor with correct triggers throughout. No GPU workflow, and none needed yet:
-`tests/test_gpu_concurrency.py` simulates the GPU worker dying and runs on a CPU (`slow`).
-* **`atrium-nlp-enrich`:** CodeQL, multi-target Docker builds (`base`, `api`, `llm`), GPU Inference Tests,
-pre-commit, Releases, Scheduled Smoke Tests, Security scans, Paradata Drift, API Meta-Contract, Workflow
-Policy Lint, and a dedicated Shellcheck workflow (the only one in the ecosystem).
-* **`atrium-page-classification`:** CodeQL, Docker Build & Publish (incl. `vit`/`clip` branch triggers), GPU
-Inference Tests, pre-commit, Automated Releases, Scheduled Smoke Tests (HF caching + a model-revision
-reachability check), Paradata Drift, API Meta-Contract, Workflow Policy Lint, and Security Scans
-(`para-config-path: setup/para_config.txt`). Its `release.yml` carries a generic, dependency-free AST
-bundle-closure check; alto-postprocess's carries the same kind, and the translator checks its bundle with
-`tests/test_release_bundle.py` and an import smoke (roadmap **D2**'s premise is met; promoting the checker
-to the hub is retired, roadmap §10).
-* **`atrium-translator`:** CodeQL, Docker Build & Push, pre-commit, Scheduled Smoke Tests, Release Bundling,
-Paradata Drift, API Meta-Contract, Workflow Policy Lint, and Security Scans. CPU-only tool — no GPU lane by
-design.
-* **`atrium-keyword-extract`** and **`atrium-digital-convert`** (until 2026-10-01 `atrium-llm-enrich` and the
-  keyword part of `atrium-nlp-enrich`): CodeQL, Docker Build & Publish (`remote` + `llm` targets — `base` deliberately
-unpublished, it carries no ENTRYPOINT), GPU Inference Tests, pre-commit, notes-only Releases, Scheduled
-Smoke Tests, Paradata Drift, API Meta-Contract, Workflow Policy Lint, and Security scans targeting the
-`-llm` image variant (largest CVE surface).
+Every tool repository has `api-contract.yml`, `codeql.yml`, `docker.yml`, `para-drift.yml`, `pre-commit.yml`,
+`release.yml`, `scheduled-smoke.yml` (the fresh-environment suite, by dispatch), `security.yml` and
+`workflow-lint.yml`. What differs:
+
+| Repository          | Image targets (probed)       | Also                                                                                                                                                                  | Notes                                                                                                                                                 |
+|---------------------|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| page-classification | `base`, `api` (`api`)        | `gpu-inference.yml` (dispatch, no runner yet)                                                                                                                         | `para-config-path: setup/para_config.txt`; `vit`/`clip` branches in the triggers; an AST bundle-closure check in `release.yml`                        |
+| ocr-postprocess     | `base`, `api` (`api`)        | —                                                                                                                                                                     | `para-config-path: setup/para_config.txt`; a bundle-closure check in `release.yml`; `tests/test_gpu_concurrency.py` simulates the GPU worker on a CPU |
+| digital-convert     | `digital`, `api` (`api`)     | —                                                                                                                                                                     | `base` is not published; `vendored-parity` against nlp-enrich's TEITOK reader and ocr-postprocess's document reader                                   |
+| nlp-enrich          | `base`, `api` (`api`)        | `lindat-daily.yml` (the LINDAT check, dispatch), `teitok-schema.yml`, `shellcheck.yml` (pull requests)                                                                | the only shellcheck workflow in the ecosystem                                                                                                         |
+| keyword-extract     | `base`, `api`, `llm` (`api`) | `controlled-live.yml` (pull requests touching its files, dispatch), `vocab-drift.yml` (pull requests), `vocab-refresh.yml` (dispatch), `gpu-inference.yml` (dispatch) | `vendored-parity` against nlp-enrich                                                                                                                  |
+| translator          | `base`, `api` (`api`)        | `integration.yml` (pull requests; live LINDAT by dispatch), `lindat-daily.yml` (the LINDAT check, dispatch)                                                           | CPU-only, no GPU lane by design; `tests/test_release_bundle.py` checks its bundle                                                                     |
 
 ### The OpenAPI release asset (atrium-project#32 round 2)
 
@@ -240,7 +229,7 @@ and this paragraph together.**
 
 ## 3. Container and image conventions
 
-> 📎 **Reference Dockerfile: [`docs/templates/Dockerfile`](templates/Dockerfile).** The shape every tool
+> **Reference Dockerfile: [`docs/templates/Dockerfile`](templates/Dockerfile).** The shape every tool
 > repo's `Dockerfile` follows — provenance ARGs, the build-time security-patch layer, the non-root
 > `atrium` user at uid 10001, and the `api` stage's `EXPOSE`/`STOPSIGNAL`/`ENV PORT`/`ENTRYPOINT`/
 > `HEALTHCHECK` block. It is a template, **not** a para-drift canonical file: the five real Dockerfiles
@@ -274,21 +263,22 @@ llm's `digital-docling`). The linter holds all of this (§3.5).
 
 ### 3.2 Tag channels
 
-| Channel       | Published on                     | Meaning                                                          |
-|---------------|----------------------------------|------------------------------------------------------------------|
-| `<semver>`    | `v*` tag, after the release gate | the immutable release — **without** the tag's `v` (`1.7.3-beta`) |
-| `latest`      | `v*` tag, after the release gate | most recent release                                              |
-| `test`        | push to `test`, after the scan   | the integration branch's HEAD; moves on every push; not gated    |
-| `sha-<short>` | every `build-and-push` run       | exact commit; the only tag a gated-out release gets              |
+| Channel       | Published on                                      | Meaning                                                          |
+|---------------|---------------------------------------------------|------------------------------------------------------------------|
+| `<semver>`    | `v*` tag, after the release gate                  | the immutable release — **without** the tag's `v` (`1.7.3-beta`) |
+| `latest`      | `v*` tag, after the release gate                  | most recent release                                              |
+| `test`        | a pull request merged into `test`, after the scan | the integration branch's HEAD; moves on every merge; not gated   |
+| `sha-<short>` | every `build-and-push` run                        | exact commit; the only tag a gated-out release gets              |
 
 `ATRIUM_RUNNER_IMAGE`, the image paradata records (and #67 R2's `CreateAction.instrument`), is taken from
-the same metadata step: the semver on a tag, `test` on a `test` push, `sha-<short>` otherwise (roadmap
+the same metadata step: the semver on a tag, `test` on a merge into `test`, `sha-<short>` otherwise (roadmap
 **B3**, fixed in round 5; it used to be `github.ref_name`, `v1.7.3-beta`, a tag GHCR never carried). The
 compose side is `ATRIUM_VERSION`: set it to the release **without** the `v`. `ATRIUM_RUNNER_REF` stays the
 git ref, `v` included.
 
-Both smoke workflows take an `image-tag` input (`latest` by default; `test` for what is about to be
-released). The `:edge` channel roadmap **W3** proposed is retired: `:test` is the HEAD channel.
+Both hub e2e lanes take an `image-tag` input (`latest` for a dispatch by default; `test` on a hub pull
+request, for what is about to be released). The `:edge` channel roadmap **W3** proposed is retired: `:test`
+is the HEAD channel.
 
 ### 3.3 Container scanning
 
@@ -299,14 +289,14 @@ not true:
 |-------------------------|-------------------------------------------------|-------------------------------|-------------|-----------------------------|
 | Post-publish SARIF scan | inside `build-and-push`, by immutable digest    | `CRITICAL,HIGH`               | `"0"`       | reports to the Security tab |
 | **Release gate**        | inside `build-and-push`, tags only, by digest   | `CRITICAL` + `ignore-unfixed` | **`"1"`**   | **fails the release**       |
-| Periodic re-scan        | `security.reusable.yml`, schedule/dispatch only | `CRITICAL,HIGH`               | `"0"`       | reports only                |
+| Weekly re-scan          | `security.reusable.yml`, schedule/dispatch only | `CRITICAL,HIGH`               | `"0"`       | reports only                |
 
 The release gate is deliberately narrowed three ways — tags only, CRITICAL only, fixable only — so an
 unpatchable CVE cannot wedge a release, and it runs *after* the SARIF upload so findings are recorded even
 when it blocks. **HIGH and unfixable-CRITICAL have no policy yet** (roadmap **H7**).
 
-⚠️ `security.reusable.yml` gates its scan job on `schedule || workflow_dispatch`. `atrium-translator` and
-`atrium-page-classification` do not declare `workflow_dispatch`, so **their weekly cron is the only way to
+`security.reusable.yml` gates its scan job on `schedule || workflow_dispatch`. `atrium-translator` and
+`atrium-page-classification` do not declare `workflow_dispatch`, so **their weekly schedule is the only way to
 run a scan at all** (roadmap **E10**).
 
 ### 3.4 Runtime health and shutdown conventions (issue #55)
@@ -317,13 +307,13 @@ acceptance for it.
 
 **The probe contract, identical across all five services** (`docs/templates/shared/atrium_service.py`):
 
-| Route                   | Answers                                                                                 | Docker `HEALTHCHECK` target                | Kubernetes probe                                                     |
-|-------------------------|-----------------------------------------------------------------------------------------|--------------------------------------------|----------------------------------------------------------------------|
-| `GET /health`           | liveness — 200 always, **including while draining**                                     | ✅ (`docs/templates/shared/healthcheck.py`) | `livenessProbe`                                                      |
-| `GET /health?deep=true` | deep liveness — runs the service's own dependency check; 503 while draining or degraded | —                                          | — (deliberately not wired to any K8s probe; see `k8s_deployment.md`) |
-| `GET /ready`            | readiness — 503 until warm, 200 while serving, 503 the instant `SIGTERM` arrives        | —                                          | `readinessProbe`, `startupProbe`                                     |
+| Route                   | Answers                                                                                 | Docker `HEALTHCHECK` target                  | Kubernetes probe                                                     |
+|-------------------------|-----------------------------------------------------------------------------------------|----------------------------------------------|----------------------------------------------------------------------|
+| `GET /health`           | liveness — 200 always, **including while draining**                                     | yes (`docs/templates/shared/healthcheck.py`) | `livenessProbe`                                                      |
+| `GET /health?deep=true` | deep liveness — runs the service's own dependency check; 503 while draining or degraded | —                                            | — (deliberately not wired to any K8s probe; see `k8s_deployment.md`) |
+| `GET /ready`            | readiness — 503 until warm, 200 while serving, 503 the instant `SIGTERM` arrives        | —                                            | `readinessProbe`, `startupProbe`                                     |
 
-⚠️ **`HEALTHCHECK` is a Docker/Compose/Podman mechanism only — Kubernetes never reads it.** The kubelet
+**`HEALTHCHECK` is a Docker/Compose/Podman mechanism only — Kubernetes never reads it.** The kubelet
 reads `livenessProbe`/`readinessProbe`/`startupProbe` from the pod spec. Issue #55 was opened on the
 premise that `HEALTHCHECK` makes `/health` visible to a K8s liveness probe; it does not. The Kubernetes
 half of this convention is a **reference manifest**, not a Dockerfile directive — see
@@ -353,12 +343,11 @@ unhealthy forever. The default-port probe above is left untouched on purpose: it
 reference manifest and every probe in it still work unchanged. Note a regression surfaces here as a
 ~5.5-minute **timeout**, not an immediate error — the listener is simply not where the probe looks.
 
-It runs on pull requests, on pushes to `test`, and on `v*` tags. The push leg was added in 2026-09 after
-the gap it left became concrete: alto-postprocess added its `api` stage on a push, so the probe never
-started that image; a fork PR weeks later was the first thing to do so, and found the `ENTRYPOINT` dying at
-import. The fix was pushed to `test` as well, where the job skipped again — so it shipped unproven, and the
-red check landed on an unrelated contributor's PR. A probe that only runs on `pull_request` checks
-contributor branches but not the integration branch `build-and-push` publishes from.
+It runs on pull requests (a merged one included, on its merge commit, before `:test` is published) and
+on `v*` tags. A probe on the integration branch matters: in 2026-09 alto-postprocess added its `api` stage
+by a direct push, so the probe never started that image until a fork PR weeks later found the `ENTRYPOINT`
+dying at import. With changes arriving by pull request only, every image the integration branch publishes
+has been probed first.
 
 **Its two budgets are derived from the `HEALTHCHECK` convention below, not chosen.** The healthy wait is
 330s because Docker only declares a container *unhealthy* after `retries` consecutive failures past the
@@ -371,7 +360,7 @@ used its drain window would exit 137 and fail the probe for behaving correctly �
 probe sends no requests, which is the case it is not testing. **Change the Dockerfile convention and these
 two numbers move with it.**
 
-⚠️ **A container's own exit code after a handled `SIGTERM` is 143 (128+15), not 0.** uvicorn's
+**A container's own exit code after a handled `SIGTERM` is 143 (128+15), not 0.** uvicorn's
 `capture_signals()` deliberately re-raises the captured signal after a graceful shutdown completes, so a
 supervisor sees the same status a process that never caught the signal would show. Do not read exit 143 as
 a crash — for these images it is the expected signature of a clean, handled stop.
@@ -395,39 +384,25 @@ What every tool repo's compose files do, held by `workflow_lint.py`'s `check_com
 
 ---
 
-## 4. Scheduled workload allocation
+## 4. Allowed schedules
 
-Cron slots, UTC, read from the six repos on 2026-09-29. **The allocation still collides** — 11 of the 15
-weekly jobs land in Monday 05:00–06:00, because the 15-minute CodeQL stagger was never extended to
-`security.yml`. Re-slotting was retired in round 5 (roadmap §10): a collision costs queue time, not a
-result.
+Since the CI agreement of 11 November 2026 ([`ci_policy.md`](ci_policy.md), "The rule"), the only scheduled
+runs are the weekly security scans. Every other lane that used to run on a timer runs by
+`workflow_dispatch`, and `workflow_lint.py --event-driven` refuses a new schedule elsewhere.
 
-**Current state:**
+| Slot (UTC)   | Jobs                                                                             |
+|--------------|----------------------------------------------------------------------------------|
+| `0 0 * * 1`  | translator security                                                              |
+| `0 3 * * 1`  | page-classification security                                                     |
+| `0 5 * * 1`  | ocr-postprocess CodeQL, nlp-enrich, keyword-extract and digital-convert security |
+| `15 5 * * 1` | digital-convert CodeQL, hub CodeQL                                               |
+| `30 5 * * 1` | nlp-enrich and keyword-extract CodeQL                                            |
+| `45 5 * * 1` | page-classification CodeQL                                                       |
+| `0 6 * * 1`  | translator CodeQL, ocr-postprocess security                                      |
 
-| Slot          | Jobs                                                    |
-|---------------|---------------------------------------------------------|
-| `0 0 * * 1`   | translator security                                     |
-| `0 2 */3 * *` | hub `e2e-pipeline-smoke`                                |
-| `0 3 * * *`   | page-classification smoke **+** alto smoke              |
-| `0 3 * * 1`   | page-classification security                            |
-| `0 4 * * *`   | translator smoke                                        |
-| `0 4 * * 1`   | nlp smoke **+** llm smoke                               |
-| `0 4 */3 * *` | hub `all-repos-smoke` (Cross-Repo Fast-Lane Matrix)     |
-| `0 5 * * 1`   | alto CodeQL **+** nlp security **+** llm security       |
-| `0 5 1 * *`   | nlp `vocab-refresh` **+** llm `vocab-refresh` (monthly) |
-| `15 5 * * 1`  | llm CodeQL **+** hub CodeQL                             |
-| `30 5 * * 1`  | nlp CodeQL **+** hub pre-commit                         |
-| `45 5 * * 1`  | page-classification CodeQL **+** hub self-check         |
-| `0 6 * * 1`   | translator CodeQL **+** alto security                   |
-| `0 6 */3 * *` | hub `e2e-digital-smoke`                                 |
-| `0 7 * * *`   | hub `pages` (documentation site)                        |
-
-Every hub check also takes `workflow_dispatch` (roadmap **E11**, round 5), so a scheduled run that failed on
-something outside the repo can be re-run without a commit.
-
-**Convention going forward:** one slot per (repo × workflow) pair; 15-minute spacing within a family;
-families separated by at least an hour. `gpu-inference` crons stay commented out until a runner exists —
-deliberately, so the ecosystem does not advertise coverage it does not have.
+Most land on Monday morning; a collision costs queue time, not a result. The cron table of 29 September 2026,
+with the smoke, e2e, vocabulary and site schedules that were removed, is in roadmap §2.4 and
+[`decisions/e2e-lanes.md`](decisions/e2e-lanes.md).
 
 ---
 
@@ -439,13 +414,12 @@ backlog: roadmap **W4** was retired in round 5 (roadmap §10), each with what wo
 | Family                | Lines (2026-09-29) | Repos | Why it stays per repo                                                                                                                                                                   |
 |-----------------------|--------------------|-------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `release.yml`         | 970                | 5     | A release gate must not depend on a cross-repo `uses:` resolving at tag-push time (roadmap §3.3); since #32 round 2 each also carries its OpenAPI gate. Every bundle is closure-checked |
-| `scheduled-smoke.yml` | 489                | 5     | The per-repo semantics are accepted (whole suite, or `-m slow`, per repo); reopen at the next divergence nobody chose                                                                   |
-| `gpu-inference.yml`   | 204                | 3     | Waits with the GPU runner (#40); no test needs a GPU today. nlp and llm's copies are byte-identical                                                                                     |
+| `scheduled-smoke.yml` | 489                | 6     | The per-repo semantics are accepted (whole suite, or `-m slow`, per repo); run by dispatch only; reopen at the next divergence nobody chose                                             |
+| `gpu-inference.yml`   | 204                | 2     | Waits with the GPU runner (#40); no test needs a GPU today. page-classification and keyword-extract have one                                                                            |
 | `shellcheck.yml`      | 33                 | 1     | nlp-enrich only, double coverage with its pre-commit hook, harmless. page-classification's hook now covers all eight of its scripts                                                     |
 
-The hub also ships **no Dockerfile and no compose file**. `plan_repo_review.md` references a planned
-`compose/docker-compose.pipeline.yml`; that file does not exist and, per the 2026-06-12 decision that no
-umbrella wrapper is needed, is not planned. That reference should be removed.
+The hub also ships **no Dockerfile and no compose file** for the chain: per the 2026-06-12 decision, no
+umbrella wrapper is needed. (The July review's planned `compose/docker-compose.pipeline.yml` was never made.)
 
 ---
 
@@ -453,23 +427,23 @@ umbrella wrapper is needed, is not planned. That reference should be removed.
 
 All ready-to-commit templates live in `docs/templates/workflows/`.
 
-| Workflow                 | What it does                                                                                                                              | Deployment state                                                                                                | Lives as        |
-|--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|-----------------|
-| **Docker Tool**          | Test + coverage + multi-target GHCR publish + scan + opt-in container health/`SIGTERM` smoke (issue #55) + forbidden-package probe (#72). | ✅ All 6 repos (→ `docker-tool.reusable.yml@sha`).                                                               | Reusable Bundle |
-| **Security**             | Version check + periodic Trivy re-scan.                                                                                                   | ✅ All 6 repos (→ `security.reusable.yml@sha`). ⚠️ No dispatch in TR/PC.                                         | Reusable Bundle |
-| **Paradata Drift**       | Canonical shared-file parity diff vs hub; `vendored-parity` vs the owning tool repo (#72).                                                | ✅ All 6 repos; digital-convert also against nlp-enrich and ocr-postprocess, keyword-extract against nlp-enrich. | Reusable Bundle |
-| **CodeQL**               | Static security/quality analysis for Python.                                                                                              | ✅ All 6 repos (→ `codeql.reusable.yml@sha`).                                                                    | Reusable Bundle |
-| **pre-commit**           | Ruff + ShellCheck + whitespace, **blocking**.                                                                                             | ✅ All 6 repos (→ `pre-commit.reusable.yml@sha`).                                                                | Reusable Bundle |
-| **API Meta-Contract**    | §4.1 service contract test; the committed spec (#32 r2).                                                                                  | ✅ All 6 repos (→ `api-contract.reusable.yml@sha`); `openapi-compat` job vs the latest release.                  | Reusable Bundle |
-| **Workflow Policy Lint** | Pins, `secrets:`, permissions, caller shape, action floor, compose names/`./data` (§3.5), release assets, production-image closure (#72). | ✅ All 6 repos + hub. ⚠️ No caller example published.                                                            | Reusable Bundle |
-| **Skill Validation**     | `agent-skill` branch contract checks.                                                                                                     | ✅ On the five `agent-skill` branches only.                                                                      | Reusable Bundle |
-| **E2E Pipeline Smoke**   | Threads one document JSON through the stages, seeded as AMČR does.                                                                        | ✅ Hub, every 3rd day. `image-tag` (`latest` / `test`) and `e2e-doc` (five fixtures) inputs.                     | Hub workflow    |
-| **Repo Suites Smoke**    | Runs each repo's `-m "not slow"` suite in parallel ("Cross-Repo Fast-Lane Matrix").                                                       | ✅ Hub, all six repos, timeouts and concurrency.                                                                 | Hub workflow    |
-| **Scheduled Smoke**      | The nightly lane: `-m slow`, or the whole suite with the optional stacks, per repo.                                                       | ✅ All 6 repos; `slow` marks exist in all six.                                                                   | Standalone      |
-| **GPU Inference**        | Real CUDA paths on a GPU runner.                                                                                                          | 🕐 2 repos (page-classification, keyword-extract), inert pending a runner (#40).                                | Standalone      |
-| **Release**              | Version guard + release bundle/notes + `openapi.json` asset and breaking-change gate (#32 r2).                                            | ✅ All 6 repos; every bundle that ships is closure-checked.                                                      | Standalone      |
-| **Shellcheck**           | Lints `*.sh`.                                                                                                                             | nlp-enrich's workflow; every repo's pre-commit hook covers its scripts.                                         | Standalone      |
-| **Secret Scanning**      | Push protection + history sweep.                                                                                                          | ⛔ Dropped 2026-07-30 — unadopted; GitHub-native scanning covers it.                                             | —               |
+| Workflow                    | What it does                                                                                                                                        | Deployment state                                                                                              | Lives as        |
+|-----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|-----------------|
+| **Docker Tool**             | Test + coverage + multi-target GHCR publish + scan + opt-in container health/`SIGTERM` smoke (issue #55) + forbidden-package probe (#72).           | All 6 repos (→ `docker-tool.reusable.yml@sha`); `:test` on a merge into `test`.                               | Reusable Bundle |
+| **Security**                | Version check + weekly Trivy re-scan.                                                                                                               | All 6 repos (→ `security.reusable.yml@sha`). No dispatch in TR/PC.                                            | Reusable Bundle |
+| **Paradata Drift**          | Canonical shared-file parity diff vs hub; `vendored-parity` vs the owning tool repo (#72).                                                          | All 6 repos; digital-convert also against nlp-enrich and ocr-postprocess, keyword-extract against nlp-enrich. | Reusable Bundle |
+| **CodeQL**                  | Static security/quality analysis for Python; on pull requests and weekly.                                                                           | All 6 repos (→ `codeql.reusable.yml@sha`).                                                                    | Reusable Bundle |
+| **pre-commit**              | Ruff + ShellCheck + whitespace, **blocking**.                                                                                                       | All 6 repos (→ `pre-commit.reusable.yml@sha`).                                                                | Reusable Bundle |
+| **API Meta-Contract**       | §4.1 service contract test; the committed spec (#32 r2).                                                                                            | All 6 repos (→ `api-contract.reusable.yml@sha`); `openapi-compat` job vs the latest release.                  | Reusable Bundle |
+| **Workflow Policy Lint**    | Pins, `secrets:`, permissions, caller shape, action floor, triggers, compose names/`./data` (§3.5), release assets, production-image closure (#72). | All 6 repos + hub. No caller example published.                                                               | Reusable Bundle |
+| **Skill Validation**        | `agent-skill` branch contract checks.                                                                                                               | On the six `agent-skill` branches only.                                                                       | Reusable Bundle |
+| **E2E Pipeline Smoke**      | Threads one record through the stages from an ATR stand-in docproc, seeded as AMČR does.                                                            | Hub pull requests touching the lane, dispatch. `image-tag` (`latest` / `test`) and `e2e-doc` (five fixtures). | Hub workflow    |
+| **Repo Suites Smoke**       | Runs each repo's `-m "not slow"` suite in parallel ("Cross-Repo Fast-Lane Matrix").                                                                 | Hub, all six repos, by dispatch.                                                                              | Hub workflow    |
+| **Fresh-environment Smoke** | `-m slow`, or the whole suite with the optional stacks, per repo, in a fresh environment.                                                           | All 6 repos, by dispatch; `slow` marks exist in all six.                                                      | Standalone      |
+| **GPU Inference**           | Real CUDA paths on a GPU runner.                                                                                                                    | 2 repos (page-classification, keyword-extract), inert pending a runner (#40).                                 | Standalone      |
+| **Release**                 | Version guard + release bundle/notes + `openapi.json` asset and breaking-change gate (#32 r2); starts on a `v*` tag push.                           | All 6 repos; every bundle that ships is closure-checked.                                                      | Standalone      |
+| **Shellcheck**              | Lints `*.sh`.                                                                                                                                       | nlp-enrich's workflow; every repo's pre-commit hook covers its scripts.                                       | Standalone      |
+| **Secret Scanning**         | Push protection + history sweep.                                                                                                                    | Dropped 2026-07-30 — unadopted; GitHub-native scanning covers it.                                             | —               |
 
 `@sha`: the tool repositories call each reusable at the commit `v1` points to (`@<sha>  # v1`, with
 `require-sha-pins`; since the sweep of 2026-10-25, [`release_trust.md`](release_trust.md) step 7).
@@ -481,16 +455,16 @@ removed rather than left as indefinitely "paused" scaffolding. GitHub-native sec
 protection covers HuggingFace tokens and internal credentials without needing the ARUB/ARUP policy sign-off
 or the org-owned `GITLEAKS_LICENSE` that `gitleaks-action` requires for organisation repositories.
 
-> ⚠️ **If reopening:** the original blocker was policy, not tooling — the scope of secret rotation and a
+> **If reopening:** the original blocker was policy, not tooling — the scope of secret rotation and a
 > historical-history sweep still need security/infrastructure sign-off before adopting a scanner that acts
 > on findings. Verify `gitleaks-action` versioning first; v2 reaches EOL in Sep 2026.
 >
-> **ARUP/ARUB institutional contacts for policy review:** Pavel (UFAL) or Ronald (ARUB).
+> **Who reviews the policy:** ÚFAL and ARÚB's infrastructure leads, through David Novák for ARÚP and ARÚB staff.
 
-> 📎 Related: `docs/templates/workflows/update_issues.sh` used to export an **elided placeholder** token
+> Related: `docs/templates/workflows/update_issues.sh` used to export an **elided placeholder** token
 > unconditionally, which killed its own `-z` guard and overrode a correctly-set environment variable
 > (roadmap **R1**, fixed in round 5). Confirming that GitHub-native secret scanning is enabled on all six
-> repositories is a repository setting (@stranak).
+> repositories is a repository setting, for the repository admin.
 
 ---
 
@@ -511,6 +485,8 @@ an *executed* or *retired* line; summarised here so this reference is not read a
 4. **Supply chain after the pilot** — no lockfiles or hash pinning (**H1**), unpinned tooling installs
    (**H2**'s tooling half), no `docker`/`pre-commit` dependabot in the tool repos (**H6**), no `pip-audit`
    gate (**H7**): each retired from #69, for its own issue if wanted.
-5. **Secret scanning** on the six repositories — a repository setting (@stranak).
-6. **Comment-only doc rot** — roadmap **R5**, **R6**, **R8** and the other *Found, not fixed* items in
+5. **Secret scanning** on the six repositories — a repository setting, for the repository admin.
+6. **Dependabot security updates** must be enabled in each repository's settings: the files now ask for
+   security updates only, and a file cannot switch them on.
+7. **Comment-only doc rot** — roadmap **R5**, **R6**, **R8** and the other *Found, not fixed* items in
    roadmap §10.
