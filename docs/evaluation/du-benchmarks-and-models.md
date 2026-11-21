@@ -8,11 +8,11 @@
 
 ## In short
 
+- The evaluation criteria come first: faithful text, no invented values, document structure, schema adherence, long inputs, long outputs, and Czech and German.
 - No public benchmark covers Czech field reports with forms and JSON output, so the ATRIUM gold set stays the measure; public sets give context.
 - Key information is scored per field by value type, as in ExtractBench, with omissions and hallucinations counted apart.
 - Printed Czech is close to solved for strong models; German old scripts and handwriting are the open risk.
-- Proposed first run: Qwen3.8-27B as the default model, two compact OCR challengers, and PP-OCRv6 and PERO-OCR as baselines.
-- No ATRIUM page has been scored yet: every figure below is a published result on other data.
+- Proposed first run: Qwen3.8-27B as the default, two compact OCR challengers, PP-OCRv6 and PERO-OCR as baselines; no ATRIUM page is scored yet.
 
 ## What is the extraction route for?
 
@@ -41,6 +41,51 @@ the vision step: they cost less, and their characters are exact.
 - The key-information JSON is a benchmark output, not a record block. The record has no `forms`
   block.
 
+## Which evaluation criteria come first?
+
+Model cards of vision-language models report results by capability area. The card of
+[Inkling 2 Small](https://huggingface.co/thinkingmachines/Inkling-2-Small), for example, groups them into
+visual perception, visual reasoning, long context, factuality, instruction following and
+multilinguality. Our task needs only some of these, and two things that no card reports. The criteria
+below are settled first: they decide which public numbers are worth reading and what our own run must
+measure. They are ranked by how much a failure would harm FAIR storage.
+
+| # | Criterion                               | Why it matters for field reports                                                                   | Proxies on model cards                                                                                                                                                                                                                                                       | Our measure                                                                                                  |
+|---|-----------------------------------------|----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| 1 | Faithful text on degraded pages         | typescripts, carbon copies and handwriting; one misread digit or diacritic changes a value         | OmniDocBench components, MDPBench, CHURRO-DS; [PerceptionBench](https://arxiv.org/pdf/2607.24957) for perception errors, perception-related hallucination included                                                                                                           | CER and NED by tier and page category; CER with diacritics removed                                           |
+| 2 | No invented values                      | an invented identifier creates a false link in the archive; an empty field costs less than a guess | the non-hallucination rate of [AA-Omniscience](https://arxiv.org/pdf/2511.13029), which rewards abstaining; [SimpleVQA](https://arxiv.org/pdf/2502.13059) for visual factuality; the abstention items of [GDP.pdf](https://arxiv.org/pdf/2607.11192)                         | hallucinations per field; weighted precision                                                                 |
+| 3 | Document structure and cross-references | tables, forms, footnotes, plans with legends, amendments that supersede earlier text               | [GDP.pdf](https://arxiv.org/pdf/2607.11192); [CharXiv](https://arxiv.org/pdf/2406.18521) and [Chartography](https://arxiv.org/pdf/2608.10677) for charts; [MuirBench](https://arxiv.org/pdf/2406.09411) for reasoning across several images, such as the pages of one report | TEDS, DB-template fit, typed field scores                                                                    |
+| 4 | Schema and instruction adherence        | the output must fit a JSON Schema and the prompt's rules                                           | [IFBench](https://arxiv.org/pdf/2507.02833), [ComplexConstraints](https://arxiv.org/pdf/2606.09118)                                                                                                                                                                          | schema-valid rate (structured outputs guarantee only the syntax); rule checks per field                      |
+| 5 | Long inputs                             | reports run to dozens or hundreds of pages, and earlier pages give context to later ones           | [AA-LCR](https://huggingface.co/datasets/ArtificialAnalysis/AA-LCR), [LongBench v2](https://arxiv.org/pdf/2412.15204), [MMLongBench-Doc](https://arxiv.org/pdf/2407.01523); MRCR v2 on Gemma 4's card                                                                        | M1, tokens per document; quality in one pass against page by page                                            |
+| 6 | Long outputs                            | a full transcription or a finds table runs to thousands of tokens                                  | [LongProc](https://arxiv.org/pdf/2501.05414); [LongWriter-V](https://arxiv.org/pdf/2502.14834) found VLMs struggling beyond about 1,000 words; ExtractBench's recall on long records                                                                                         | output tokens per page and per document; truncated replies, which must be zero; record recall on long tables |
+| 7 | Czech and German                        | Czech dominates the archive; German appears in older and Sudeten-German material                   | [Global-MMLU-Lite](https://huggingface.co/datasets/CohereLabs/Global-MMLU-Lite), with Czech since version 3.0 (a knowledge test, not reading); MDPBench's German column; CHURRO-DS's Czech print                                                                             | CER and field scores by language                                                                             |
+
+### What do the shortlisted models' cards report?
+
+The figures are the vendors' own, from different harnesses and settings. Qwen measured Gemma 4 itself.
+A dash means the card does not report the benchmark. Use these figures to shortlist, never to decide.
+
+| Proxy (criterion)                   | Qwen3.8-27B | Qwen3.6-27B | Qwen3.6-35B-A3B | Gemma 4 31B                      | Inkling 2 Small (reference only)        |
+|-------------------------------------|-------------|-------------|-----------------|----------------------------------|-----------------------------------------|
+| OmniDocBench 1.5 (1, 3)             | 91.1        | 89.4        | 89.9            | 80.1                             | — (v1.6: 94.6)                          |
+| CharXiv reasoning, without code (3) | 83.7        | 78.4        | 78.0            | 67.9                             | 85.6                                    |
+| BabyVision, without code (1)        | 65.7        | 28.9        | —               | —                                | 68.6                                    |
+| SimpleVQA (2)                       | —           | 56.1        | 58.9            | 52.9                             | 68.2, with search and tools             |
+| IFBench (4)                         | 79.5        | 69.1        | —               | —                                | —                                       |
+| Long context (5)                    | —           | —           | —               | MRCR v2, 8 needles at 128k: 66.4 | AA-LCR 83.3; LongBench v2 70.6          |
+| Abstention (2)                      | —           | —           | —               | —                                | AA-Omniscience non-hallucination 73.3 % |
+| Multilingual (7)                    | —           | —           | —               | —                                | Global-MMLU-Lite 91.0; MDPBench 81.4    |
+
+Sources: the cards of [Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B) (its figures and
+Qwen3.6-27B's), [Qwen3.6-27B](https://huggingface.co/Qwen/Qwen3.6-27B) and
+[Qwen3.6-35B-A3B](https://huggingface.co/Qwen/Qwen3.6-35B-A3B) (their figures and Gemma 4's),
+[Gemma 4 31B](https://huggingface.co/google/gemma-4-31B) and
+[Inkling 2 Small](https://huggingface.co/thinkingmachines/Inkling-2-Small).
+
+No candidate's card reports long-output quality, abstention or Czech. Qwen3.8-27B's card only advises
+allowing up to 131,072 output tokens for the final answer. Our run therefore measures criteria 2, 6 and 7
+itself.
+
 ## What do we measure?
 
 #22 names four checks: reading order, text, image regions, and forms as key–value pairs. The table
@@ -57,6 +102,7 @@ and TEDS the tree-edit-distance similarity of two HTML tables.
 | Critical facts (optional)   | pass/fail unit tests in the [olmOCR-Bench](https://huggingface.co/datasets/allenai/olmOCR-bench) style, such as "`C-TX-202400594` appears" or "line A precedes line B"                | the cheapest gold: a test takes seconds to write                                          | new                                                                                                                         |
 | Regions                     | presence and count per region type                                                                                                                                                    | Markdown carries no boxes; #22 asks for types and their share of the page                 | new                                                                                                                         |
 | Cost                        | input and output tokens per page, seconds per page, peak GPU memory                                                                                                                   | #22's measurements M1 (tokens) and M2 (speed)                                             | `scripts/detail_budget.py`, run paradata                                                                                    |
+| Long output                 | output tokens per page and per document; truncated replies, which must be zero; record recall on long tables                                                                          | long transcriptions and finds tables are where models stop early                          | run paradata; new                                                                                                           |
 
 ### How is key information scored?
 
@@ -198,6 +244,33 @@ Boxes are not our output, so these rank low. Reading order still matters.
 | [M6Doc](https://arxiv.org/pdf/2305.08719), [D4LA](https://arxiv.org/pdf/2308.14978)                                    | layout classes on scanned, photographed and noisy pages | **L**                                                             | English, Chinese | mAP                             | 2023     |
 | [ReadingBank](https://github.com/microsoft/unilm/tree/master/layoutreader) ([paper](https://arxiv.org/pdf/2108.11591)) | reading order on 500,000 pages                          | **L–M**: the data behind LayoutReader, which ocr-postprocess uses | English          | BLEU, average relative distance | 2021     |
 
+### Capabilities reported on VLM model cards
+
+Model cards report these next to the document benchmarks above. Inkling 2 Small's card is an example
+of the grouping.
+
+| Benchmark                                                                                                                   | What it does                                                                                                         | Relation to our task                                                                                                                                      | Languages                      | Measures (optimises)                                    | Released                       |
+|-----------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------|---------------------------------------------------------|--------------------------------|
+| [PerceptionBench](https://arxiv.org/pdf/2607.24957)                                                                         | 3,000 questions over ten atomic perception skills                                                                    | **M**: separates misreading from misreasoning; perception-related hallucination is the weakest skill                                                      | not stated                     | accuracy per skill                                      | Jul 2026                       |
+| [BabyVision](https://arxiv.org/pdf/2601.06521)                                                                              | 388 items on core visual skills that need no language                                                                | **L–M**: whether a model sees symbols and shapes, as on plans                                                                                             | needs no language              | accuracy                                                | Jan 2026                       |
+| [SimpleVQA](https://arxiv.org/pdf/2502.13059)                                                                               | short factual questions about images                                                                                 | **M**: visual factuality                                                                                                                                  | not stated                     | accuracy                                                | Feb 2025                       |
+| [GDP.pdf](https://arxiv.org/pdf/2607.11192)                                                                                 | 100 questions by professionals over real PDFs, with rubrics of atomic criteria; 11 capabilities, abstention included | **H**: the closest capability test to ours: extraction, tables, footnotes, plans, scan noise, superseding amendments. The best of 17 models passes 30.7 % | not stated                     | rubric score and strict pass rate                       | Jul 2026                       |
+| [AA-Omniscience](https://arxiv.org/pdf/2511.13029)                                                                          | 6,000 knowledge questions over 42 topics                                                                             | **M**: whether a model abstains instead of inventing; its index penalises hallucination                                                                   | not stated                     | Omniscience Index (−100 to 100), non-hallucination rate | Nov 2025                       |
+| [MuirBench](https://arxiv.org/pdf/2406.09411)                                                                               | 2,600 questions over 11,264 images in 12 multi-image tasks, each paired with an unanswerable twin                    | **M**: reasoning across several images, such as the pages of one report                                                                                   | not stated                     | accuracy                                                | Jun 2024                       |
+| [CharXiv](https://arxiv.org/pdf/2406.18521), [Chartography](https://arxiv.org/pdf/2608.10677)                               | 2,323 charts from arXiv papers; 100 professional chart tasks                                                         | **L–M**: graphs in specialist reports                                                                                                                     | not stated                     | accuracy                                                | Jun 2024, Aug 2026             |
+| [AA-LCR](https://huggingface.co/datasets/ArtificialAnalysis/AA-LCR)                                                         | 100 questions over document sets of about 100k tokens; answers must be reasoned across documents                     | **H**: long reports and their appendices                                                                                                                  | not stated                     | accuracy, judged equality                               | version 1.1 Sep 2026           |
+| [LongBench v2](https://arxiv.org/pdf/2412.15204)                                                                            | 503 multiple-choice questions over contexts of 8k to 2M words                                                        | **M**: long-context understanding                                                                                                                         | not stated                     | accuracy                                                | Dec 2024                       |
+| [LongProc](https://arxiv.org/pdf/2501.05414)                                                                                | six procedural tasks with outputs up to 8k tokens, such as HTML pages to TSV                                         | **H**: long structured output, the closest public test of a long table or JSON                                                                            | not stated                     | deterministic task scores                               | Jan 2025                       |
+| [IFBench](https://arxiv.org/pdf/2507.02833)                                                                                 | precise instruction following with new, unseen output constraints                                                    | **M**: prompt and format rules                                                                                                                            | not stated                     | constraint pass rate                                    | Jul 2025                       |
+| [ComplexConstraints](https://arxiv.org/pdf/2606.09118)                                                                      | 75 expert prompts with 1,559 rubric items                                                                            | **M**: complex instructions                                                                                                                               | not stated                     | rubric score                                            | Jun 2026                       |
+| [Global-MMLU-Lite](https://huggingface.co/datasets/CohereLabs/Global-MMLU-Lite) ([paper](https://arxiv.org/pdf/2412.03304)) | human-translated knowledge questions; Czech and Slovak since version 3.0                                             | **M**: the Czech competence of the language model, not its reading                                                                                        | 23 languages, Czech among them | accuracy                                                | Dec 2024; version 3.0 May 2026 |
+
+Also on such cards, of low relevance to us: [MMMU-Pro](https://arxiv.org/pdf/2409.02813) (exam questions with images),
+[ZeroBench](https://arxiv.org/pdf/2502.09696) (adversarial visual puzzles),
+[Humanity's Sixth Sense](https://arxiv.org/pdf/2610.08966) (intuitive scene reasoning),
+[ScreenSpot-Pro](https://arxiv.org/pdf/2504.07981) (pointing at elements of software screens) and
+[VIALS](https://arxiv.org/pdf/2608.21357) (life-science images).
+
 ## Which benchmarks do we use, and how?
 
 1. **Our own gold set is the measure.** It has two layers and an option:
@@ -214,6 +287,8 @@ Boxes are not our output, so these rank low. Reading order still matters.
    data are for research only: they are used for internal comparison and never redistributed.
 4. **Copy two protocols.** "From Pixels to Structure" scores image-to-JSON with CER and ANLS\* and
    tests fine-tuning on heritage data. RISE reports the cost per 1,000 documents next to quality.
+5. **Read model cards by criterion.** When shortlisting, compare candidates on the proxies of the
+   seven criteria above, never on an overall index.
 
 ## Which models are candidates?
 
@@ -258,13 +333,14 @@ team).
 
 ### General vision-language models
 
-| Model                                                                                                 | Size, released                                             | Licence    | Languages, handwriting                                                 | Published results                                                                                                                           | Serving                                                 |
-|-------------------------------------------------------------------------------------------------------|------------------------------------------------------------|------------|------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------|
-| [Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B)                                                | 27B dense, Aug 2026                                        | Apache-2.0 | images and video; 262,144-token window; thinking mode on by default    | ODB 1.5 91.1 (card); ParseBench-2 73.4; OCRBench v2 63.5                                                                                    | SGLang, vLLM; the translator already serves it for text |
-| [Qwen3.6-27B](https://huggingface.co/Qwen/Qwen3.6-27B) and Qwen3.6-35B-A3B                            | 27B dense; 35B mixture of experts with 3B active; Apr 2026 | Apache-2.0 | —                                                                      | OCRBench v2: 68.3 (27B), the best open model, and 65.5 (35B-A3B). ExtractBench (LlamaIndex): 87.3 % value F1 (35B-A3B), the best open model | vLLM                                                    |
-| [Gemma 4 31B](https://huggingface.co/google/gemma-4-31B) ([report](https://arxiv.org/pdf/2607.02770)) | 31B dense; also 26B-A4B, 12B, E4B, E2B; Jul 2026           | Apache-2.0 | 140+ languages in pre-training; OCR and handwriting recognition listed | ODB 1.5 average edit 0.131; the 26B-A4B scored 66.2 % on ExtractBench (LlamaIndex)                                                          | vLLM, SGLang                                            |
-| [Qwen3.5-122B-A10B](https://huggingface.co/Qwen/Qwen3.5-122B-A10B)                                    | 122B mixture of experts, 10B active; Feb 2026              | Apache-2.0 | 201 languages claimed                                                  | ODB 1.5 89.8; CC-OCR 81.8; OCRBench 92.1                                                                                                    | vLLM                                                    |
-| [Qwen3.5](https://huggingface.co/Qwen/Qwen3.5-27B) smaller sizes                                      | 0.8B to 35B-A3B; Feb–Mar 2026                              | Apache-2.0 | 201 languages claimed                                                  | Qwen3.5-27B ODB 1.5 88.9; Qwen3.5-9B MDPBench 65.7 (German 72.8) and IDP leaderboard 76.7                                                   | vLLM                                                    |
+| Model                                                                                                          | Size, released                                             | Licence    | Languages, handwriting                                                 | Published results                                                                                                                           | Serving                                                                                                            |
+|----------------------------------------------------------------------------------------------------------------|------------------------------------------------------------|------------|------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| [Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B)                                                         | 27B dense, Aug 2026                                        | Apache-2.0 | images and video; 262,144-token window; thinking mode on by default    | ODB 1.5 91.1 (card); ParseBench-2 73.4; OCRBench v2 63.5                                                                                    | SGLang, vLLM; the translator already serves it for text                                                            |
+| [Qwen3.6-27B](https://huggingface.co/Qwen/Qwen3.6-27B) and Qwen3.6-35B-A3B                                     | 27B dense; 35B mixture of experts with 3B active; Apr 2026 | Apache-2.0 | —                                                                      | OCRBench v2: 68.3 (27B), the best open model, and 65.5 (35B-A3B). ExtractBench (LlamaIndex): 87.3 % value F1 (35B-A3B), the best open model | vLLM                                                                                                               |
+| [Gemma 4 31B](https://huggingface.co/google/gemma-4-31B) ([report](https://arxiv.org/pdf/2607.02770))          | 31B dense; also 26B-A4B, 12B, E4B, E2B; Jul 2026           | Apache-2.0 | 140+ languages in pre-training; OCR and handwriting recognition listed | ODB 1.5 average edit 0.131; the 26B-A4B scored 66.2 % on ExtractBench (LlamaIndex)                                                          | vLLM, SGLang                                                                                                       |
+| [Qwen3.5-122B-A10B](https://huggingface.co/Qwen/Qwen3.5-122B-A10B)                                             | 122B mixture of experts, 10B active; Feb 2026              | Apache-2.0 | 201 languages claimed                                                  | ODB 1.5 89.8; CC-OCR 81.8; OCRBench 92.1                                                                                                    | vLLM                                                                                                               |
+| [Qwen3.5](https://huggingface.co/Qwen/Qwen3.5-27B) smaller sizes                                               | 0.8B to 35B-A3B; Feb–Mar 2026                              | Apache-2.0 | 201 languages claimed                                                  | Qwen3.5-27B ODB 1.5 88.9; Qwen3.5-9B MDPBench 65.7 (German 72.8) and IDP leaderboard 76.7                                                   | vLLM                                                                                                               |
+| [Inkling 2 Small](https://huggingface.co/thinkingmachines/Inkling-2-Small) (Thinking Machines; reference only) | 594B mixture of experts, 17B active; Nov 2026              | Apache-2.0 | English, with general multilingual ability; 1M-token window            | ODB v1.6 94.6; MDPBench 81.4; GDP.pdf 25.2; AA-LCR 83.3; AA-Omniscience non-hallucination 73.3 %                                            | needs at least 500 GB of GPU memory (2× B300 or 4× H200), beyond our hardware; its API hosts are external services |
 
 Also available, with weaker or no document evidence: Ovis2.6-30B-A3B (ODB 93.70), InternVL3.5,
 Mistral Small 4, GLM-4.6V and MiniCPM-V 4.6. Kimi K2.5 (1T parameters) and MiniMax-M3 (428B) are
@@ -487,6 +563,28 @@ repositories or model cards where a tool has no paper.
 - Levchenko (2025). *Evaluating LLMs for Historical Document OCR: A Methodological Framework for Digital Humanities*. LM4DH workshop, RANLP 2025. [PDF](https://arxiv.org/pdf/2510.06743)
 - Kohút and Hradiš (2023). *Fine-tuning Is a Surprisingly Effective Domain Adaptation Baseline in Handwriting Recognition*. arXiv preprint. [PDF](https://arxiv.org/pdf/2302.06308)
 
+### VLM capability benchmarks
+
+- Lin et al. (2026). *PerceptionBench: Evaluating Atomic Visual Perception in Multimodal Large Language Models*. arXiv preprint. [PDF](https://arxiv.org/pdf/2607.24957)
+- Chen et al. (2026). *BabyVision: Visual Reasoning Beyond Language*. arXiv preprint. [PDF](https://arxiv.org/pdf/2601.06521)
+- Cheng et al. (2025). *SimpleVQA: Multimodal Factuality Evaluation for Multimodal Large Language Models*. arXiv preprint. [PDF](https://arxiv.org/pdf/2502.13059)
+- Garre et al. (2026). *GDP.pdf: Benchmarking Grounded Multimodal Reasoning over Professional PDF Documents*. arXiv preprint. [PDF](https://arxiv.org/pdf/2607.11192)
+- Jackson et al. (2025). *AA-Omniscience: Evaluating Cross-Domain Knowledge Reliability in Large Language Models*. arXiv preprint. [PDF](https://arxiv.org/pdf/2511.13029)
+- Wang et al. (2024). *MuirBench: A Comprehensive Benchmark for Robust Multi-image Understanding*. arXiv preprint. [PDF](https://arxiv.org/pdf/2406.09411)
+- Wang et al. (2024). *CharXiv: Charting Gaps in Realistic Chart Understanding in Multimodal LLMs*. arXiv preprint. [PDF](https://arxiv.org/pdf/2406.18521)
+- Garre et al. (2026). *Chartography: A Benchmark for Professional Chart Understanding*. arXiv preprint. [PDF](https://arxiv.org/pdf/2608.10677)
+- Bai et al. (2024). *LongBench v2: Towards Deeper Understanding and Reasoning on Realistic Long-context Multitasks*. arXiv preprint. [PDF](https://arxiv.org/pdf/2412.15204)
+- Ye et al. (2025). *LongProc: Benchmarking Long-Context Language Models on Long Procedural Generation*. COLM 2025. [PDF](https://arxiv.org/pdf/2501.05414)
+- Tu et al. (2025). *LongWriter-V: Enabling Ultra-Long and High-Fidelity Generation in Vision-Language Models*. arXiv preprint. [PDF](https://arxiv.org/pdf/2502.14834)
+- Pyatkin et al. (2025). *Generalizing Verifiable Instruction Following*. NeurIPS 2025 Datasets and Benchmarks. [PDF](https://arxiv.org/pdf/2507.02833)
+- Mehta et al. (2026). *ComplexConstraints and Beyond: Expert Rubrics for RLVR*. GEM workshop, ACL 2026. [PDF](https://arxiv.org/pdf/2606.09118)
+- Singh et al. (2024). *Global MMLU: Understanding and Addressing Cultural and Linguistic Biases in Multilingual Evaluation*. arXiv preprint. [PDF](https://arxiv.org/pdf/2412.03304)
+- Yue et al. (2024). *MMMU-Pro: A More Robust Multi-discipline Multimodal Understanding Benchmark*. ACL 2025. [PDF](https://arxiv.org/pdf/2409.02813)
+- Roberts et al. (2025). *ZeroBench: An Impossible Visual Benchmark for Contemporary Large Multimodal Models*. ICML 2026. [PDF](https://arxiv.org/pdf/2502.09696)
+- Guo et al. (2026). *Humanity's Sixth Sense: Benchmarking Intuitive Visual Reasoning in Multimodal Models*. arXiv preprint. [PDF](https://arxiv.org/pdf/2610.08966)
+- Li et al. (2025). *ScreenSpot-Pro: GUI Grounding for Professional High-Resolution Computer Use*. arXiv preprint. [PDF](https://arxiv.org/pdf/2504.07981)
+- Lau et al. (2026). *VIALS: A Benchmark for Visual Interpretation of Artifacts in the Life Sciences*. arXiv preprint. [PDF](https://arxiv.org/pdf/2608.21357)
+
 ### Models and tools
 
 - Cui et al. (2025). *PaddleOCR-VL: Boosting Multilingual Document Parsing via a 0.9B Ultra-Compact Vision-Language Model*. arXiv preprint. [PDF](https://arxiv.org/pdf/2510.14528)
@@ -526,6 +624,8 @@ repositories or model cards where a tool has no paper.
 - [OCRBench v2 leaderboard](https://99franklin.github.io/ocrbench_v2/).
 - Transkribus model pages: [Czech Handwriting M1](https://www.transkribus.org/models/transkribus-czech-handwriting-m1) and [Moravian Land Records](https://www.transkribus.org/models/moravian-land-records).
 - [PERO-OCR web app](https://pero-ocr.fit.vutbr.cz/): engines, terms of use and the REST API.
+- [Inkling 2 Small model card](https://huggingface.co/thinkingmachines/Inkling-2-Small): the capability groups and scores cited above.
+- Dataset cards: [AA-LCR](https://huggingface.co/datasets/ArtificialAnalysis/AA-LCR) and [Global-MMLU-Lite](https://huggingface.co/datasets/CohereLabs/Global-MMLU-Lite).
 - Qwen3.8-27B, the Qwen3.5 family, Chandra 2, Nemotron 3.5 Parse, NuExtract3, Kraken and the Transkribus models: the model cards and repositories linked in the tables.
 - vLLM documentation: [structured outputs](https://docs.vllm.ai/en/latest/features/structured_outputs.html) and the [Docker guide](https://docs.vllm.ai/en/latest/deployment/docker.html).
 - [PaddleOCR-VL guide](https://www.paddleocr.ai/latest/en/version3.x/pipeline_usage/PaddleOCR-VL.html): supported hardware and serving routes.
