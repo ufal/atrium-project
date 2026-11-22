@@ -1,5 +1,8 @@
 # ATRIUM born-digital converter: Galaxy tool
 
+**Status:** handed to DARIAH for testing; further Galaxy work is parked during the AMČR pilot. The tool runs the
+1.4.5-beta image, which writes a record; from release 2.0.0-beta the converter writes docproc instead.
+
 `digital_convert.xml` runs the command-line image of
 [ufal/atrium-digital-convert](https://github.com/ufal/atrium-digital-convert) at release `1.4.5-beta`
 (`ghcr.io/ufal/atrium-digital-convert-digital:1.4.5-beta`, the `digital` build target: light engine, headless

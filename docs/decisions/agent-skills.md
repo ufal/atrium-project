@@ -197,3 +197,47 @@ least one backend (Ollama or OpenRouter with a test key).
   alto-postprocess: `master`; nlp-enrich: `master`; llm-enrich: `main`).
 - Each implementation session is logged in that repo's working records, which its
   `docs/development.md` links.
+
+## The skills catalog, retired 2026-11-21
+
+`docs/skills_catalog.md` listed the six skills; its table now lives, checked against the branches, on the
+site's [Agent skills](../../docs_site/agent-skills.md#the-six-skills) page. Its dated parts are kept here.
+
+> **Names (2026-10-21):** the skills were first written for `alto-postprocess` and `llm-enrich`, whose repositories
+> are archived. ocr-postprocess's skill now carries its own name; keyword-extract's and digital-convert's skills are
+> new, built from the skeleton for their own endpoints (keyword-extract takes a record or plain text, not llm-enrich's
+> CSV of lines). Use `ATRIUM_KW_URL` for keyword-extract; `ATRIUM_LE_URL` belonged to llm-enrich.
+
+**The pipeline order the catalog gave** (before ARÚP's output contract of 12 November 2026; the route is now on the hub's Pipelines page):
+
+```
+scan → page-classification → ocr-postprocess (quality filter) → translator ─┐
+                                                                         ├─→ nlp-enrich → keyword-extract
+                                                                     (Clear lines only)
+```
+
+Route only `Clear`/`Noisy` lines from ocr-postprocess into the downstream NLP and keyword stages.
+
+## Status and tracking, as of the 21 October sync
+
+Implemented on five `agent-skill` branches on 2026-07-18, and on digital-convert's on 2026-10-21. Each is kept in
+step with its repo's `test` branch by hand, per [`agent_skill_strategy.md`](../agent_skill_strategy.md) §12.2, with
+`tools/skill_ify.py` deriving the tree and `tools/skill_drift_check.py` checking it.
+
+**Last sync: 2026-10-21** (atrium-project#77 C), from the `test` heads of that morning. `skill_drift_check.py`
+reports **6/6 aligned**; each `service/README.md` is the repo's runbook with the trimmed parts pointed at `test`,
+declared in `DOCUMENTED_DIVERGENCES`. In that pass:
+
+- every client retries a `502` only when it is not final (`RETRY_502_REASONS`), exits `1` on a usage error, and
+  every `scripts/server.sh` waits for `/ready`; `skill_drift_check.py` now fails a client that retries every `502`;
+- keyword-extract and digital-convert got skills of their own, replacing the llm-enrich and nlp-enrich copies;
+  ocr-postprocess's skill is named `atrium-ocr-postprocess`; nlp-enrich's no longer offers keywords (they left it
+  in 1.0.0);
+- `skill_ify.py apply` keeps the files only the skill branch carries, and their file modes.
+
+Treat any snapshot here as perishable: run the tool rather than trusting this line.
+
+Refinement still open: one green `skill-validate` run per branch with the repaired callers,
+live end-to-end acceptance round-trips, and release tags. The per-repo `agent-skill: <repo>`
+sub-issues under #31 (§13) have **not** been created — tracking is in the hub's working records
+for #31 meanwhile ([Development history](../../docs_site/development-history.md#the-working-records)).

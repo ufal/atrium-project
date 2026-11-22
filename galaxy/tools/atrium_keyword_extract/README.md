@@ -1,5 +1,8 @@
 # ATRIUM keyword extraction: Galaxy tool
 
+**Status:** handed to DARIAH for testing; further Galaxy work is parked during the AMČR pilot. The tool runs the
+1.6.5-beta batch image, which predates record schema 2.0 of release 2.0.0-beta.
+
 `keyword_extract.xml` runs the batch image of
 [ufal/atrium-keyword-extract](https://github.com/ufal/atrium-keyword-extract) at release `1.6.5-beta`
 (`ghcr.io/ufal/atrium-keyword-extract:1.6.5-beta`, the `base` build target). It extracts the keywords of all the
@@ -57,4 +60,4 @@ column (exit 1). None needs the network.
 ## Licences
 
 The code is MIT; YAKE is AGPL-3.0; the KeyBERT model is Apache-2.0. The paradata of each run lists the components and
-their licences.
+their licences; no licence of an output is computed.

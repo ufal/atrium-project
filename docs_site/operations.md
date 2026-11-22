@@ -14,8 +14,8 @@ what the container proves before it is published, and how to run it on Kubernete
 !!! info "Scope"
     The build and deployment machinery is shared by all six tools. The image, probe and
     environment details below are those of page-classification and the translator. The six
-    services of the S2 pilot, their runbooks and the acceptance results are on
-    [S2 pilot handover](pilot.md).
+    services of the AMČR pilot, their runbooks and the acceptance results are on
+    [Production pilot](pilot.md).
 
 ## The deployment model
 
@@ -47,34 +47,38 @@ The `-api` suffix is part of the **image name**, not the tag: the hub's build wo
 | `sha-<short>`                  | every publishing build — immutable, the audit trail                                                         |
 | `<version>`, e.g. `1.8.0-beta` | a `v*` git tag, **after** the release gate passes. The leading `v` is stripped                              |
 | `latest`                       | the same moment, the same condition. `-beta` versions count, so `latest` is the newest release, beta or not |
-| `test`                         | a push to the `test` branch — the moving pre-release channel the end-to-end tests can run against           |
+| `test`                         | a pull request merged into `test` — the moving pre-release channel the end-to-end tests can run against     |
 
-**A push to `vit` or `master` publishes nothing.** Only a push to `test`, a version tag, or a
-published GitHub release triggers the build-and-push job.
+**CI runs on pull requests and releases only.** A pull request builds and checks the images without
+publishing them; a pull request merged into `test`, a version tag, or a published GitHub release
+triggers the build-and-push job. Nobody pushes to a branch directly.
 
 So a service image is always `atrium-<tool>-api:<version>`, and a batch image
 `atrium-<tool>:<version>`:
 
 ```bash
 docker pull ghcr.io/ufal/atrium-page-classification-api:<version>
-docker pull ghcr.io/ufal/atrium-translator-api:latest
+docker pull ghcr.io/ufal/atrium-translator-api:<version>
 ```
 
 ### Running the batch image
 
-The batch images read from `/data/input` by default, so one mounted directory is enough:
+The batch images read from `/data/input` by default, so one mounted directory is enough. They run as uid
+10001; `--user "$(id -u):0"` lets the container write into a directory you own:
 
 ```bash
 # classify every page image under ./data/input; result tables land in ./data/output
-docker run --rm -v "$PWD/data:/data" -v "$PWD/data/output:/app/result" \
+docker run --rm --user "$(id -u):0" -v "$PWD/data:/data" -v "$PWD/data/output:/app/result" \
     ghcr.io/ufal/atrium-page-classification:<version>
 
-# translate every ALTO file under ./data/input into ./data/output
-docker run --rm -v "$PWD/data:/data" ghcr.io/ufal/atrium-translator:<version>
+# translate the AMČR records under ./data/input with the job's field list into ./data/output
+docker run --rm --user "$(id -u):0" -v "$PWD/data:/data" ghcr.io/ufal/atrium-translator:<version> \
+    /data/input --xpaths /data/fields.txt --formats xml --source_lang cs -o /data/output
 ```
 
 Arguments after the image name replace the defaults listed below — any `run.py` or
-`main.py` flag works. Add `-v hf-cache:/cache/huggingface` to keep downloaded models between
+`main.py` flag works. The translator's defaults translate ALTO pages, a research use; a metadata run
+names its field list, as above. Add `-v hf-cache:/cache/huggingface` to keep downloaded models between
 runs.
 
 ### What is inside each image
@@ -95,16 +99,16 @@ runs.
 
 === "translator"
 
-    |                     | `base`                                                                                                                                 | `api`                                                           |
-    |---------------------|----------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------|
-    | From                | `python:3.11-slim`                                                                                                                     | `base`                                                          |
-    | System packages     | security upgrades only                                                                                                                 | —                                                               |
-    | Python requirements | `requirements.txt`, `service/requirements.txt`                                                                                         | —                                                               |
-    | User                | `atrium`, uid **10001**, owning `/cache` and `/data` only — `/app` stays root-owned on purpose, so the source is immutable at run time | same                                                            |
-    | Entry point         | `python main.py`                                                                                                                       | `python -m service.api`                                         |
-    | Default arguments   | `/data/input --alto --formats alto.xml --target_lang en -o /data/output`                                                               | —                                                               |
-    | Port, signal, drain | —                                                                                                                                      | `EXPOSE 8000` · `STOPSIGNAL SIGTERM` · `GRACEFUL_SHUTDOWN_S=20` |
-    | Healthcheck         | —                                                                                                                                      | the same `healthcheck.py`, same timings                         |
+    |                     | `base`                                                                                                                                         | `api`                                                           |
+    |---------------------|------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------|
+    | From                | `python:3.11-slim`                                                                                                                             | `base`                                                          |
+    | System packages     | security upgrades only                                                                                                                         | —                                                               |
+    | Python requirements | `requirements.txt`, `service/requirements.txt`                                                                                                 | —                                                               |
+    | User                | `atrium`, uid **10001**, owning `/cache` and `/data` only — `/app` stays root-owned on purpose, so the source is immutable at run time         | same                                                            |
+    | Entry point         | `python /app/container_entrypoint.py /app/main.py`: arguments go to `main.py`; a first argument that names a shell or Python runs that program | `python -m service.api`                                         |
+    | Default arguments   | `/data/input --alto --formats alto.xml --target_lang en -o /data/output`                                                                       | —                                                               |
+    | Port, signal, drain | —                                                                                                                                              | `EXPOSE 8000` · `STOPSIGNAL SIGTERM` · `GRACEFUL_SHUTDOWN_S=20` |
+    | Healthcheck         | —                                                                                                                                              | the same `healthcheck.py`, same timings                         |
 
 Both set `HF_HOME=/cache/huggingface`, so a mounted volume there keeps downloaded models across
 container restarts.
@@ -137,8 +141,8 @@ and patches nothing.
 
 ## What the container proves before it is published
 
-On every pull request, every push to `test` and every version tag, the hub's build workflow starts
-the `api` image and checks it from the outside:
+On every pull request, every pull request merged into `test` and every version tag, the hub's build
+workflow starts the `api` image and checks it from the outside:
 
 | Check                       | Passes when                                                                                                                             |
 |-----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
@@ -178,7 +182,7 @@ service flips `/ready` to 503 and refuses new work with 503, uvicorn drains for
 **5 + 20 + 25 = 50 s**, inside the manifest's `terminationGracePeriodSeconds: 60`.
 
 A single request longer than that chain is cut — for these two services, a 50-page PDF through the
-classifier, or a large ALTO file through the translator's per-chunk LINDAT calls. Raise
+classifier, or a long document through the translator's per-chunk LINDAT calls. Raise
 `GRACEFUL_SHUTDOWN_S` and `terminationGracePeriodSeconds` together.
 
 ### Sizing, storage and egress
@@ -194,8 +198,8 @@ classifier, or a large ALTO file through the translator's per-chunk LINDAT calls
     * **Egress.** `huggingface.co` only — the `ufal/vit-historical-page` revisions and the base
       model configurations. No LINDAT call.
     * **Limits.** `MAX_UPLOAD_MB` defaults to **10**; a PDF is further capped by `MAX_PDF_PAGES`, default
-      **50** (`tool_limits.py`; over it, 413 `limit_exceeded`). Behind digital-convert's `/describe`, set it
-      to at least the longest report: `/describe` sends the whole PDF.
+      **50** (`tool_limits.py`; over it, 413 `limit_exceeded`); raise it to the longest document the
+      deployment sends.
 
 === "translator"
 
@@ -205,8 +209,8 @@ classifier, or a large ALTO file through the translator's per-chunk LINDAT calls
       backend is selected. The image carries the FastText model (`/opt/models/fasttext-lid.bin`,
       checked by its SHA-256 at build time), so it never calls `huggingface.co`; only a checkout
       downloads the model on first use.
-    * **Limits.** `MAX_UPLOAD_MB` defaults to **50**, because ALTO goes in and ALTO comes out;
-      set it explicitly when deploying from the shared template, whose example value is lower.
+    * **Limits.** `MAX_UPLOAD_MB` defaults to **50**, sized for ALTO pages in and out, the largest
+      input; set it explicitly when deploying from the shared template, whose example value is lower.
 
 Both services are stateless per request — each works inside its own temporary directory — so
 raising `replicas` is safe. Each page-classification replica loads its own copy of the five models.
@@ -257,10 +261,10 @@ come up should treat a refused connection the same as `503 starting`, and keep p
 Two hub runbooks define "it works", and both apply to these services unchanged:
 
 **On Kubernetes** (`docs/k8s_acceptance_runbook.md`): apply the manifest (Deployment and Service) with
-the tool name and the approved image substituted; wait for the rollout; confirm `healthcheck.py` passes
+the tool name and the image digest substituted; wait for the rollout; confirm `healthcheck.py` passes
 inside the pod; then, with a slow request **checked to be still running**, restart the deployment and
 confirm the request answers 200 with its expected body — no in-flight request may be dropped. The slowest request shape for each: a multi-page PDF to
-`POST /predict_document`, and a large ALTO file to `POST /translate`. Then prove the configuration
+`POST /predict_document`, and a long document to `POST /translate`. Then prove the configuration
 reaches the process: `PORT=9000`, `LOG_LEVEL=DEBUG`, an `ALLOWED_ORIGINS` value that is honoured and
 one that is refused, and `MAX_UPLOAD_MB=1` answering a 2 MB upload with 413.
 

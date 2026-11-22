@@ -17,3 +17,8 @@ short comments and points here for the history ([`ci_policy.md`](../ci_policy.md
 - [`document-schema-history.md`](document-schema-history.md): the dated changelog of the document record
   schema, July to November 2026.
 - [`agent-skills.md`](agent-skills.md): the planning decisions, work plans and rollout of the Agent Skills.
+- [`site-history.md`](site-history.md): the hub site's rounds 3 to 8 for issue #57, formerly `INDEX.md`.
+- [`pages-publishing.md`](pages-publishing.md): how the seven repositories came to publish from `gh-pages`, formerly
+  the dated part of `PAGES_SETUP.md`.
+- [`repo-review-2026-07.md`](repo-review-2026-07.md): the repository review and forward strategy of July 2026,
+  formerly `docs/plan_repo_review.md`.

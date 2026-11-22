@@ -1,5 +1,8 @@
 # ATRIUM Galaxy workflows (ÚFAL tools)
 
+**Status:** handed to DARIAH for testing; further Galaxy work is parked during the AMČR pilot. These workflows
+chain the 1.x batch images and are not the pilot's route.
+
 Six workflows for the ATRIUM tools wrapped in `../../tools/`, as Galaxy `.ga` files (format-version 0.1). Import each
 with *Workflows → Import* on a Galaxy that has the tools; on DARIAH's test instance
 (<https://galaxy.acdh-dev.oeaw.ac.at/galaxy/>) they become usable once the wrappers are installed. This folder sits

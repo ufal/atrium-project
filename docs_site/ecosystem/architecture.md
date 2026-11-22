@@ -29,7 +29,7 @@ What holds them together is the hub, `atrium-project`, and it does so in two way
 ```mermaid
 flowchart TB
   subgraph HUB["atrium-project — the hub"]
-    SHARED["docs/templates/shared/<br/>24 canonical files + MANIFEST.json"]
+    SHARED["docs/templates/shared/<br/>26 canonical files + MANIFEST.json"]
     REUSE["8 reusable workflows<br/>pinned by callers to a commit"]
     E2E["3 end-to-end workflows"]
     SITE["this site"]
@@ -93,32 +93,34 @@ fixed path, and CI fails the tool repository if a single byte differs.
 `MANIFEST.json` is the one registration point — one row per file, naming the canonical file,
 its destination in a tool repository, and whether it has a `--selftest` that CI must also run.
 
-| Canonical file                              | Destination in a tool repo                  | Selftest | What it is                                                                                 |
-|---------------------------------------------|---------------------------------------------|----------|--------------------------------------------------------------------------------------------|
-| `atrium_document.py`                        | `atrium_document.py`                        |          | the document record: ownership, accretion, validation                                      |
-| `atrium_document.schema.json`               | `atrium_document.schema.json`               |          | its JSON Schema                                                                            |
-| `atrium_document.schema.doc-schema-v1.json` | `atrium_document.schema.doc-schema-v1.json` |          | the same schema frozen as tag `doc-schema-v1`; never edited                                |
-| `atrium_paradata.py`                        | `atrium_paradata.py`                        |          | the per-run paradata logger                                                                |
-| `para_licenses.py`                          | `para_licenses.py`                          |          | licence normalisation and merging of the component lists                                   |
-| `atrium_vocab.py`                           | `atrium_vocab.py`                           | ✓        | the SKOS controlled-label registry                                                         |
-| `atrium_vocab.schema.json`                  | `atrium_vocab.schema.json`                  |          | schema for the registry's JSON-LD export                                                   |
-| `atrium_rocrate.py`                         | `atrium_rocrate.py`                         | ✓        | the RO-Crate exporter                                                                      |
-| `check_version.py`                          | `check_version.py`                          |          | the release gate: tag = `CITATION.cff` = `para_config.txt`                                 |
-| `atrium_limits.py`                          | `atrium_limits.py`                          | ✓        | every service limit as a setting, and the `limits_applied` record                          |
-| `atrium_openapi.py`                         | `atrium_openapi.py`                         | ✓        | the committed `service/openapi.json`: export, check, compare with the last release         |
-| `atrium_service.py`                         | `service/atrium_service.py`                 |          | the shared HTTP service contract — `/info`, `/health`, `/ready`, drain                     |
-| `healthcheck.py`                            | `service/healthcheck.py`                    |          | the container healthcheck probe                                                            |
-| `test_para_licenses.py`                     | `tests/test_para_licenses.py`               |          |                                                                                            |
-| `test_document_originators.py`              | `tests/test_document_originators.py`        |          | block ownership for both originators                                                       |
-| `test_atrium_vocab.py`                      | `tests/test_atrium_vocab.py`                |          |                                                                                            |
-| `test_atrium_rocrate.py`                    | `tests/test_atrium_rocrate.py`              |          |                                                                                            |
-| `test_logging_contract.py`                  | `tests/test_logging_contract.py`            |          | one log format, no `basicConfig()` in library code                                         |
-| `test_env_contract.py`                      | `tests/test_env_contract.py`                |          | `.env.example` must list every variable the service reads                                  |
-| `test_dockerfile_security_layer.py`         | `tests/test_dockerfile_security_layer.py`   |          | pins the `apt-get upgrade` layer that keeps the release gate passable                      |
-| `test_schema_freeze.py`                     | `tests/test_schema_freeze.py`               |          | this repo's schema against the frozen copy: nothing removed, every change since registered |
-| `test_atrium_limits.py`                     | `tests/test_atrium_limits.py`               |          |                                                                                            |
-| `test_limits_contract.py`                   | `tests/test_limits_contract.py`             |          | every limit is a documented setting that `/info` reports                                   |
-| `test_openapi_contract.py`                  | `tests/test_openapi_contract.py`            |          | the committed spec is current; typed responses; one error body                             |
+| Canonical file                              | Destination in a tool repo                  | Selftest | What it is                                                                                                                     |
+|---------------------------------------------|---------------------------------------------|----------|--------------------------------------------------------------------------------------------------------------------------------|
+| `atrium_document.py`                        | `atrium_document.py`                        |          | the document record: ownership, accretion, validation                                                                          |
+| `atrium_document.schema.json`               | `atrium_document.schema.json`               |          | its JSON Schema                                                                                                                |
+| `atrium_document.schema.doc-schema-v1.json` | `atrium_document.schema.doc-schema-v1.json` |          | the same schema frozen as tag `doc-schema-v1`; never edited                                                                    |
+| `atrium_paradata.py`                        | `atrium_paradata.py`                        |          | the per-run paradata logger                                                                                                    |
+| `para_licenses.py`                          | `para_licenses.py`                          |          | licence-name normalisation of the component list; computes no licence                                                          |
+| `atrium_vocab.py`                           | `atrium_vocab.py`                           | ✓        | the SKOS controlled-label registry                                                                                             |
+| `atrium_vocab.schema.json`                  | `atrium_vocab.schema.json`                  |          | schema for the registry's JSON-LD export                                                                                       |
+| `atrium_rocrate.py`                         | `atrium_rocrate.py`                         | ✓        | the RO-Crate exporter                                                                                                          |
+| `check_version.py`                          | `check_version.py`                          |          | the release gate: tag = `CITATION.cff` = `para_config.txt`                                                                     |
+| `atrium_limits.py`                          | `atrium_limits.py`                          | ✓        | every service limit as a setting, and the `limits_applied` record                                                              |
+| `atrium_openapi.py`                         | `atrium_openapi.py`                         | ✓        | the committed `service/openapi.json`: export, check, compare with the last release                                             |
+| `atrium_service.py`                         | `service/atrium_service.py`                 |          | the shared HTTP service contract — `/info`, `/health`, `/ready`, drain                                                         |
+| `healthcheck.py`                            | `service/healthcheck.py`                    |          | the container healthcheck probe                                                                                                |
+| `container_entrypoint.py`                   | `container_entrypoint.py`                   |          | the batch image's entry point: arguments go to the tool's program; a first argument naming a shell or Python runs that program |
+| `test_para_licenses.py`                     | `tests/test_para_licenses.py`               |          |                                                                                                                                |
+| `test_document_originators.py`              | `tests/test_document_originators.py`        |          | block ownership for both originators                                                                                           |
+| `test_atrium_vocab.py`                      | `tests/test_atrium_vocab.py`                |          |                                                                                                                                |
+| `test_atrium_rocrate.py`                    | `tests/test_atrium_rocrate.py`              |          |                                                                                                                                |
+| `test_logging_contract.py`                  | `tests/test_logging_contract.py`            |          | one log format, no `basicConfig()` in library code                                                                             |
+| `test_env_contract.py`                      | `tests/test_env_contract.py`                |          | `.env.example` must list every variable the service reads                                                                      |
+| `test_dockerfile_security_layer.py`         | `tests/test_dockerfile_security_layer.py`   |          | pins the `apt-get upgrade` layer that keeps the release gate passable                                                          |
+| `test_schema_freeze.py`                     | `tests/test_schema_freeze.py`               |          | this repo's schema against the frozen copy: nothing removed, every change since registered                                     |
+| `test_atrium_limits.py`                     | `tests/test_atrium_limits.py`               |          |                                                                                                                                |
+| `test_limits_contract.py`                   | `tests/test_limits_contract.py`             |          | every limit is a documented setting that `/info` reports                                                                       |
+| `test_openapi_contract.py`                  | `tests/test_openapi_contract.py`            |          | the committed spec is current; typed responses; one error body                                                                 |
+| `test_container_entrypoint_shared.py`       | `tests/test_container_entrypoint_shared.py` |          | the entry point's two paths                                                                                                    |
 
 `test_env_contract.py` additionally needs a repo-local `tests/env_contract_data.py` — the
 list of variables that particular service reads — which each repository keeps and which is
@@ -151,48 +153,48 @@ The script exits 0 only when CI would pass. A sibling checkout it cannot find is
 ## The CI federation
 
 Each tool repository keeps a set of **thin caller workflows**; the real logic lives in eight
-reusable workflows in the hub. Since the #72 sweep (2026-10-25) the callers reach them at a commit of
-the hub's **`v1`** tag, written `@<sha>  # v1`, which only a reviewed pin change moves; `v1` itself is
+reusable workflows in the hub. The callers reach them at a commit of the hub's **`v1`** tag, written `@<sha>  # v1`, which only a reviewed pin change moves; `v1` itself is
 moved deliberately, and `test` is the hub's pre-release channel.
 
 | Hub reusable                  | What it does for a tool repository                                                                                                                           |
 |-------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `docker-tool.reusable.yml`    | fast test lane, container smoke test, image build, CVE gate, publish to GHCR                                                                                 |
 | `api-contract.reusable.yml`   | the service meta-contract: `/info` envelope, `/health`, `/ready`, OpenAPI validity                                                                           |
-| `para-drift.reusable.yml`     | byte-parity of all 24 vendored files, plus their selftests                                                                                                   |
-| `security.reusable.yml`       | version consistency, and a scheduled Trivy scan of the published image                                                                                       |
+| `para-drift.reusable.yml`     | byte-parity of all 26 vendored files, plus their selftests                                                                                                   |
+| `security.reusable.yml`       | version consistency, and a weekly Trivy scan of the published image                                                                                          |
 | `codeql.reusable.yml`         | CodeQL static analysis                                                                                                                                       |
 | `pre-commit.reusable.yml`     | `pre-commit run --all-files`, blocking                                                                                                                       |
 | `workflow-lint.reusable.yml`  | checks the caller's own workflows: SHA-pinned write-scoped actions, `@v1` refs, timeouts, concurrency, permission grants that cover what the callee asks for |
 | `skill-validate.reusable.yml` | the Agent Skill branch contract — see [Agent skills](../agent-skills.md)                                                                                     |
 
-Both documented tools call the same seven on their default branches (`skill-validate` runs only
-on their `agent-skill` branches), and each keeps a few workflows of its own:
+Both documented tools call the same seven (`skill-validate` runs only on their `agent-skill` branches),
+and each keeps a few workflows of its own. CI runs on pull requests and releases only: the weekly CodeQL
+and security scans are the one schedule, and the other lanes of their own run by dispatch.
 
 === "page-classification"
 
-    | Workflow                                                                    | Kind            | Triggers                                                                    |
-    |-----------------------------------------------------------------------------|-----------------|-----------------------------------------------------------------------------|
-    | `docker.yml`                                                                | → `docker-tool` | push to `vit`, `test`, `clip`, `master`; PRs                                |
-    | `api-contract.yml`, `para-drift.yml`, `pre-commit.yml`, `workflow-lint.yml` | → hub           | push and PR on the same four branches                                       |
-    | `codeql.yml`                                                                | → hub           | push, PR, weekly                                                            |
-    | `security.yml`                                                              | → hub           | push, PR, tags, weekly                                                      |
-    | `release.yml`                                                               | → `docker-tool` | tags `v*` — version gate; the images, built, probed, scanned and promoted (`release-gate`, #81); then the release with its zip and `images.json` |
-    | `scheduled-smoke.yml`                                                       | local           | daily — checks a published model revision is reachable, runs the slow tests |
-    | `gpu-inference.yml`                                                         | local           | manual only — runs on a self-hosted GPU runner                              |
+    | Workflow                                                                    | Kind            | Triggers                                                                                                                                    |
+    |-----------------------------------------------------------------------------|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+    | `docker.yml`                                                                | → `docker-tool` | pull requests into `vit`, `test`, `clip`, `master`; a pull request merged into `test` publishes `:test`                                     |
+    | `api-contract.yml`, `para-drift.yml`, `pre-commit.yml`, `workflow-lint.yml` | → hub           | pull requests into the same four branches                                                                                                   |
+    | `codeql.yml`                                                                | → hub           | pull requests, weekly                                                                                                                       |
+    | `security.yml`                                                              | → hub           | pull requests, `v*` tags, weekly                                                                                                            |
+    | `release.yml`                                                               | → `docker-tool` | `v*` tags — version gate; the images, built, probed, scanned and promoted (`release-gate`); then the release with its zip and `images.json` |
+    | `scheduled-smoke.yml`                                                       | local           | manual only — checks a published model revision is reachable, runs the slow tests                                                           |
+    | `gpu-inference.yml`                                                         | local           | manual only — runs on a self-hosted GPU runner                                                                                              |
 
 === "translator"
 
-    | Workflow                                                                    | Kind            | Triggers                                                                      |
-    |-----------------------------------------------------------------------------|-----------------|-------------------------------------------------------------------------------|
-    | `docker.yml`                                                                | → `docker-tool` | push to `test`, `master`; PRs                                                 |
-    | `api-contract.yml`, `para-drift.yml`, `pre-commit.yml`, `workflow-lint.yml` | → hub           | push and PR on `test`, `master`                                               |
-    | `codeql.yml`                                                                | → hub           | push, PR, weekly                                                              |
-    | `security.yml`                                                              | → hub           | push, PR, weekly                                                              |
-    | `release.yml`                                                               | → `docker-tool` | tags `v*.*.*` — version gate; the images (`release-gate`, #81); then the release with its bundle and `images.json` |
-    | `integration.yml`                                                           | local           | a stub-backend lane on every push; a live-LINDAT lane on manual dispatch only |
-    | `scheduled-smoke.yml`                                                       | local           | daily — the full suite in a fresh environment, to catch dependency drift      |
-    | `lindat-daily.yml`                                                          | local           | daily — 24 identical requests to live LINDAT, failing on a bad reply (#78)    |
+    | Workflow                                                                    | Kind            | Triggers                                                                                                  |
+    |-----------------------------------------------------------------------------|-----------------|-----------------------------------------------------------------------------------------------------------|
+    | `docker.yml`                                                                | → `docker-tool` | pull requests into `test`, `master`; a pull request merged into `test` publishes `:test`                  |
+    | `api-contract.yml`, `para-drift.yml`, `pre-commit.yml`, `workflow-lint.yml` | → hub           | pull requests into `test`, `master`                                                                       |
+    | `codeql.yml`                                                                | → hub           | pull requests, weekly                                                                                     |
+    | `security.yml`                                                              | → hub           | pull requests, weekly                                                                                     |
+    | `release.yml`                                                               | → `docker-tool` | `v*` tags — version gate; the images (`release-gate`); then the release with its bundle and `images.json` |
+    | `integration.yml`                                                           | local           | a stub-backend lane on every pull request; a live-LINDAT lane on manual dispatch only                     |
+    | `scheduled-smoke.yml`                                                       | local           | manual only — the full suite in a fresh environment, to catch dependency drift                            |
+    | `lindat-daily.yml`                                                          | local           | manual only, "LINDAT check (manual)" — 24 identical requests to live LINDAT, failing on a bad reply       |
 
 The hub runs its own workflows without `@v1` — they use `./…` so they test the commit under
 review — and three end-to-end workflows that exercise the published images together:
@@ -211,8 +213,8 @@ formatter is fenced off too: each tool's `ruff.toml` excludes the vendored files
 **The hub never owns tool behaviour.** It owns the record's contract, the service contract and
 the CI; what a tool *does* is decided in the tool repository.
 
-**There is no cross-repository token.** A push to a tool repository cannot trigger anything in
-the hub. The hub re-reads on schedules and on manual dispatch instead.
+**There is no cross-repository token.** A change in a tool repository cannot trigger anything in
+the hub. The hub's end-to-end lanes run on its own pull requests and on manual dispatch instead.
 
 **At run time, the only contract between tools is the record.** No tool imports another tool's
 code. Stages meet in the `atrium_document` JSON — see
@@ -236,7 +238,7 @@ This table records **provenance**: what this page was written from, not a build 
 
 | Source                                                                                                             | What was taken from it                                             |
 |--------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| `atrium-project/docs/templates/shared/MANIFEST.json`                                                               | the 24 files and their destinations                                |
+| `atrium-project/docs/templates/shared/MANIFEST.json`                                                               | the 26 files and their destinations                                |
 | `atrium-page-classification@adee922`, `atrium-translator@71feaef`                                                  | vendored destinations, repository-local helpers, Dockerfile stages |
 | `atrium-project/scripts/revendor_shared.sh`                                                                        | the re-vendoring procedure and its exit semantics                  |
 | `atrium-project/.github/workflows/*.reusable.yml` and the hub-own workflows                                        | the federation                                                     |

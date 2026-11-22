@@ -1,16 +1,22 @@
 # E2E pipeline smoke fixtures — default `CTX000000003`
 
-> **Since record schema 2.0 (2026-11-14, atrium-project#84)** the lane starts from a docproc in the ATR's
-> shape, `docproc/<id>.atr.docproc.json`, a stand-in for the ATR written from `ALTO/<id>.alto.xml` by
-> [`tools/e2e/alto_to_docproc.py`](../../tools/e2e/alto_to_docproc.py) (`--check` says whether they are
-> current). An empty page is routed `empty` and has no `pages[]` entry (H5). The chain is ocr-postprocess (the
-> record from docproc) → page-classification → nlp-enrich → keyword-extract, and each record is checked against
-> the stand-in it was built from (`e2e_assert.py --docproc`); the ALTO stays as the stand-in's source and the
-> page image's. `DOC_LINE_CATEG/` is no longer read by the lane; the sections below describe the route before 2.0.
->
-> `mixed/scan_page.page2.txt` is the born-digital lane's OCR text for the scanned page of digital-convert's
-> `scan_page.docx`: [`tools/e2e/atr_standin.py`](../../tools/e2e/atr_standin.py) writes an ATR stand-in from
-> digital-convert's docproc with it, and ocr-postprocess builds the mixed record from both (H6).
+The fixtures of the hub's end-to-end lanes. The scanned-document lane starts from a docproc in the ATR's
+shape, `docproc/<id>.atr.docproc.json`: a stand-in for the ATR, written from `ALTO/<id>.alto.xml` by
+[`tools/e2e/alto_to_docproc.py`](../../tools/e2e/alto_to_docproc.py) (`--check` says whether they are
+current). The chain is ocr-postprocess (the record from docproc) → page-classification → nlp-enrich →
+keyword-extract, and each record is checked against the stand-in it was built from
+(`e2e_assert.py --docproc`). An empty page is routed `empty` and has no `pages[]` entry. The ALTO stays as the
+stand-in's source and the page image's; `DOC_LINE_CATEG/` is no longer read by the lane.
+
+`mixed/scan_page.page2.txt` is the born-digital lane's OCR text for the scanned page of digital-convert's
+`scan_page.docx`: [`tools/e2e/atr_standin.py`](../../tools/e2e/atr_standin.py) writes an ATR stand-in from
+digital-convert's docproc with it, and ocr-postprocess builds the mixed record from both.
+
+The lanes run on the hub's pull requests that touch them, and by dispatch. The rest of this file describes the
+fixtures and, as history, the route the lane ran before record schema 2.0
+([decisions/e2e-lanes.md](../../docs/decisions/e2e-lanes.md) has the dated record).
+
+## The fixtures, and the route before record schema 2.0
 
 Five fixture pairs; the default is one **single-page, synthetic Czech** document that travels the whole
 ATRIUM tool chain in CI (issue [#18](https://github.com/ufal/atrium-project/issues/18) follow-up — the
@@ -25,7 +31,7 @@ with helpers in [`tools/e2e/`](../../tools/e2e/). Every job boundary is one cros
 assertions check **formats and contracts, never model quality**.
 
 The fixture is the workflow's `e2e-doc` input (atrium-project#69, roadmap S6). A manual dispatch offers
-all five; push and schedule runs use `CTX000000003`. The other four are multi-page, and Stages 1
+all five; the other runs use `CTX000000003`. The other four are multi-page, and Stages 1
 (page-classification) and 3 (translator) see **page 1 only** — the workflow renders and translates
 `<id>-1` — while alto, nlp and llm see the whole document.
 

@@ -112,6 +112,32 @@ change is the repository lists, the end-to-end workflows, these pages and the re
 successor map (`PROGRAM_SUCCESSORS`), which lets the new program ids write beside the old ones
 without rewriting a stamp already in a record.
 
+### October → November 2026 · the pilot's contract
+
+The release set for the AMČR pilot was agreed on 4 November (atrium-project#77); ARÚP saw it as the starting
+point of a pilot assembled step by step. ARÚP's output contract of 12 November set the pilot's route:
+digital-convert and the ATR write the layout as docproc, ocr-postprocess builds the record from it, every
+output is an AMČR distribution with its own paradata, and the translator is a record-level job. The tools'
+`test` branches carry it as record schema 2.0 and paradata 3.0 (release 2.0.0-beta). In the same weeks CI
+moved to pull requests and releases only, under the working agreement of atrium-project#40. The route:
+[Pipelines](pipelines.md#the-route-through-the-pipeline).
+
+## The decision records
+
+The hub's dated decisions are in `docs/decisions/`, one record per subject, each opening with what was
+decided ([the list](https://github.com/ufal/atrium-project/blob/main/docs/decisions/README.md)):
+
+| Record                                                                                                                     | What it covers                                                    |
+|----------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
+| [`docker-tool-reusable.md`](https://github.com/ufal/atrium-project/blob/main/docs/decisions/docker-tool-reusable.md)       | the tools' test, container probe, publishing and CVE gate         |
+| [`e2e-lanes.md`](https://github.com/ufal/atrium-project/blob/main/docs/decisions/e2e-lanes.md)                             | the scanned and born-digital end-to-end lanes                     |
+| [`release-trust-log.md`](https://github.com/ufal/atrium-project/blob/main/docs/decisions/release-trust-log.md)             | rulesets, releases and pins over time; the release gate's rollout |
+| [`document-schema-history.md`](https://github.com/ufal/atrium-project/blob/main/docs/decisions/document-schema-history.md) | the record schema's changelog, July to November 2026              |
+| [`agent-skills.md`](https://github.com/ufal/atrium-project/blob/main/docs/decisions/agent-skills.md)                       | the planning, work plans and rollout of the agent skills          |
+| [`site-history.md`](https://github.com/ufal/atrium-project/blob/main/docs/decisions/site-history.md)                       | this site's rounds 3 to 8                                         |
+| [`pages-publishing.md`](https://github.com/ufal/atrium-project/blob/main/docs/decisions/pages-publishing.md)               | how the repositories came to publish from `gh-pages`              |
+| [`repo-review-2026-07.md`](https://github.com/ufal/atrium-project/blob/main/docs/decisions/repo-review-2026-07.md)         | the repository review and forward strategy of July 2026           |
+
 ## What the record keeps repeating
 
 The same four lessons recur across six months of entries, in different words each time:

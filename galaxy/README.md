@@ -1,5 +1,9 @@
 # ATRIUM tools in Galaxy
 
+**Status:** handed to DARIAH for testing; further Galaxy work is parked during the AMČR pilot. The wrappers run
+the released 1.x batch images, which predate release 2.0.0-beta, and they are not the pilot's route: in the AMČR
+pilot, AMČR's own pipeline calls the services.
+
 Galaxy tool wrappers, data managers and workflows for the six ATRIUM tools of ÚFAL
 ([#66](https://github.com/ufal/atrium-project/issues/66)). The layout is that of
 [DARIAH-ERIC/atrium-galaxy-tools](https://github.com/DARIAH-ERIC/atrium-galaxy-tools), the repository DARIAH's test

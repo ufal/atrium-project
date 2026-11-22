@@ -25,13 +25,22 @@ releases — read once, and then each repository's own conventions.
 
 ### Branches
 
-| Branch  | Environment          | Rule                                                                                       |
-|---------|----------------------|--------------------------------------------------------------------------------------------|
-| `test`  | Staging              | The base for all development. Always branch from `test`, and open pull requests against it |
-| default | Stable / integration | Merged only by a human reviewer. No pull requests directly into it                         |
+| Branch  | Environment          | Rule                                                                                         |
+|---------|----------------------|----------------------------------------------------------------------------------------------|
+| `test`  | Staging              | The base for all development. Always branch from `test`; changes arrive by pull request only |
+| default | Stable / integration | Merged only by a human reviewer. No pull requests directly into it                           |
 
 The stable branch is the repository's default branch — `master` in the translator, `vit` in
 page-classification, whose branch names follow its model families.
+
+### The working agreement
+
+* **One pull request per issue**, with a description, reviewed, and **squash-merged**.
+* **Nobody pushes directly** to `test` or the default branch.
+* **Releases are deliberate.** Work is batched until it changes something for users, roughly one
+  release per tool every one or two weeks, and each release has curated notes.
+* **CI runs on pull requests and releases only**, with the weekly security scans as the one schedule
+  ([`ci_policy.md`](https://github.com/ufal/atrium-project/blob/main/docs/ci_policy.md)).
 
 Branch names follow three patterns:
 
@@ -47,7 +56,8 @@ Branch names follow three patterns:
 2. Branch from `test`: `git checkout test && git pull origin test`, then `git checkout -b feature-<name>`.
 3. Implement, following the repository's code conventions.
 4. Run the fast checks before every commit.
-5. Open a pull request against `test` — as a **Draft** while work is in progress.
+5. Open a pull request against `test`, one per issue — as a **Draft** while work is in progress.
+6. After review, the pull request is squash-merged and its branch deleted.
 
 ### What a pull request contains
 
@@ -83,17 +93,19 @@ before it can publish: the tag, `CITATION.cff`'s `version`, and `para_config.txt
 `[tool] version`. The hub's `check_version.py` — vendored into every tool — enforces it in each
 repository's release workflow, and `security.reusable.yml` checks it again. Cutting a release:
 
-1. Bump `version` and `date-released` in `CITATION.cff`, and `[tool] version` in
-   `para_config.txt`, to the same value.
-2. Add the release to the *Release History* table in `CONTRIBUTING.md`.
-3. Merge through `test` into the default branch.
-4. Tag the merge commit `v<version>` and push the tag.
-5. CI checks the three versions, builds the images, runs the release gate and — only if it
+1. In a pull request into `test`, bump `version` and `date-released` in `CITATION.cff`, and
+   `[tool] version` in `para_config.txt`, to the same value, and add the release, with its curated
+   notes, to the *Release History* table in `CONTRIBUTING.md`.
+2. Once it is merged, tag `test` with the hub's helper,
+   `python3 ../atrium-project/scripts/tag_release.py v<version>`. It refuses a tag whose versions
+   disagree or whose pull request's checks did not pass, and pushes that one tag.
+3. CI checks the three versions, builds the images, runs the release gate and — only if it
    passes — publishes `<version>` and `latest`. See [Operations](operations.md#the-release-gate).
+4. The default branch catches up when `test` is merged into it.
 
 ### Shared code
 
-The 24 files listed in
+The 26 files listed in
 [Architecture](ecosystem/architecture.md#what-is-canonical-and-what-is-vendored) are **never
 edited in a tool repository**: CI fails on a single changed byte. A change to shared code is
 made in the hub and copied out with `scripts/revendor_shared.sh`, and the tool repositories'
@@ -167,13 +179,14 @@ and `tools/docs_check.py` checks it.
 
 This table records **provenance**: what this page was written from, not a build instruction.
 
-| Source                                                         | What was taken from it              |
-|----------------------------------------------------------------|-------------------------------------|
-| `atrium-project/docs/templates/CONTRIBUTING.md`                | the family standard                 |
-| `atrium-page-classification/CONTRIBUTING.md` @ `vit` `adee922` | its conventions and release history |
-| `atrium-translator/CONTRIBUTING.md` @ `master` `71feaef`       | the same                            |
-| each repository's `ruff.toml` and `.pre-commit-config.yaml`    | the lint and hook tables            |
-| `atrium-project/mkdocs.yml`, `tools/docs/requirements.txt`     | the site conventions and build      |
+| Source                                                                       | What was taken from it                   |
+|------------------------------------------------------------------------------|------------------------------------------|
+| `atrium-project/docs/templates/CONTRIBUTING.md`                              | the family standard                      |
+| `atrium-page-classification/CONTRIBUTING.md` @ `vit` `adee922`               | its conventions and release history      |
+| `atrium-translator/CONTRIBUTING.md` @ `master` `71feaef`                     | the same                                 |
+| the tools' `CONTRIBUTING.md` on `test`, 2026-11-21; `scripts/tag_release.py` | the working agreement; tagging a release |
+| each repository's `ruff.toml` and `.pre-commit-config.yaml`                  | the lint and hook tables                 |
+| `atrium-project/mkdocs.yml`, `tools/docs/requirements.txt`                   | the site conventions and build           |
 
 Contact details are deliberately not reproduced here; each repository's own
 *Contacts & Acknowledgements* section is the place to find them.

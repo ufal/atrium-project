@@ -5,7 +5,8 @@ README's `#` line, taglines from the GitHub repo description, chips from each RE
 own badge block, default branches from the repo metadata (first read 2026-09-18;
 re-read 2026-10-07 for the repositories of the 1 October split; the digital-convert and
 keyword-extract titles 2026-10-22, the nlp-enrich, page-classification and translator titles
-2026-10-25, after their READMEs moved to the #79 skeleton). The
+2026-10-25, after their READMEs moved to the #79 skeleton; all six titles and roles 2026-11-21, after
+the documentation round for the AMČR pilot's route). The
 Python chip follows the version the images and CI use; a README badge that lags it is a
 finding for that repository, not a reason to publish the old value.
 
@@ -19,20 +20,45 @@ HUB = "atrium-project"
 HUB_SITE = "https://ufal.github.io/atrium-project"
 ORG = "https://github.com/ufal"
 
-# Pipeline order is the accretion order the document record travels in,
-# NOT a file-handoff chain -- see 57.plan.md D.2.
+# The order of the AMČR pilot's route (the hub's Pipelines page, "The route through the
+# pipeline"): digital-convert or the ATR gives the layout, ocr-postprocess builds the record,
+# the others add to it; the translator runs apart, when a record is archived.
 REPOS = [
+    {
+        "slug": "atrium-digital-convert",
+        "short": "digital-convert",
+        "docs_path": "workflows/digital-convert/",
+        "stage": 1,
+        "default_branch": "main",
+        "title": "Born-digital documents into docproc layout",
+        "subtitle": "PDF · DOCX · ODT · ODS · XLSX · RTF · DOC · XLS → docproc, a verdict per page",
+        "tagline": "Digital-born documents transformed into JSON records, and page content information "
+        "for the pages that still need OCR.",
+        "role": "The first step. Reads the text layer, gives every page a verdict; a page that needs it sends the document to the ATR.",
+        "chips": [
+            ("python", "3.11+", "https://www.python.org/downloads/", "py"),
+            (
+                "layout",
+                "docproc",
+                "https://github.com/ufal/atrium-digital-convert/blob/test/schemas/docproc/README.md",
+                "data",
+            ),
+            ("SSH OMP", "jGxgQI", "https://marketplace.sshopencloud.eu/tool-or-service/jGxgQI", "sshomp"),
+            ("license", "MIT", "https://opensource.org/license/mit/", "lic"),
+            ("funded by", "ATRIUM", "https://atrium-research.eu/", "atr"),
+        ],
+    },
     {
         "slug": "atrium-page-classification",
         "short": "page-classification",
         "docs_path": "workflows/page-classification/",
-        "stage": 1,
+        "stage": 2,
         "default_branch": "vit",
         "title": "Scanned archive pages sorted into eleven page types",
-        "subtitle": "for historical document routing",
+        "subtitle": "what each page holds, beside the ATR",
         "tagline": "Classification of historical page images using ViT and CNN — decides which "
         "downstream pipeline each page is worth sending to.",
-        "role": "Structural perception. Eleven page categories that route the rest of the pipeline.",
+        "role": "Page types. Classifies the pages that go to the ATR; the categories join the record's pages.",
         "chips": [
             ("python", "3.11", "https://www.python.org/downloads/", "py"),
             ("🤗 HF", "vit-historical-page", "https://huggingface.co/ufal/vit-historical-page", "hf"),
@@ -46,41 +72,20 @@ REPOS = [
         "slug": "atrium-ocr-postprocess",
         "short": "ocr-postprocess",
         "docs_path": "workflows/ocr-postprocess/",
-        "stage": 2,
+        "stage": 3,
         "default_branch": "master",
-        "title": "OCR text lines sorted into five quality categories",
-        "subtitle": "split · stats · extract · classify · aggregate",
+        "title": "The document record, with every text line sorted into five quality categories",
+        "subtitle": "docproc → the record · language · quality",
         "tagline": "Post-processing of OCR output — ALTO XML, and also PAGE XML, hOCR, PDF, office and "
         "text files — into extracted text and a scored line-quality table, plus per-page ALTO.",
-        "role": "Deserialisation of ALTO and every other OCR or text-bearing input, and OCR quality "
-        "control. The fan-out point of the whole pipeline.",
+        "role": "The record builder. Builds the record from docproc and scores every line; research "
+        "batches over ALTO and other OCR output.",
         "chips": [
             ("python", "3.11", "https://www.python.org/downloads/", "py"),
             ("🤗 HF", "fasttext-langID", "https://huggingface.co/facebook/fasttext-language-identification", "hf"),
             ("🤗 HF", "Qwen2.5-0.5B", "https://huggingface.co/Qwen/Qwen2.5-0.5B", "hf"),
             ("vendored", "alto-tools", "https://github.com/cneud/alto-tools", "dep"),
             ("SSH OMP", "YParYU", "https://marketplace.sshopencloud.eu/tool-or-service/YParYU", "sshomp"),
-            ("license", "MIT", "https://opensource.org/license/mit/", "lic"),
-            ("funded by", "ATRIUM", "https://atrium-research.eu/", "atr"),
-        ],
-    },
-    {
-        "slug": "atrium-translator",
-        "short": "translator",
-        "docs_path": "workflows/translator/",
-        "stage": 3,
-        "default_branch": "master",
-        "title": "XML documents translated in place, ALTO pages and AMČR metadata",
-        "subtitle": "in-place translation of ALTO / AMCR XML",
-        "tagline": "In-place translation of XML (ALTO/AMCR) files into English, preserving every "
-        "tag, namespace and coordinate.",
-        "role": "Protected translation. A terminal branch — its output is recorded, not consumed.",
-        "chips": [
-            ("python", "3.11", "https://www.python.org/downloads/", "py"),
-            ("API", "LINDAT Translation", "https://lindat.mff.cuni.cz/services/translation/", "api"),
-            ("API", "UDPipe 2", "https://lindat.mff.cuni.cz/services/udpipe/", "api"),
-            ("🤗 HF", "fasttext-langID", "https://huggingface.co/facebook/fasttext-language-identification", "hf"),
-            ("SSH OMP", "CizIUW", "https://marketplace.sshopencloud.eu/tool-or-service/CizIUW", "sshomp"),
             ("license", "MIT", "https://opensource.org/license/mit/", "lic"),
             ("funded by", "ATRIUM", "https://atrium-research.eu/", "atr"),
         ],
@@ -95,7 +100,7 @@ REPOS = [
         "subtitle": "UDPipe · NameTag · TEITOK",
         "tagline": "NLP enrichment of text lines from ALTO XML — morphology, named entities and "
         "TEITOK XML with bounding boxes preserved.",
-        "role": "Morphosyntax and named entities. Produces the TEITOK corpus format.",
+        "role": "Morphosyntax and named entities. Reads the record, adds its linguistic layer, writes TEITOK.",
         "chips": [
             ("python", "3.11", "https://www.python.org/downloads/", "py"),
             ("API", "UDPipe 2", "https://lindat.mff.cuni.cz/services/udpipe/api-reference.php", "api"),
@@ -126,25 +131,22 @@ REPOS = [
         ],
     },
     {
-        "slug": "atrium-digital-convert",
-        "short": "digital-convert",
-        "docs_path": "workflows/digital-convert/",
+        "slug": "atrium-translator",
+        "short": "translator",
+        "docs_path": "workflows/translator/",
         "stage": 6,
-        "default_branch": "main",
-        "title": "Born-digital documents into ATRIUM document records",
-        "subtitle": "PDF · DOCX · ODT · ODS · XLSX · RTF · DOC · XLS → the document record",
-        "tagline": "Digital-born documents transformed into JSON records, and page content information "
-        "for the pages that still need OCR.",
-        "role": "The born-digital route's first stage: reads the text layer, flags the pages that need OCR.",
+        "default_branch": "master",
+        "title": "XML documents translated in place, AMČR metadata records and ALTO pages",
+        "subtitle": "metadata → metadata-en, in place",
+        "tagline": "In-place translation of XML (ALTO/AMCR) files into English, preserving every "
+        "tag, namespace and coordinate.",
+        "role": "A record-level job. Turns an archived record's metadata into English; ALTO for research.",
         "chips": [
-            ("python", "3.11+", "https://www.python.org/downloads/", "py"),
-            (
-                "record",
-                "atrium_document 1.0",
-                "https://github.com/ufal/atrium-project/blob/main/docs/document_schema.md",
-                "data",
-            ),
-            ("SSH OMP", "jGxgQI", "https://marketplace.sshopencloud.eu/tool-or-service/jGxgQI", "sshomp"),
+            ("python", "3.11", "https://www.python.org/downloads/", "py"),
+            ("API", "LINDAT Translation", "https://lindat.mff.cuni.cz/services/translation/", "api"),
+            ("API", "UDPipe 2", "https://lindat.mff.cuni.cz/services/udpipe/", "api"),
+            ("🤗 HF", "fasttext-langID", "https://huggingface.co/facebook/fasttext-language-identification", "hf"),
+            ("SSH OMP", "CizIUW", "https://marketplace.sshopencloud.eu/tool-or-service/CizIUW", "sshomp"),
             ("license", "MIT", "https://opensource.org/license/mit/", "lic"),
             ("funded by", "ATRIUM", "https://atrium-research.eu/", "atr"),
         ],

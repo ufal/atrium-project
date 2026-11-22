@@ -408,7 +408,7 @@ both W1 (to hold the result) and W3 (to validate it without cutting a release).
 
 - **An umbrella orchestration compose.** Ruled out on 2026-06-12 (motyc): *"I believe we won't need any
   overall Docker wrapper, i.e. we need to be able to run the individual containers with the tools reachable
-  via API."* W6's healthcheck/`/health` work serves that requirement instead. `plan_repo_review.md` still
+  via API."* W6's healthcheck/`/health` work serves that requirement instead. `plan_repo_review.md` (now `decisions/repo-review-2026-07.md`) still
   references a planned `compose/docker-compose.pipeline.yml`; that reference should be removed.
 - **gitleaks.** Dropped on 2026-07-30 after going unadopted; the blocker was policy, not tooling, and
   GitHub-native secret scanning with push protection covers the same ground without an org-owned

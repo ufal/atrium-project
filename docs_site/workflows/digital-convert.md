@@ -9,107 +9,97 @@ role: workflow
 authored: true
 ---
 
-# Reading born-digital documents into the document record, without OCR
+# Reading born-digital documents into their layout, without OCR
 
-> **Pending: record schema 2.0** ([atrium-project#84](https://github.com/ufal/atrium-project/issues/84)).
-> This page describes the 1.x tool the releases carry today. On the `test` branches digital-convert writes docproc
-> (`atr/docproc-json`), not the record, and refuses nothing: a page it cannot use is `needsAtr`, a page whose
-> rendering shows nothing is routed `empty` (D29), and every box is on the displayed page, origin top-left of the
-> CropBox, after `/Rotate`, in 1/72 inch × UserUnit (D28). When a page needs the ATR the whole document goes
-> through it, and ocr-postprocess builds the record from the ATR's docproc and this one, keeping the text layer's
-> lines on the other pages (H6). A spreadsheet keeps every non-empty cell, numbers and dates in the form the sheet
-> displays them: an ODS as its file stored them, an XLSX or XLS as LibreOffice shows it in cs-CZ
-> ([#9](https://github.com/ufal/atrium-digital-convert/issues/9)).
-
-*The digital-convert workflow.* Tool: [atrium-digital-convert](https://ufal.github.io/atrium-digital-convert/).
-The tool was part of **llm-enrich** until 1 October 2026; it continues in a new repository under
-its own name, and the keyword extraction that llm-enrich also did moved to
-[keyword-extract](keyword-extract.md).
+*The digital-convert workflow.* Tool: [atrium-digital-convert](https://github.com/ufal/atrium-digital-convert).
+The tool was part of **llm-enrich** until 1 October 2026; it continues in a new repository under its own name, and
+the keyword extraction that llm-enrich also did moved to [keyword-extract](keyword-extract.md).
 
 !!! info "Scope"
     This page gives the **stable core** of the workflow: its purpose, its steps, the formats
     it reads and writes, and the licences of the components it uses. The converter's engines and
-    options, the rules that route a page, and the service's limits and settings with their
+    options, the rules that give a page its verdict, and the service's limits and settings with their
     defaults are documented with the code — in the tool's
-    [README](https://github.com/ufal/atrium-digital-convert#readme), whose documentation map leads to its usage, configuration
-    and how-it-works pages, and its
-    [service README](https://github.com/ufal/atrium-digital-convert/blob/main/service/README.md#limits) —
+    [README](https://github.com/ufal/atrium-digital-convert/blob/test/README.md), whose documentation map leads to
+    its usage, configuration and how-it-works pages, and its
+    [service README](https://github.com/ufal/atrium-digital-convert/blob/test/service/README.md#limits) —
     because they change as the rules are calibrated on AMČR documents.
 
 ## Purpose
 
-A PDF, a word-processor file or a spreadsheet that was never printed and scanned already carries
-its text; running OCR on it would only add errors. This workflow reads such a file directly and
-writes the ATRIUM document record from what it finds: the pages, the lines (with their boxes, in
-a PDF), the blocks they belong to, the headings, running headers and footers, footnotes and
-tables. It also checks the text layer of every page. A page whose layer is missing, does not
-decode to readable text or comes from an earlier OCR run is flagged `needs_ocr`, so that the
-orchestration can send those pages to OCR; on request the tool also assesses every page and says
-where it should go next. A PDF whose text layer is mostly the result of an earlier OCR run is
-refused, because it belongs to the OCR route and [ocr-postprocess](ocr-postprocess.md).
+A PDF, a word-processor file or a spreadsheet that was never printed and scanned already carries its text; running
+OCR on it would only add errors. This workflow reads such a file directly and writes its layout as docproc
+(`atr/docproc-json`), the format the ATR, AIS CR's text-recognition service, writes for scanned pages: the pages,
+the blocks in reading order with their lines (with their boxes, in a PDF or an office document), the headings,
+running headers and footers, footnotes and tables. It also checks the text layer of every page. A page whose layer
+is missing, does not decode to readable text or comes from an earlier OCR run is marked `needsAtr`, so that the
+whole document goes through the ATR with those pages forced. No document is refused for its pages.
+[ocr-postprocess](ocr-postprocess.md) builds the ATRIUM document record from the docproc.
 
 ## At a glance
 
-|                        |                                                                                                                                                                                                                                                                                                                                                                          |
-|------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **In**                 | PDF, office documents (DOCX, DOC, ODT, RTF) read as their own text on the pages of a LibreOffice rendering, and, without pages to render, spreadsheets (ODS, XLSX, XLS) and text files (TXT, CSV, TSV, JSON), recognised by their content, not their extension; images go to the ATR instead; optionally the AMČR seed record, whose `source.sha512` must match the file |
-| **Out**                | the ATRIUM document record (JSON); on request the same record as annotated Markdown; a per-page assessment (JSON), from `/describe` or, since v1.3.0-beta, the command line's `--describe`; the run's paradata (JSON)                                                                                                                                                    |
-| **Runs as**            | an HTTP service, `api-digital` (image `-api`: `POST /reformat`, and `POST /describe` for a per-page assessment), and a command-line tool (`api_util/digital_to_json.py`, image `-digital`), under these names since v1.1.0-beta                                                                                                                                          |
-| **Compute**            | CPU, no GPU; memory follows the text a document holds, not its file size; the optional layout-model engine for complex PDFs is a local, opt-in build                                                                                                                                                                                                                     |
-| **Network**            | none for `/reformat` and a plain command-line run; `/describe` (`--describe`) calls page-classification and ocr-postprocess when their URLs are set; the optional layout-model engine fetches its models at build time                                                                                                                                                   |
-| **Code licence**       | MIT                                                                                                                                                                                                                                                                                                                                                                      |
-| **Component licences** | the default engine uses permissively licensed libraries; the optional layout-model engine adds model weights under Apache-2.0 and CDLA-Permissive-2.0; LibreOffice, which converts DOC and XLS and renders office documents, is listed. The rights in the text are the source document's: [Licences and paradata](../ecosystem/licences.md)                              |
-| **Record**             | SSH Open Marketplace tool [`jGxgQI`](https://marketplace.sshopencloud.eu/tool-or-service/jGxgQI)                                                                                                                                                                                                                                                                         |
+|                        |                                                                                                                                                                                                                                                                                                                                                                                                           |
+|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **In**                 | PDF, office documents (DOCX, DOC, ODT, RTF) read as their own text on the pages of a LibreOffice rendering, and, without pages to render, spreadsheets (ODS, XLSX, XLS) and text files (TXT, CSV, TSV, JSON), recognised by their content, not their extension; images go to the ATR instead; optionally AMČR's seed of the record (the document's identifier and the checksum of its original)           |
+| **Out**                | the docproc (JSON), with a verdict on every page's text layer and the route of every page; an office document's rendered PDF, which page-classification and the ATR read; on request, the document as annotated Markdown; the run's paradata (JSON)                                                                                                                                                       |
+| **Runs as**            | an HTTP service, `api-digital` (image `-api`: `POST /reformat`), and a command-line tool (`api_util/digital_to_json.py`, image `-digital`)                                                                                                                                                                                                                                                                |
+| **Compute**            | CPU, no GPU; memory follows the text a document holds, not its file size; the optional layout-model engine for complex PDFs is a local, opt-in build                                                                                                                                                                                                                                                      |
+| **Network**            | none; the optional layout-model engine fetches its models at build time                                                                                                                                                                                                                                                                                                                                   |
+| **Code licence**       | MIT                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **Component licences** | the default engine uses permissively licensed libraries; the optional layout-model engine adds model weights under Apache-2.0 and CDLA-Permissive-2.0; LibreOffice, which converts DOC and XLS and renders office documents, is listed. Each run lists the components it used, each with its own licence or terms. No licence of an output is computed: [Licences and paradata](../ecosystem/licences.md) |
+| **Record**             | SSH Open Marketplace tool [`jGxgQI`](https://marketplace.sshopencloud.eu/tool-or-service/jGxgQI)                                                                                                                                                                                                                                                                                                          |
 
 ## Steps
 
-| # | Step                             | What happens                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | In → out                                                           | Activity   |
-|---|----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|------------|
-| 1 | Read the file                    | When an AMČR seed is sent, its `source.sha512` is checked against the file's bytes first, and a mismatch is refused. The type is recognised from the content, and decides the workflow ([#9](https://github.com/ufal/atrium-digital-convert/issues/9)). Visual: a light engine reads a PDF's structure directly (for complex PDFs a layout-model engine can be selected instead); an office document keeps its own text (a DOCX read directly, ODT and RTF through the reader shared with ocr-postprocess, a DOC first converted to DOCX) and takes its pages from a headless LibreOffice rendering: each line is matched to the rendered words, so it gets its page and its box in pt, and the rendered PDF is what page-classification and the ATR read for a page that needs the ATR. Textual: spreadsheets (an XLS first converted to XLSX) and text files are extracted as they are, every CSV column and every JSON string, without geometry, and never go to the ATR. | PDF, DOCX, DOC, ODT, RTF; ODS, XLSX, XLS, TXT, CSV, TSV, JSON → IR | Converting |
-| 2 | Check the text layer             | Every page's text layer is tested and its verdict recorded as `text_layer` (`digital`, `garbled`, `ocr`, `none`, `blank`); a line that does not decode is flagged `decode:garbled` (`decode:inverted` for mirrored text), with its `decode_score`: a verdict on its characters, apart from line quality, which ocr-postprocess scores. A page without a usable layer is marked `needsAtr` with its reason and goes to the ATR; no document is refused.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | IR → IR                                                            | —          |
-| 3 | Build the record                 | Pages, lines with their block ids (and exact boxes in a PDF; the other formats have none), line styles (heading level, bold and italic, running header or footer, footnote), tables and the source's identity are written as the blocks the tool owns. In a PDF a heading is a line set larger than the body text, or a bold line at the body size that reads as a title, unless bold body-size text is more than `BOLD_HEADING_MAX_SHARE` of the body text. The record is written only if it keeps to the tool's own fields and passes the schema.                                                                                                                                                                                                                                                                                                                                                                                                                          | IR → JSON                                                          | Converting |
-| 4 | Assess the pages, when asked for | `/describe`, or the command line's `--describe`, says for every page whether its text can be used as it is, what kind of page it is ([page-classification](page-classification.md)), whether its text reads ([ocr-postprocess](ocr-postprocess.md)), and its route: `nlp` (use the text), `ocr` or `htr` (re-acquire it, for handwriting with HTR) or `none` (nothing to read). The two stages are called only when their URLs are set, and may add their own fields to the record; without them the tool answers from the converter alone. A stage that is down is reported, never a failed request.                                                                                                                                                                                                                                                                                                                                                                        | JSON → JSON                                                        | —          |
-| 5 | Render, when asked for           | The record is turned into annotated Markdown, page by page in reading order, with the layout carried in HTML comments: the one form in which a document is given to a language model, as in keyword-extract's whole-document runs.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | JSON → Markdown                                                    | —          |
+| #   | Step                   | What happens                                                                                                                                                                                                                                                                                                                                                                                                                               | In → out                    | Activity   |
+|-----|------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------|------------|
+| 1   | Read the file          | When an AMČR seed is sent, its `source.sha512` is checked against the file's bytes first, and a mismatch is refused. The type is recognised from the content, and decides the workflow. Visual: a light engine reads a PDF on its own pages, and an office document as its own text placed on the pages of a LibreOffice rendering. Textual: a spreadsheet keeps every non-empty cell as the sheet displays it, and a text file its lines. | file → pages, blocks, lines | Converting |
+| 2   | Check the text layer   | Every page's text layer is tested: `digital` (it decodes), `garbled` (it does not), `ocr` (an earlier OCR run) or `none` (no text). A page that is not `digital` is `needsAtr`, with a reason. A line that does not decode keeps the flag `decode:garbled` (`decode:inverted` for mirrored text): a verdict on its characters, apart from the line quality ocr-postprocess scores.                                                         | pages → verdicts            | —          |
+| 3   | Write the docproc      | Pages, blocks with their lines and boxes, headings, tables as cell grids, and the route of every page in `metadata.routing`: `text-layer`, `atr` or `empty`. An empty page is routed `empty` and left out of `pages[]`. The docproc is validated against its schema; one that fails is never returned, and a limit that would cut content fails the job.                                                                                   | → docproc (JSON), paradata  | Converting |
+| 4   | Render, when asked for | The document is turned into annotated Markdown, page by page in reading order, with the layout carried in HTML comments: the one form in which a document is given to a language model, as in keyword-extract's whole-document runs.                                                                                                                                                                                                       | → Markdown                  | —          |
+
+## What you get
+
+The docproc: for every page, its size, its blocks in reading order with their lines and boxes, and its verdict in
+`textLayer`; for every page of the original, its route in `metadata.routing`. When no page needs the ATR, this
+docproc is the one stored for the document. When a page needs it, the ATR's docproc is the stored one, and this one
+is an intermediate that ocr-postprocess merges with it. For an office document, the rendered PDF comes with it,
+because its pages are the ones the docproc's page numbers and boxes refer to.
+
+## Limits
+
+* Unruled tables are read by column, and letter-spaced captions and map labels split into pieces.
+* An office document's pages are LibreOffice's, which can break pages differently from Word; the docproc, the
+  rendered PDF and the ATR use the same pages.
+* Spreadsheets and text files have no geometry: their pages and lines have no positions.
+* The converter was tried on 15 AMČR excavation reports, which showed its defects; there is no accuracy figure.
 
 ## Provenance and licence
 
-Every `/reformat` and `/describe` call returns the run's paradata: an RO-Crate `CreateAction` that
-names the file it read, with its digest, the seed when one was sent, and the record blocks it
-wrote; `/describe` adds each stage's own paradata. On the command line, `--paradata-dir` writes a
-paradata log (JSON). The paradata lists the components that ran, each with its licence, as
-declared in the tool's `para_config.txt`: with the default engine, permissively licensed libraries
-only, and the layout-model engine adds only permissive ones. LibreOffice, which converts DOC and
-XLS and renders office documents for their pages, is listed with its version whenever a run uses it,
-as a fact; the text stays the document's own. An office document's rendered PDF is named among the
-outputs by its digest and marked as not stored. None of these licences is the licence of the output:
-the source document's own rights apply to its text ([Licences and paradata](../ecosystem/licences.md)).
+Every `/reformat` call returns the run's paradata: an RO-Crate `CreateAction` that names the file it read as
+`original`, the seed when one was sent, and the docproc it wrote, each by SHA-512; when a page needs the ATR the
+docproc is marked as not stored. On the command line, `--paradata-dir` writes a paradata file. The paradata list the
+components that ran, each with its licence, as declared in the tool's `para_config.txt`: with the default engine,
+permissively licensed libraries only, and the layout-model engine adds only permissive ones. LibreOffice, which
+converts DOC and XLS and renders office documents for their pages, is listed with its version whenever a run uses
+it, as a fact; the text stays the document's own. An office document's rendered PDF is named among the outputs by
+its digest and marked as not stored. No licence of an output is computed: the rights in an output follow the source
+document ([Licences and paradata](../ecosystem/licences.md)).
 
-In the [document record](../ecosystem/document-contract.md) the tool is one of the two
-originators of the positional layer — `pages`, `content`, `lines` and `tables` — for a
-born-digital document, as [ocr-postprocess](ocr-postprocess.md) is for a scanned one; the
-document's `source.origin` decides which of the two writes. The one exception is a page flagged
-`needs_ocr`, whose lines ocr-postprocess may replace with the OCR lines. Every page row also
-carries the converter's `text_layer`. In `/describe`, page-classification and ocr-postprocess may
-add their own fields (page categories, line and page quality); the tool keeps their write only
-when its own part of the record comes back unchanged. The program id in the record is
-`digital-convert`, as before the move.
+The tool owns no block of the [document record](../ecosystem/document-contract.md): it writes docproc, and
+ocr-postprocess, the record builder, writes the record from it. Records written by releases before 2.0.0-beta name
+the converter as `digital-convert`, the program id it keeps.
 
 ## Where it sits
 
-* **First stage of the born-digital route** — [Pipelines → W2](../pipelines.md#other-workflows).
-  Scans and images go through OCR and ocr-postprocess instead; the route step of the AMČR
-  pipeline chooses by the file type AMČR detected. That route calls `/reformat`, which calls no
-  other service: in the AMČR deployment Temporal chains the stages.
-* **The OCR hand-off** — [Pipelines → W3](../pipelines.md#other-workflows). Pages flagged
-  `needs_ocr` go to the ATR service. `/describe` refines that list in `summary.reacquire_pages`:
-  it leaves out drawings and photographs, sends handwriting to HTR, and adds decoding pages whose
-  prose the quality model rejects. A page that loses letters to unmapped glyphs is flagged in the
-  record itself since v1.2.2-beta (`garbled`), and goes to OCR whatever its page type. ocr-postprocess then merges the ATR ALTO
-  of each flagged page back into the same record, page by page; the born-digital pages stay as
-  the converter wrote them.
-* **What follows it.** The record goes on to [nlp-enrich](nlp-enrich.md) and
-  [keyword-extract](keyword-extract.md), which reads the converter's lines like any other
-  record's.
+* **The first step of a born-digital document** — [Pipelines → The route through the pipeline](../pipelines.md#the-route-through-the-pipeline)
+  and [W2](../pipelines.md#other-workflows). Scans and images go to the ATR instead. The AMČR pipeline calls
+  `/reformat`, which calls no other service: the pipeline's orchestrator (Temporal) chains the steps.
+* **Mixed documents** — [Pipelines → W3](../pipelines.md#other-workflows). When some pages need the ATR, the whole
+  document goes through the ATR with those pages forced, and page-classification classifies those pages beside it;
+  ocr-postprocess keeps this docproc's exact lines on the other pages.
+* **What follows it.** The record ocr-postprocess builds goes on to [nlp-enrich](nlp-enrich.md) and
+  [keyword-extract](keyword-extract.md).
 * **Born-digital extraction** step of the AMČR text workflow
   [`0xSpVP`](https://marketplace.sshopencloud.eu/workflow/0xSpVP) (step 6, beside GROBID).
 * **The service image** is one of the containerised services —
@@ -120,35 +110,37 @@ when its own part of the record comes back unchanged. The program id in the reco
 **SSH Open Marketplace.** Tool record [`jGxgQI`](https://marketplace.sshopencloud.eu/tool-or-service/jGxgQI), "Born-digital document converter: PDF and
 office files into structured text without OCR" (created 24 October 2026).
 
-**Galaxy sheet.**
+**Galaxy sheet.** The Galaxy wrappers were handed to DARIAH for testing; further Galaxy work is parked during the
+AMČR pilot. The sheet describes the wrapper as delivered, for the command-line image at `v1.4.5-beta`, when the
+converter still wrote the record.
 
-|                          |                                                                                                                                                                                                                                                                                                                                                  |
-|--------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Workflow inputs**      | one born-digital file per job — `pdf`, `docx` or `xlsx` (ODT, ODS, RTF, DOC and XLS have no datatype on DARIAH's Galaxy); optionally the record to add to — `json`                                                                                                                                                                               |
-| **Parameters**           | page breaks in DOCX (`auto`, `explicit`, `none`); Markdown output. `--classify-pages` acts only with `--describe`, which calls other services, so neither is offered                                                                                                                                                                             |
-| **Workflow outputs**     | the document record — `json`, with the pages that need OCR flagged; Markdown — `markdown`; paradata — `json`                                                                                                                                                                                                                                     |
-| **Container**            | `ghcr.io/ufal/atrium-digital-convert-digital:<version>` — the command-line image (`api_util/digital_to_json.py`), light engine and headless LibreOffice; since `v1.4.5-beta` it runs the job script Galaxy hands it (the hub-canonical `container_entrypoint.py`). The Docling image is built locally only; the service image `-api` is not used |
-| **Galaxy tool**          | `atrium_digital_convert` `1.4.5-beta+galaxy0`, in the hub's [`galaxy/`](https://github.com/ufal/atrium-project/tree/test/galaxy) folder with the workflow *ATRIUM born-digital documents to keywords*; for DARIAH's test Galaxy (<https://galaxy.acdh-dev.oeaw.ac.at/galaxy/>)                                                                   |
-| **Compute**              | CPU                                                                                                                                                                                                                                                                                                                                              |
-| **Network**              | none: no models, and the `--describe` stage URLs stay unset                                                                                                                                                                                                                                                                                      |
-| **Test data**            | four of the PDF and DOCX files `tests/fixtures/digital/make_fixtures.py` generates with the standard library, and an XLSX made the same way, MIT                                                                                                                                                                                                 |
-| **Credit**               | the authors in the tool's `CITATION.cff`, with their ORCIDs; licence MIT                                                                                                                                                                                                                                                                         |
-| **Closest Galaxy tools** | Galaxy's `markitdown` and `grobid` convert born-digital documents but write no ATRIUM record; DARIAH's `atrium_pdf_text_extraction`, on the instance, writes a PDF's text as page-based JSON                                                                                                                                                     |
+|                          |                                                                                                                                                                                                                                                                                                      |
+|--------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Workflow inputs**      | one born-digital file per job — `pdf`, `docx` or `xlsx` (ODT, ODS, RTF, DOC and XLS have no datatype on DARIAH's Galaxy); optionally the record to add to — `json`                                                                                                                                   |
+| **Parameters**           | page breaks in DOCX (`auto`, `explicit`, `none`); Markdown output                                                                                                                                                                                                                                    |
+| **Workflow outputs**     | the document record — `json`, with the pages that need OCR flagged; Markdown — `markdown`; paradata — `json`                                                                                                                                                                                         |
+| **Container**            | `ghcr.io/ufal/atrium-digital-convert-digital:<version>` — the command-line image (`api_util/digital_to_json.py`), light engine and headless LibreOffice; it runs the job script Galaxy hands it (the hub-canonical `container_entrypoint.py`). The Docling image is built locally, and not used here |
+| **Galaxy tool**          | `atrium_digital_convert` `1.4.5-beta+galaxy0`, in the hub's [`galaxy/`](https://github.com/ufal/atrium-project/tree/test/galaxy) folder with the workflow *ATRIUM born-digital documents to keywords*; for DARIAH's test Galaxy (<https://galaxy.acdh-dev.oeaw.ac.at/galaxy/>)                       |
+| **Compute**              | CPU                                                                                                                                                                                                                                                                                                  |
+| **Network**              | none: no models                                                                                                                                                                                                                                                                                      |
+| **Test data**            | four of the PDF and DOCX files `tests/fixtures/digital/make_fixtures.py` generates with the standard library, and an XLSX made the same way, MIT                                                                                                                                                     |
+| **Credit**               | the authors in the tool's `CITATION.cff`, with their ORCIDs; licence MIT                                                                                                                                                                                                                             |
+| **Closest Galaxy tools** | Galaxy's `markitdown` and `grobid` convert born-digital documents but write no ATRIUM record; DARIAH's `atrium_pdf_text_extraction`, on the instance, writes a PDF's text as page-based JSON                                                                                                         |
 
 ## Sources
 
-Read from `ufal/atrium-digital-convert` at release **`v1.4.0-beta`** (2026-10-29). Earlier readings
-were at `v1.3.0-beta` (2026-10-26), `v1.2.1-beta` (2026-10-19) and, before the move, `ufal/atrium-llm-enrich` at `v0.8.0`. This
-table records **provenance**, not a build instruction.
-The Galaxy sheet (2026-11-07) follows `v1.4.5-beta` and the tool's wrapper in the hub's `galaxy/` folder (#66).
+Read from `ufal/atrium-digital-convert` on its `test` branch, which carries release 2.0.0-beta, on 2026-11-21. Earlier
+readings were at `v1.4.0-beta` (2026-10-29), `v1.3.0-beta` (2026-10-26), `v1.2.1-beta` (2026-10-19) and, before the
+move, `ufal/atrium-llm-enrich` at `v0.8.0`. The Galaxy sheet (2026-11-07) follows `v1.4.5-beta` and the tool's
+wrapper in the hub's `galaxy/` folder. This table records **provenance**, not a build instruction.
 
-| Source                                                                                                                                                       | What was taken from it                                                    |
-|--------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
-| `README.md` §§ intro, Where it sits in the pipeline, Formats, What the record holds, The per-page assessment, Configuration, Docker, Paradata and provenance | purpose, the steps, the formats, the routes, the images, the licence rule |
-| `service/README.md` §§ Endpoints, Errors, Configuration, Limits, How it works; `service/api.py`, `service/stages.py`, `service/describe.py`                  | the HTTP service, the stage calls and their guard, the limits             |
-| `api_util/digital_to_json.py`, `digital_pdf.py`, `digital_text.py`, `digital_legacy.py`, `digital_report.py`, `json_to_md.py`                                | the reading, the checks, the headings, the routes, the Markdown           |
-| `para_config.txt`, `LICENSE`                                                                                                                                 | the licence components, the code licence                                  |
-| `.env.example`, `tool_limits.py`                                                                                                                             | the settings named on this page                                           |
-| `CONTRIBUTING.md` § Release History, `CITATION.cff`                                                                                                          | the releases, the move from llm-enrich                                    |
-| `tests/fixtures/MANIFEST.json`                                                                                                                               | test data                                                                 |
-| `DARIAH-ERIC/atrium-galaxy-tools`; `bgruening/galaxytools`                                                                                                   | the Galaxy analogues                                                      |
+| Source                                                                                                                        | What was taken from it                                            |
+|-------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
+| `README.md`, `docs/how-it-works.md`, `docs/reference/formats.md`                                                              | purpose, the two workflows, the verdicts, the formats, the routes |
+| `service/README.md` §§ Endpoints, Errors, Configuration, Limits, How it works; `service/api.py`                               | the HTTP service and its limits                                   |
+| `api_util/digital_to_json.py`, `docproc_writer.py`, `digital_pdf.py`, `digital_text.py`, `digital_legacy.py`, `json_to_md.py` | the reading, the checks, the docproc, the Markdown                |
+| `para_config.txt`, `LICENSE`                                                                                                  | the licence components, the code licence                          |
+| `.env.example`, `tool_limits.py`                                                                                              | the settings named on this page                                   |
+| `CONTRIBUTING.md` § Release History, `CITATION.cff`                                                                           | the releases, the move from llm-enrich                            |
+| `tests/fixtures/MANIFEST.json`                                                                                                | test data                                                         |
+| `DARIAH-ERIC/atrium-galaxy-tools`; `bgruening/galaxytools`                                                                    | the Galaxy analogues                                              |
