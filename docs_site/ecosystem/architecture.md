@@ -20,8 +20,9 @@ where the boundaries are.
 
 There is no monorepo and no git submodule. The seven repositories are deliberately separate,
 because the tools' dependency graphs cannot share an environment: page-classification needs
-PyTorch and a vision-model stack, ocr-postprocess is CPU heuristics, keyword-extract needs GPU LLM
-inference for its controlled kind. One environment for all of them would satisfy none.
+PyTorch and a vision-model stack, ocr-postprocess FastText, a small language model and LayoutReader,
+digital-convert LibreOffice and PDF libraries, keyword-extract KeyBERT and a language-model backend for its
+controlled kind. One environment for all of them would satisfy none.
 
 What holds them together is the hub, `atrium-project`, and it does so in two ways only — it
 **hands out copies of code**, and it **runs CI on their behalf**.

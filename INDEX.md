@@ -40,25 +40,25 @@ describes them.
 
 ## The hub's references, `docs/`
 
-| Document                                                                              | What it answers                                                                            |
-|---------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
-| [documentation-style.md](docs/documentation-style.md)                                 | how the documentation of all seven repositories is written and checked                     |
-| [ci_policy.md](docs/ci_policy.md)                                                     | when CI runs, what each check proves, how a check is added                                 |
-| [docker_gha.md](docs/docker_gha.md)                                                   | the Docker and GitHub Actions workflows, images and probes                                 |
-| [release_trust.md](docs/release_trust.md)                                             | tags, rulesets and pins, and how a release is tagged                                       |
-| [shared_components.md](docs/shared_components.md)                                     | who owns each shared file, and how a consumer adopts a change                              |
-| [document_schema.md](docs/document_schema.md)                                         | the record schema 2.0, reading 1.x records, the freeze of `doc-schema-v1`                  |
-| [paradata_schema.md](docs/paradata_schema.md)                                         | the paradata schema 3.0                                                                    |
-| [rocrate_export.md](docs/rocrate_export.md)                                           | the RO-Crate export and one run's `CreateAction`                                           |
-| [skos_strategy.md](docs/skos_strategy.md)                                             | the SKOS registry of the ATRIUM vocabulary                                                 |
-| [agent_skill_strategy.md](docs/agent_skill_strategy.md)                               | the service contract every tool meets, and the rules for skill branches                    |
-| [k8s_deployment.md](docs/k8s_deployment.md)                                           | the reference Kubernetes manifest, its settings and known limits                           |
-| [k8s_acceptance_runbook.md](docs/k8s_acceptance_runbook.md)                           | the acceptance of the six services on a receiving cluster                                  |
-| [skill_acceptance_runbook.md](docs/skill_acceptance_runbook.md)                       | the acceptance of the six skill branches                                                   |
-| [proposals/rights-and-policy.md](docs/proposals/rights-and-policy.md)                 | the open proposal of a per-document processing policy                                      |
-| [evaluation/du-benchmarks-and-models.md](docs/evaluation/du-benchmarks-and-models.md) | the research note on document-understanding benchmarks and models, for #22 after the pilot |
-| [docker_gha_roadmap.md](docs/docker_gha_roadmap.md)                                   | the closed Docker and CI plan of August to October 2026, kept as history                   |
-| `arub-p_contacts.md`                                                                  | partner contacts, internal                                                                 |
+| Document                                                                              | What it answers                                                                               |
+|---------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| [documentation-style.md](docs/documentation-style.md)                                 | how the documentation of all seven repositories is written and checked                        |
+| [ci_policy.md](docs/ci_policy.md)                                                     | when CI runs, what each check proves, how a check is added                                    |
+| [docker_gha.md](docs/docker_gha.md)                                                   | the Docker and GitHub Actions workflows, images and probes                                    |
+| [release_trust.md](docs/release_trust.md)                                             | tags, rulesets and pins, and how a release is tagged                                          |
+| [shared_components.md](docs/shared_components.md)                                     | who owns each shared file, and how a consumer adopts a change                                 |
+| [document_schema.md](docs/document_schema.md)                                         | the record schema 2.0, reading 1.x records, the freeze of `doc-schema-v1`                     |
+| [paradata_schema.md](docs/paradata_schema.md)                                         | the paradata schema 3.0                                                                       |
+| [rocrate_export.md](docs/rocrate_export.md)                                           | the RO-Crate export and one run's `CreateAction`                                              |
+| [skos_strategy.md](docs/skos_strategy.md)                                             | the SKOS registry of the ATRIUM vocabulary                                                    |
+| [agent_skill_strategy.md](docs/agent_skill_strategy.md)                               | the service contract every tool meets, and the rules for skill branches                       |
+| [k8s_deployment.md](docs/k8s_deployment.md)                                           | the reference Kubernetes manifest, its settings and known limits                              |
+| [k8s_acceptance_runbook.md](docs/k8s_acceptance_runbook.md)                           | the acceptance of the six services on a receiving cluster                                     |
+| [skill_acceptance_runbook.md](docs/skill_acceptance_runbook.md)                       | the acceptance of the six skill branches                                                      |
+| [proposals/rights-and-policy.md](docs/proposals/rights-and-policy.md)                 | the closed proposal on run evidence, processing policy and output rights, and what came of it |
+| [evaluation/du-benchmarks-and-models.md](docs/evaluation/du-benchmarks-and-models.md) | the research note on document-understanding benchmarks and models, for #22 after the pilot    |
+| [docker_gha_roadmap.md](docs/docker_gha_roadmap.md)                                   | the closed Docker and CI plan of August to October 2026, kept as history                      |
+| `arub-p_contacts.md`                                                                  | partner contacts, internal                                                                    |
 
 ## Decision records, `docs/decisions/`
 

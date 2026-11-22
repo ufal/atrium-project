@@ -108,10 +108,9 @@ artifact the smoke test should track rather than freeze.
 
 ## Why the DOC_LINE_CATEG bridge exists
 
-alto-postprocess's classify stage (`classify_TEXT.py`, which replaced `langID_classify.py`) scores
-perplexity on a GPU and **aborts** when CUDA is unavailable (`classify_TEXT.py:431-440`), because on CPU
-it is ~100–400× slower. A GitHub-hosted runner has no GPU, so Stage 2 runs with `SKIP_CLASSIFY = true`
-and the committed CSV stands in for that stage's output: Stage 4 (nlp-enrich) reads it through
-`INPUT_TABLES_DIR`, and Stage 5 (llm-enrich) takes it as `--input`. The bridge goes away when the
-classify stage has a GPU lane to run in (deferred with
-[#40](https://github.com/ufal/atrium-project/issues/40)).
+History: before record schema 2.0 the lane started from the ALTO. ocr-postprocess's batch classify stage (`classify_TEXT.py`, which
+replaced `langID_classify.py`) scores perplexity on a GPU and **aborts** when CUDA is unavailable
+(`classify_TEXT.py:431-440`), because on CPU it is ~100–400× slower. A GitHub-hosted runner has no GPU, so
+Stage 2 ran with `SKIP_CLASSIFY = true` and the committed CSV stood in for that stage's output: Stage 4
+(nlp-enrich) read it through `INPUT_TABLES_DIR`, and Stage 5 (keyword-extract; llm-enrich until 24 October
+2026) took it as `--input`.
