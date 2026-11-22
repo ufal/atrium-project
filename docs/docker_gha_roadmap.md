@@ -1,10 +1,12 @@
 # ATRIUM GHA + Docker — Refinement & Expansion Roadmap
 
-> **Repository names (2026-10-01).** This document predates the repository moves of atrium-project#72 and
-> uses the names of its time: `alto-postprocess` is now `ocr-postprocess`; `llm-enrich` split into
-> `keyword-extract` (its keyword stage, with the keyword extraction of `nlp-enrich`) and `digital-convert`
-> (the born-digital converter). The old repositories are superseded and, since 2026-10-19, archived (read-only). Read the names below through that map;
-> the current ones are in [`docs_site/ecosystem/repository-map.md`](../docs_site/ecosystem/repository-map.md).
+> **In short.** The plan of August–September 2026 for the ecosystem's GitHub Actions and Docker set-up: a
+> findings register (the E, H, B, R and W codes that other pages cite), the cross-cutting decisions, and the
+> waves that executed them. It was closed on 2026-09-29: every wave executed or retired (§10). It is kept as
+> the record; [`docker_gha.md`](docker_gha.md) says what is true now. Two parts no longer hold: the schedules
+> of §2.4 and the branch-push channels of §3.2 were replaced on 2026-11-21 by CI on pull requests and
+> releases only ([`ci_policy.md`](ci_policy.md), "The rule"). It names the repositories as they were then:
+> `alto-postprocess` is now `ocr-postprocess`, and `llm-enrich`'s keyword stage is now `keyword-extract`.
 
 > **Status:** Closed out 2026-09-29 — every wave executed or retired, see **§10** ([#69](https://github.com/ufal/atrium-project/issues/69)) · **Date:** 2026-08-04 · **Issue:** [#18](https://github.com/ufal/atrium-project/issues/18), then [#69](https://github.com/ufal/atrium-project/issues/69)
 > **Companion:** [`docker_gha.md`](docker_gha.md) is the *current-state reference*. This file is the *plan*.
@@ -130,6 +132,8 @@ Four workflow families, ~1,020 lines, no hub reusable:
 
 ### 2.4 Branch policy, schedules and CI spend
 
+> **Superseded on 2026-11-21:** no workflow runs on a schedule except the weekly security scans, and none on a branch push ([`ci_policy.md`](ci_policy.md), "The rule").
+
 | #      | Finding                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Evidence                                                                                                                                                                 |
 |--------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **S1** | **Zero of ~20 branches are protected**, in any of the six repositories. Not just the hub.                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `list_branches` on all six: every entry `"protected": false`                                                                                                             |
@@ -185,6 +189,8 @@ nlp-enrich's own `docker.yml` comment documents. Changing the publisher instead 
 already in the registry.
 
 ### 3.2 Tag channels
+
+> **Superseded on 2026-11-21 in one point:** `:test` is published when a pull request is merged into `test`, not on a push ([`docker_gha.md`](docker_gha.md) §3.2).
 
 | Channel                 | Published on                            | Meaning                              |
 |-------------------------|-----------------------------------------|--------------------------------------|
@@ -402,7 +408,7 @@ both W1 (to hold the result) and W3 (to validate it without cutting a release).
 
 - **An umbrella orchestration compose.** Ruled out on 2026-06-12 (motyc): *"I believe we won't need any
   overall Docker wrapper, i.e. we need to be able to run the individual containers with the tools reachable
-  via API."* W6's healthcheck/`/health` work serves that requirement instead. `plan_repo_review.md` still
+  via API."* W6's healthcheck/`/health` work serves that requirement instead. `plan_repo_review.md` (now `decisions/repo-review-2026-07.md`) still
   references a planned `compose/docker-compose.pipeline.yml`; that reference should be removed.
 - **gitleaks.** Dropped on 2026-07-30 after going unadopted; the blocker was policy, not tooling, and
   GitHub-native secret scanning with push protection covers the same ground without an org-owned

@@ -1,5 +1,8 @@
 # ATRIUM XML translator: Galaxy tool
 
+**Status:** handed to DARIAH for testing; further Galaxy work is parked during the AMČR pilot. The tool runs the
+1.7.8-beta batch image, which predates release 2.0.0-beta.
+
 `translator.xml` runs the batch image of [ufal/atrium-translator](https://github.com/ufal/atrium-translator) at
 release `1.7.8-beta` (`ghcr.io/ufal/atrium-translator:1.7.8-beta`). It translates one XML document per job, an
 AMČR metadata record or an ALTO page, and writes it back with its structure unchanged. A collection maps over the
@@ -51,4 +54,4 @@ and its template field list, `amcr-fields.example.txt` (MIT).
 ## Licences
 
 The code is MIT. The fastText model is CC BY-NC 4.0; the paradata of each run lists the components and their
-licences.
+licences, and no licence of an output is computed.

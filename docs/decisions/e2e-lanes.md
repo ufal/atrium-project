@@ -15,6 +15,20 @@ a quote are as of when it was written; the workflow is the authority on what hol
 What each lane proves, and its gaps, is in the responsibility map of [`ci_policy.md`](../ci_policy.md);
 the image side of both lanes is in [`docker-tool-reusable.md`](docker-tool-reusable.md).
 
+## 2026-11-21 — hub pull requests and dispatch, no push
+
+**Decision.** Both lanes run on hub pull requests that touch their files (the `paths:` of each
+workflow), by dispatch, and, for the scanned route, when another workflow calls it. Neither runs on a push
+to `main` any more. A pull request runs the `:test` images, as a push did. all-repos-smoke runs by dispatch
+only, and the lane-failure issue steps of the formerly scheduled lanes are gone.
+**Status:** in the hub's `test` branch.
+**Why.** The working agreement of 11 November 2026: CI on pull requests and releases, no scheduled runs
+apart from security, no direct pushes to `main`.
+**Consequence.** A change to a lane is tested before it merges, not after; a lane that nothing touched does
+not run, so a release is preceded by a dispatch of both lanes at `test` (`ci_policy.md`, Releases). The sections [What a pipeline run tests](#what-a-pipeline-run-tests),
+[Lane failure issue](#lane-failure-issue), [Schedule](#schedule) and
+[Image channel by event](#image-channel-by-event) describe the push and schedule design this replaces.
+
 ## 2026-11-16 — the mixed document and the record joined to its docproc (atrium-project#84)
 
 - **The mixed document (H6).** ocr-postprocess builds a record from the ATR's docproc and digital-convert's

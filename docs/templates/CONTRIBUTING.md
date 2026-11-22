@@ -1,9 +1,8 @@
 # Contributing to «Repository Display Name» (ATRIUM)
 
 Welcome! Thank you for your interest in contributing. This repository [^repo] provides
-«one-sentence statement of what the tool does and where it sits in the ATRIUM pipeline:
-page-classification → ocr-postprocess → nlp-enrich → keyword-extract → translator, or
-digital-convert for born-digital files».
+«one sentence: what the tool does, and its step in the AMČR pipeline. The route itself is on the hub's
+[Pipelines](https://ufal.github.io/atrium-project/pipelines/) page; do not retell it here.»
 
 This document is for contributors: the release history, the branches, the pull request and
 commit formats, the code and test conventions. What the tool does is in `README.md`; how to set
@@ -29,9 +28,10 @@ fails the build otherwise. The API service reports this same value (see Code
 Conventions → *Single source of truth for the version*). Update `date-released:` in
 `CITATION.cff` to the actual release date on every version bump.
 
-**Tagging.** Tag a release only once its version bump is pushed, with the hub's helper, which refuses a tag the
-release gate would fail and pushes that one tag alone: `python3 ../atrium-project/scripts/tag_release.py
-vX.Y.Z-beta` (hub `docs/release_trust.md`, Tagging a release). If a tag push starts no run of `release.yml`, run
+**Tagging.** Tag a release only once the pull request with its version bump is merged into `test`, with the
+hub's helper. It refuses a tag the release gate would fail or whose pull request's checks did not pass, and
+pushes that one tag alone: `python3 ../atrium-project/scripts/tag_release.py vX.Y.Z-beta` (hub
+`docs/release_trust.md`, Tagging a release). If a tag push starts no run of `release.yml`, run
 that workflow on the tag (*Actions → «release workflow name» → Run workflow*, the tag as the ref): on a tag, that
 run is the release; on a branch, it is the dry run.
 
@@ -39,10 +39,15 @@ run is the release; on a branch, it is the dry run.
 
 ## Branches & Environments
 
-| Branch   | Environment          | Rule                                                                            |
-|----------|----------------------|---------------------------------------------------------------------------------|
-| `test`   | Staging              | Base for all development. Always branch from `test`.                            |
-| `master` | Stable / Integration | Merged exclusively by a human reviewer. Do not open PRs directly into `master`. |
+| Branch   | Environment          | Rule                                                                                      |
+|----------|----------------------|-------------------------------------------------------------------------------------------|
+| `test`   | Staging              | Base for all development. Always branch from `test`; changes arrive by pull request only. |
+| `master` | Stable / Integration | Merged exclusively by a human reviewer. Do not open PRs directly into `master`.           |
+
+**Working agreement.** One pull request per issue, with a description, reviewed, and squash-merged. Nobody
+pushes directly to `test` or `master`. Releases are deliberate: work is batched until it changes something
+for users, and each release has curated notes. CI runs on pull requests and releases only
+([`ci_policy.md`](https://github.com/ufal/atrium-project/blob/main/docs/ci_policy.md)).
 
 ```text
 test    ←  feature-<name>
@@ -70,7 +75,8 @@ master  ←  (humans only, after test stabilises)
    ```
 3. **Implement** following the code conventions below.
 4. **Run the fast checks** (see Testing) before every commit.
-5. **Open a Pull Request** targeting `test`. Use a **Draft PR** while work is in progress.
+5. **Open a Pull Request** targeting `test`, one per issue. Use a **Draft PR** while work is in progress.
+6. **After review,** the pull request is squash-merged; delete the branch.
 
 ---
 
@@ -151,15 +157,16 @@ pytest -m "not slow" --tb=short           # 3. fast lane — no models, no GPU, 
 The fast lane requires **no ML models, GPU, or network** — those tests are marked
 `@pytest.mark.slow` and excluded by default.
 ```bash
-pip install -r requirements-test.txt                     # pytest>=8.0, pytest-cov only
+pip install -r requirements-test.txt                     # the test dependencies
 pytest -m "not slow" --tb=short                          # before every commit
 pytest -m "not slow" --cov=. --cov-report=term-missing   # with coverage
 pytest --tb=short                                        # full suite (needs model setup)
 ```
 
-**Shared, drop-in test files (keep byte-identical across repos):**
-* `tests/test_paradata.py` — `ParadataLogger`, `_sanitise`
-* `tests/test_para_licenses.py` — `normalise_license`, `component_terms` (facts only; no licence is computed)
+**Shared, drop-in test files (keep byte-identical across repos):** the `tests/test_*.py` entries of the hub's
+`docs/templates/shared/MANIFEST.json`, among them `tests/test_para_licenses.py` (`normalise_license`,
+`component_terms`: facts only, no licence is computed), `tests/test_schema_freeze.py`,
+`tests/test_env_contract.py`, `tests/test_limits_contract.py` and `tests/test_openapi_contract.py`.
 
 **Rules:**
 * Any test that loads a checkpoint, hits the network, or needs a GPU **must** be
@@ -177,7 +184,7 @@ against the shared `ruff.toml` template before opening a PR.
 ---
 
 ## Shared ("drop-in") code
-The 24 files of `ufal/atrium-project/docs/templates/shared/MANIFEST.json` (`atrium_paradata.py`,
+The 26 files of `ufal/atrium-project/docs/templates/shared/MANIFEST.json` (`atrium_paradata.py`,
 `para_licenses.py`, the record, service and limits modules, their schemas and contract tests) are
 **canonical** in the hub and copied verbatim into each tool repository. Files copied from another
 tool (the document reader, the TEITOK reader) and the bundled vocabulary are pinned the same way.

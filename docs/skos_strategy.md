@@ -1,10 +1,8 @@
 # ATRIUM SKOS Strategy — vocabularies as an internal alignment framework
 
-> **Repository names (2026-10-01).** This document predates the repository moves of atrium-project#72 and
-> uses the names of its time: `alto-postprocess` is now `ocr-postprocess`; `llm-enrich` split into
-> `keyword-extract` (its keyword stage, with the keyword extraction of `nlp-enrich`) and `digital-convert`
-> (the born-digital converter). The old repositories are superseded and, since 2026-10-19, archived (read-only). Read the names below through that map;
-> the current ones are in [`docs_site/ecosystem/repository-map.md`](../docs_site/ecosystem/repository-map.md).
+> **Older names.** Parts of this document were written before the repositories moved on 2026-10-01:
+> `alto-postprocess` is now `ocr-postprocess`, and the keyword stage of `llm-enrich` is now `keyword-extract`.
+> §§6–8 are the dated record of the defects found and fixed; §§3–5 and §9 describe the current rules.
 
 _Issue: [ufal/atrium-project#51](https://github.com/ufal/atrium-project/issues/51) · Milestone: Q3 [WP8 / WP7] · Date: 2026-09-08_
 _Status: **normative for the vocabulary layer of all six repos.** Supersedes
@@ -15,11 +13,11 @@ _Companion documents: [`document_schema.md`](document_schema.md) (the record the
 Decisions fixed at planning time:
 
 1. **No namespace is requested, from here or anywhere.** Issue #51 asked for a DARIAH Vocabs
-   namespace. @motyc's answer removed that from this repo's plate for ~18 months and pointed at
+   namespace. AMČR's answer removed that from this repo's plate for ~18 months and pointed at
    what is left: *"This does not prevent using SKOS as framework to align the data internally. It
    is definitely desirable."* That sentence is this document's entire mandate.
 2. **Source concepts keep the sources' URIs.** AMCR and TEATER already mint resolvable
-   identifiers. ATRIUM mints nothing for them — those are precisely the "current IDs" @motyc says
+   identifiers. ATRIUM mints nothing for them — those are precisely the "current IDs" that AMČR says
    *"will become PID references to the published SKOS compliant version"*.
 3. **ATRIUM mints URIs only for what ATRIUM authors**, rooted in one swappable constant.
 4. **Nothing is published.** This is an internal alignment framework. No external service is
@@ -27,18 +25,18 @@ Decisions fixed at planning time:
 
 ## 1. Why this document exists
 
-Five tools exchange one JSON record, and several of its fields carry controlled terms **as bare
+The tools exchange one JSON record, and several of its fields carry controlled terms **as bare
 strings**: `pages[].category`, `page_categories`, `lines[].categ`, `pages[].quality_band`,
 `entities[].type_teitok`, `entities[].type_cnec`, and `enrichment.items[].teater_category`, which
 holds an AMČR/TEATER source label rather than an ATRIUM term ([V-5](#v-5--teater_category-is-a-source-label-closed)). Each label
 set is declared in a different repository in a different form — a Python list, a set of `return`
 statements, a JSON config, a dict literal — and until now nothing reconciled them.
 
-That is not a tidiness complaint. It has produced live defects, catalogued in [§6](#6-defect-register).
-The most instructive: `lines[].categ` has **two** authorised originators emitting **disjoint** label
-sets, and its only consumer filters on one of them — so on the OCR path the filter matches nothing
-and garbage OCR lines reach the model. Nothing failed. No validator complained. The field is typed
-`string` and every value was a valid string.
+That was not a tidiness complaint. It had produced live defects, catalogued in [§6](#6-defect-register).
+The most instructive, in the 1.x record: `lines[].categ` had **two** authorised writers emitting
+**disjoint** label sets, and its only consumer filtered on one of them — so on the OCR path the filter matched
+nothing and garbage OCR lines reached the model. Nothing failed. No validator complained. The field was typed
+`string` and every value was a valid string. Record schema 2.0 has one writer of `categ`, the record builder.
 
 SKOS is the right frame for this because the problem is not serialisation, it is **meaning**: which
 labels exist, which are the same thing, which is broader than which, and which external authority a
@@ -106,7 +104,7 @@ non-resolving `urn:` would make the eventual move a rewrite of stored values ins
 **Registering the w3id redirect is optional and blocks nothing.** These URIs are identifiers first
 and locations second; they identify correctly before any redirect exists. Registration is a
 one-file pull request against the `w3id.org` repository whenever someone wants dereferencing, and
-it is *not* a namespace request in the sense @motyc ruled out — it reserves a redirect, not a
+it is *not* a namespace request in the sense AMČR ruled out — it reserves a redirect, not a
 vocabulary, and commits ARUP/ARUB to nothing.
 
 ### 3.3 What ATRIUM may and may not name
@@ -116,7 +114,7 @@ vocabulary, and commits ARUP/ARUB to nothing.
 > it, ATRIUM may name **its own harvest** (`atrium:scheme/amcr-harvest`) — an artifact ATRIUM
 > really does own — but never the concepts inside it.
 
-This is what keeps @motyc's constraint satisfied by construction. There is no ATRIUM identifier for
+This is what keeps AMČR's constraint satisfied by construction. There is no ATRIUM identifier for
 an AMCR term to migrate off, because one was never created.
 
 ## 4. The registry — `atrium_vocab.py`

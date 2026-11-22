@@ -10,8 +10,10 @@ issue: 57
 
 The Institute of Formal and Applied Linguistics (ÚFAL, Charles University) builds six tools for
 **ATRIUM**. Together they take archival documents, such as typewritten reports, handwritten field notes,
-photographs, drawings and born-digital files, and turn them into structured, searchable records. This
-site explains what each tool does and how they fit together.
+photographs, drawings and born-digital files, and turn them into structured, searchable records. In the
+AMČR pilot they process the documents of the Archaeological Map of the Czech Republic (AMČR), with ARÚP, the
+Institute of Archaeology in Prague. This site explains what each tool does and how they fit together. Terms
+such as ATR, docproc and paradata are explained in the [Glossary](glossary.md).
 
 ## What ATRIUM is
 
@@ -28,14 +30,14 @@ repositories in all.
 
 Find the line that describes you:
 
-| You are                              | Start with                                | Then                                                                                                                        |
-|--------------------------------------|-------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| archive or collection staff          | [For archives](for-archives.md)           | [Licences and paradata](ecosystem/licences.md) · [Glossary](glossary.md)                                                    |
-| running the services                 | [Operations](operations.md)               | [S2 pilot handover](pilot.md), which links each service's runbook                                                           |
-| calling a tool from your own code    | [Workflows](workflows/index.md)           | [The document contract](ecosystem/document-contract.md) · [Schemas](contracts/schemas.md) · [Agent skills](agent-skills.md) |
-| developing the tools                 | [Architecture](ecosystem/architecture.md) | [Contributing standards](contributing-standards.md) · [Development history](development-history.md)                         |
-| managing or coordinating the project | [Status](status.md)                       | [S2 pilot handover](pilot.md) · [Repository map](ecosystem/repository-map.md)                                               |
-| judging the methods and results      | [Pipelines](pipelines.md)                 | each tool's evaluation pages, from the documentation map in its README                                                      |
+| You are                              | Start with                                                 | Then                                                                                                                        |
+|--------------------------------------|------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| archive or collection staff          | [For archives](for-archives.md)                            | [Licences and paradata](ecosystem/licences.md) · [Glossary](glossary.md)                                                    |
+| running the services                 | [Operations](operations.md)                                | [Production pilot](pilot.md), which links each service's runbook                                                            |
+| calling a tool from your own code    | each tool's README, whose quick start runs from a checkout | [Workflows](workflows/index.md) · [The document contract](ecosystem/document-contract.md) · [Agent skills](agent-skills.md) |
+| developing the tools                 | [Architecture](ecosystem/architecture.md)                  | [Contributing standards](contributing-standards.md) · [Development history](development-history.md)                         |
+| managing or coordinating the project | [Status](status.md)                                        | [Production pilot](pilot.md) · [Repository map](ecosystem/repository-map.md)                                                |
+| judging the methods and results      | [Pipelines](pipelines.md)                                  | each tool's evaluation pages, from the documentation map in its README                                                      |
 
 Or by question:
 
@@ -62,8 +64,9 @@ Or by question:
 
     ---
 
-    Sorts each scanned page into one of **eleven page types**. A person or a script then decides
-    whether the page needs OCR, handwriting recognition, table extraction or image handling.
+    Sorts each scanned page into one of **eleven page types**, which say what the page holds: typed,
+    printed or handwritten text, tables, drawings, photographs. In the AMČR pipeline it classifies the
+    pages that go to the ATR, beside it; the categories describe the pages and route nothing.
 
     [Workflow](workflows/page-classification.md) · [Documentation](https://github.com/ufal/atrium-page-classification/blob/test/README.md#documentation) · [Landing page](https://ufal.github.io/atrium-page-classification/) · [Source](https://github.com/ufal/atrium-page-classification)
 
@@ -71,9 +74,9 @@ Or by question:
 
     ---
 
-    Checks OCR output line by line. Every line gets its language and a quality label, so you know
-    which lines to use, correct or send to OCR again. It reads ALTO and the other common OCR formats,
-    and PDF, office and text files.
+    Builds the document record from docproc, the page layout that the ATR or digital-convert wrote,
+    and grades every text line: its language and a quality label, so you know which lines to use. For
+    research collections it also reads ALTO, other OCR formats and text-bearing files.
 
     [Workflow](workflows/ocr-postprocess.md) · [Documentation](https://github.com/ufal/atrium-ocr-postprocess/blob/test/README.md#documentation) · [Landing page](https://ufal.github.io/atrium-ocr-postprocess/) · [Source](https://github.com/ufal/atrium-ocr-postprocess)
 
@@ -81,8 +84,9 @@ Or by question:
 
     ---
 
-    Translates ALTO pages and AMČR metadata records **in place**. Every tag, namespace and coordinate
-    stays; only the text changes.
+    Translates the free-text fields of AMČR metadata records **in place**, apart from the document
+    pipeline: a job run when a record is archived. Every tag and namespace stays; only the text
+    changes. ALTO pages can be translated too, for research.
 
     [Workflow](workflows/translator.md) · [Documentation](https://github.com/ufal/atrium-translator/blob/test/README.md#documentation) · [Landing page](https://ufal.github.io/atrium-translator/) · [Source](https://github.com/ufal/atrium-translator)
 
@@ -90,9 +94,10 @@ Or by question:
 
     ---
 
-    Adds each word's base form, part of speech and grammar, and the names of people, places and
-    organisations, using LINDAT's UDPipe and NameTag. The result is a TEITOK file that keeps every
-    word's place on the page.
+    Reads the record and adds each word's base form, part of speech and grammar, and the names of
+    people, places and organisations, using the UDPipe and NameTag services of LINDAT, the Czech
+    language-resource infrastructure. It also writes a TEITOK file that keeps every word's place on
+    the page.
 
     [Workflow](workflows/nlp-enrich.md) · [Documentation](https://github.com/ufal/atrium-nlp-enrich/blob/test/README.md#documentation) · [Landing page](https://ufal.github.io/atrium-nlp-enrich/) · [Source](https://github.com/ufal/atrium-nlp-enrich)
 
@@ -109,8 +114,9 @@ Or by question:
 
     ---
 
-    Reads born-digital files (PDF, DOCX, ODT, ODS, XLSX, RTF; DOC and XLS through LibreOffice) into the
-    document record, without OCR. Pages whose text cannot be read are marked, so only those go to OCR.
+    Reads born-digital files (PDF and office documents on their pages; sheets and text files as text)
+    into docproc, without OCR, and gives every page a verdict on its text layer. If any page needs text
+    recognition, the whole document goes through the ATR, with those pages marked.
 
     [Workflow](workflows/digital-convert.md) · [Documentation](https://github.com/ufal/atrium-digital-convert/blob/test/README.md#documentation) · [Landing page](https://ufal.github.io/atrium-digital-convert/) · [Source](https://github.com/ufal/atrium-digital-convert)
 
@@ -128,27 +134,35 @@ Or by question:
 
 ```mermaid
 flowchart LR
-  SCAN[/"scanned pages"/] --> PC[page-classification]
-  PC -. "routing decision" .-> OCR["OCR<br/>(outside the pipeline)"]
-  OCR --> ALTO[ocr-postprocess]
-  DOCS[/"office and text files"/] -. "text-lines" .-> ALTO
-  BORN[/"born-digital PDF, DOCX"/] --> DC[digital-convert]
-  ALTO -- "PAGE_ALTO/" --> TR[translator]
-  ALTO -- "DOC_LINE_CATEG/" --> NLP[nlp-enrich]
+  UP[/"AMČR upload"/] --> DC[digital-convert]
+  UP -- "an image" --> ATR["the ATR<br/>(AIS CR)"]
+  DC -- "a page needs the ATR" --> ATR
+  DC -. "those pages" .-> PC[page-classification]
+  DC -- "docproc" --> OP[ocr-postprocess]
+  ATR -- "docproc" --> OP
+  PC -. "page categories" .-> OP
+  OP -- "record" --> NLP[nlp-enrich]
   NLP -- "record" --> KW[keyword-extract]
-  DC -- "record" --> KW
-  TR --> EN[/"English editions"/]
+  ARC[/"an archived record"/] --> TR["translator<br/>metadata-en"]
 ```
+
+digital-convert gives every page of a PDF or office file a verdict on its text layer. If any page needs
+text recognition, the whole document goes through the ATR, AIS CR's text-recognition service, and
+page-classification classifies those pages beside it. ocr-postprocess builds the record from the layout,
+docproc, and nlp-enrich and keyword-extract add to it. A step that cannot finish fails the job, and AMČR
+stores nothing of it. The translator runs apart, when a record is archived. The route in full:
+[Pipelines](pipelines.md#the-route-through-the-pipeline).
 
 **Six tools, each in its own repository.** Each tool is a command-line program and an HTTP service built
 from the same code. Each ships as container images. The tools need very different environments: a
 vision-model stack, CPU rules, remote translation services, GPU language models. So they are not
 combined into one program.
 
-**One record per document.** A JSON file, `<doc_id>.document.json`, ties the stages together. Each stage
-reads it, adds the one block it owns, and passes it on. By the end it holds the page categories, the
-text, the translation reference, the entities and the keywords. It also records which program, at which
-version and with which components, wrote each part. See [The document contract](ecosystem/document-contract.md).
+**One record per document.** A JSON file, `<doc_id>.document.json`, ties the stages together.
+ocr-postprocess builds it, and each later stage adds the blocks it owns: by the end it holds the pages, the
+text lines, the page categories, the linguistic layer, the entities and the keywords. It holds no run data:
+what each run read, wrote and used is in its paradata, kept beside each output. See
+[The document contract](ecosystem/document-contract.md).
 
 **One hub.** `atrium-project` holds the code every tool shares: the record, the paradata, the licence
 catalogue, the vocabulary and the service contract. It hands out identical copies of that code, runs the
@@ -156,8 +170,8 @@ checks every tool calls, and runs the end-to-end test of all the tools together.
 [Architecture](ecosystem/architecture.md).
 
 **Built here, run by the partners.** ÚFAL builds, tests and publishes the container images. The partner
-institutes of archaeology run them on their own infrastructure, next to their own collections. See
-[Operations](operations.md).
+institutes of archaeology run them on their own infrastructure, next to their own collections: in the pilot,
+AMČR's pipeline calls them. See [Operations](operations.md).
 
 ## About this site
 

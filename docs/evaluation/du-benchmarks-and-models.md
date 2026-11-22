@@ -36,8 +36,8 @@ the vision step: they cost less, and their characters are exact.
   built by ocr-postprocess. A VLM route would be a separate decision after the pilot, measured
   against that route.
 - Choosing the ATR's OCR engine belongs to AMČR's own evaluation.
-- In the pilot, page categories are an optional weak signal and never choose a route (output
-  contract of 12 November 2026, D33). Here they only stratify the gold set and the scores.
+- In the pilot, page categories are an optional weak signal and never choose a route (ARÚP's output
+  contract of 12 November 2026). Here they only stratify the gold set and the scores.
 - The key-information JSON is a benchmark output, not a record block. The record has no `forms`
   block.
 

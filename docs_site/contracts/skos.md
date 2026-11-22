@@ -31,12 +31,12 @@ It is an internal alignment framework, and deliberately modest:
   prerequisite for any of it.
 * **No namespace was requested.** A request for a DARIAH vocabulary namespace was set aside as a
   long-horizon item; using SKOS to align the data internally was judged worth doing without it.
-* **Source vocabularies keep their own URIs.** AMCR and TEATER already mint resolvable identifiers,
+* **Source vocabularies keep their own URIs.** AMČR and TEATER already mint resolvable identifiers,
   and ATRIUM does not re-mint them.
 * **ATRIUM mints URIs only for what it authors** — and roots them all in one constant, so the day a
   real namespace exists, one line changes.
 
-The registry is `atrium_vocab.py`, one of the [24 shared files](../ecosystem/architecture.md#what-is-canonical-and-what-is-vendored),
+The registry is `atrium_vocab.py`, one of the [26 shared files](../ecosystem/architecture.md#what-is-canonical-and-what-is-vendored),
 vendored byte-identically into both documented tools.
 
 ## How a URI is minted
@@ -155,20 +155,21 @@ validate_labels("page-category", ["TEXT", "Text", "Plate"])
 
 The translator does **not** import `atrium_vocab` and writes no field that carries a scheme. Its
 controlled vocabulary is something else: a **translation glossary**,
-`data_samples/vocabulary.csv`, with five columns — `source_lemma,target_translation,source,source_id,uri`
-— harvested by `load_vocab.py` from AMCR (over OAI-PMH) and TEATER (over GraphQL). The
+`data_samples/vocabulary.csv`, with six columns — `source_lemma,target_translation,source,source_id,uri,description`
+— built by `load_vocab.py` from keyword-extract's vocabulary release, or harvested from AMČR (over OAI-PMH) and
+TEATER (over GraphQL). The
 `source_id` and `uri` columns point back at the source vocabulary's own concept — for example
-`https://api.aiscr.cz/id/HES-000497` for AMCR's *(polo)zemnice*, "pit house" — so a protected
+`https://api.aiscr.cz/id/HES-000497` for AMČR's *(polo)zemnice*, "pit house" — so a protected
 term stays traceable without ATRIUM minting a URI for it. The glossary protects terms during
 translation; it does not label anything in the record. See
 [translator → Guide](https://github.com/ufal/atrium-translator/blob/test/docs/usage.md#use-a-vocabulary).
 
 ## "`broader` means two things"
 
-`skos_strategy.md` §5.2 records a modelling decision about the **source** vocabularies: AMCR's
+`skos_strategy.md` §5.2 records a modelling decision about the **source** vocabularies: AMČR's
 `hierarchie_vyse` edges all cross from one scheme to another and so become `skos:related`, while
 TEATER's `broader` edges stay within one scheme and become real `skos:broader`. That concerns the
-vocabularies keyword-extract builds from AMCR and TEATER. **It does not touch `page-category`**, which
+vocabularies keyword-extract builds from AMČR and TEATER. **It does not touch `page-category`**, which
 asserts no `broader` at all.
 
 ## Getting the vocabulary

@@ -1,5 +1,8 @@
 # ATRIUM NLP enrichment: Galaxy tool
 
+**Status:** handed to DARIAH for testing; further Galaxy work is parked during the AMČR pilot. The tool runs the
+1.3.4-beta batch image, which predates record schema 2.0 of release 2.0.0-beta.
+
 `nlp_enrich.xml` runs the batch image of [ufal/atrium-nlp-enrich](https://github.com/ufal/atrium-nlp-enrich) at
 release `1.3.4-beta` (`ghcr.io/ufal/atrium-nlp-enrich:1.3.4-beta`). It annotates the text lines of one Czech document
 per job with LINDAT UDPipe 2 and NameTag 3 and, with the document's ALTO, writes TEITOK with each word's position. A
@@ -53,4 +56,4 @@ says), `CTX000000006.lines.csv` (the ocr-postprocess wrapper's output for its `C
 ## Licences
 
 The code is MIT; the UDPipe and NameTag models are CC BY-NC-SA. The paradata of each run lists the components and
-their licences.
+their licences; no licence of an output is computed.

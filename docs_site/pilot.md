@@ -1,13 +1,13 @@
 ---
-title: S2 pilot handover
+title: Production pilot
 nav_order: 12
 status: partial
 issue: 77
 ---
 
-# S2 pilot handover
+# Production pilot
 
-AMČR colleagues run the six ATRIUM services themselves in the S2 pilot, from December 2026 to January
+AMČR colleagues run the six ATRIUM services themselves in the AMČR pilot, from December 2026 to January
 2027. This page is where the handover starts: which images, which runbook for each, what to watch for,
 and whom to ask. It follows the handover rules of the
 [acceptance runbook](https://github.com/ufal/atrium-project/blob/main/docs/k8s_acceptance_runbook.md#handover-rules).
@@ -16,23 +16,27 @@ measured and what is experimental: [Status](status.md).
 
 ## The six services
 
-The versions below are the pilot set, one release per tool, final since 4 November
-([#77](https://github.com/ufal/atrium-project/issues/77)). Each tool's command line and service
-give the same results from the same input; what still differs, and why, is in one table in each tool's
-`docs/usage.md`.
+The pilot is assembled step by step: each step joins the chain with the release that is proven when it is
+put together, which may be newer than the ones below. The release set agreed in
+[#77](https://github.com/ufal/atrium-project/issues/77) is the starting point. The route these pages
+describe, with record schema 2.0 and docproc, comes with the 2.0.0-beta releases, which are on the tools'
+`test` branches and not released yet. Each tool's command line and service give the same results from
+the same input; what still differs, and why, is in one table in each tool's `docs/usage.md`.
 
-**11 November** is the target for choosing and approving the six `-api` images. AMČR approves each one
-explicitly, by digest, and the digest is entered here once approved. Until then the column stays empty,
-and `latest` or `test` are never the baseline. Acceptance on AMČR's cluster follows separately (below).
+The digest of each `-api` image is entered here when its step joins the chain; `latest` and `test` are never
+the baseline. Acceptance on AMČR's cluster is separate (below).
 
-| Stage                              | Image                                         | Release       | Approved digest | Runbook                                                                                                                                                                                  | Issues                                                               |
-|------------------------------------|-----------------------------------------------|---------------|-----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|
-| page categories                    | `ghcr.io/ufal/atrium-page-classification-api` | `1.12.3-beta` | —               | [service/README.md](https://github.com/ufal/atrium-page-classification/blob/v1.12.3-beta/service/README.md)                                                                              | [tracker](https://github.com/ufal/atrium-page-classification/issues) |
-| OCR output and text files → lines  | `ghcr.io/ufal/atrium-ocr-postprocess-api`     | `1.15.3-beta` | —               | [service/README.md](https://github.com/ufal/atrium-ocr-postprocess/blob/v1.15.3-beta/service/README.md)                                                                                  | [tracker](https://github.com/ufal/atrium-ocr-postprocess/issues)     |
-| born-digital files → the record    | `ghcr.io/ufal/atrium-digital-convert-api`     | `1.4.4-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-digital-convert/blob/v1.4.4-beta/service/README.md)                                                                                   | [tracker](https://github.com/ufal/atrium-digital-convert/issues)     |
-| morphology, named entities, TEITOK | `ghcr.io/ufal/atrium-nlp-enrich-api`          | `1.3.3-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-nlp-enrich/blob/v1.3.3-beta/service/README.md)                                                                                        | [tracker](https://github.com/ufal/atrium-nlp-enrich/issues)          |
-| keywords                           | `ghcr.io/ufal/atrium-keyword-extract-api`     | `1.6.4-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-keyword-extract/blob/v1.6.4-beta/service/README.md)                                                                                   | [tracker](https://github.com/ufal/atrium-keyword-extract/issues)     |
-| English metadata                   | `ghcr.io/ufal/atrium-translator-api`          | `1.7.5-beta`  | —               | [service/README.md](https://github.com/ufal/atrium-translator/blob/v1.7.5-beta/service/README.md)                                                                                        | [tracker](https://github.com/ufal/atrium-translator/issues)          |
+| Step                                             | Image                                         | Starting release | Digest | Runbook                                                                                                     | Issues                                                               |
+|--------------------------------------------------|-----------------------------------------------|------------------|--------|-------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|
+| born-digital files → docproc, a verdict per page | `ghcr.io/ufal/atrium-digital-convert-api`     | `1.4.4-beta`     | —      | [service/README.md](https://github.com/ufal/atrium-digital-convert/blob/v1.4.4-beta/service/README.md)      | [tracker](https://github.com/ufal/atrium-digital-convert/issues)     |
+| page categories, beside the ATR                  | `ghcr.io/ufal/atrium-page-classification-api` | `1.12.3-beta`    | —      | [service/README.md](https://github.com/ufal/atrium-page-classification/blob/v1.12.3-beta/service/README.md) | [tracker](https://github.com/ufal/atrium-page-classification/issues) |
+| the record, every line scored                    | `ghcr.io/ufal/atrium-ocr-postprocess-api`     | `1.15.3-beta`    | —      | [service/README.md](https://github.com/ufal/atrium-ocr-postprocess/blob/v1.15.3-beta/service/README.md)     | [tracker](https://github.com/ufal/atrium-ocr-postprocess/issues)     |
+| morphology, named entities, TEITOK               | `ghcr.io/ufal/atrium-nlp-enrich-api`          | `1.3.3-beta`     | —      | [service/README.md](https://github.com/ufal/atrium-nlp-enrich/blob/v1.3.3-beta/service/README.md)           | [tracker](https://github.com/ufal/atrium-nlp-enrich/issues)          |
+| keywords                                         | `ghcr.io/ufal/atrium-keyword-extract-api`     | `1.6.4-beta`     | —      | [service/README.md](https://github.com/ufal/atrium-keyword-extract/blob/v1.6.4-beta/service/README.md)      | [tracker](https://github.com/ufal/atrium-keyword-extract/issues)     |
+| English metadata, on archiving                   | `ghcr.io/ufal/atrium-translator-api`          | `1.7.5-beta`     | —      | [service/README.md](https://github.com/ufal/atrium-translator/blob/v1.7.5-beta/service/README.md)           | [tracker](https://github.com/ufal/atrium-translator/issues)          |
+
+The ATR, the text-recognition service between digital-convert and ocr-postprocess, is AIS CR's own and is not
+listed here.
 
 **For operators: finding a digest.**
 
@@ -41,8 +45,8 @@ and `latest` or `test` are never the baseline. Acceptance on AMČR's cluster fol
 - Read a digest from that file, or with `docker buildx imagetools inspect <image>:<tag>`.
 - Every end-to-end run records the digest and source of each image it ran (`e2e-manifest.json`, an
   artifact of the run). A green run at these release tags shows which releases passed together.
-- The end-to-end lanes run the batch images for most stages. The digests to approve are still those of
-  the `-api` images of the same releases.
+- The end-to-end lanes run the batch images for most stages. The digests to record are those of the
+  `-api` images of the same releases.
 
 ## Before you rely on a result
 
@@ -50,23 +54,26 @@ Each runbook has a **Known limits** section. These are the ones a pilot user mee
 
 - **ocr-postprocess** scores language and quality line by line; its rules are tuned for Czech, so
   lines in other languages are scored less reliably.
-- **translator** refuses a language pair its backend has no model for (422,
-  `cause: unsupported_language_pair`) rather than routing it through another language; by default it
-  calls LINDAT, whose output terms are open under [#78](https://github.com/ufal/atrium-project/issues/78).
-- **digital-convert** reads born-digital files only: a PDF that carries an OCR text layer is refused,
-  and pages whose text was extracted damaged are flagged for OCR. Its upload limit is 250 MB; a deployment
-  can raise it for larger originals, but files up to 1.5 GB are not yet tested for memory, concurrency and
-  timeouts.
+- **translator** needs the field list with each metadata request (`xpaths`); without it the request is
+  refused (422, `cause: missing_xpaths`) in release 2.0.0-beta. It refuses a language pair its backend has
+  no model for (422, `cause: unsupported_language_pair`) rather than routing it through another language.
+- **digital-convert** never refuses a document in release 2.0.0-beta: it gives every page a verdict, and a
+  page without usable text sends the whole document through the ATR. The starting release `1.4.4-beta`
+  still refuses a PDF that carries an OCR text layer. Its upload limit is 250 MB; a deployment can raise it
+  for larger originals, but files up to 1.5 GB are not yet tested for memory, concurrency and timeouts.
 - **keyword-extract**'s vocabulary-controlled kind is experimental and not evaluated; its statistical
   kind needs no backend.
 - **page-classification** classifies at most `MAX_PDF_PAGES` pages of a PDF per request (default 50);
-  set it to the longest report when it runs behind digital-convert's `/describe`.
+  raise it to the longest document the deployment sends.
 - **nlp-enrich** calls LINDAT's UDPipe and NameTag. Its `/jobs` are kept in memory: a restart loses them, and
-  the caller submits a lost job again (accepted for the S2 pilot).
+  the caller submits a lost job again (accepted for the pilot).
+- **LINDAT.** Until the terms of LINDAT's services are settled
+  ([atrium-project#78](https://github.com/ufal/atrium-project/issues/78)), AMČR does not publish outputs made
+  through them: the linguistic layer, the entities, the TEITOK file and the English metadata.
 
 ## Acceptance
 
-AMČR's acceptance on its own cluster is planned for the **second half of November**, before the December
+AMČR's acceptance on its own cluster was planned for the **second half of November**, before the December
 pilot, coordinated with [@rharasim](https://github.com/rharasim). The procedure and its results table are in
 the [Kubernetes acceptance runbook](https://github.com/ufal/atrium-project/blob/main/docs/k8s_acceptance_runbook.md).
 The table has one row per service: the digest each pod ran and what each check printed, and for the

@@ -1,5 +1,8 @@
 # ATRIUM OCR post-processing: Galaxy tools
 
+**Status:** handed to DARIAH for testing; further Galaxy work is parked during the AMČR pilot. The tools run the
+1.15.4-beta batch image, which predates the record builder of release 2.0.0-beta.
+
 Two tools run the batch image of [ufal/atrium-ocr-postprocess](https://github.com/ufal/atrium-ocr-postprocess) at
 release `1.15.4-beta` (`ghcr.io/ufal/atrium-ocr-postprocess:1.15.4-beta`). Both take one document per job; a
 collection maps over them.

@@ -1,5 +1,8 @@
 # ATRIUM page classification: Galaxy tool
 
+**Status:** handed to DARIAH for testing; further Galaxy work is parked during the AMČR pilot. The tool runs the
+1.12.3-beta batch image, which keys a PDF's pages by `page`; from release 2.0.0-beta they are keyed by `page_index`.
+
 `page_classification.xml` runs the batch image of
 [ufal/atrium-page-classification](https://github.com/ufal/atrium-page-classification) at release
 `1.12.3-beta` (`ghcr.io/ufal/atrium-page-classification:1.12.3-beta`). It sorts page images, or the pages of a PDF,

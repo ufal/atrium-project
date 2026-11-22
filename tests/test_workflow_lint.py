@@ -957,3 +957,82 @@ def test_an_optional_exit_needs_a_ci_optional_reason(tmp_path, step, ok):
     rc, out = run_lint(tmp_path)
     assert (rc == 0) is ok, out
     assert ok or "# ci-optional:" in out
+
+
+# ── --event-driven: CI runs on pull requests and releases only (docs/ci_policy.md) ──────────────
+
+_TRIGGERED = """\
+name: T
+on:
+%s
+concurrency:
+  group: t-${{ github.event_name }}-${{ github.ref }}
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: echo hi
+"""
+
+
+@pytest.mark.parametrize(
+    "on_block",
+    [
+        "  push:\n    branches: [test]\n  pull_request:\n    branches: [test]",
+        "  push:\n  pull_request:",
+        "  push:\n    branches-ignore: [main]",
+        "  push:\n    branches: [test]\n    tags: ['v*']",
+    ],
+)
+def test_event_driven_refuses_a_branch_push(tmp_path, on_block):
+    write_workflow(tmp_path, "x.yml", _TRIGGERED % on_block)
+    rc, out = run_lint(tmp_path, "--event-driven")
+    assert rc == 1
+    assert "runs on a branch push" in out
+
+
+@pytest.mark.parametrize(
+    "on_block",
+    [
+        "  push:\n    tags: ['v*']\n  workflow_dispatch:",
+        "  pull_request:\n    branches: [test]\n    types: [opened, synchronize, reopened, closed]",
+        "  release:\n    types: [published]",
+    ],
+)
+def test_event_driven_accepts_pull_requests_releases_and_tag_pushes(tmp_path, on_block):
+    write_workflow(tmp_path, "x.yml", _TRIGGERED % on_block)
+    rc, out = run_lint(tmp_path, "--event-driven")
+    assert rc == 0, out
+
+
+def test_event_driven_refuses_a_schedule_outside_the_security_scans(tmp_path):
+    write_workflow(tmp_path, "smoke.yml", _TRIGGERED % "  schedule:\n    - cron: '0 4 * * 1'\n  workflow_dispatch:")
+    rc, out = run_lint(tmp_path, "--event-driven")
+    assert rc == 1
+    assert "has a `schedule:`" in out
+
+
+@pytest.mark.parametrize("name", ["codeql.yml", "security.yml"])
+def test_event_driven_keeps_the_weekly_security_scans(tmp_path, name):
+    write_workflow(tmp_path, name, _TRIGGERED % "  pull_request:\n  schedule:\n    - cron: '0 5 * * 1'")
+    rc, out = run_lint(tmp_path, "--event-driven")
+    assert rc == 0, out
+
+
+def test_event_driven_lets_the_site_deploy_on_a_merge_into_main_only(tmp_path):
+    write_workflow(tmp_path, "pages.yml", _TRIGGERED % "  push:\n    branches: [main]\n  pull_request:")
+    assert run_lint(tmp_path, "--event-driven")[0] == 0
+    write_workflow(tmp_path, "pages.yml", _TRIGGERED % "  push:\n    branches: [main, test]\n  pull_request:")
+    rc, out = run_lint(tmp_path, "--event-driven")
+    assert rc == 1 and "runs on a branch push" in out
+
+
+def test_without_event_driven_the_trigger_rule_is_off(tmp_path):
+    """The rule is opt-in for the linter, and on in CI: workflow-lint.reusable.yml passes the flag."""
+    write_workflow(tmp_path, "x.yml", _TRIGGERED % "  push:\n    branches: [test]")
+    assert run_lint(tmp_path)[0] == 0
+    reusable = (_HUB_ROOT / ".github" / "workflows" / "workflow-lint.reusable.yml").read_text(encoding="utf-8")
+    assert "--event-driven" in reusable

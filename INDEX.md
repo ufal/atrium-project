@@ -1,347 +1,86 @@
-# ATRIUM hub site tree — issue #57, rounds 3–7 (content)
+# Index of the hub's documents
 
-Everything here lands on **`atrium-project`'s default branch (`main`)**, not on `gh-pages`.
-`gh-pages` receives the *built* site; this is its source, and `.github/workflows/pages.yml`
-is what does the building. See [`PAGES_SETUP.md`](PAGES_SETUP.md) for the publishing
-mechanics.
+Every Markdown document in `atrium-project`, by where it lives, with one line on what it answers. The published
+site is built from `docs_site/`; everything else is read in the repository. The maintainers' working records in
+`agent_dev_logs/` are not listed: [Development history](docs_site/development-history.md#the-working-records)
+describes them.
 
-## What round 3 changed, and why
+## At the root
 
-Round 2 shipped **38 draft shells** — frontmatter, a `## Sources` table and an outline of
-`<!-- ASSEMBLER: -->` markers — to be filled at build time by an assembler that would slice
-each tool's `README.md` into site pages. The maintainer's verdict on what that published was
-*"no new information available"*, and it was correct: **34 of the 38 pages were a second copy
-of something already public.** A mirror rebuilt on a cron can only tie its source or lag it.
+| Document                           | What it answers                                                                              |
+|------------------------------------|----------------------------------------------------------------------------------------------|
+| [README.md](README.md)             | what the hub is, the seven repositories, and where to read next                              |
+| [INDEX.md](INDEX.md)               | this list                                                                                    |
+| [PAGES_SETUP.md](PAGES_SETUP.md)   | how the hub's site and the tools' landing cards are built and published                      |
 
-`f47bf54` then removed the 25 `docs_site/tools/**` mirror pages and the `- Tools:` nav block,
-leaving 13 hub shells and no tool sections at all.
+## The published site, `docs_site/`
 
-**Round 3 writes pages instead of generating them.** The assembler (issue #57's plan, part B) is
-retired along with `_generators/{make_hub,make_config,headings,hub_spec}.py`. Ten tool pages
-are written — five for `page-classification`, five for `translator`, the two repositories
-whose documentation is furthest along — and every claim in them was verified against the
-tool's code at a named commit, not taken from its prose.
+| Page                                                                       | What it answers                                                                        |
+|----------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| [index.md](docs_site/index.md)                                             | what the tools do, how they work together, where each reader starts                    |
+| [for-archives.md](docs_site/for-archives.md)                               | what happens to an archive's documents, what comes back, what leaves the institution   |
+| [status.md](docs_site/status.md)                                           | what each tool is ready for, the pilot's timeline, what is open or parked              |
+| [pilot.md](docs_site/pilot.md)                                             | the production pilot: the services, their runbooks, the limits met first, the contacts |
+| [pipelines.md](docs_site/pipelines.md)                                     | the route through the pipeline, what passes between the stages, the workflows W1–W13   |
+| [workflows/](docs_site/workflows/index.md)                                 | one page per tool: its purpose, steps, licences and place on the route                 |
+| [ecosystem/architecture.md](docs_site/ecosystem/architecture.md)           | the hub and the tools, the shared code, the CI federation                              |
+| [ecosystem/repository-map.md](docs_site/ecosystem/repository-map.md)       | which repository owns what                                                             |
+| [ecosystem/document-contract.md](docs_site/ecosystem/document-contract.md) | the ATRIUM record, field by field and owner by owner                                   |
+| [ecosystem/licences.md](docs_site/ecosystem/licences.md)                   | paradata, components and their licences, the rights in an output                       |
+| [contracts/schemas.md](docs_site/contracts/schemas.md)                     | the schema files and their versions                                                    |
+| [contracts/skos.md](docs_site/contracts/skos.md)                           | the controlled vocabulary and its SKOS form                                            |
+| [contracts/rocrate.md](docs_site/contracts/rocrate.md)                     | RO-Crate export and the paradata of a run                                              |
+| [agent-skills.md](docs_site/agent-skills.md)                               | the six agent skills and how to install one                                            |
+| [operations.md](docs_site/operations.md)                                   | images and tags, the release gate, the container checks, Kubernetes                    |
+| [contributing-standards.md](docs_site/contributing-standards.md)           | the working agreement, branches, pull requests, releases                               |
+| [development-history.md](docs_site/development-history.md)                 | the chronology, the per-repository histories, the decision records                     |
+| [glossary.md](docs_site/glossary.md)                                       | the terms the pages use                                                                |
+| [external-tools.md](docs_site/external-tools.md)                           | the standards, models, services and institutions the tools depend on                   |
+| `tools/page-classification/*`, `tools/translator/*`                        | ten short pages that point old addresses to the tools' own documentation               |
 
-Each page keeps a `## Sources` table, but its job has changed: it is now a **provenance
-record** naming what was read and at which ref, not a build instruction.
+## The hub's references, `docs/`
 
-## What round 4 changed
+| Document                                                                              | What it answers                                                                               |
+|---------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| [documentation-style.md](docs/documentation-style.md)                                 | how the documentation of all seven repositories is written and checked                        |
+| [ci_policy.md](docs/ci_policy.md)                                                     | when CI runs, what each check proves, how a check is added                                    |
+| [docker_gha.md](docs/docker_gha.md)                                                   | the Docker and GitHub Actions workflows, images and probes                                    |
+| [release_trust.md](docs/release_trust.md)                                             | tags, rulesets and pins, and how a release is tagged                                          |
+| [shared_components.md](docs/shared_components.md)                                     | who owns each shared file, and how a consumer adopts a change                                 |
+| [document_schema.md](docs/document_schema.md)                                         | the record schema 2.0, reading 1.x records, the freeze of `doc-schema-v1`                     |
+| [paradata_schema.md](docs/paradata_schema.md)                                         | the paradata schema 3.0                                                                       |
+| [rocrate_export.md](docs/rocrate_export.md)                                           | the RO-Crate export and one run's `CreateAction`                                              |
+| [skos_strategy.md](docs/skos_strategy.md)                                             | the SKOS registry of the ATRIUM vocabulary                                                    |
+| [agent_skill_strategy.md](docs/agent_skill_strategy.md)                               | the service contract every tool meets, and the rules for skill branches                       |
+| [k8s_deployment.md](docs/k8s_deployment.md)                                           | the reference Kubernetes manifest, its settings and known limits                              |
+| [k8s_acceptance_runbook.md](docs/k8s_acceptance_runbook.md)                           | the acceptance of the six services on a receiving cluster                                     |
+| [skill_acceptance_runbook.md](docs/skill_acceptance_runbook.md)                       | the acceptance of the six skill branches                                                      |
+| [proposals/rights-and-policy.md](docs/proposals/rights-and-policy.md)                 | the closed proposal on run evidence, processing policy and output rights, and what came of it |
+| [evaluation/du-benchmarks-and-models.md](docs/evaluation/du-benchmarks-and-models.md) | the research note on document-understanding benchmarks and models, for #22 after the pilot    |
+| [docker_gha_roadmap.md](docs/docker_gha_roadmap.md)                                   | the closed Docker and CI plan of August to October 2026, kept as history                      |
+| `arub-p_contacts.md`                                                                  | partner contacts, internal                                                                    |
 
-**The nine remaining hub shells are written**, plus the portal copy on `index.md` — the
-static parts of the site: the repository map, the architecture, the document contract, the
-schemas, the SKOS vocabulary, RO-Crate export, agent skills, operations and the contribution
-standard. Each is the **page-classification + translator view** of a contract whose normative
-text lives in the hub's `docs/`: the concrete fields, URIs, endpoints, probes, images and
-branches those two tools have, read out of their code, and where the hub document and the code
-disagree. The other three tools appear only as identity rows until their sections are written.
+## Decision records, `docs/decisions/`
 
-**Two round-3 errors are corrected**, line by line: both tool guides named the API image
-`atrium-<tool>:<version>-api` — the registry publishes `atrium-<tool>-api:<version>`, with no
-leading `v` — and page-classification's overview repeated the hub's claim that the tool reads its
-label list from the filesystem at run time, which is true only of `--train`/`--eval`.
+Dated: why the hub is built the way it is. [The list](docs/decisions/README.md) says what each record covers:
+the CI workflows, the end-to-end lanes, the release-trust log, the record schema's changelog, the agent skills,
+the site's rounds, the publishing setup and the repository review of July 2026.
 
-Two findings were **run, not inferred**: the shared `atrium_document.py` and `atrium_paradata.py`,
-driven with each tool's calls and `para_config.txt`, reproduce the licence each tool's record
-ends up with, and the worked example on the document-contract page validates against the schema.
-The RO-Crate page's mapping table is the real exporter's output on that same record.
+## Templates, `docs/templates/`
 
-**Tables follow the maintainer's formatter**: every column padded to its longest cell by
-character count, one space either side, separator dashes = width + 2 — reverse-engineered from
-the round-3 commit, where it reproduces 13 of 14 reformatted files byte-for-byte (the 14th differs
-only in one table the formatter skipped). Tables indented inside content tabs are aligned the same
-way.
+| Document                                                                          | What it is                                                   |
+|-----------------------------------------------------------------------------------|--------------------------------------------------------------|
+| [CONTRIBUTING.md](docs/templates/CONTRIBUTING.md)                                 | the contribution standard each tool fills in                 |
+| [README.template.md](docs/templates/README.template.md)                           | the shape of a tool README                                   |
+| [skill/README.md](docs/templates/skill/README.md)                                 | the skill templates, and how to use them                     |
+| [skill/SKILL.template.md](docs/templates/skill/SKILL.template.md)                 | the `SKILL.md` of a skill branch                             |
+| [skill/serviceREADME.template.md](docs/templates/skill/serviceREADME.template.md) | the service runbook every tool's `service/README.md` follows |
 
-## What round 5 changed
+## Elsewhere
 
-**The designed-but-unwritten sections are filled**, still scoped to page-classification and the
-translator:
-
-- **`pipelines.md`** — W5 (Agent-Skill), W7 (vocabulary harvesting, the translator's half), W12
-  (the annotation round trip, page-classification's half) and W13 (RO-Crate export) are written;
-  "the remaining nine" becomes "the remaining five", all belonging to the other three tools.
-- **`external-tools.md`** — the "Still to write" block becomes real sections: the metadata
-  standards and serialisations both tools vendor, CoNLL-U, PDF rasterisation, the classifier's ML
-  stack, the translator's other back-ends and its evaluation metrics, the runtime and CI
-  infrastructure, the project and its institutions, and the DMP standards deliberately not
-  implemented. Entries only the other tools use stay marked *pending*.
-- **`development-history.md`** — the cross-repository chronology, condensed from the hub's
-  timeline into six eras, plus the four lessons that record keeps repeating.
-
-**Every behavioural claim the surveys could only infer was run** on copies in a scratch directory
-— `sort.sh`, `move_single.sh`, `pdf2png.sh` (against a stub `pdftoppm`), `filtering.py`,
-`downscale.py`, `result_analysis.sh`, the `collect_images()` listing, `load_vocab.py`, the
-vocabulary loader, `para_licenses.py`, both shared selftests, and CTranslate2's accepted compute
-types. What could not be checked from here is stated as such: AIS CR's own site and the LINDAT
-dataset record were unreachable, so those entries say only what the code relies on.
-
-**Four round-3 statements are corrected**, line by line: `--train` resolves to **CC BY-NC 4.0**
-(what `para_config.txt` declares), not the README's CC BY-NC-SA 4.0 — on `pipelines.md` W8 and on
-page-classification's overview and reference; `amcr-inputs.txt` holds 15 URLs, not 16; OAI-PMH *is*
-named by all three repositories that use it; UDPipe model names carry the `-241121` suffix.
-
-## What round 6 changed
-
-**The site now publishes only lasting facts.** Rounds 3–5 held every page to "values verified
-against code, and named drift where the two disagree" — which filled the pages with audit
-material that goes stale within days: "Known drift" lists (20+ items per tool), defect
-write-ups, README-versus-code asides, open-issue status, commit SHAs and `file:NN` references in
-prose. The maintainer's #57 TODO asks for static, unchangeable descriptions instead. Round 6
-rewrote all **23** pages to that bar, scoped as before to page-classification and the
-translator, and moved every removed finding — re-checked against the current heads, with a
-status each — into issue #57's findings register, a working record
-([Development history](docs_site/development-history.md#the-working-records)) that lives outside `docs_site/` and is never published.
-
-- **Stripped:** both tools' `## Known drift` sections; the agent-skills Known drift; the
-  contributing-standards "Contradictions" section; the schemas "What the schema says that the
-  code does not"; the rocrate "What a crate cannot yet say"; every "Written so far / round N"
-  admonition (replaced by one `!!! info "Scope"` form); dated measurements, counts that change
-  with each release or harvest, and SHAs / line references outside `## Sources`.
-- **Reframed, not lost:** each stripped section's lasting core is kept as plain description —
-  e.g. the terminal-branch warning became "the translator's output is an end product"; "Rule 5
-  in practice" became "How the record's licence is computed"; "Nobody runs it yet" became
-  "Running the exporter"; history pages became a settled narrative with no "still open".
-- **Added (lasting content the pages lacked):** page-classification — how a prediction is made,
-  label naming and what each category suggests doing next, preparing input, reading the output
-  (real rows from a committed result table), the `vX.Y` revision scheme, YOLO-cls and CLIP,
-  `curl` examples, how to cite. Translator — how a translation is made, metadata (AMCR) mode
-  step by step, vocabulary protection (Tag-and-Protect vs prompt glossary), language
-  identification and pair discovery, a dual-pass Mermaid diagram, a code map, design limits,
-  `CT2_*` / `LLM_*` environment rows. Hub — "How the ecosystem works" on the portal, a workflow
-  index on Pipelines, a glossary of terms on External tools, the deployment model and a
-  batch-image quick start on Operations, "Anatomy of a tool" on Architecture, the record's life
-  cycle on the document contract, release steps / shared-code rule / "Contributing to this site"
-  on Contributing standards, a Turtle concept and an RO-Crate excerpt from the real exporter.
-- **Corrected against the current heads** (pc `vit` @ `adee922`, translator `master` @
-  `71feaef`): `ct2` is a registered `--backend`; the dataset licence is CC BY-NC 4.0 everywhere
-  in page-classification; `checkpoint/` is *not* git-ignored; the upload variable is
-  `MAX_UPLOAD_MB`; ct2 NMT families apply no vocabulary protection (only `lindat` and the LLM
-  back-ends do); the round-5 data-script findings are fixed at `a95c6c6`.
-- **Site defect fixed:** the `atrium-pipeline` strips linked `../<tool>/index.md` inside raw
-  HTML, which MkDocs does not rewrite — those links 404'd on the built site. Now `../<tool>/`.
-
-## What round 7 changed
-
-**A Workflows section: one narrative per tool** (`docs_site/workflows/`, six pages). Issue #57's
-TODO asked for every workflow "from beginning to end with a clear purpose and results stated";
-#4/#17 need the same text as SSH Open Marketplace workflow records, and #66 needs it as Galaxy
-workflows. A narrative is written once, in a fixed shape — Purpose · At a glance · Steps ·
-What you get · Limits · Provenance and licence · Where it sits · On other platforms · Sources —
-so each section fills one field of the SSH Open Marketplace record, of the Galaxy `.ga` file and
-of a Workflow RO-Crate. The overview page holds that field table.
-
-- **Two depths.** page-classification and the translator, the two tools whose workflow has
-  settled, get **full** narratives, with a Galaxy sheet each (datatypes, container, compute,
-  network, test data, the closest tools already in Galaxy). alto-postprocess, nlp-enrich and
-  llm-enrich get the **stable core** — purpose, step order, formats, licence floor, records —
-  written only from behaviour present in their latest release tag and unchanged on `test`,
-  with a *Scope* box pointing to their README for the rest.
-- **The model it follows** is ATRIUM's own T4.2.1 pairing: DARIAH's SSH Open Marketplace
-  workflow `IrpmkB` (the narrative) and its Galaxy workflow in `DARIAH-ERIC/atrium-galaxy-tools`
-  (the runnable twin).
-- **Glossary:** four new entries on External tools — SSH Open Marketplace, TaDiRAH, Galaxy,
-  WorkflowHub and Workflow RO-Crate — and two terms, *workflow narrative* and *actionable
-  workflow*.
-- **Wired in:** nav group *Workflows* after Pipelines; the portal cards, "Start here" and the
-  by-question table; both tool overviews' "Where to go next"; the repository map's *Docs here*
-  column for the three tools without a section; the Pipelines scope note and *Other workflows*.
-- **Landing cards:** `_generators/repos.py` gains a `docs_path` per repository and
-  `make_stubs.py` uses it, so the "Documentation →" button of alto-postprocess, nlp-enrich and
-  llm-enrich lands on their workflow page instead of a missing tool section. The regenerated
-  cards also carry alto-postprocess's multi-format tagline and nlp-enrich's current chips.
-
-## What round 8 changed
-
-**The translator section follows `v1.2.1-beta`.** Its five tool pages and its workflow page were
-written against `71feaef`/`v1.1.0-beta`, before issue #46's output guard, ALTO append rework and
-language rules existed; each claim was re-read against the code and corrected:
-
-- ALTO `append` is an `ALTERNATIVE` per `String` with `CONTENT` kept, not a block label;
-- the source-language rules (detected ≥ 0.5 and ≥ 20 letters, backend-supported → element
-  label → document language → default `cs`) replace the 0.2 threshold and the "answers `en`"
-  failure mode; `translations.detected_source_lang`;
-- the degenerate-output guard, the end-of-document re-run and the log's `status` column;
-- **AMCR 2.2 does not accept `append` output** — measured, not assumed: the shipped records
-  validate against the published schema as source (15/15) and `replace` output (15/15), not as
-  `append` output (0/15); ALTO of either mode is valid ALTO 3.1;
-- new flags and variables on Reference and Operations; `v1.2.0-beta` / `v1.2.1-beta` on the
-  Changelog, and #46 on History.
-
-**Deployment docs corrected.** The shared K8s manifest named the API image
-`atrium-<tool>:<version>-api`, which the release workflow never publishes; it is
-`atrium-<tool>-api:<version>`. `docs/k8s_deployment.md`'s translator rows gain `OUTPUT_MODE`,
-`AMCR_FIELDS_PATH`, `LINDAT_GUARD_RETRIES` and `DEFAULT_SOURCE_LANG`.
-
-## Layout
-
-| Path                          | What it is                                                                                                               |
-|-------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| `mkdocs.yml`                  | site config. `docs_dir: docs_site`, `site_dir: site`, `strict: true`, `validation.links.anchors: warn`                   |
-| `PAGES_SETUP.md`              | the publishing mechanics: why a branch source, how Pages is enabled, what the legacy Jekyll builder would have published |
-| `docs_site/**`                | **30 pages** — 13 hub pages + 7 Workflows pages + 2 repos × 5 tool-section pages                                         |
-| issue #57's findings register | the unpublished findings register: everything round 6 removed from the pages, by owning repository, with a status        |
-| `docs_site/assets/extra.css`  | styling hook; the `.atrium-pipeline` strip on each tool index uses it                                                    |
-| `.github/workflows/pages.yml` | builds `docs_site/` with `--strict`; publishes to `gh-pages` on push to `main`                                           |
-| `tools/docs/requirements.txt` | the toolchain ranges — verified with mkdocs 1.6.1, mkdocs-material 9.7.7, pymdown-extensions 12.x                        |
-| `_generators/`                | the landing-card generator: `make_stubs.py`, `repos.py` (with each card's `docs_path`), `style.css`                      |
-
-## Page status
-
-| Page                                                                                   | State                                                                                                                              |
-|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| `index.md`                                                                             | **written** — the portal, and how the ecosystem works                                                                              |
-| `pipelines.md`                                                                         | **partial** — workflow index; W1, W4–W8, W12, W13 in full; five listed                                                             |
-| `external-tools.md`                                                                    | **partial** — glossary of terms; every entry the two tools depend on; SSH Open Marketplace, TaDiRAH, Galaxy, WorkflowHub (round 7) |
-| `workflows/*`                                                                          | **written** — overview, 2 full narratives, 4 stable-core narratives (round 7; renamed and split 7 October)                         |
-| `development-history.md`                                                               | **partial** — per-repo index and the cross-repository chronology                                                                   |
-| `tools/page-classification/*`                                                          | **moved** — 5 short pages pointing to the tool's own `docs/` (#79, 2026-10-25)                                                     |
-| `tools/translator/*`                                                                   | **moved** — 5 short pages pointing to the tool's own `docs/` (#79, 2026-10-25)                                                     |
-| `ecosystem/repository-map.md`                                                          | **written** — seven identity rows; depth for the two documented tools                                                              |
-| `ecosystem/{architecture,document-contract}.md`, `contracts/{schemas,skos,rocrate}.md` | **partial** — written for page-classification and translator                                                                       |
-| `agent-skills.md`, `operations.md`, `contributing-standards.md`                        | **partial** — written for page-classification and translator                                                                       |
-
-`mkdocs.yml`'s `nav` and `docs_site/` agree in both directions, **30 ↔ 30**, checked by a
-green `mkdocs build --strict`. Under `strict: true` a nav entry with no file and a file with
-no nav entry are both build failures, which is why a tool section may only be added to the
-nav in the same commit as its pages. **No page on the site is a round-2 shell any more.**
-
-## Why `docs_site/` and not `docs/`
-
-The hub's `docs/` already holds 13 canonical markdown files plus `docs/templates/` — and
-`docs/templates/shared/` is enforced byte-identical across all six tool repositories by
-`para-drift.reusable.yml` (five when this was measured). Publishing from `docs/` would mean moving that tree, and
-`docs/templates` is referenced **363 times across the six repos that then existed**, with the paths baked into
-the docstrings of the vendored files themselves. All 17 canonical files would have to be
-re-vendored inside one atomic window or CI goes red in every tool repository at once.
-`docs_site/` costs nothing.
-
-## The shape a written tool page uses
-
-1. **frontmatter** — `title`, `nav_order`, `status`, `round`, `issue`, plus `repo`/`role` on
-   tool pages. `nav_order` is `20 + stage*10 + role_index`: page-classification 30–34,
-   translator 50–54, with 40–44 and 60–74 reserved for the three sections not yet written.
-   The Workflows pages use 14–19 (overview, then the tools in pipeline order) and carry
-   `role: workflow`.
-2. **The page.** Written prose, tables and diagrams — no markers, no admonition claiming the
-   page will be filled later.
-3. **`## Sources`** — a provenance table: what was read, at which ref, and what was taken
-   from it. The one place on a page where commit SHAs and `file:NN` references belong.
-
-The bar every page has to clear: **a reader is better off here than on the README, and the page
-stays true until the tool itself changes.** Two things earn the first — cross-repository facts
-the tool repository cannot state about itself, and values read from code rather than prose.
-The second rules out, since round 6, anything time-bound: drift between documents and code,
-defects, open-issue status, dated measurements. Those go to
-issue #57's findings register ([working records](docs_site/development-history.md#the-working-records)) as candidate issues for their owners.
-
-## Verified
-
-**Round 7 (2026-09-25)**, on hub `test` @ `8de7896` plus this round's files; narratives written against
-page-classification `v1.8.0-beta`, translator `v1.1.0-beta`, alto-postprocess `v1.5.1-beta`, nlp-enrich `v0.21.0` and
-llm-enrich `v0.7.0`:
-
-- `mkdocs build --strict` → **exits 0**, no warnings, 29 pages; `nav` ↔ `docs_site/` 29 ↔ 29.
-- **152 of 152** markdown tables render as HTML tables; **seven** Mermaid diagrams, as before.
-- No built link points at `…/tools/{alto-postprocess,nlp-enrich,llm-enrich}/`.
-- The time-bound-wording sweep leaves nothing on the six Workflows pages; the built site greps clean for e-mail
-  addresses and maintainer handles.
-- `_generators/make_stubs.py` output differs from each deployed `gh-pages` tree only in the intended lines;
-  `ruff check _generators/` clean.
-- `pytest tests/` → **154 passed, 2 skipped**; `workflow_lint.py --offline` → **OK**.
-
-**Round 6 (2026-09-23)**, on hub `main` @ `7b0b84e` plus this round's files, pages written
-against page-classification `vit` @ `adee922` and translator `master` @ `71feaef`:
-
-- `mkdocs build --strict` → **exits 0**, no warnings, 23 pages; `nav` ↔ `docs_site/` 23 ↔ 23.
-- Every markdown table renders as an HTML `<table>` — **128 of 128**, counted per page.
-- **Seven** Mermaid diagrams render as `class="mermaid"` — pipelines 2, architecture 2, portal 1,
-  agent skills 1, translator reference 1.
-- Both tool-index pipeline strips link to directory URLs that exist in the built site.
-- A sweep of every page body (outside `## Sources`) for *Known drift, so far, round N, never been
-  run, still open, used to, defect, pending, today, currently*, 7-hex SHAs and `file:NN`
-  references leaves only tool names (`para-drift`), settled history and behaviour descriptions.
-- The built site greps clean for e-mail addresses, the partner-contacts file, maintainer handles,
-  token prefixes, the grant number and CI run IDs; the RO-Crate excerpt elides author ORCIDs.
-- `python3 -m pytest tests/ -q` → **141 passed, 4 skipped** (unchanged — no code touched);
-  `workflow_lint.py --offline` → **OK**.
-- Tables follow the maintainer's formatter; the reproduction script leaves all 23 files
-  byte-stable on a second pass.
-
-As of round 5 (2026-09-23), on the maintainer's `88bc1a6` plus that round's files:
-
-- `mkdocs build --strict` → **exits 0**, 23 pages, on mkdocs 1.6.1 / mkdocs-material 9.7.7 /
-  pymdown-extensions 12.0.1. Every internal cross-page link and anchor resolves.
-- `python3 -m pytest tests/ -q` → **141 passed, 4 skipped**, unchanged from round 4. (Round 3
-  recorded 111 / 22; the difference is only that `pytest`, `pyyaml` and `jsonschema` are installed
-  in this environment, so fewer tests skip. No test file changed.)
-- `python3 tools/ci/workflow_lint.py --repo-root . --hub-root . --offline` → **OK**.
-- The built `site/` contains **no** `ASSEMBLER` marker and **no** "Draft shell" admonition on any
-  page, and none of: the personal contact address, `arub-p_contacts`, maintainer handles, token
-  prefixes, the grant number, internal secret names, CI run IDs, or cluster paths and hostnames.
-- Every markdown table in every rendered page produces an HTML `<table>` (counted per page for the
-  three pages round 5 touched).
-- Three Mermaid diagrams render as `class="mermaid"` elements — two on `pipelines.md`, one on
-  `ecosystem/architecture.md`.
-
-## Contents
-
-```
-  .github/workflows/pages.yml
-  INDEX.md
-  PAGES_SETUP.md
-  (issue #57's findings register, among the working records)
-  mkdocs.yml
-  tools/docs/requirements.txt
-  _generators/make_stubs.py
-  _generators/repos.py
-  _generators/style.css
-  docs_site/index.md
-  docs_site/pipelines.md
-  docs_site/external-tools.md
-  docs_site/development-history.md
-  docs_site/agent-skills.md
-  docs_site/operations.md
-  docs_site/contributing-standards.md
-  docs_site/assets/extra.css
-  docs_site/contracts/rocrate.md
-  docs_site/contracts/schemas.md
-  docs_site/contracts/skos.md
-  docs_site/ecosystem/architecture.md
-  docs_site/ecosystem/document-contract.md
-  docs_site/ecosystem/repository-map.md
-  docs_site/tools/page-classification/index.md
-  docs_site/tools/page-classification/guide.md
-  docs_site/tools/page-classification/reference.md
-  docs_site/tools/page-classification/changelog.md
-  docs_site/tools/page-classification/history.md
-  docs_site/tools/translator/index.md
-  docs_site/tools/translator/guide.md
-  docs_site/tools/translator/reference.md
-  docs_site/tools/translator/changelog.md
-  docs_site/tools/translator/history.md
-  docs_site/workflows/index.md
-  docs_site/workflows/page-classification.md
-  docs_site/workflows/ocr-postprocess.md
-  docs_site/workflows/translator.md
-  docs_site/workflows/nlp-enrich.md
-  docs_site/workflows/keyword-extract.md
-  docs_site/workflows/digital-convert.md
-```
-
-## What these rounds deliberately do not do
-
-- **The other four tool sections.** ocr-postprocess, nlp-enrich, keyword-extract and digital-convert keep their
-  reserved `nav_order` ranges; until their sections are written, their workflow page is what
-  the site says about them.
-- **Any change to a tool repository's code or documentation.** The drift these pages document
-  is reported, not fixed at source; each item is a candidate issue in its own repository. The
-  one exception is each tool's `gh-pages` landing card, which the hub generates.
-- **Tool sections behind the landing cards.** Since round 7 a card links to its tool section
-  where one exists (page-classification, translator) and to its workflow page otherwise;
-  `repos.py`'s `docs_path` is the one value to change when a section is written.
-- **`PAGES_STRATEGY.md`.** It is referenced by `PAGES_SETUP.md` and by issue #57's working
-  records, and **has never existed in this repository** — every `§`-reference to it points
-  nowhere. Its 12-page design survives only as a summary in the hub's timeline.
-  Flagged here, not written.
-- **The hub's licence statement.** `mkdocs.yml`'s `copyright:` line and every landing card say
-  "MIT licensed", but the hub has **no `LICENSE` and no `CITATION.cff`** — the two tools are MIT,
-  the hub states nothing. Left for the maintainer to decide, not edited.
+| Document                                                                         | What it answers                                                                        |
+|----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| [fixtures/e2e/README.md](fixtures/e2e/README.md)                                 | the fixtures of the end-to-end lanes                                                   |
+| [galaxy/README.md](galaxy/README.md)                                             | the Galaxy wrappers handed to DARIAH; further Galaxy work is parked                    |
+| `galaxy/tools/atrium_*/README.md`                                                | one per wrapped tool                                                                   |
+| [galaxy/workflows/atrium_ufal/README.md](galaxy/workflows/atrium_ufal/README.md) | the Galaxy workflows, and their [changelog](galaxy/workflows/atrium_ufal/CHANGELOG.md) |

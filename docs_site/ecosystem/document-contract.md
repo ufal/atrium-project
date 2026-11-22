@@ -8,13 +8,13 @@ issue: 57
 
 # The document contract
 
-> **Record schema 2.0 and paradata 3.0** ([atrium-project#84](https://github.com/ufal/atrium-project/issues/84)),
-> on the hub's and the tools' `test` branches. It is released as `doc-schema-v2` once it has passed the validator,
-> the end-to-end checks and a run through the assembled chain; `doc-schema-v1`, the 1.x record, stays as published.
-
 The `atrium_document` record is the one thing that travels through the whole pipeline. This
-page says what it holds, who may write which part of it, how it is built up stage by stage,
-and where the history of each run is kept.
+page says what it holds, who may write which part of it, how it is built up step by step,
+and where the history of each run is kept. It is for integrators.
+
+> **Versions.** The tools write record schema 2.0 and paradata 3.0. The published record schema is
+> `doc-schema-v1`; 2.0 is published as `doc-schema-v2` once it has passed the validator, the end-to-end
+> checks and a run through the assembled chain.
 
 !!! info "Normative text lives in the hub"
     [`docs/document_schema.md`](https://github.com/ufal/atrium-project/blob/main/docs/document_schema.md)
@@ -76,8 +76,8 @@ The rules are the hub's; page-classification applies them so:
 | **5 · Facts, not a licence**        | the run lists its components with their own terms in its paradata; nothing is computed into a licence                                                                                  |
 | **6 · Unknown blocks preserved**    | ✓ through the shared module                                                                                                                                                            |
 
-The translator writes nothing into the record since its v2.0.0-beta: its pilot job is the
-record-level `metadata-en`, run when a record is archived, with its own paradata.
+The translator writes nothing into the record: its pilot job is the record-level `metadata-en`,
+run when a record is archived, with its own paradata.
 
 ### What the references point at
 
@@ -96,8 +96,8 @@ answers **500** and returns no record.
 ## A worked example
 
 The committed example record,
-[`fixtures/atrium_document.example.json`](https://github.com/ufal/atrium-project/blob/test/fixtures/atrium_document.example.json),
-has the blocks of every step for a two-page document. Its first page row:
+[`fixtures/atrium_document.example.json`](https://github.com/ufal/atrium-project/blob/main/fixtures/atrium_document.example.json),
+shows the blocks the steps write, for a two-page document. Its first page row:
 
 ```json
 {"page": "1", "page_index": 1, "canvas": {"width": 612, "height": 792, "unit": "pt", "user_unit": 1},

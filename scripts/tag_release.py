@@ -22,15 +22,16 @@ never moved (docs/release_trust.md), so a tag that misses is a version lost. Two
      job. The version gate passes on such a commit, so the script also reads the commit's runs.
 
 So this script tags only what the remote branch already has, only when the release gate would
-pass and the commit's push runs passed, and pushes exactly one ref:
+pass and the commit's checks passed, and pushes exactly one ref:
 
   * the tag is `vX.Y.Z` or `vX.Y.Z-suffix` (no stray dot);
   * the working tree has no uncommitted change to tracked files;
   * HEAD is `<remote>/<branch>` after a fetch: the version bump is committed AND pushed;
   * the repository's own vendored `check_version.py --tag … --require-tag` passes — the same
     check `release.yml`'s version-guard runs, so a refusal here is a failed run avoided;
-  * with `gh`, every push run of HEAD has finished and passed (`--no-ci-check` skips this; without
-    `gh` it is reported as not done);
+  * with `gh`, every run of the pull request merged as HEAD, and every push or pull-request run of
+    HEAD itself, has finished and passed (`--no-ci-check` skips this; without `gh` it is reported as
+    not done). CI runs on pull requests, so a merged pull request's runs are the commit's checks;
   * the tag exists neither on the remote nor, unpushed, locally (delete a local-only tag first).
 
 Then it creates an annotated tag on HEAD and pushes `refs/tags/<tag>` alone. With the `gh` CLI it
@@ -143,22 +144,30 @@ def preflight(repo: Path, tag: str, remote: str, branch: str) -> str:
     return head
 
 
-#: Conclusions of a push run that make its commit unfit to release.
+#: Conclusions of a run that make its commit unfit to release.
 BAD_CONCLUSIONS = {"failure", "timed_out", "startup_failure", "action_required", "cancelled"}
 
+#: The events whose runs check a commit: CI runs on pull requests; a push run is a commit pushed
+#: before CI moved to pull requests (11 November 2026), or the hub site's deployment.
+CHECK_EVENTS = {"pull_request", "push"}
 
-def check_ci(gh: Optional[str], slug: Optional[str], sha: str) -> str:
-    """Refuse a commit whose push runs failed or are still running; return what was checked.
 
-    `v1.7.7-beta` (translator, 11-06) was tagged three minutes after Docker Build & Push had failed on
-    its commit, and its Release Bundle stopped in the same test job. The release gate cannot see
-    that; the commit's own runs can.
-    """
-    if not gh or not slug:
-        return "CI not checked (gh is not installed, or the remote is not on GitHub): look at the commit's runs first"
-    proc = subprocess.run(
+def _gh_json(gh: str, args: list) -> tuple:
+    """`gh <args>` parsed as JSON: (data, None), or (None, why it failed)."""
+    proc = subprocess.run([gh, *args], capture_output=True, text=True)
+    if proc.returncode != 0:
+        return None, f"`gh {args[0]}` failed: {(proc.stderr or proc.stdout).strip()[:200]}"
+    try:
+        return json.loads(proc.stdout or "null"), None
+    except json.JSONDecodeError:
+        return None, f"`gh {args[0]}` printed no JSON"
+
+
+def _runs_of(gh: str, slug: str, sha: str) -> tuple:
+    """The runs of one commit: (runs, None) or (None, why `gh run list` failed)."""
+    return _gh_json(
+        gh,
         [
-            gh,
             "run",
             "list",
             "--repo",
@@ -170,26 +179,57 @@ def check_ci(gh: Optional[str], slug: Optional[str], sha: str) -> str:
             "--limit",
             "100",
         ],
-        capture_output=True,
-        text=True,
     )
-    if proc.returncode != 0:
-        return f"CI not checked (`gh run list` failed: {(proc.stderr or proc.stdout).strip()[:200]})"
-    try:
-        runs = [run for run in json.loads(proc.stdout or "[]") if run.get("event") == "push"]
-    except json.JSONDecodeError:
-        return "CI not checked (`gh run list` printed no JSON)"
+
+
+def merged_pull_request(gh: str, slug: str, sha: str) -> Optional[tuple]:
+    """The pull request merged as `sha` (a squash or merge commit), as (number, head sha), or None."""
+    pulls, _ = _gh_json(gh, ["api", f"repos/{slug}/commits/{sha}/pulls"])
+    if not isinstance(pulls, list):
+        return None
+    for pr in pulls:
+        head = (pr.get("head") or {}).get("sha")
+        if head and (pr.get("merge_commit_sha") == sha or pr.get("merged_at")):
+            return pr.get("number"), head
+    return None
+
+
+def check_ci(gh: Optional[str], slug: Optional[str], sha: str) -> str:
+    """Refuse a commit whose checks failed or are still running; return what was checked.
+
+    `v1.7.7-beta` (translator, 11-06) was tagged three minutes after Docker Build & Push had failed on
+    its commit, and its Release Bundle stopped in the same test job. The release gate cannot see
+    that; the commit's own runs can. CI runs on pull requests, so the checks of a commit that a pull
+    request merged are that pull request's runs, on its head commit, together with any run of the
+    commit itself (the `:test` publish of the merge, for instance).
+    """
+    if not gh or not slug:
+        return "CI not checked (gh is not installed, or the remote is not on GitHub): look at the commit's runs first"
+    own, err = _runs_of(gh, slug, sha)
+    if own is None:
+        return f"CI not checked ({err})"
+    runs = [run for run in own if run.get("event") in CHECK_EVENTS]
+    what = f"the commit {sha[:12]}"
+    pr = merged_pull_request(gh, slug, sha)
+    if pr:
+        number, head = pr
+        theirs, err = _runs_of(gh, slug, head)
+        if theirs is None:
+            return f"CI not checked ({err})"
+        seen = {run.get("url") for run in runs}
+        runs += [run for run in theirs if run.get("event") == "pull_request" and run.get("url") not in seen]
+        what = f"pull request #{number}, merged as {sha[:12]},"
     if not runs:
-        return f"CI not checked: no push run of {sha[:12]} was found"
+        return f"CI not checked: no pull-request or push run of {sha[:12]} was found"
     failed = [run for run in runs if run.get("status") == "completed" and run.get("conclusion") in BAD_CONCLUSIONS]
     running = [run for run in runs if run.get("status") != "completed"]
     if failed:
         listed = "\n".join(f"  {run.get('name')}: {run.get('conclusion')} {run.get('url', '')}" for run in failed)
-        raise Refusal(f"the commit {sha[:12]} has push runs that did not pass:\n{listed}\nfix them, push, then tag")
+        raise Refusal(f"{what} has runs that did not pass:\n{listed}\nfix them in a pull request, then tag")
     if running:
         listed = "\n".join(f"  {run.get('name')}: {run.get('status')}" for run in running)
-        raise Refusal(f"the commit {sha[:12]} still has push runs going:\n{listed}\nwait until they pass, then tag")
-    return f"CI green: {len(runs)} push run(s) of {sha[:12]} passed"
+        raise Refusal(f"{what} still has runs going:\n{listed}\nwait until they pass, then tag")
+    return f"CI green: {len(runs)} run(s) of {what.rstrip(',')} passed"
 
 
 def wait_for_run(gh: Optional[str], slug: Optional[str], tag: str, seconds: int) -> Optional[str]:
@@ -237,7 +277,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--branch", default="test", help="the branch the release commit is on (default: test)")
     parser.add_argument("--dry-run", action="store_true", help="check everything, tag nothing")
     parser.add_argument("--wait", type=int, default=90, help="seconds to wait for the Release Bundle run (gh)")
-    parser.add_argument("--no-ci-check", action="store_true", help="tag without checking the commit's push runs")
+    parser.add_argument(
+        "--no-ci-check",
+        action="store_true",
+        help="tag without checking the commit's CI runs (its pull request's and its own)",
+    )
     parser.add_argument("--gh", default=shutil.which("gh"), help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
 

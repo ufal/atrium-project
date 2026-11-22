@@ -1,8 +1,11 @@
 # Reusable workflow the ATRIUM tool repositories call to test, build, probe and publish images.
 #   test                pytest with coverage; skips reported; tests must not change tracked files
 #   docker-build-smoke  build every target; start each probe target: health, port, logs, SIGTERM
-#   build-and-push      push by digest, scan, then promote the release tags (tag, `test` push)
+#   build-and-push      push by digest, scan, then promote the release tags (tag; `test` on a merge)
 #   images              on a version tag, the digest each promoted tag resolves to (images-json)
+# Events: a pull request (opened, synchronize, reopened) builds, tests and probes; a pull request
+# merged into `test` (its `closed` event) does the same on the merge commit and publishes `:test`;
+# an unmerged close runs nothing; a version tag or a release publishes the release tags.
 # The caller caps every job's permissions. Reasons and incident history:
 # docs/decisions/docker-tool-reusable.md; the workflow set: docs/docker_gha.md.
 name: ATRIUM Docker Tool Template
@@ -147,6 +150,8 @@ env:
 
 jobs:
   test:
+    # Not on a pull request closed without merging; a merged one is tested on its merge commit.
+    if: github.event.action != 'closed' || github.event.pull_request.merged
     runs-on: ubuntu-latest
     timeout-minutes: 45
     # Least privilege (#10, G8): with no block, a reusable workflow's job inherits the caller's
@@ -159,6 +164,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          # A merged pull request's `closed` event: the merge commit on its base branch.
+          ref: ${{ github.event.action == 'closed' && github.event.pull_request.merge_commit_sha || '' }}
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v7
@@ -298,14 +306,14 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
   docker-build-smoke:
-    # Runs on pull requests, dispatch, `test` pushes and version tags, so it probes what
-    # build-and-push publishes (W3). build-and-push needs this job: with release-gate, a failed
-    # leg publishes nothing (#81). Dispatch lets a release dry run exercise the gate.
-    # History: docs/decisions/docker-tool-reusable.md#when-the-probe-runs
+    # Runs on pull requests (a merged one included, not an unmerged close), dispatch and version
+    # tags, so it probes what build-and-push publishes (W3). build-and-push needs this job: with
+    # release-gate, a failed leg publishes nothing (#81). Dispatch lets a release dry run exercise
+    # the gate. History: docs/decisions/docker-tool-reusable.md#when-the-probe-runs
     if: >-
-      github.event_name == 'pull_request'
+      (github.event_name == 'pull_request'
+       && (github.event.action != 'closed' || github.event.pull_request.merged))
       || github.event_name == 'workflow_dispatch'
-      || (github.event_name == 'push' && github.ref == 'refs/heads/test')
       || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -320,6 +328,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          # A merged pull request's `closed` event: the merge commit on its base branch.
+          ref: ${{ github.event.action == 'closed' && github.event.pull_request.merge_commit_sha || '' }}
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v4
@@ -688,7 +699,8 @@ jobs:
 
   build-and-push:
     needs: [test, docker-build-smoke]
-    # Publishes on a version tag, a release and a push to `test` (the `:test` channel, W2). With
+    # Publishes on a version tag, a release and a pull request merged into `test` (the `:test`
+    # channel, W2). With
     # `release-gate: true` nothing is pushed unless every probe leg passed (#81); `!cancelled()`
     # lets it run after a failed probe when the gate is off. `:test` is not CVE-gated (tags only).
     # Callers' concurrency groups must never cancel a tag build. History:
@@ -699,7 +711,7 @@ jobs:
       && (needs.docker-build-smoke.result == 'success' || !inputs.release-gate)
       && (startsWith(github.ref, 'refs/tags/v')
           || github.event_name == 'release'
-          || (github.event_name == 'push' && github.ref == 'refs/heads/test'))
+          || (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged && github.base_ref == 'test'))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -715,6 +727,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          # A merged pull request's `closed` event: the merge commit on its base branch.
+          ref: ${{ github.event.action == 'closed' && github.event.pull_request.merge_commit_sha || '' }}
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
@@ -745,7 +760,7 @@ jobs:
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
             # The moving pre-release channel (issue #10): the E2E lanes run `:test` to check the
             # code about to be released before the tag is cut. `latest` is untouched.
-            type=raw,value=test,enable=${{ github.ref == 'refs/heads/test' }}
+            type=raw,value=test,enable=${{ (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged && github.base_ref == 'test') }}
 
       - name: Set up Docker Buildx
         id: buildx

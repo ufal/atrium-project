@@ -32,6 +32,21 @@ included, is in the [Glossary](glossary.md).
 
 ## Data & OCR formats
 
+### docproc, the layout format of digital-convert and the ATR
+
+**What it is.** A JSON format for a document's layout: its pages, each with a verdict on its text layer,
+and on each page the blocks and lines of text with their positions, in reading order. It is ARÚP's
+format: the ATR writes it for scanned pages, and ARÚP versions its schema and validates the pipeline's
+outputs against it. In AMČR it is the distribution `atr/docproc-json`, one stored per document.
+
+**Where ATRIUM uses it.** digital-convert writes docproc for a born-digital file, with a verdict for every
+page; when a page needs text recognition, the ATR's docproc is the stored one. ocr-postprocess builds the
+ATRIUM record from it, and for a mixed document merges the two. digital-convert keeps the copies of the
+schema it validates against, and the changes ÚFAL proposed, in
+[`schemas/docproc/`](https://github.com/ufal/atrium-digital-convert/blob/test/schemas/docproc/README.md).
+
+**Onward:** [the route through the pipeline](pipelines.md#the-route-through-the-pipeline)
+
 ### ALTO XML
 
 **What it is.** *Analyzed Layout and Text Object* — an XML standard for the output of OCR,
@@ -39,12 +54,13 @@ maintained by the Library of Congress. It records not just the recognised text b
 the page each piece of it sits*: a document is `Page` → `TextBlock` → `TextLine` → `String`,
 and each `String` carries one token in a `CONTENT` attribute plus its bounding box.
 
-**Where ATRIUM uses it.** It is the backbone format of the whole pipeline. `ocr-postprocess`
-consumes OCR ALTO and emits per-page ALTO under `PAGE_ALTO/`; the
-[translator](https://github.com/ufal/atrium-translator/blob/test/README.md) rewrites ALTO in place, preserving every coordinate;
-the E2E fixture is one ALTO v3 page. Versions v1–v4 are in scope, with one catch:
-ocr-postprocess's ALTO methods split only v3 files (`page_split.py`), while its text-lines
-method and service read every version.
+**Where ATRIUM uses it.** Outside the AMČR pipeline, which produces and stores no ALTO. The earlier
+OCR of the two collections (ALTO from ABBYY FineReader) is converted once into docproc. For research
+and batch use, ocr-postprocess reads ALTO and writes per-page ALTO under `PAGE_ALTO/`, nlp-enrich takes
+an ALTO file as the layout of a TEITOK file, and the
+[translator](https://github.com/ufal/atrium-translator/blob/test/README.md) rewrites ALTO in place,
+preserving every coordinate. Versions v1–v4 are in scope, with one catch: ocr-postprocess's ALTO methods
+split only v3 files (`page_split.py`), while its text-lines method and service read every version.
 
 **Why it is harder than it looks.** Because ALTO stores text *spatially*, translating or
 rewriting it is not a text operation — see
@@ -64,10 +80,10 @@ circumstances, finds and free-text notes.
 translate — `popis`, `poznamka`, `lokalizace`, `lokalizace_okolnosti`, `souhrn_upresneni` and the
 protected-data fields — in its own XPath list, which it sends with each job; the translator has no
 default list. Its `amcr-fields.example.txt` is a template of such a list, not AMČR's list.
-`load_vocab.py` also harvests AMCR's controlled vocabulary (*heslář*) to build the
+`load_vocab.py` also harvests AMČR's controlled vocabulary (*heslář*) to build the
 translation glossary.
 
-**One detail worth carrying.** AMCR's own thesaurus already expresses bilingual pairs as
+**One detail worth carrying.** AMČR's own thesaurus already expresses bilingual pairs as
 sibling elements — `heslo` / `heslo_en` — which is exactly the shape the translator's
 `append` output mode adopts rather than inventing a new one.
 
@@ -80,13 +96,13 @@ very old, very stable HTTP protocol for pulling metadata records out of a reposi
 You ask for `GetRecord` or `ListRecords`, optionally since a date, and get XML back. It is how
 digital libraries have exchanged catalogue data for twenty years.
 
-**Where ATRIUM uses it.** AMCR is harvested over OAI-PMH: `amcr-inputs.txt` holds sample
+**Where ATRIUM uses it.** AMČR is harvested over OAI-PMH: `amcr-inputs.txt` holds sample
 `GetRecord` URLs against `https://api.aiscr.cz/2.2/oai` — the records in `my_documents/` — and `load_vocab.py` walks the same endpoint with `ListRecords` to build
 the vocabulary ([W7](pipelines.md#w7--vocabulary-harvesting--review-the-translators-half)). The
-translator's metadata mode finds the AMCR and OAI-PMH namespaces anywhere in a file, so that it
+translator's metadata mode finds the AMČR and OAI-PMH namespaces anywhere in a file, so that it
 can translate fields *inside* an OAI-PMH envelope as well as in a bare record.
 
-**Why it is listed here.** Three repositories harvested AMCR over it — the translator, nlp-enrich
+**Why it is listed here.** Three repositories harvested AMČR over it — the translator, nlp-enrich
 and llm-enrich. The two vocabulary builds of the last two now live in keyword-extract.
 
 **Onward:** <https://www.openarchives.org/pmh/>
@@ -261,7 +277,7 @@ they are separate entries in the licence table for exactly that reason.
 each concept, organised in a tree of categories and served from `teater.aiscr.cz` over GraphQL
 rather than OAI-PMH.
 
-**Where ATRIUM uses it.** Together with the AMCR *heslář*, it is one of the two sources
+**Where ATRIUM uses it.** Together with the AMČR *heslář*, it is one of the two sources
 `load_vocab.py` unions into the translation glossary, and
 `keyword-extract` builds a nested union of both for its category enum. Its data is CC0, as AMČR
 has stated (atrium-project#6), so loading the vocabulary adds no restriction to a run.
@@ -382,8 +398,8 @@ inherit the repository's visibility and can be pulled anonymously when it is pub
 is what makes `image-tag` the most consequential input in that workflow.
 
 !!! note "`:latest` moves only on a version tag"
-    Only a push to the `test` branch publishes, as `sha-*` and `:test`; pushes to other branches
-    publish nothing. `:latest` and the version tag move only on a `v*` tag, and only after the
+    A pull request merged into `test` publishes, as `sha-*` and `:test`; nothing else on a branch
+    publishes. `:latest` and the version tag move only on a `v*` tag, and only after the
     release gate passes — `-beta` tags included. So `:latest` means *the most recent release that
     passed the gate*, not *the most recent build* — which matters when reading an E2E result. See
     [W6](pipelines.md#w6--e2e-smoke-the-integration-contract) and [Operations](operations.md#images-and-tags).
@@ -575,8 +591,9 @@ here; their building blocks are BY (attribution), NC (non-commercial) and SA (sh
 
 **Where ATRIUM uses it.** The paradata lists every component a run used with its licence, as an
 SPDX identifier or a display name; `para_licenses.py`, vendored into every tool, normalises the
-names. The module also still writes an older calculated field; it is not a licence and is not to be
-used ([an old field to ignore](ecosystem/licences.md#an-old-field-to-ignore)).
+names. It computes no licence: records and paradata of the older schemas carried a calculated field,
+which is not a licence and is not to be used
+([older records and crates](ecosystem/licences.md#older-records-and-crates)).
 
 **Worth knowing.**
 
@@ -630,7 +647,7 @@ makes it dereferenceable. See [SKOS](contracts/skos.md#how-a-uri-is-minted).
 
 ## Domain vocabularies
 
-AMCR, TEATER and OAI-PMH are described above. Two more belong to nlp-enrich's part of the
+AMČR, TEATER and OAI-PMH are described above. Two more belong to nlp-enrich's part of the
 pipeline:
 
 * **CNEC 2.0** — the *Czech Named Entity Corpus* type hierarchy, used for the named-entity
@@ -771,7 +788,7 @@ service image contains it; digital-convert vendors the same adapter.
 
 **Where ATRIUM uses it.** Not in the two tools' code. The hub README states the project's purpose,
 and the shared modules mention two of them: the SKOS registry leaves the externally published,
-DARIAH-namespaced SKOS version of the AMCR and TEATER vocabularies to a separate project, and the
+DARIAH-namespaced SKOS version of the AMČR and TEATER vocabularies to a separate project, and the
 record schema describes `entities[].pid` as "the ARIADNE/GoTriple hook".
 
 **Onward:** <https://atrium-research.eu/> · <https://www.dariah.eu/> ·
@@ -794,7 +811,7 @@ acknowledgements, and this site's footer.
 ústav AV ČR* — in Prague (ARÚP) and Brno (ARÚB). They hold the collections these tools were built
 for, and they are the partners the services are handed to.
 
-**Where ATRIUM uses it.** In the data: the AMCR sample records name
+**Where ATRIUM uses it.** In the data: the AMČR sample records name
 `Archeologický ústav AV ČR, Praha, v.v.i.` as the responsible organisation. In page-classification's
 results: `result/ARUP_averaged_SHORT.csv` and `result/ARUB_averaged_SHORT.csv` are ensemble
 classifications of each institute's pages. And at the deployment boundary: the handoff is a Docker
@@ -804,18 +821,31 @@ image that the partners run on their own Kubernetes ([Operations](operations.md)
 
 ### AIS CR — `aiscr.cz`
 
-**What it is.** The Czech archaeological information infrastructure that publishes the AMCR
+**What it is.** The Czech archaeological information infrastructure that publishes the AMČR
 database and the TEATER thesaurus, under the `aiscr.cz` domain. Its OAI-PMH endpoint identifies
 itself as *Archaeological Map of the Czech Republic (AMCR)* and labels the repository's metadata
 CC BY-NC 4.0 as a whole. AMČR has stated that the keyword lists (the `heslo` set) and the TEATER
 thesaurus are CC0 (atrium-project#6), and the tools record them so.
 
-**Where ATRIUM uses it.** `aiscr.cz` hosts everything the translator harvests or links to: the AMCR
-OAI-PMH endpoint `api.aiscr.cz/2.2/oai`, AMCR's identifier namespace `api.aiscr.cz/id/` (also a
-prefix in the SKOS registry), the AMCR XML schema under `api.aiscr.cz/schema/amcr/2.2/`, and TEATER
+**Where ATRIUM uses it.** `aiscr.cz` hosts everything the translator harvests or links to: the AMČR
+OAI-PMH endpoint `api.aiscr.cz/2.2/oai`, AMČR's identifier namespace `api.aiscr.cz/id/` (also a
+prefix in the SKOS registry), the AMČR XML schema under `api.aiscr.cz/schema/amcr/2.2/`, and TEATER
 at `teater.aiscr.cz` — GraphQL at `/api/graphql`, identifiers under `/id/`.
 
 **Onward:** <https://www.aiscr.cz/>
+
+### The ATR, AIS CR's text-recognition service
+
+**What it is.** The text-recognition service of AIS CR, which reads scanned pages and writes their layout
+and text as docproc. It is AIS CR's own service, outside the six ATRIUM tools; choosing its OCR engine
+belongs to AMČR.
+
+**Where ATRIUM uses it.** In the AMČR pipeline, an image goes to the ATR directly, and a PDF or office
+file goes through it whole when digital-convert finds a page without usable text, with those pages
+marked. page-classification classifies those pages beside it, and ocr-postprocess builds the record from
+the ATR's docproc. An ATR failure fails the job.
+
+**Onward:** [the route through the pipeline](pipelines.md#the-route-through-the-pipeline)
 
 ### The data management plan
 
@@ -850,6 +880,7 @@ This table records **provenance**, not a build instruction.
 
 | Source                                                                                                                                                                                                                                                                                                                                                                                            | What was taken from it                                                                                                                              |
 |---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| `atrium-digital-convert` `schemas/docproc/README.md` and the hub's [Pipelines](pipelines.md#the-route-through-the-pipeline), on `test`, 2026-11-21                                                                                                                                                                                                                                                | the docproc and ATR entries; ALTO's place outside the pipeline                                                                                      |
 | `atrium-translator` `v1.2.1-beta` — `processors/{backend,identifier,language,translator,lemmatizer,llm_translator,ct2_translator}.py`, `config.txt`, `para_config.txt`, `docs/translation-backends.md`, `amcr-inputs.txt`, `load_vocab.py`, `eval/`, `service/requirements.txt`, `.github/dependabot.yml`, `CITATION.cff`, `data_samples/my_documents/`                                           | CUBBITT, UDPipe, FastText, AMCR, OAI-PMH, TEATER, CoNLL-U, the back-ends, sacreBLEU / COMET, FastAPI, AIS CR hosts, and every licence consequence   |
 | `atrium-page-classification` @ `vit` `adee922` — `setup/{requirements,para_config,config}.txt`, `service/{api.py,inference.py,requirements.txt}`, `Dockerfile`, `docker-compose.yml`, `.github/dependabot.yml`, `.coveragerc`, `.pre-commit-config.yaml`, `data_scripts/`, `result/`, `README.md`, `CITATION.cff`                                                                                 | Hugging Face, `ufal/vit-historical-page`, `regnety_160`, the ML stack, PDF rasterisation, Docker, the LINDAT dataset handle, ARÚP/ARÚB result files |
 | the shared files both tools vendor — `atrium_vocab.py`, `atrium_rocrate.py`, `atrium_document.py` + schema, `atrium_paradata.py`, `para_licenses.py`, `check_version.py`                                                                                                                                                                                                                          | every metadata-standards entry; the licence and Turtle behaviour                                                                                    |

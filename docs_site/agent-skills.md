@@ -12,8 +12,9 @@ Give a coding agent — Claude Code, Codex, Antigravity — the ability to call 
 without teaching it the tool's code.
 
 !!! info "Scope"
-    All six tools have an `agent-skill` branch. The two described below are
-    page-classification's and the translator's; the other four follow the same pattern.
+    All six tools have an `agent-skill` branch, listed in [The six skills](#the-six-skills).
+    page-classification's and the translator's are described in detail; the other four follow
+    the same pattern. AMČR's pipeline calls the services directly, not through skills.
 
 ## What a skill is here
 
@@ -55,7 +56,31 @@ coverage configuration, and modules the service does not import — and keeps th
 so the service it starts is the same one the default branch publishes. The translator's
 branch adds a small demonstration web page at `/frontend`.
 
-## The two skills
+## The six skills
+
+| Skill (`name:`)              | Branch                                                                                     | Does                                                                     | The client calls                                            | Client                          | Server URL      | Service on the branch |
+|------------------------------|--------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|-------------------------------------------------------------|---------------------------------|-----------------|-----------------------|
+| `atrium-page-classification` | [page-classification](https://github.com/ufal/atrium-page-classification/tree/agent-skill) | sorts page images and PDFs into the eleven page types                    | `POST /predict_image` · `/predict_document`                 | `scripts/atrium_classify.py`    | `ATRIUM_PC_URL` | `1.9.6-beta`          |
+| `atrium-ocr-postprocess`     | [ocr-postprocess](https://github.com/ufal/atrium-ocr-postprocess/tree/agent-skill)         | each line's language and quality category, from ALTO pages or text files | `POST /process`                                             | `scripts/atrium_postprocess.py` | `ATRIUM_AP_URL` | `1.12.1-beta`         |
+| `atrium-digital-convert`     | [digital-convert](https://github.com/ufal/atrium-digital-convert/tree/agent-skill)         | born-digital documents converted, with a verdict for every page          | `POST /reformat`; `/describe`, parked during the AMČR pilot | `scripts/atrium_convert.py`     | `ATRIUM_DC_URL` | `1.2.1-beta`          |
+| `atrium-nlp-enrich`          | [nlp-enrich](https://github.com/ufal/atrium-nlp-enrich/tree/agent-skill)                   | lemmas, tags and named entities of text lines, as TEITOK                 | `POST /enrich` · `/enrich_text` · `/jobs`                   | `scripts/atrium_enrich.py`      | `ATRIUM_NE_URL` | `1.1.3-beta`          |
+| `atrium-keyword-extract`     | [keyword-extract](https://github.com/ufal/atrium-keyword-extract/tree/agent-skill)         | statistical and vocabulary-controlled keywords of a record or a text     | `POST /extract_keywords` · `/extract_keywords_text`         | `scripts/atrium_keywords.py`    | `ATRIUM_KW_URL` | `1.4.0-beta`          |
+| `atrium-translator`          | [translator](https://github.com/ufal/atrium-translator/tree/agent-skill)                   | XML translated in place: AMČR metadata records, ALTO pages               | `POST /translate`                                           | `scripts/atrium_translate.py`   | `ATRIUM_TR_URL` | `1.5.0-beta`          |
+
+Each branch carries the service of the release in the last column, which predates record schema 2.0
+and the AMČR pilot's route. Its `scripts/server.sh` starts that service. Two clients differ from the
+2.0.0-beta services:
+
+- **The translator's** sends no field list. Its own service reads one from its configuration, but a
+  2.0.0-beta service needs it with each request and refuses the client's metadata calls (422,
+  `cause` `missing_xpaths`).
+- **ocr-postprocess's** calls `/process`, the line scoring of research batches, not `/build_record`,
+  the record builder of the pipeline.
+
+Every service also answers `GET /info`, `GET /health` and `GET /ready` ([below](#the-service-contract-the-skills-lean-on)),
+and serves its OpenAPI document at `GET /openapi.json`.
+
+## Two skills in detail
 
 === "page-classification"
 
@@ -110,17 +135,17 @@ branch adds a small demonstration web page at `/frontend`.
     | Output                | the translated document as a file: `page.alto.xml` → `page_en.alto.xml`, `record.xml` → `record_en.xml`; with a baseline record, `multipart/mixed` carrying the XML and the updated record |
     | Needs at request time | outbound network — the default backend is LINDAT's translation API                                                                                                                         |
 
-    | Client flag                     | Default                                            |                                                                  |
-    |---------------------------------|----------------------------------------------------|------------------------------------------------------------------|
-    | `files…`                        | —                                                  | ALTO pages or AMCR records                                       |
-    | `--base-url`                    | `$ATRIUM_TR_URL` or `http://localhost:8000`        |                                                                  |
-    | `--source-lang`                 | `auto`                                             | detection per `TextBlock`                                        |
-    | `--target-lang`                 | `en`                                               |                                                                  |
-    | `--alto` / `--no-alto`          | `--alto`                                           | `--no-alto` for AMCR metadata records                            |
-    | `-o`, `--output FILE`           | the server-proposed name, in the current directory | `-` for stdout; one input file only                              |
-    | `--info`                        |                                                    | print the service's capabilities and limits, then exit           |
-    | `--document-json PATH`          |                                                    | a baseline record to add `translations` to — one input file only |
-    | `--document-json-out-file PATH` | `<stem>.document.json`                             | requires `--document-json`                                       |
+    | Client flag                     | Default                                            |                                                                                                 |
+    |---------------------------------|----------------------------------------------------|-------------------------------------------------------------------------------------------------|
+    | `files…`                        | —                                                  | ALTO pages or AMČR records                                                                      |
+    | `--base-url`                    | `$ATRIUM_TR_URL` or `http://localhost:8000`        |                                                                                                 |
+    | `--source-lang`                 | `auto`                                             | detection per `TextBlock`                                                                       |
+    | `--target-lang`                 | `en`                                               |                                                                                                 |
+    | `--alto` / `--no-alto`          | `--alto`                                           | `--no-alto` for AMČR metadata records                                                           |
+    | `-o`, `--output FILE`           | the server-proposed name, in the current directory | `-` for stdout; one input file only                                                             |
+    | `--info`                        |                                                    | print the service's capabilities and limits, then exit                                          |
+    | `--document-json PATH`          |                                                    | a baseline record, handed back by a 2.0.0-beta service with nothing added — one input file only |
+    | `--document-json-out-file PATH` | `<stem>.document.json`                             | requires `--document-json`                                                                      |
 
     What `SKILL.md` tells the agent, condensed: use `--no-alto` for metadata — a mismatch produces
     empty or mangled output rather than an error; keep `auto` unless the user names the language;
@@ -187,7 +212,7 @@ Every ATRIUM service implements the same meta-contract, from the hub-canonical
 | Endpoint                | Answers                                                                                                                                                                                                                                                                             |
 |-------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `GET /info`             | `service` (the repository name), `version` (from `para_config.txt`, never hard-coded), `endpoints` (the live route list), `limits` (at least `max_upload_mb`), plus capabilities — the classifier adds `categories` and `available_models`; the translator adds `supported_formats` |
-| `GET /health`           | `{"status": "ok"}`, always 200 while the process lives — liveness                                                                                                                                                                                                                   |
+| `GET /health`           | `{"status": "ok"}`, 200 while the process serves — liveness. A service that loads its model before it opens its port (keyword-extract) answers nothing until then                                                                                                                   |
 | `GET /health?deep=true` | 503 with a `detail` when a dependency is degraded, or while draining                                                                                                                                                                                                                |
 | `GET /ready`            | 503 `starting` until warm-up completes; 200 when ready to serve; 503 `draining` after SIGTERM — readiness                                                                                                                                                                           |
 
@@ -237,11 +262,12 @@ profile, polling `/info` until it answers, and the shared exit codes above.
 
 This table records **provenance**: what this page was written from, not a build instruction.
 
-| Source                                                                         | What was taken from it        |
-|--------------------------------------------------------------------------------|-------------------------------|
-| `atrium-page-classification@agent-skill` — `SKILL.md`, `README.md`, `scripts/` | the page-classification skill |
-| `atrium-translator@agent-skill` — the same files                               | the translator skill          |
-| `atrium-project/docs/templates/shared/atrium_service.py`                       | the meta-contract             |
-| `atrium-project/docs/skills_catalog.md`, `docs/agent_skill_strategy.md` §§4–7  | the normative contract        |
-| `atrium-project/.github/workflows/skill-validate.reusable.yml`                 | what CI checks                |
-| `atrium-project/docs/templates/skill/`                                         | the templates                 |
+| Source                                                                                                | What was taken from it                                            |
+|-------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
+| `atrium-page-classification@agent-skill` — `SKILL.md`, `README.md`, `scripts/`                        | the page-classification skill                                     |
+| `atrium-translator@agent-skill` — the same files                                                      | the translator skill                                              |
+| `atrium-project/docs/templates/shared/atrium_service.py`                                              | the meta-contract                                                 |
+| `docs/agent_skill_strategy.md` §§4–7, and the former `docs/skills_catalog.md`                         | the normative contract; the six skills                            |
+| the six tools' `agent-skill` branches — `SKILL.md`, `scripts/`, `para_config.txt`, read on 2026-11-21 | the six skills, their clients and the service each branch carries |
+| `atrium-project/.github/workflows/skill-validate.reusable.yml`                                        | what CI checks                                                    |
+| `atrium-project/docs/templates/skill/`                                                                | the templates                                                     |

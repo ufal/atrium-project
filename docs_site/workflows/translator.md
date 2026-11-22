@@ -11,51 +11,53 @@ authored: true
 
 # Translating XML documents with a protected domain vocabulary
 
-*The translator workflow.* Tool section: [translator](https://github.com/ufal/atrium-translator/blob/test/README.md).
+*The translator workflow.* Tool: [atrium-translator](https://github.com/ufal/atrium-translator).
 
 ## Purpose
 
-Archival collections hold text inside XML: OCR transcriptions in ALTO XML, and structured
-metadata records such as those of the Archaeological Map of the Czech Republic (AMČR). This
+Archival collections hold text inside XML: structured metadata records such as those of the
+Archaeological Map of the Czech Republic (AMČR), and OCR transcriptions in ALTO XML. This
 workflow translates that text — into English by default — and writes it back into the same
 document, so that tags, namespaces, attributes and, for ALTO, the position of every word
-survive, and the result stays valid against its schema. Domain terms can be held to their
+survive, and the result stays valid against its schema. In the AMČR pilot it turns the
+free-text fields of an AMČR record into English, the fields named by a list AMČR sends with
+each job; ALTO translation is for research and batch use. Domain terms can be held to their
 established translations from a controlled vocabulary, so that an archaeological term is
 rendered the same way in every document.
 
 ## At a glance
 
-|                        |                                                                                                                                                                                                                                                                                                                                                                 |
-|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **In**                 | ALTO XML pages, or any well-formed XML with the list of the fields to translate (XPaths), which comes with each job (there is no default list); the two told apart by their root element unless a mode is named; files, folders or lists of URLs; optionally a vocabulary (CSV)                                                                                 |
-| **Out**                | the translated document (same format); a translation log pairing source and target text (CSV); a paradata log (JSON); the ATRIUM document record (JSON), handed back unchanged from v2.0.0-beta. The service returns the log and the record on request (`include_log`, `include_record`)                                                                        |
-| **Runs as**            | a command-line tool (`main.py`); a container image; an HTTP service image (`POST /translate`); an [Agent Skill](../agent-skills.md)                                                                                                                                                                                                                             |
-| **Compute**            | CPU; a GPU only for a self-hosted translation model (Qwen3.8-27B was measured on one 96 GB GPU)                                                                                                                                                                                                                                                                 |
-| **Network**            | the LINDAT translation service (the default backend) and the LINDAT UDPipe service (vocabulary matching), or the server of a language-model backend; the Hugging Face Hub for the language-identification model on first use, from a checkout (the published images carry it); GitHub when the vocabulary is fetched from keyword-extract's release             |
-| **Code licence**       | MIT                                                                                                                                                                                                                                                                                                                                                             |
-| **Component licences** | a default run uses CUBBITT through the LINDAT service (a CC BY-NC-SA 4.0 model, under LINDAT's terms of use) and, when the source language is detected, FastText (CC BY-NC 4.0); a run with only permissive components can be assembled (see below). These do not by themselves set the rights in the output: [Licences and paradata](../ecosystem/licences.md) |
-| **Records**            | SSH Open Marketplace tool [`CizIUW`](https://marketplace.sshopencloud.eu/tool-or-service/CizIUW) and workflow [`13eHAZ`](https://marketplace.sshopencloud.eu/workflow/13eHAZ)                                                                                                                                                                                   |
+|                        |                                                                                                                                                                                                                                                                                                                                                     |
+|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **In**                 | any well-formed XML with the list of the fields to translate (XPaths), which comes with each job (there is no default list, and a metadata run without one is refused); for research and batch use, ALTO XML pages; the two told apart by their root element unless a mode is named; files, folders or lists of URLs; optionally a vocabulary (CSV) |
+| **Out**                | the translated document (same format); a translation log pairing source and target text (CSV); a paradata log (JSON); the ATRIUM document record (JSON), only when one is given, handed back unchanged. The service returns the log on request (`include_log`), and the record when one is sent                                                     |
+| **Runs as**            | a command-line tool (`main.py`); a container image; an HTTP service image (`POST /translate`); an [Agent Skill](../agent-skills.md)                                                                                                                                                                                                                 |
+| **Compute**            | CPU; a GPU only for a self-hosted translation model (Qwen3.8-27B was measured on one 96 GB GPU)                                                                                                                                                                                                                                                     |
+| **Network**            | the LINDAT translation service (the default backend) and the LINDAT UDPipe service (vocabulary matching), or the server of a language-model backend; the Hugging Face Hub for the language-identification model on first use, from a checkout (the published images carry it); GitHub when the vocabulary is fetched from keyword-extract's release |
+| **Code licence**       | MIT                                                                                                                                                                                                                                                                                                                                                 |
+| **Component licences** | a default run uses CUBBITT through the LINDAT service (a CC BY-NC-SA 4.0 model, under LINDAT's terms of use) and, when the source language is detected, FastText (CC BY-NC 4.0); a run with only permissive components can be assembled (see below). No licence of an output is computed: [Licences and paradata](../ecosystem/licences.md)         |
+| **Records**            | SSH Open Marketplace tool [`CizIUW`](https://marketplace.sshopencloud.eu/tool-or-service/CizIUW) and workflow [`13eHAZ`](https://marketplace.sshopencloud.eu/workflow/13eHAZ)                                                                                                                                                                       |
 
 ## Steps
 
-| # | Step                                   | What happens                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | In → out    | Activity    |
-|---|----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|-------------|
-| 1 | Prepare a domain vocabulary (optional) | Czech–English term pairs from the AMČR vocabularies and the TEATER thesaurus, each pointing back to the concept it came from. The project keeps one curated list, which keyword-extract publishes with each release: `load_vocab.py --from-release` builds the CSV from that asset, checked against its `.sha256`, and adds the concept's description where there is one. The bundled harvester collects pairs from the live sources instead (AMČR over OAI-PMH, TEATER over GraphQL). The shipped `data_samples/vocabulary.csv` is keyword-extract's `v1.3.0-beta` list: 4,715 pairs, 1,961 with a description. A vocabulary of one's own in the same CSV form works as well.                                                                 | → CSV       | Collecting  |
-| 2 | Choose the mode and the fields         | ALTO transcriptions are translated in ALTO mode, which works on the words of each text line. For metadata records, the fields to translate are listed as XPaths; namespaces and OAI-PMH envelopes are handled by the tool. The file's root element decides the mode (an `<alto>` root is ALTO, any other is metadata) unless one is named: `--alto`, `--xpaths` or `--formats` on the command line, `is_alto` in the service (since v1.6.0-beta). The field list comes with each job (`--xpaths FILE`, or the service's `xpaths` field): there is no default list, and a metadata request without one is refused (D34, since v2.0.0-beta). AMČR passes its own list; the tool's `amcr-fields.example.txt` is a template of one, not that list. | ALTO, XML   | —           |
-| 3 | Identify the source language           | A language-identification model detects the language of each text block (ALTO) or field (metadata), so a record that mixes languages is handled piece by piece. A guess is used only when it is confident and names a language the backend translates; otherwise the element's own label, the document's language, then a configured default decide. A confident guess of a language the backend cannot translate is reported for review. Naming the source language skips detection. Before anything is translated, the named language, or the default, is checked against the backend: a pair it cannot translate is refused (exit 1 on the command line, 422 `unsupported_language_pair` from the service) and is never rerouted.           | —           | —           |
-| 4 | Protect domain terms (optional)        | Vocabulary terms found in the text are replaced by placeholders before translation and restored as their agreed translations afterwards; multi-word terms are matched first, single words by lemma. Language-model backends receive the matching terms as a glossary in the prompt instead; the OpenAI-compatible backend can add each term's description as context (off by default). The command line takes the vocabulary with `--vocabulary`; the service applies one only when `VOCABULARY_PATH` names it.                                                                                                                                                                                                                                | CSV         | Lemmatizing |
-| 5 | Translate                              | The text goes to the chosen backend: the LINDAT translation service (CUBBITT, the default), an OpenAI-compatible language-model API (such as Qwen3.8-27B on one's own vLLM server), or a self-hosted CTranslate2 model. Long texts are split at sentence boundaries first. Every reply is checked against its source: one that is empty, runaway, cut short, looping, or mixes Latin and Cyrillic letters in a word is requested again, re-run at the end of the document if it still fails, and never written.                                                                                                                                                                                                                                | —           | Translating |
-| 6 | Rebuild and validate the document      | ALTO: each text block is translated as a whole and line by line; the fluent whole-block translation is then divided among the original lines and written into the original word elements — replacing their text, or added beside it as an alternative. Metadata: the translation replaces the source text, or is added beside it with language labels. Metadata output can be validated against an XSD schema, such as the AMČR schema, which accepts replaced records and not appended ones: `--xsd` on the command line, `XSD_PATH` in the service (since v1.6.0-beta).                                                                                                                                                                      | → ALTO, XML | —           |
-| 7 | Review and record provenance           | A translation log beside each output pairs source and target text line by line or field by field, with a status saying whether each was translated normally, recovered by a re-run, placed approximately, kept as source, or translated from a fallback language because the backend cannot translate the detected one. The paradata log records what was run, with each component's licence, and names the field list, the backend and the model, never the fields' text; from v2.0.0-beta nothing is written into the document record.                                                                                                                                                                                                       | → CSV, JSON | —           |
+| #   | Step                                   | What happens                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | In → out    | Activity    |
+|-----|----------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|-------------|
+| 1   | Prepare a domain vocabulary (optional) | Czech–English term pairs from the AMČR vocabularies and the TEATER thesaurus, each pointing back to the concept it came from. The project keeps one curated list, which keyword-extract publishes with each release: `load_vocab.py --from-release` builds the CSV from that asset, checked against its `.sha256`, and adds the concept's description where there is one. The bundled harvester collects pairs from the live sources instead (AMČR over OAI-PMH, TEATER over GraphQL). The shipped `data_samples/vocabulary.csv` is keyword-extract's `v1.3.0-beta` list: 4,715 pairs, 1,961 with a description. A vocabulary of one's own in the same CSV form works as well.                                                        | → CSV       | Collecting  |
+| 2   | Choose the mode and the fields         | For metadata records, the fields to translate are listed as XPaths; namespaces and OAI-PMH envelopes are handled by the tool. ALTO transcriptions, for research and batch use, are translated in ALTO mode, which works on the words of each text line. The file's root element decides the mode (an `<alto>` root is ALTO, any other is metadata) unless one is named: `--alto`, `--xpaths` or `--formats` on the command line, `is_alto` in the service. The field list comes with each job (`--xpaths FILE`, or the service's `xpaths` field): there is no default list, and a metadata run or request without one is refused. AMČR passes its own list; the tool's `amcr-fields.example.txt` is a template of one, not that list. | ALTO, XML   | —           |
+| 3   | Identify the source language           | A language-identification model detects the language of each text block (ALTO) or field (metadata), so a record that mixes languages is handled piece by piece. A guess is used only when it is confident and names a language the backend translates; otherwise the element's own label, the document's language, then a configured default decide. A confident guess of a language the backend cannot translate is reported for review. Naming the source language skips detection. Before anything is translated, the named language, or the default, is checked against the backend: a pair it cannot translate is refused (exit 1 on the command line, 422 `unsupported_language_pair` from the service) and is never rerouted.  | —           | —           |
+| 4   | Protect domain terms (optional)        | Vocabulary terms found in the text are replaced by placeholders before translation and restored as their agreed translations afterwards; multi-word terms are matched first, single words by lemma. Language-model backends receive the matching terms as a glossary in the prompt instead; the OpenAI-compatible backend can add each term's description as context (off by default). The command line takes the vocabulary with `--vocabulary`; the service applies one only when `VOCABULARY_PATH` names it.                                                                                                                                                                                                                       | CSV         | Lemmatizing |
+| 5   | Translate                              | The text goes to the chosen backend: the LINDAT translation service (CUBBITT, the default), an OpenAI-compatible language-model API (such as Qwen3.8-27B on one's own vLLM server), or a self-hosted CTranslate2 model. Long texts are split at sentence boundaries first. Every reply is checked against its source: one that is empty, runaway, cut short, looping, or mixes Latin and Cyrillic letters in a word is requested again and re-run at the end of the document if it still fails. A reply that never recovers fails the document; it is never written.                                                                                                                                                                  | —           | Translating |
+| 6   | Rebuild and validate the document      | ALTO: each text block is translated as a whole and line by line; the fluent whole-block translation is then divided among the original lines and written into the original word elements — replacing their text, or added beside it as an alternative. Metadata: the translation replaces the source text, or is added beside it with language labels. Metadata output can be validated against an XSD schema, such as the AMČR schema, which accepts replaced records and not appended ones: `--xsd` on the command line, `XSD_PATH` in the service.                                                                                                                                                                                 | → ALTO, XML | —           |
+| 7   | Review and record provenance           | A translation log beside each output pairs source and target text line by line or field by field, with a status saying whether each was translated normally, recovered by a re-run, placed approximately, or translated from a fallback language because the backend cannot translate the detected one. The paradata log records what was run, with each component's licence, and names the field list, the backend and the model, never the fields' text; nothing is written into the document record.                                                                                                                                                                                                                               | → CSV, JSON | —           |
 
 **Which backend.** LINDAT stays the default. The recommended self-hosted alternative is
 `openai_compatible` with Qwen3.8-27B (Apache-2.0) on one's own vLLM server: in the bake-off
-of 2026-10-19 it kept numbers and vocabulary terms about as well as LINDAT (terms 0.978 against
+it kept numbers and vocabulary terms about as well as LINDAT (terms 0.978 against
 0.987) and failed no segment. `ct2`
 with EuroLLM is no longer recommended, because it drops short segments (see Limits). The
 bake-off compares the backends without reference translations. Its script is
 `eval/bakeoff.py`, its results are in `eval/results/issue4_bakeoff_2610/`, and the decision
-is in the tool's `docs/translation-backends.md`.
+is in the tool's `docs/decisions/backend-choice.md`.
 
 The vocabulary step is its own workflow on Pipelines —
 [W7, vocabulary harvesting and review](../pipelines.md#w7--vocabulary-harvesting--review-the-translators-half).
@@ -65,17 +67,19 @@ The vocabulary step is its own workflow on Pipelines —
 * **The same document in another language** — `<name>_<target language>.<extension>`, every tag
   and namespace in place; for ALTO, every line where it was.
 * **A review log** — `<name>_log.csv`, with the source and the translated text side by side, and a
-  status per line that points a reviewer at what was recovered, approximated, left untranslated
-  or translated from a fallback language.
+  status per line that points a reviewer at what was recovered, approximated or translated from
+  a fallback language.
 * **Consistent terminology** — every protected term carries its agreed translation, and the
   paradata counts the protected terms per document.
-* **A provenance record** — the paradata log of the run, with each component's licence. The
-  document record per file, `<name>.document.json`, is handed back with nothing added from v2.0.0-beta.
+* **A provenance record** — the paradata log of the run, with each component's licence. A
+  document record given with a file is handed back with nothing added.
 
 The translator's output is an end product: no later stage reads it. In the AMČR pilot it is
 `metadata-en`, the English copy of a record's metadata, made by a record-level job when the record
-is archived and served under the same access rules as `metadata` (ARÚP's output contract of 12
-November, §8 and D36).
+is archived and served under the same access rules as `metadata`. Until the terms of LINDAT's
+services are settled ([atrium-project#78](https://github.com/ufal/atrium-project/issues/78)), AMČR
+does not publish outputs made through them: the linguistic layer, the entities, the TEITOK file
+and the English metadata.
 
 ## Limits
 
@@ -84,8 +88,8 @@ November, §8 and D36).
   a different number of words.
 * **Schema validation applies to metadata output.** ALTO output keeps the structure of its
   input — and is valid ALTO in either mode — but is not validated by the tool. The command line
-  takes a schema file or URL (`--xsd`); the service, since v1.6.0-beta, only a local file its
-  deployment names (`XSD_PATH`), and answers `xsd_valid` (or refuses with `xsd_strict`).
+  takes a schema file or URL (`--xsd`); the service only a local file its deployment names
+  (`XSD_PATH`), and answers `xsd_valid` (or refuses with `xsd_strict`).
 * **Appended AMČR records are not valid AMČR.** The AMČR schema allows neither a language label
   on the translated fields nor a second copy of them; a record that must validate is translated
   in replace mode.
@@ -95,13 +99,13 @@ November, §8 and D36).
 * **Placeholders protect terms only for the LINDAT backend.** Language-model backends get a
   glossary instead, and the self-hosted neural translation models receive no vocabulary.
 * **EuroLLM on `ct2` drops short segments.** In the bake-off EuroLLM-9B ran on past the source
-  in 96 of 1,230 segments, almost all a number or a single word. The guard keeps their source
-  text and logs them `untranslated`.
+  in 96 of 1,230 segments, almost all a number or a single word. Such a segment fails the
+  document.
 
 ## Provenance and licence
 
 Each run writes `<stamp>_translator.json`, the paradata log; the service returns the same
-provenance, with the same keys since v1.7.0-beta, in its response instead of writing a file. The paradata lists the components the run
+provenance, with the same keys, in its response instead of writing a file. The paradata lists the components the run
 actually used, each with its licence or terms, as declared in the tool's `para_config.txt`:
 
 | Component                                                         | Licence                   | Used when                                                   |
@@ -118,7 +122,8 @@ actually used, each with its licence or terms, as declared in the tool's `para_c
 | Opus-MT (`opus_mt`)                                               | CC BY 4.0                 | a `ct2` Opus-MT model                                       |
 
 A hosted language-model API is recorded with its provider's terms of service (`LLM provider ToS`).
-None of these licences or terms is the licence of the output: [Licences and paradata](../ecosystem/licences.md).
+Each run lists the components it used, each with its own licence or terms. No licence of an output is computed: the
+rights in an output follow the source document ([Licences and paradata](../ecosystem/licences.md)).
 
 **A run with only permissive components** needs both: a self-hosted model under a permissive licence and the source
 language named explicitly. The recommended model is Qwen3.8-27B through `openai_compatible`,
@@ -127,60 +132,57 @@ Opus-MT family also qualifies. The AMČR and TEATER vocabularies are CC0 and do 
 way. What a run lists is on
 [Reference → Licence](https://github.com/ufal/atrium-translator/blob/test/docs/reference/licences.md#what-a-run-records).
 
-From v2.0.0-beta (record schema 2.0, [atrium-project#84](https://github.com/ufal/atrium-project/issues/84))
-the tool writes nothing into the [document record](../ecosystem/document-contract.md): a record sent
+The tool writes nothing into the [document record](../ecosystem/document-contract.md): a record sent
 with a file is handed back unchanged, and `translations` and `entities[].translation_en` stay reserved.
 The run is described by the paradata of `metadata-en`, which names `metadata` and `metadata-en` by
-SHA-512 and the field list used, with no field text. Up to v1.7.x the tool wrote the `translations`
-block and recorded the translated file as `derived_from.translated_xml`.
+SHA-512 and the field list used, with no field text.
 
 ## Where it sits
 
 * **A record-level job of the AMČR pilot.** When a record is archived, its metadata is translated
-  into `metadata-en`, with the field list AMČR sends (ARÚP's output contract of 12 November, §8;
-  ARUP-CAS/aiscr-docs-pipeline#13 adds the job type). It is not a stage of the document chain.
+  into `metadata-en`, with the field list AMČR sends; AMČR's pipeline adds the job type
+  (ARUP-CAS/aiscr-docs-pipeline#13). It is not a stage of the document chain.
 * **Translation** step of the AMČR text workflow
   [`0xSpVP`](https://marketplace.sshopencloud.eu/workflow/0xSpVP), where it translates AMČR
   metadata records.
 * Also used in [W4](../pipelines.md#w4--containerised-service--api-workflow) (as a service),
   [W5](../pipelines.md#w5--agent-skill-workflow) (from a coding agent) and
   [W7](../pipelines.md#w7--vocabulary-harvesting--review-the-translators-half) (the vocabulary).
-* **ALTO mode**, which translates the full text of OCR pages, stays for research and batch use, the
-  Galaxy workflow *ATRIUM scanned pages: classify, OCR, translate* among them. It is not part of the
-  pipeline, and the end-to-end test no longer runs it.
+* **ALTO mode**, which translates the full text of OCR pages, stays for research and batch use. It
+  is not part of the pipeline, and the end-to-end test does not run it.
 
 ## On other platforms
 
 **SSH Open Marketplace.** Tool record [`CizIUW`](https://marketplace.sshopencloud.eu/tool-or-service/CizIUW);
 workflow record [`13eHAZ`](https://marketplace.sshopencloud.eu/workflow/13eHAZ), to be rebuilt with the
-seven steps above (#4). Related records: [LINDAT Translation](https://marketplace.sshopencloud.eu/tool-or-service/1wLXFh), [UDPipe](https://marketplace.sshopencloud.eu/tool-or-service/i6piia).
+seven steps above. Related records: [LINDAT Translation](https://marketplace.sshopencloud.eu/tool-or-service/1wLXFh), [UDPipe](https://marketplace.sshopencloud.eu/tool-or-service/i6piia).
 
-**Galaxy sheet.**
+**Galaxy sheet.** The Galaxy wrappers were handed to DARIAH for testing; further Galaxy work is parked during the
+AMČR pilot. The sheet describes the wrapper as delivered, for the batch image at `v1.7.8-beta`.
 
-|                          |                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Workflow inputs**      | a collection of documents — `xml` (ALTO pages included); for metadata mode, the list of fields — `txt`; optionally the vocabulary — `csv`                                                                                                                                                                                                                                                                                                     |
-| **Parameters**           | target language; source language (or detection); backend; replace or append; optional XSD schema                                                                                                                                                                                                                                                                                                                                              |
-| **Workflow outputs**     | translated documents — `xml`; translation logs — `csv`; paradata — `json`; document record — `json`                                                                                                                                                                                                                                                                                                                                           |
-| **Container**            | `ghcr.io/ufal/atrium-translator:<version>` — the batch image (`main.py`), one document per job; since `v1.7.8-beta` it runs the job script Galaxy hands it. It carries the vocabulary (`data_samples/vocabulary.csv`) but no field list: the XPath list is an input of the job. It validates against a schema with `--xsd`; the service image `ghcr.io/ufal/atrium-translator-api` is not used. Neither image includes the `ct2` dependencies |
-| **Galaxy tool**          | `atrium_translator` `1.7.8-beta+galaxy1`, LINDAT backend only, in the hub's [`galaxy/`](https://github.com/ufal/atrium-project/tree/test/galaxy) folder with the workflows *ATRIUM translation of XML records* and *ATRIUM scanned pages: classify, OCR, translate*; for DARIAH's test Galaxy (<https://galaxy.acdh-dev.oeaw.ac.at/galaxy/>)                                                                                                  |
-| **Compute**              | CPU                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| **Network**              | the LINDAT translation and UDPipe services (the image carries the language-identification model) — or a self-hosted model                                                                                                                                                                                                                                                                                                                     |
-| **Credentials**          | an API key only for a hosted language-model API (`LLM_API_KEY`; a local server may need none), passed through Galaxy's credentials mechanism                                                                                                                                                                                                                                                                                                  |
-| **Test data**            | the tool's test fixtures `tests/fixtures/sample_amcr.xml` and `sample.alto.xml` (in the wrapper's `test-data/`); `data_samples/` in the tool repository — 15 AMČR metadata records and one ALTO page, with their translations, logs and paradata in both output modes                                                                                                                                                                         |
-| **Credit**               | the authors in the tool's `CITATION.cff`, with their ORCIDs; licence MIT                                                                                                                                                                                                                                                                                                                                                                      |
-| **Closest Galaxy tools** | none translates; the language-model tools (`llm_hub`, `chatgpt_openai_api`) and the `xpath` tool are the nearest, and DARIAH's `gate-cloud-client` shows the pattern for a tool that calls a remote service                                                                                                                                                                                                                                   |
+|                          |                                                                                                                                                                                                                                                                                                                                                                                                                           |
+|--------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Workflow inputs**      | a collection of documents — `xml` (ALTO pages included); for metadata mode, the list of fields — `txt`; optionally the vocabulary — `csv`                                                                                                                                                                                                                                                                                 |
+| **Parameters**           | target language; source language (or detection); backend; replace or append; optional XSD schema                                                                                                                                                                                                                                                                                                                          |
+| **Workflow outputs**     | translated documents — `xml`; translation logs — `csv`; paradata — `json`; document record — `json`                                                                                                                                                                                                                                                                                                                       |
+| **Container**            | `ghcr.io/ufal/atrium-translator:<version>` — the batch image (`main.py`), one document per job; it runs the job script Galaxy hands it. It carries the vocabulary (`data_samples/vocabulary.csv`) but no field list: the XPath list is an input of the job. It validates against a schema with `--xsd`; the service image `ghcr.io/ufal/atrium-translator-api` is not used. Neither image includes the `ct2` dependencies |
+| **Galaxy tool**          | `atrium_translator` `1.7.8-beta+galaxy1`, LINDAT backend only, in the hub's [`galaxy/`](https://github.com/ufal/atrium-project/tree/test/galaxy) folder with the workflows *ATRIUM translation of XML records* and *ATRIUM scanned pages: classify, OCR, translate*; for DARIAH's test Galaxy (<https://galaxy.acdh-dev.oeaw.ac.at/galaxy/>)                                                                              |
+| **Compute**              | CPU                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **Network**              | the LINDAT translation and UDPipe services (the image carries the language-identification model) — or a self-hosted model                                                                                                                                                                                                                                                                                                 |
+| **Credentials**          | an API key only for a hosted language-model API (`LLM_API_KEY`; a local server may need none), passed through Galaxy's credentials mechanism                                                                                                                                                                                                                                                                              |
+| **Test data**            | the tool's test fixtures `tests/fixtures/sample_amcr.xml` and `sample.alto.xml` (in the wrapper's `test-data/`); `data_samples/` in the tool repository — 15 AMČR metadata records and one ALTO page, with their translations, logs and paradata in both output modes                                                                                                                                                     |
+| **Credit**               | the authors in the tool's `CITATION.cff`, with their ORCIDs; licence MIT                                                                                                                                                                                                                                                                                                                                                  |
+| **Closest Galaxy tools** | none translates; the language-model tools (`llm_hub`, `chatgpt_openai_api`) and the `xpath` tool are the nearest, and DARIAH's `gate-cloud-client` shows the pattern for a tool that calls a remote service                                                                                                                                                                                                               |
 
 ## Sources
 
-Read from `ufal/atrium-translator` at release **`v1.7.0-beta`** (2026-10-29) and from this site's
-translator section; earlier readings were at `v1.6.1-beta` (2026-10-28; the code of `v1.6.0-beta`, whose
+Read from `ufal/atrium-translator` on its `test` branch, which carries release 2.0.0-beta, on 2026-11-21. Earlier
+readings were at release `v1.7.0-beta` (2026-10-29), with this site's translator section, and at `v1.6.1-beta` (2026-10-28; the code of `v1.6.0-beta`, whose
 images were published without a release) and `v1.5.0-beta` (2026-10-19). The licence table follows the
 `para_config.txt` of that release. This table records **provenance**, not a build instruction.
 The Galaxy sheet's *Container* and *Galaxy tool* rows (2026-11-06) follow `v1.7.8-beta` and the hub's `galaxy/` folder (#66).
-The field list, the record and the place in the pilot (2026-11-16) follow the translator's `test` branch (v2.0.0-beta,
-unreleased: translator#60 and translator#61) and ARÚP's output contract of 12 November (§8, D34, D36); the Galaxy rows follow
-`1.7.8-beta+galaxy1`.
+The field list, the record and the place in the pilot (2026-11-16) follow the translator's `test` branch and ARÚP's
+output contract of 12 November 2026; the Galaxy rows follow `1.7.8-beta+galaxy1`.
 
 | Source                                                                                                                                                                                                                       | What was taken from it                                                                         |
 |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|

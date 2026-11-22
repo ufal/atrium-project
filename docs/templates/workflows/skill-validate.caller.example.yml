@@ -16,8 +16,6 @@
 name: Skill Branch Validation
 
 on:
-  push:
-    branches: [agent-skill]
   pull_request:
     branches: [agent-skill]
 

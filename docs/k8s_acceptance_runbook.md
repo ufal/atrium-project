@@ -1,13 +1,13 @@
-# Kubernetes acceptance runbook (S2 handover)
+# Kubernetes acceptance runbook (pilot handover)
 
-How AMČR operators accept the six ATRIUM `-api` images on their own Kubernetes before the S2 pilot
+How AMČR operators accept the six ATRIUM `-api` images on their own Kubernetes for the AMČR pilot
 (atrium-project#77; the procedure was first written for #55). It runs the reference manifest
 [`templates/k8s/atrium-service.deployment.yaml`](templates/k8s/atrium-service.deployment.yaml), not the
 bare image: Kubernetes reads probes from the manifest, never from a Dockerfile `HEALTHCHECK`. The reasons
 behind each field are in [`k8s_deployment.md`](k8s_deployment.md).
 
 **You need:** a Kubernetes namespace you can deploy to, `kubectl`, `curl`, `python3`, a checkout of
-`atrium-project`, the six approved images (§"Image identity") and one test input per service
+`atrium-project`, the six images to accept (§"Image identity") and one test input per service
 (§"Per-service smoke request"). The commands run from the root of the checkout.
 
 **Who runs it:** the receiving operators, on the receiving cluster. ÚFAL CI does not run it and never needs
@@ -17,7 +17,7 @@ container; the rolling-restart checks need a real Deployment.
 
 ## Handover rules
 
-These hold for this runbook and for every operator page linked from the S2 pilot page.
+These hold for this runbook and for every operator page linked from the Production pilot page.
 
 1. **Examples are acceptance artifacts.** From a clean checkout and the prerequisites above, every command
    works with only the named substitutions (`TOOL`, `VERSION`, `DIGEST`, the input files). A failing HTTP
@@ -51,8 +51,8 @@ These hold for this runbook and for every operator page linked from the S2 pilot
 | Image identity       | the manifest digest                     | `…-api:1.4.4-beta@sha256:<64 hex>`                   | no                                 |
 | Development channels | `test`, `latest`                        | `…-api:latest`                                       | yes, by design                     |
 
-`test` and `latest` move with every build and are never a pilot baseline. The S2 set is the six digests
-approved for the pilot. Read a digest with
+`test` and `latest` move and are never a pilot baseline. The pilot is assembled step by step, and the digest of
+each step's image is entered on the Production pilot page when the step joins the chain. Read a digest with
 `docker buildx imagetools inspect ghcr.io/ufal/atrium-<tool>-api:<version>` (the `Digest:` line). With
 `DIGEST` set below, Kubernetes pulls by digest, and the tag only labels it. Tag protection and immutable
 releases are in [`release_trust.md`](release_trust.md). Which releases passed the hub's E2E lanes together
@@ -69,11 +69,10 @@ is in each run's `e2e-manifest` artifact ([`ci_policy.md`](ci_policy.md)).
    `controlled.ready: false` with the reason, and `kind=controlled` answers 501. The smoke request below uses
    the statistical kind, which needs no key. To accept the controlled kind as well, create the Secret and
    uncomment its `secretKeyRef` stanza first (`k8s_deployment.md` §"Environment variables").
-3. **digital-convert's `/describe` calls two other stages.** Set `PAGE_CLASSIFICATION_URL` and
-   `OCR_POSTPROCESS_URL` to their Services (`http://atrium-page-classification-api:8000`,
-   `http://atrium-ocr-postprocess-api:8000`) to run them. Unset, each stage is reported `not_configured` and
-   the request still succeeds. `/reformat` calls neither. With stages configured, raise `STAGE_TIMEOUT_S`,
-   `GRACEFUL_SHUTDOWN_S` and `terminationGracePeriodSeconds` together (`k8s_deployment.md` Table B).
+3. **digital-convert is accepted on `/reformat`.** Its `/describe`, which calls two other stages, is parked
+   during the AMČR pilot: not part of the pipeline. Its request stays below for reference; it needs
+   `PAGE_CLASSIFICATION_URL` and `OCR_POSTPROCESS_URL` set to their Services, and `STAGE_TIMEOUT_S`,
+   `GRACEFUL_SHUTDOWN_S` and `terminationGracePeriodSeconds` raised together (`k8s_deployment.md` Table B).
 4. **`ALLOWED_ORIGINS` defaults to `*`.** Set it in the manifest before applying if the cluster is reachable
    from browsers on a network where that matters.
 5. **`replicas: 1` stays 1 for nlp-enrich.** Its job registry is in memory, per replica (`service/jobs.py`),
@@ -88,8 +87,8 @@ order. `set -u` stops on a variable you forgot.
 ```bash
 set -u
 TOOL=digital-convert        # page-classification | ocr-postprocess | translator | nlp-enrich | keyword-extract | digital-convert
-VERSION=1.4.4-beta          # the approved release, without its leading v
-DIGEST=                     # sha256:… of the approved image; empty pulls by tag
+VERSION=1.4.4-beta          # the release of the step, without its leading v
+DIGEST=                     # sha256:… of that image; empty pulls by tag
 IMAGE="ghcr.io/ufal/atrium-${TOOL}-api:${VERSION}${DIGEST:+@${DIGEST}}"
 DEPLOY="deployment/atrium-${TOOL}-api"
 
@@ -213,14 +212,14 @@ FORM=(-F "document_json=@<record.json>" -F kind=statistical); KEYS=(doc_id keywo
 ENDPOINT=/reformat; UPLOAD_FIELD=file
 FORM=(-F "file=@<born-digital.pdf>"); KEYS=(service doc_id document_json limits_applied paradata)
 
-# digital-convert: the converter plus the stages of "Before you start" item 3
+# digital-convert's /describe: parked during the AMČR pilot, kept for reference ("Before you start" item 3)
 ENDPOINT=/describe; UPLOAD_FIELD=file
 FORM=(-F "file=@<born-digital.pdf>"); KEYS=(service doc_id document_json pages summary stages)
 ```
 
-Run digital-convert's procedure once per endpoint. For `/describe`, also record each stage's status from
-`stages` in the body (`ok`, `partial`, `not_configured`, `unavailable`, …; the full list is in the
-service's `service/openapi.json`).
+Run digital-convert's procedure for `/reformat`. `/describe` is parked during the AMČR pilot; if it is run
+for reference, its `stages` field reports each stage's status (`ok`, `not_configured`, `unavailable`, …; the
+full list is in the service's `service/openapi.json`).
 
 ### nlp-enrich: jobs are not durable
 
@@ -244,8 +243,9 @@ The smoke request above translates ALTO, which the pilot does not use. What the 
 metadata file, `metadata-en` ([translator#46](https://github.com/ufal/atrium-translator/issues/46)), so it
 is accepted on its own, with real AMČR records:
 
-- the free-text fields of AMČR's own field list for the job, mounted as `data/fields.txt` (the translator
-  has no default list, and its `amcr-fields.example.txt` is only a template), in `replace` mode, with
+- the free-text fields of AMČR's own field list for the job, mounted as `data/fields.txt` (from release
+  2.0.0-beta the translator has no default list, and its `amcr-fields.example.txt` is only a template), in
+  `replace` mode, with
   `--source_lang cs`; vocabulary fields are not sent, since AMČR fills them from its own English labels;
 - validated against the AMČR 2.2 schema with `--xsd … --xsd-strict` (a record that fails makes the run exit
   `3`). `--xsd` is an option of the **batch** image, not of `/translate`, so this run uses
@@ -259,7 +259,8 @@ docker run --rm --user "$(id -u):0" -v "$PWD/data:/data" ghcr.io/ufal/atrium-tra
 
 Record in the second table below: the image and its digest; the number of records and how many validated
 (the run's last `XSD: N/M record(s) valid` line); the `_log.csv` `status` counts (`ok`, `rerun`,
-`approx_alignment`, `untranslated`); `lindat_degenerate_replies` from the paradata; and a reviewer's verdict on
+`approx_alignment`, and in releases before 2.0.0-beta `untranslated`; from 2.0.0-beta a field left in Czech
+fails the run); `lindat_degenerate_replies` from the paradata; and a reviewer's verdict on
 a sample of the translations (say ten records), with any field that stayed in Czech. LINDAT's reliability
 over time is watched separately ([#78](https://github.com/ufal/atrium-project/issues/78)).
 
@@ -272,7 +273,7 @@ over time is watched separately ([#78](https://github.com/ufal/atrium-project/is
 | translator          |              | ☐       | ☐      | ☐     | ☐                 | ☐      | ☐            |                                      |
 | nlp-enrich          |              | ☐       | ☐      | ☐     | ☐                 | ☐      | ☐            | jobs across a restart: not supported |
 | keyword-extract     |              | ☐       | ☐      | ☐     | ☐                 | ☐      | ☐            | kind used:                           |
-| digital-convert     |              | ☐       | ☐      | ☐     | ☐                 | ☐      | ☐            | `/describe` stages:                  |
+| digital-convert     |              | ☐       | ☐      | ☐     | ☐                 | ☐      | ☐            | `/reformat`                          |
 
 | translator metadata run  | Image digest | Records | Valid (AMČR 2.2) | `ok` | `rerun` | `untranslated` | Degenerate replies | Sample review |
 |--------------------------|--------------|---------|------------------|------|---------|----------------|--------------------|---------------|
@@ -280,4 +281,4 @@ over time is watched separately ([#78](https://github.com/ufal/atrium-project/is
 
 In "Observed / notes", write what the step printed (`PASS`, `FAIL` with the HTTP code, `INVALID`), the
 values set for criterion 4, and anything you had to change. Send the table to the contacts in
-[`arub-p_contacts.md`](arub-p_contacts.md); the completed copy is linked from the S2 pilot page.
+[`arub-p_contacts.md`](arub-p_contacts.md); the completed copy is linked from the Production pilot page.

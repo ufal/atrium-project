@@ -4,8 +4,8 @@
 # scores the record -> page-classification adds the page categories -> nlp-enrich -> keyword-extract,
 # with the record contract asserted after the stages and the RO-Crate validated. The translator is
 # not in the chain: `metadata-en` is a record-level job on archiving, and full-text translation is
-# parked. Runs on hub pushes to main, by dispatch and as a reusable workflow (no schedule since
-# 2026-11-14). Reasons and history: docs/decisions/e2e-lanes.md.
+# parked. Runs on hub pull requests that touch the lane, by dispatch and as a reusable workflow (no
+# schedule, no push trigger). Reasons and history: docs/decisions/e2e-lanes.md.
 name: Reusable E2E Pipeline Smoke Test
 
 on:
@@ -74,27 +74,38 @@ on:
         default: true
         type: boolean
         required: false
-  push:
-    branches: [ main ]
+  pull_request:
+    branches: [main, test]
+    paths:
+      - ".github/workflows/e2e-pipeline-smoke.yml"
+      - "tools/e2e/**"
+      - "fixtures/e2e/**"
+      - "fixtures/atrium_document.seed.example.json"
+      - "docs/templates/shared/atrium_document.py"
+      - "docs/templates/shared/atrium_document.schema.json"
+      - "docs/templates/shared/atrium_rocrate.py"
+      - "docs/templates/shared/atrium_vocab.py"
+      - "tools/ci/rocrate_check.py"
+      - "tools/ci/requirements-rocrate.txt"
 
 # What a run tests (issue #10): the stages are PUBLISHED images, and `:latest` moves only on a
 # version tag, so `image-tag: latest` validates THE LAST RELEASE of each tool. `image-tag: test`
-# (published on every push to a repo's `test` branch) validates what is about to be released, and
-# is what a push runs (channel by event, as the born-digital lane does). A dispatch or a caller
-# chooses. History: docs/decisions/e2e-lanes.md#what-a-pipeline-run-tests
+# (published when a pull request is merged into a tool's `test` branch) validates what is about to
+# be released, and is what a pull request runs (channel by event, as the born-digital lane does). A
+# dispatch or a caller chooses. History: docs/decisions/e2e-lanes.md#what-a-pipeline-run-tests
 
 concurrency:
   group: e2e-pipeline-smoke-${{ github.ref }}
   cancel-in-progress: false
 
-# Push runs have no inputs, so they keep CTX000000003 (roadmap S6, #69).
+# Pull-request runs have no inputs, so they keep CTX000000003 (roadmap S6, #69).
 env:
   E2E_DOC: ${{ inputs.e2e-doc || 'CTX000000003' }}
-  # Push runs have no inputs and run seeded. Compared as a string on purpose: in an
+  # Pull-request runs have no inputs and run seeded. Compared as a string on purpose: in an
   # expression a missing input (null) loosely EQUALS false, which would turn the default off.
   E2E_SEED: ${{ format('{0}', inputs.seed) == 'false' && 'false' || 'true' }}
-  # A push runs `:test`; a dispatch or a caller the tag it names (`latest` by default).
-  IMAGE_TAG: ${{ inputs.image-tag || (github.event_name == 'push' && 'test' || 'latest') }}
+  # A pull request runs `:test`; a dispatch or a caller the tag it names (`latest` by default).
+  IMAGE_TAG: ${{ inputs.image-tag || (github.event_name == 'pull_request' && 'test' || 'latest') }}
 
 jobs:
   e2e-json-thread:
