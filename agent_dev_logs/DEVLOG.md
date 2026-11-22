@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #77, #78, #79, #83, #84); #72 and #81 closed 11-16. The starting set of the pilot phase (11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Released since, the starting set unchanged: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5 and v1.4.7, keyword-extract v1.6.5, page-classification v1.13.0 and v1.14.2, translator v1.7.8-beta; each tool's `test` is 13–22 commits past its last tag and declares the unreleased v2.0.0-beta (record 2.0). Hub workflows pinned to `02cbd01` (`v1`, 11-16), which all six tools call by commit; `test` = `main` = `a7e440b` (11-19). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-19, evening (#13: the manuscript of 14:41 against the code), at the end of the file (this file is not in date order)._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #77, #78, #79, #83, #84); #72 and #81 closed 11-16. The starting set of the pilot phase (11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Released since, the starting set unchanged: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5 and v1.4.7, keyword-extract v1.6.5, page-classification v1.13.0 and v1.14.2, translator v1.7.8-beta; each tool's `test` is 16–25 commits past its last tag and declares the unreleased v2.0.0-beta (record 2.0). Hub workflows pinned to `fbffe25` (`v1`, 11-22), which all six tools call by commit; `test` = `main` = `fbffe25` (11-22), the merge of #93. The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-22 (#79 and #40: the seven PRs merged, and what landed), at the end of the file (this file is not in date order)._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` (#84: `84.*` since 11-16; the CAA manuscript checked: `digests/13.findings.md`) · `issues/` exports (source of truth). Pairs of closed issues removed 2026-11-19: #51, #72, #81, #82; kept: #18, #31, #32, #53, #55, #57 (cited elsewhere). Cross-repo snapshot: `digests/project_state_1911.md` (prior: `project_state_1111.md`, `project_state_0411.md`, `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -4172,3 +4172,43 @@ candidates are six `.3` releases carrying #6's step 1.
   header. The reply on #13 drafted in the session, not posted. In page-classification and nlp-enrich: the last
   four links to files deleted earlier, unlinked.
 * Logs only; no code changed. Files delivered as full files.
+
+## 2026-11-22 — #79 and #40: the seven PRs merged, and what landed
+
+* **Asked (K4TEL):** 11-21: descriptions for the seven `docs-GHA-edits` PRs, the hub's remaining pages and a sweep of
+  the PRs' CI logs. 11-22: confirm what landed; a closing comment for #79; these logs.
+* **Merged 11-22** (squash; the branches deleted): hub #93 `fbffe25`; ocr-postprocess #17 `a0509c1`; digital-convert
+  #16 `9e336f7`; page-classification #76 `e6a5761`; nlp-enrich #48 `11cad2a`; keyword-extract #8 `dcfd190`; translator
+  #65 `a064ac4`. Each merge's tree equals its PR's last head (`refs/pull/N/head`). `main` = `test` = `v1` = `fbffe25`;
+  the six tools call the hub at `fbffe25` (ten refs each, `uses:` and `hub-ref`); `doc-schema-v1` = `544298b`, unchanged.
+* **Checked after the merges:**
+  * the site deployed `fbffe25` (pages.yml on the push to `main`, then the gh-pages build);
+  * each tool's `docker.yml` ran green on the merged pull request's `closed` event, on the new reusable. The
+    translator's run published `atrium-translator-api:test` from the merge commit (`sha256:f84d2ed4…`, revision
+    `a064ac4`): the `:test` channel works;
+  * every last PR run was green, the hub's two E2E lanes and keyword-extract's live controlled check included;
+  * `docs_check.py` passes in the six tools and `runbook_check.py` in the six runbooks; the hub has the four errors below;
+  * the acknowledgement agreed on #79 (11-10) is in all six READMEs, the README template and the style guide.
+* **Found:**
+  * #93 indexes three decision records it does not contain: `decisions/site-history.md`, `decisions/pages-publishing.md`
+    and `decisions/repo-review-2026-07.md`. `INDEX.md` and `PAGES_SETUP.md` lost their dated parts in the tree (they
+    are in `8f5171b`), `docs/plan_repo_review.md` was not moved and `docs/skills_catalog.md` not deleted.
+    `docs_check.py` reports the four links; its step in Workflow Policy Lint is advisory, so #93's last run logged
+    the error and passed.
+  * Schedules and Dependabot are read from the default branch: `master` in four tools, `main` in digital-convert,
+    `vit` in page-classification. Those still hold the old workflows, so the smoke, LINDAT, controlled-live and
+    vocab-refresh schedules keep running (the translator's `master` ran two on 11-22) until `test` is merged there
+    with the 2.0.0-beta release batch (#77). The hub is clean.
+  * The CI log sweep: hub and translator read in full; the other five by conclusion, after the sweep stopped at the
+    usage limit. Open (→ #40): CodeQL asks for an `on.push` hook; `pages.yml` gives pull-request builds
+    `contents: write`; the pipeline lane does not mount page-classification's paradata, so the crate check misses
+    that action; each pull request saves a 1.3 GB Hugging Face cache no other pull request reads; `runbook_check.py`
+    runs in no workflow; `HF_TOKEN` and `CODECOV_TOKEN` are not set; Material for MkDocs reaches end of life on
+    5 May 2027.
+* **Written here (not pushed):** `hub-self-check.yml` (a dispatched run clones `test`), `pages.yml` (the review's new
+  path), `e2e-pipeline-smoke.yml` ("first merge into test"), the Links paragraph of `documentation-style.md`; the
+  digests and plans of #79, #40, #6, #84, #77, #66 and #78; this entry and the header. The three records come from
+  K4TEL's own copies, with `git rm docs/plan_repo_review.md docs/skills_catalog.md`.
+* **Next:** the follow-up hub PR (the three records and the fixes above); the readability review, at the next meeting
+  (requests to ARÚP and ARÚB staff go through David Novák); the 2.0.0-beta release batch (#77).
+* **Not posted; not pushed.** The #79 comment is drafted in the session.

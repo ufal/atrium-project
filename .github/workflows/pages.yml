@@ -15,7 +15,8 @@
 # THAT FAILURE WAS LOAD-BEARING, AND IS NO LONGER. `/docs` is the hub's canonical
 # internal tree, so a GREEN Jekyll build from it would have published
 # docs/arub-p_contacts.md (five ARUP/ARUB partner email addresses),
-# docs/plan_repo_review.md and the 97 KB internal docker_gha_roadmap.md -- the build
+# docs/plan_repo_review.md (now docs/decisions/repo-review-2026-07.md) and the 97 KB
+# internal docker_gha_roadmap.md -- the build
 # log reaches `Rendering: arub-p_contacts.md` and dies four files later. Nothing was
 # published only because it crashed, which is an accident, not a safeguard.
 #

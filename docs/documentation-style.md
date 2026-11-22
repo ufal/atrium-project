@@ -142,7 +142,8 @@ paragraph and links there.
 
 Inside a repository, links are relative. The hub links its own documents at `blob/main` (the branch the
 site is built from), and a tool's documentation at `blob/test` (the branch the next release is cut
-from). `python3 tools/docs_check.py` checks both kinds of link and their anchors.
+from). `python3 tools/docs_check.py` checks relative links and their anchors. It does not follow a link into
+another repository or to the site: check those by hand when the heading they point to changes.
 
 ### Working records
 

@@ -76,7 +76,7 @@ jobs:
       # drift check reads the hub at `v1` (atrium-project#87). Label such hub PRs
       # `siblings:<branch>`: the tools are cloned at that branch where they have it, at `test`
       # where not. The label is read when the job runs, so re-run the job after adding it, and
-      # remove it once the tool PRs have merged. Pushes, the weekly run and dispatch clone `test`.
+      # remove it once the tool PRs have merged. A dispatched run clones `test`.
       - name: Choose the tool repositories' branch (a PR's siblings label)
         id: siblings
         if: github.event_name == 'pull_request'

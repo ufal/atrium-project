@@ -322,8 +322,8 @@ jobs:
         run: |
           IMAGE="ghcr.io/ufal/atrium-keyword-extract-api:${IMAGE_TAG}"
           if ! docker pull "$IMAGE"; then
-            echo "::warning::$IMAGE is not published yet (keyword-extract's first release or first test push); the keyword step is skipped."
-            echo "**Skipped:** $IMAGE is not published yet (keyword-extract's first release or first test push); the keyword step is skipped." >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::$IMAGE is not published yet (keyword-extract's first release or first merge into test); the keyword step is skipped."
+            echo "**Skipped:** $IMAGE is not published yet (keyword-extract's first release or first merge into test); the keyword step is skipped." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           CID=$(docker run -d -e PORT=8080 -e HF_TOKEN -p 8080:8080 "$IMAGE")
