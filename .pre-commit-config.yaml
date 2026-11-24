@@ -14,8 +14,12 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
+      # fixtures/chain/ holds a chain's files as the tools wrote them: each step's paradata name
+      # the records by SHA-512, which a whitespace fix would break.
       - id: trailing-whitespace
+        exclude: ^fixtures/chain/
       - id: end-of-file-fixer
+        exclude: ^fixtures/chain/
       - id: check-yaml
         args: [ --unsafe ]
       - id: check-added-large-files
