@@ -8,8 +8,8 @@ issue: 57
 
 # Repository map
 
-The tools on their `test` branches write record schema 2.0 (release 2.0.0-beta, not released yet). The
-published record schema is `doc-schema-v1`; 2.0 is published as `doc-schema-v2` once the pilot has proven it.
+The tools write record schema 2.0 since their 2.0.0-beta releases (24 November 2026). The published record
+schema is `doc-schema-v1`; 2.0 is published as `doc-schema-v2` once the pilot has proven it.
 
 Find the right repository in one look: what each of the seven is for, which part of the
 document record it is allowed to write, and where its documentation lives.
