@@ -234,3 +234,13 @@ def test_the_stand_in_refuses_a_document_with_no_page_for_the_atr(tmp_path, caps
 def test_the_expected_forced_pages_are_checked():
     doc = ats.standin(_mixed_digital(), {2: ["Plán"]})
     assert any("forced pages [2], expected []" in p for p in da.check(doc, expect_forced="none"))
+
+
+def test_the_pages_showing_graphics_are_checked():
+    doc = _digital()
+    doc["metadata"]["routing"]["pages"][0].update(graphics=0, tables=1)
+    doc["metadata"]["routing"]["pages"][1].update(graphics=1, tables=0)
+    assert da.check(doc, expect_graphics="2") == []
+    assert any("showing graphics are [2], expected []" in p for p in da.check(doc, expect_graphics="none"))
+    del doc["metadata"]["routing"]["pages"][1]["graphics"]
+    assert any("showing graphics are [], expected [2]" in p for p in da.check(doc, expect_graphics="2"))

@@ -8,9 +8,10 @@ keyword-extract, and each record is checked against the stand-in it was built fr
 (`e2e_assert.py --docproc`). An empty page is routed `empty` and has no `pages[]` entry. The ALTO stays as the
 stand-in's source and the page image's; `DOC_LINE_CATEG/` is no longer read by the lane.
 
-`mixed/scan_page.page2.txt` is the born-digital lane's OCR text for the scanned page of digital-convert's
-`scan_page.docx`: [`tools/e2e/atr_standin.py`](../../tools/e2e/atr_standin.py) writes an ATR stand-in from
-digital-convert's docproc with it, and ocr-postprocess builds the mixed record from both.
+`mixed/scan_page.page2.txt` is the born-digital lane's OCR text for the picture page of digital-convert's
+`scan_page.pdf` (an office document never goes to the ATR, so the mixed case is a PDF):
+[`tools/e2e/atr_standin.py`](../../tools/e2e/atr_standin.py) writes an ATR stand-in from digital-convert's docproc
+with it, and ocr-postprocess builds the mixed record from both.
 
 The lanes run on the hub's pull requests that touch them, and by dispatch. The rest of this file describes the
 fixtures and, as history, the route the lane ran before record schema 2.0

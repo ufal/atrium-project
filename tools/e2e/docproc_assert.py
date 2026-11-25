@@ -15,7 +15,9 @@ built, against the hand-over rules of ARÚP's contract of 12 November 2026:
   * nothing is refused (H12): a page the converter cannot use is routed to the ATR;
   * no run data and no licence anywhere in it (D1, D2): no `run_uuid`, `provenance`, `license`;
   * `--expect-atr-pages`: `none`, `all` (every page not routed `empty`), or a comma-separated list of
-    the page numbers routed `atr`.
+    the page numbers routed `atr`;
+  * `--expect-graphics-pages`: `none` or a comma-separated list of the page numbers whose routing says
+    they show graphics (`graphics` > 0, digital-convert's ask 14): the pages for page-classification.
 
 Usage:
     python tools/e2e/docproc_assert.py work/docproc/minimal.docproc.json \\
@@ -63,6 +65,7 @@ def check(
     schema: Optional[Dict[str, Any]] = None,
     expect_atr: Optional[str] = None,
     expect_forced: Optional[str] = None,
+    expect_graphics: Optional[str] = None,
 ) -> List[str]:
     """The failures of `document` (empty when every check holds)."""
     problems: List[str] = []
@@ -110,6 +113,15 @@ def check(
         forced = {row.get("page") for row in routing if isinstance(row, dict) and row.get("forced") is True}
         if forced != forced_wanted:
             problems.append(f"the routing echoes forced pages {sorted(forced)}, expected {sorted(forced_wanted)} (D27)")
+    graphics_wanted = _expected(expect_graphics, numbers, set())
+    if graphics_wanted is not None:
+        shown = {
+            row.get("page")
+            for row in routing
+            if isinstance(row, dict) and isinstance(row.get("graphics"), int) and row["graphics"] > 0
+        }
+        if shown != graphics_wanted:
+            problems.append(f"pages showing graphics are {sorted(shown)}, expected {sorted(graphics_wanted)} (ask 14)")
     return problems
 
 
@@ -127,6 +139,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         default=None,
         help="the ATR's docproc: `none` or comma-separated page numbers its routing must echo as forced (ask 5)",
     )
+    parser.add_argument(
+        "--expect-graphics-pages",
+        default=None,
+        help="`none` or comma-separated page numbers whose routing says they show graphics (ask 14)",
+    )
     args = parser.parse_args(argv)
     try:
         document = json.loads(args.docproc.read_text(encoding="utf-8"))
@@ -134,7 +151,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     except (OSError, json.JSONDecodeError) as exc:
         print(f"docproc_assert: {exc}", file=sys.stderr)
         return 2
-    problems = check(document, schema, args.expect_atr_pages, args.expect_forced)
+    problems = check(document, schema, args.expect_atr_pages, args.expect_forced, args.expect_graphics_pages)
     for problem in problems:
         print(f"❌ {args.docproc.name}: {problem}")
     if problems:
