@@ -1,0 +1,87 @@
+{
+  "schema_version": "2.0",
+  "record_type": "atrium-document",
+  "doc_id": "CTX000000003",
+  "source": {
+    "origin": "atr",
+    "page_count": 1,
+    "language": [
+      "cs"
+    ]
+  },
+  "page_categories": {
+    "1": "TEXT_P"
+  },
+  "pages": [
+    {
+      "page_index": 1,
+      "page": "1",
+      "content_status": "text",
+      "canvas": {
+        "width": 1654.0,
+        "height": 2339.0,
+        "unit": "px"
+      },
+      "quality_score": 0.9048,
+      "quality_band": "Clear",
+      "category": "TEXT_P",
+      "category_confidence": 1.0
+    }
+  ],
+  "content": {
+    "text": "Náčrt sondy.\n1998"
+  },
+  "lines": [
+    {
+      "page": "1",
+      "line": 1,
+      "text": "Náčrt sondy.",
+      "block": "p1-b0",
+      "text_source": "atr",
+      "bbox_precision": "derived",
+      "bbox": [
+        220.0,
+        160.0,
+        820.0,
+        280.0
+      ],
+      "categ": "Clear",
+      "quality_score": 0.9048,
+      "lang": "slk_Latn"
+    },
+    {
+      "page": "1",
+      "line": 2,
+      "text": "1998",
+      "block": "p1-b0",
+      "text_source": "atr",
+      "bbox_precision": "derived",
+      "bbox": [
+        220.0,
+        160.0,
+        820.0,
+        280.0
+      ],
+      "categ": "Non-text",
+      "quality_score": 0.0
+    }
+  ],
+  "quality_summary": {
+    "pages": {
+      "total": 1,
+      "empty": 0,
+      "scored": 1,
+      "mean": 0.9048,
+      "median": 0.9048,
+      "min": 0.9048,
+      "max": 0.9048
+    },
+    "lines": {
+      "total": 2,
+      "by_categ": {
+        "Clear": 1,
+        "Non-text": 1
+      }
+    }
+  }
+}

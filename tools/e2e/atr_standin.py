@@ -20,9 +20,9 @@ has no ATR, so this writes a docproc in the ATR's shape from digital-convert's d
   * `pipeline` names the stand-in and `processedAt` is fixed, so the output is the same on every run.
 
 Usage:
-    python tools/e2e/atr_standin.py work/docproc/scan_page-docx.docproc.json \\
+    python tools/e2e/atr_standin.py work/docproc/scan_page-pdf.docproc.json \\
         --ocr-text 2=fixtures/e2e/mixed/scan_page.page2.txt \\
-        --out work/docproc/scan_page-docx.atr.docproc.json
+        --out work/docproc/scan_page-pdf.atr.docproc.json
 
 Exit 0 when written, 1 when digital-convert's docproc routes no page to the ATR (nothing to stand in
 for), 2 for a usage error.

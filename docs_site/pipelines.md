@@ -41,7 +41,10 @@ here instead of retelling it.
 digital-convert reads every PDF or office file and gives each page a verdict on its text layer; it never
 refuses a document. If any page needs text recognition, the whole document goes through the ATR (AIS CR's
 text-recognition service) with those pages marked, and page-classification classifies those pages beside
-it. Images go to the ATR directly. Both write the same layout format, docproc; one docproc is stored per
+it. Only a PDF page can need the ATR: an office document (DOCX, DOC, ODT, RTF) is read as its own text, in full.
+digital-convert also says what each page shows besides its text (`graphics`, `tables`) and hands over an office
+document's rendered PDF when a page shows graphics; sending those pages to page-classification is proposed on
+[#84](https://github.com/ufal/atrium-project/issues/84). Images go to the ATR directly. Both write the same layout format, docproc; one docproc is stored per
 document. ocr-postprocess builds the ATRIUM record from it, keeping born-digital lines where they are
 good, and scores every line; page-classification's categories join the record's page rows. nlp-enrich
 adds the linguistic layer and the TEITOK file; keyword-extract adds keywords. The pipeline validates the
@@ -150,7 +153,7 @@ image, nothing more.
 
 | # | Stage               | Reads                                | Writes                                                       |
 |---|---------------------|--------------------------------------|--------------------------------------------------------------|
-| 1 | digital-convert     | the original (not for an image)      | a verdict for every page; the forced pages                   |
+| 1 | digital-convert     | the original (not for an image)      | a verdict and a description for every page; the forced pages |
 | 2 | the ATR (AIS CR)    | the whole document, the forced pages | `atr/docproc-json`, the stored layout                        |
 | 2 | page-classification | the page images of the forced pages  | `page_categories`, `pages[].category`, `category_confidence` |
 | 3 | ocr-postprocess     | the stored docproc, the seed         | the record: `source`, `pages`, `lines`, `content`, scores    |

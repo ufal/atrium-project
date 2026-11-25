@@ -1,0 +1,53 @@
+{
+  "schema_version": "3.0",
+  "program": "nlp-enrich",
+  "tool_version": "v2.0.0-beta",
+  "repository": "https://github.com/ufal/atrium-nlp-enrich",
+  "runner_ref": "48c0e73d0c8825063e699b864ee0dda520c4a7ae",
+  "docker_image": "",
+  "python_version": "3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]",
+  "run_id": "261125-143944",
+  "run_uuid": "urn:uuid:0b5a92eb-dcde-4121-818b-ea9032ec9dd7",
+  "run_agent": "",
+  "action_status": "completed",
+  "start_time": "2026-11-25T14:39:44.622131+00:00",
+  "end_time": "2026-11-25T14:39:45.095832+00:00",
+  "duration_seconds": 0.474,
+  "config": {
+    "script": "api_3_nt",
+    "model_nametag": "nametag3-multilingual-onto-260521",
+    "nametag_url": "https://lindat.mff.cuni.cz/services/nametag/api/recognize",
+    "timeout": "60",
+    "max_retries": "5",
+    "conllu_input_dir": "../_chain/nlp_out/UDP",
+    "output_dir": "../_chain/nlp_out/NE"
+  },
+  "parameters": {},
+  "inputs": [],
+  "outputs": [],
+  "components": [
+    {
+      "name": "nametag3_models",
+      "license": "CC BY-NC-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/"
+    },
+    {
+      "name": "udpipe2_models",
+      "license": "CC BY-NC-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/"
+    }
+  ],
+  "statistics": {
+    "input_files_total": 1,
+    "successfully_processed": 1,
+    "skipped_files": 0,
+    "output_counts_by_type": {
+      "tsv": 1
+    },
+    "performance_per_minute": {
+      "tsv": 126.6622
+    }
+  },
+  "skipped_files_detail": [],
+  "limits": []
+}

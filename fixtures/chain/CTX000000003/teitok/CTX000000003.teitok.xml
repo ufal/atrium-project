@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TEI xmlnsoff="http://www.tei-c.org/ns/1.0" lang="sk">
+  <teiHeader>
+    <fileDesc>
+      <titleStmt><title>CTX000000003</title></titleStmt>
+      <publicationStmt><p>Unpublished</p></publicationStmt>
+      <notesStmt><note n="orgfile">CTX000000003.document.json</note></notesStmt>
+      <sourceDesc><p>CTX000000003.document.json; text and page layout from the ATRIUM record CTX000000003.document.json (line text from: atr)</p></sourceDesc>
+    </fileDesc>
+    <encodingDesc>
+      <appInfo>
+        <application ident="atrium-nlp-enrich" version="teitok-2"><label>atrium-nlp-enrich TEITOK writer</label><desc>bbox origin: page; token boxes apportioned from line boxes (approximate); 2 line(s) with only their block's box carry no coordinates</desc></application>
+        <application ident="udpipe" version="2"><label>UDPipe 2, https://lindat.mff.cuni.cz/services/udpipe</label><desc>Model: czech-pdt-ud-2.15-241121</desc></application>
+        <application ident="nametag"><label>NameTag NER</label><desc>Model: nametag3-multilingual-onto-260521</desc></application>
+        <application ident="ocr-postprocess"><label>ocr-postprocess</label><desc>lines, page canvases and line boxes in CTX000000003.document.json</desc></application>
+      </appInfo>
+    </encodingDesc>
+    <profileDesc><langUsage><language ident="sk"/></langUsage></profileDesc>
+    <revisionDesc>
+      <change when="2026-11-25" who="ocr-postprocess" type="converted">Converted from CTX000000003.document.json by ocr-postprocess</change>
+      <change when="2026-11-25" who="udpipe" type="tagged" subtype="parsed">tokenized, lemmatized and dependency parsed with UDPipe model czech-pdt-ud-2.15-241121 (UDPipe 2, https://lindat.mff.cuni.cz/services/udpipe)</change>
+      <change when="2026-11-25" who="nametag" type="ner">named entity recognition with NameTag model nametag3-multilingual-onto-260521</change>
+    </revisionDesc>
+  </teiHeader>
+  <facsimile>
+    <surface id="facs-1" lrx="1654" lry="2339">
+      <graphic url="CTX000000003-1.png"/>
+    </surface>
+  </facsimile>
+  <text>
+    <body>
+      <pb n="1" id="pb-1" facs="CTX000000003-1.png" corresp="#facs-1" bbox="0 0 1654 2339"/>
+      <div type="TextBlock" id="b-1.1" bbox="220 160 820 280">
+        <s id="s-1" text="Náčrt sondy.">
+          <lb id="lb-1.1"/><tok id="w-1" type="w" ord="1" lemma="náčrt" upos="NOUN" xpos="NNIS1-----A----" feats="Animacy=Inan|Case=Nom|Gender=Masc|Number=Sing" deprel="root">Náčrt</tok> <tok id="w-2" type="w" ord="2" lemma="sonda" upos="NOUN" xpos="NNFS2-----A----" feats="Case=Gen|Gender=Fem|Number=Sing" head="w-1" deprel="nmod" join="right">sondy</tok><tok id="w-3" type="pc" ord="3" lemma="." upos="PUNCT" xpos="Z:-------------" head="w-1" deprel="punct">.</tok>
+        </s>
+        <s id="s-2" text="1998">
+          <lb id="lb-1.2"/><name id="n-1" type="MISC" onto="DATE" sameAs="#w-4"><tok id="w-4" type="w" ord="1" lemma="1998" upos="NUM" xpos="C=-------------" feats="NumForm=Digit|NumType=Card" deprel="root" join="right">1998</tok></name></s>
+      </div>
+    </body>
+  </text>
+</TEI>

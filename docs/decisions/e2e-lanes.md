@@ -15,6 +15,19 @@ a quote are as of when it was written; the workflow is the authority on what hol
 What each lane proves, and its gaps, is in the responsibility map of [`ci_policy.md`](../ci_policy.md);
 the image side of both lanes is in [`docker-tool-reusable.md`](docker-tool-reusable.md).
 
+## 2026-11-25 — an office document never goes to the ATR (atrium-digital-convert#9)
+
+**Decision.** digital-convert reads an office document's text from the file in full and routes none of its pages
+to the ATR; every page of a document with pages says what it shows besides its text (`graphics`, `tables`, ask
+14 of its docproc proposal). The born-digital lane follows: `scan_page.docx` builds alone, its picture page
+routed `empty` with one graphic, and `/reformat` hands over its rendered PDF because a page shows a graphic.
+The mixed document (H6) moves to `scan_page.pdf`, whose picture page goes to the ATR, with the same stand-in
+text. `docproc_assert.py --expect-graphics-pages` checks the pages that show graphics in every case.
+**Status:** in the hub's `test` branch with digital-convert v2.0.0-beta.
+**Why.** An office document is XML: its text is all there, and the ATR could only read it again from a
+rendering. What a page shows is for the pipeline to choose the pages page-classification reads.
+**Consequence.** The lane needs the digital-convert `test` branch and image that carry `scan_page.pdf`.
+
 ## 2026-11-21 — hub pull requests and dispatch, no push
 
 **Decision.** Both lanes run on hub pull requests that touch their files (the `paths:` of each

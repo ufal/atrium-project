@@ -1,5 +1,5 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #77, #78, #79, #83, #84); #72 and #81 closed 11-16. The starting set of the pilot phase (11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Released since, the starting set unchanged: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5 and v1.4.7, keyword-extract v1.6.5, page-classification v1.13.0 and v1.14.2, translator v1.7.8-beta; each tool's `test` is 16–25 commits past its last tag and declares the unreleased v2.0.0-beta (record 2.0). Hub workflows pinned to `fbffe25` (`v1`, 11-22), which all six tools call by commit; `test` = `main` = `fbffe25` (11-22), the merge of #93. The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-22 (#79 and #40: the seven PRs merged, and what landed), at the end of the file (this file is not in date order)._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #77, #78, #79, #83, #84); #72 and #81 closed 11-16. The starting set of the pilot phase (11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Released since, the starting set unchanged: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5 and v1.4.7, keyword-extract v1.6.5, page-classification v1.13.0 and v1.14.2, translator v1.7.8-beta; each tool's `test` is 16–25 commits past its last tag and declares the unreleased v2.0.0-beta (record 2.0). Hub workflows pinned to `fbffe25` (`v1`, 11-22), which all six tools call by commit; `test` = `main` = `fbffe25` (11-22), the merge of #93. The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-25 (v2.0.0-beta release prep), at the end of the file (this file is not in date order)._
 > _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` (#84: `84.*` since 11-16; the CAA manuscript checked: `digests/13.findings.md`) · `issues/` exports (source of truth). Pairs of closed issues removed 2026-11-19: #51, #72, #81, #82; kept: #18, #31, #32, #53, #55, #57 (cited elsewhere). Cross-repo snapshot: `digests/project_state_1911.md` (prior: `project_state_1111.md`, `project_state_0411.md`, `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
@@ -4212,3 +4212,31 @@ candidates are six `.3` releases carrying #6's step 1.
 * **Next:** the follow-up hub PR (the three records and the fixes above); the readability review, at the next meeting
   (requests to ARÚP and ARÚB staff go through David Novák); the 2.0.0-beta release batch (#77).
 * **Not posted; not pushed.** The #79 comment is drafted in the session.
+
+## 2026-11-24 → 2026-11-25 — v2.0.0-beta release prep (#94), the chain sample, the route question
+
+* **PR #94** (`v2-beta-prep` → `test`, head `814cb7e`): the release date (26 November) on three pages; the
+  born-digital lane follows atrium-digital-convert#9 (an office document never goes to the ATR, `scan_page.pdf` is
+  the mixed case, `docproc_assert.py --expect-graphics-pages`); the route pages; the k8s pages without the stage
+  settings; `fixtures/chain/CTX000000003/`, one document through ocr-postprocess, page-classification, nlp-enrich
+  and keyword-extract at the release commits (8 paradata `completed`, the crate).
+* **CI:** `digital-branch` is red until digital-convert #17 is merged and `:test` republished: the published image
+  predates `graphics`. Replayed here on digital-convert `3737cb2`, every case passes.
+* **#84:** K4TEL's comment of 11-24 (batch `config` paths) was updated on 11-25: the samples are regenerated, the
+  chain sample is in, and two questions go to ARÚP: page-classification also on the pages with graphics, and
+  whether AMČR stores the rendered PDF (`rendered-pdf`, unstored today). Until then the agreed route.
+* **Samples, 11-25:** ocr-postprocess 9/9, page-classification 2/2, translator 2/2 and the chain 8/8 pass the gate
+  (`completed`, the release commits, every SHA-512 resolves, no licence fields); nlp-enrich's run needs a rerun (its
+  summarize step failed on an untracked document).
+* **Written here (not pushed):** `docs/k8s_deployment.md` without `RENDER_TEXT_COVERAGE` (`test_env_doc_contract`
+  failed with the tools at their heads); the #84 digest, plan and export.
+* **Addendum (11-25, evening):**
+  * nlp-enrich's rerun is in (`e6f0788`): three documents, five paradata `completed`. Every sample is now clean
+    (ocr-postprocess 9/9, page-classification 2/2, nlp-enrich 5/5, translator 2/2, the chain 8/8).
+  * Two transient CI failures, re-run: keyword-extract #9 `docker-build-smoke (api)` (the container was still
+    loading KeyBERT from the Hub, without `HF_TOKEN`, when the step gave up) and this PR's CodeQL `analyze` (the
+    SARIF was made; the upload failed).
+  * Merge order: digital-convert #17, then `:test` republished and `digital-branch` re-run here; then
+    keyword-extract, nlp-enrich, ocr-postprocess, page-classification and translator; the pre-tag checks; the tags
+    on 26 November; this PR after the six releases.
+* Logs only; not pushed.

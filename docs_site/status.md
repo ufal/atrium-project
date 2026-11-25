@@ -17,7 +17,7 @@ All six are beta releases. A release's images are scanned before they are publis
 digest ([the release gate](operations.md#the-release-gate)). Its API contract is checked against the
 previous release's, as each service's runbook describes under "OpenAPI". The table gives the pilot's
 starting releases; the route of this site, with record schema 2.0 and docproc, comes with the 2.0.0-beta
-releases, on the tools' `test` branches and not released yet.
+releases of 26 November 2026.
 
 | Tool                | Starting release | What has been measured                                                        | Experimental or not evaluated                                              | Needs at run time                                            | Limits                                                                                               |
 |---------------------|------------------|-------------------------------------------------------------------------------|----------------------------------------------------------------------------|--------------------------------------------------------------|------------------------------------------------------------------------------------------------------|

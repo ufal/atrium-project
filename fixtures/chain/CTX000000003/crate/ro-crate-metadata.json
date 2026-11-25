@@ -1,0 +1,491 @@
+{
+  "@context": [
+    "https://w3id.org/ro/crate/1.2/context",
+    {
+      "@version": 1.1,
+      "ContainerImage": "https://w3id.org/ro/terms/workflow-run#ContainerImage",
+      "atrium": "https://w3id.org/atrium/",
+      "containerImage": "https://w3id.org/ro/terms/workflow-run#containerImage",
+      "paradataRecord": {
+        "@id": "https://w3id.org/atrium/term/paradataRecord",
+        "@type": "@json"
+      },
+      "recordFields": {
+        "@id": "https://w3id.org/atrium/term/recordFields",
+        "@type": "@json"
+      },
+      "registry": "https://w3id.org/ro/terms/workflow-run#registry",
+      "sha512": "https://w3id.org/atrium/term/sha512",
+      "stored": "https://w3id.org/atrium/term/stored",
+      "tag": "https://w3id.org/ro/terms/workflow-run#tag"
+    }
+  ],
+  "@graph": [
+    {
+      "@id": "ro-crate-metadata.json",
+      "@type": "CreativeWork",
+      "about": {
+        "@id": "./"
+      },
+      "conformsTo": {
+        "@id": "https://w3id.org/ro/crate/1.2"
+      }
+    },
+    {
+      "@id": "./",
+      "@type": "Dataset",
+      "about": [
+        {
+          "@id": "https://w3id.org/atrium/entity-type/MISC"
+        },
+        {
+          "@id": "https://w3id.org/atrium/line-category/Clear"
+        },
+        {
+          "@id": "https://w3id.org/atrium/line-category/Non-text"
+        },
+        {
+          "@id": "https://w3id.org/atrium/page-category/TEXT_P"
+        },
+        {
+          "@id": "https://w3id.org/atrium/quality-band/Clear"
+        }
+      ],
+      "conformsTo": {
+        "@id": "https://w3id.org/ro/wfrun/process/0.5"
+      },
+      "datePublished": "2026-11-25",
+      "description": "The fragment of the E2E's final record under a stub root, as AMČR's record crate embeds it.",
+      "isBasedOn": {
+        "@id": "#source"
+      },
+      "license": {
+        "@id": "#no-licence-asserted"
+      },
+      "mentions": [
+        {
+          "@id": "urn:uuid:0b5a92eb-dcde-4121-818b-ea9032ec9dd7"
+        },
+        {
+          "@id": "urn:uuid:23e34c0b-3889-431f-8f9f-225e00e1638e"
+        },
+        {
+          "@id": "urn:uuid:31c8a535-2ff8-45c9-b8e0-b068a045c2e6"
+        },
+        {
+          "@id": "urn:uuid:664eacf9-3cbe-4003-abcf-4ecf93e9b765"
+        },
+        {
+          "@id": "urn:uuid:8d6aacc1-5e19-4431-aeda-0280fdec7897"
+        },
+        {
+          "@id": "urn:uuid:be189f77-8205-46fa-a13e-aeac35ec0dd6"
+        },
+        {
+          "@id": "urn:uuid:cbcabc35-4b2f-4043-ad59-6eb61af2a456"
+        },
+        {
+          "@id": "urn:uuid:e3f2dea1-ed56-4093-b76c-f89beee63399"
+        }
+      ],
+      "name": "ATRIUM record fragment CTX000000003 (stub root)"
+    },
+    {
+      "@id": "#atr/docproc-json@d57259f63f2699cb",
+      "@type": "CreativeWork",
+      "encodingFormat": "application/json",
+      "name": "atr/docproc-json",
+      "sha512": "d57259f63f2699cb989346a46784e9903d74b4bce9c3953e6e5562c8bd827c1b42424df885bb955eb31c8403ebf33e1dc2fdf4511f697634ad27960c800e0892"
+    },
+    {
+      "@id": "#atr/teitok-xml@c6ce087d006fb73c",
+      "@type": "CreativeWork",
+      "encodingFormat": "application/xml",
+      "name": "atr/teitok-xml",
+      "sha512": "c6ce087d006fb73ccd022f0c99411f85daf30d08fd9b7852b2a33ed6774dbd96800a6bc75bbc757d898c21e734e3eda87435be3d17fccf81fb1e0fd397175ff6"
+    },
+    {
+      "@id": "#atrium/document-json@2d50acbda787afb6",
+      "@type": "CreativeWork",
+      "encodingFormat": "application/json",
+      "name": "atrium/document-json",
+      "recordFields": "{\"entities\": [\"surface\", \"lemma\", \"type_teitok\", \"page\", \"line\", \"char_span\", \"teitok_ref\", \"type_onto\"], \"lines\": [\"page\", \"line\", \"lemma\", \"upos\", \"feats\", \"teitok_ref\"], \"pages\": [\"page_index\", \"teitok_surface\"]}",
+      "sha512": "2d50acbda787afb6f8989835f905fe06a263fbc8b54ede29656afe28a06ba629be29c2c3a57c2bed241ce8fbcb4316a5d6b83c4e3195e5f105fae83723068393"
+    },
+    {
+      "@id": "#atrium/document-json@4cbb7d0ba412b85c",
+      "@type": "CreativeWork",
+      "encodingFormat": "application/json",
+      "name": "atrium/document-json",
+      "recordFields": "{\"content\": [\"text\"], \"lines\": [\"page\", \"line\", \"text\", \"block\", \"text_source\", \"bbox_precision\", \"bbox\", \"categ\", \"quality_score\", \"lang\"], \"pages\": [\"page_index\", \"page\", \"content_status\", \"canvas\", \"quality_score\", \"quality_band\"], \"quality_summary\": [\"pages\", \"lines\"], \"source\": [\"origin\", \"page_count\", \"language\"]}",
+      "sha512": "4cbb7d0ba412b85ca12beba03b3f285a642e6eb926a14bad18b38a6ad35e40984fff5daeaebaa8455cb2cc6ee5fed8775efafc1f6494f95f4b0883ad115c6347"
+    },
+    {
+      "@id": "#atrium/document-json@96aa6d35f8f3b822",
+      "@type": "CreativeWork",
+      "encodingFormat": "application/json",
+      "name": "atrium/document-json",
+      "recordFields": "{\"page_categories\": [\"1\"], \"pages\": [\"page_index\", \"category\", \"category_confidence\"]}",
+      "sha512": "96aa6d35f8f3b8226d49f463059bac9d71247262bb60ad1e819ea7843e2c59b73bc3db1b48eebae65d67ca6190054335b133926adb42af0e6cb14e1ccc11e68e"
+    },
+    {
+      "@id": "#atrium/document-json@aacbb79c26330fc3",
+      "@type": "CreativeWork",
+      "encodingFormat": "application/json",
+      "name": "atrium/document-json",
+      "recordFields": "{\"keywords\": [\"document\", \"pages\"]}",
+      "sha512": "aacbb79c26330fc3a85ae1e162bb3b50adf1594858959ad3e041ad2903d2921d29057f366558d62b76ce83e65ba512bb6145b03326cac66985ca6536b09c0b96"
+    },
+    {
+      "@id": "#no-licence-asserted",
+      "@type": "CreativeWork",
+      "description": "No licence is asserted for this crate. The rights in its contents depend on the source and on AMČR's permission to process it. Each run's paradata lists the components that ran, each with its own terms.",
+      "name": "No licence asserted"
+    },
+    {
+      "@id": "#source",
+      "@type": "CreativeWork",
+      "description": "The ORIGINAL input this record was built from, identified by doc_id and its SHA-512. Archive-managed and not part of this crate. Text obtained as: atr.",
+      "identifier": "CTX000000003",
+      "name": "CTX000000003"
+    },
+    {
+      "@id": "https://github.com/ufal/atrium-keyword-extract/releases/tag/v2.0.0-beta",
+      "@type": "SoftwareApplication",
+      "alternateName": "keyword-extract",
+      "creator": [
+        {
+          "@id": "https://orcid.org/0009-0002-4773-2797"
+        },
+        {
+          "@id": "https://orcid.org/0009-0002-8856-2501"
+        },
+        {
+          "@id": "https://orcid.org/0000-0001-6592-6291"
+        },
+        {
+          "@id": "https://orcid.org/0000-0002-6895-8536"
+        }
+      ],
+      "name": "atrium-keyword-extract",
+      "runtimePlatform": "Python 3.11.4",
+      "url": "https://github.com/ufal/atrium-keyword-extract",
+      "version": "2.0.0-beta"
+    },
+    {
+      "@id": "https://github.com/ufal/atrium-nlp-enrich/releases/tag/v2.0.0-beta",
+      "@type": "SoftwareApplication",
+      "alternateName": "nlp-enrich",
+      "creator": [
+        {
+          "@id": "https://orcid.org/0009-0002-4773-2797"
+        },
+        {
+          "@id": "https://orcid.org/0000-0001-6592-6291"
+        },
+        {
+          "@id": "https://orcid.org/0000-0002-6895-8536"
+        }
+      ],
+      "name": "atrium-nlp-enrich",
+      "runtimePlatform": "Python 3.11.4",
+      "url": "https://github.com/ufal/atrium-nlp-enrich",
+      "version": "2.0.0-beta"
+    },
+    {
+      "@id": "https://github.com/ufal/atrium-ocr-postprocess/releases/tag/v2.0.0-beta",
+      "@type": "SoftwareApplication",
+      "alternateName": "ocr-postprocess",
+      "creator": [
+        {
+          "@id": "https://orcid.org/0009-0002-4773-2797"
+        },
+        {
+          "@id": "https://orcid.org/0000-0001-5718-9447"
+        },
+        {
+          "@id": "https://orcid.org/0009-0002-8856-2501"
+        },
+        {
+          "@id": "https://orcid.org/0000-0001-6592-6291"
+        },
+        {
+          "@id": "https://orcid.org/0000-0002-6895-8536"
+        }
+      ],
+      "name": "atrium-ocr-postprocess",
+      "runtimePlatform": "Python 3.11.4",
+      "url": "https://github.com/ufal/atrium-ocr-postprocess",
+      "version": "2.0.0-beta"
+    },
+    {
+      "@id": "https://github.com/ufal/atrium-page-classification/releases/tag/v2.0.0-beta",
+      "@type": "SoftwareApplication",
+      "alternateName": "page-classification",
+      "creator": [
+        {
+          "@id": "https://orcid.org/0009-0002-4773-2797"
+        },
+        {
+          "@id": "https://orcid.org/0000-0001-5718-9447"
+        },
+        {
+          "@id": "https://orcid.org/0000-0001-6592-6291"
+        },
+        {
+          "@id": "https://orcid.org/0000-0002-6895-8536"
+        }
+      ],
+      "name": "atrium-page-classification",
+      "runtimePlatform": "Python 3.11.4",
+      "url": "https://github.com/ufal/atrium-page-classification",
+      "version": "2.0.0-beta"
+    },
+    {
+      "@id": "https://orcid.org/0000-0001-5718-9447",
+      "@type": "Person",
+      "name": "Dana Křivánková"
+    },
+    {
+      "@id": "https://orcid.org/0000-0001-6592-6291",
+      "@type": "Person",
+      "name": "David Novák"
+    },
+    {
+      "@id": "https://orcid.org/0000-0002-6895-8536",
+      "@type": "Person",
+      "name": "Pavel Straňák"
+    },
+    {
+      "@id": "https://orcid.org/0009-0002-4773-2797",
+      "@type": "Person",
+      "name": "Kateryna Lutsai"
+    },
+    {
+      "@id": "https://orcid.org/0009-0002-8856-2501",
+      "@type": "Person",
+      "name": "David Spáčil"
+    },
+    {
+      "@id": "https://w3id.org/atrium/entity-type/MISC",
+      "@type": "DefinedTerm",
+      "inDefinedTermSet": {
+        "@id": "https://w3id.org/atrium/scheme/entity-type"
+      },
+      "name": "MISC",
+      "termCode": "MISC"
+    },
+    {
+      "@id": "https://w3id.org/atrium/line-category/Clear",
+      "@type": "DefinedTerm",
+      "inDefinedTermSet": {
+        "@id": "https://w3id.org/atrium/scheme/line-category"
+      },
+      "name": "Clear",
+      "termCode": "Clear"
+    },
+    {
+      "@id": "https://w3id.org/atrium/line-category/Non-text",
+      "@type": "DefinedTerm",
+      "inDefinedTermSet": {
+        "@id": "https://w3id.org/atrium/scheme/line-category"
+      },
+      "name": "Non-text",
+      "termCode": "Non-text"
+    },
+    {
+      "@id": "https://w3id.org/atrium/page-category/TEXT_P",
+      "@type": "DefinedTerm",
+      "inDefinedTermSet": {
+        "@id": "https://w3id.org/atrium/scheme/page-category"
+      },
+      "name": "TEXT_P",
+      "termCode": "TEXT_P"
+    },
+    {
+      "@id": "https://w3id.org/atrium/quality-band/Clear",
+      "@type": "DefinedTerm",
+      "inDefinedTermSet": {
+        "@id": "https://w3id.org/atrium/scheme/quality-band"
+      },
+      "name": "Clear",
+      "termCode": "Clear"
+    },
+    {
+      "@id": "https://w3id.org/atrium/scheme/entity-type",
+      "@type": "DefinedTermSet",
+      "name": "entity-type"
+    },
+    {
+      "@id": "https://w3id.org/atrium/scheme/line-category",
+      "@type": "DefinedTermSet",
+      "name": "line-category"
+    },
+    {
+      "@id": "https://w3id.org/atrium/scheme/page-category",
+      "@type": "DefinedTermSet",
+      "name": "page-category"
+    },
+    {
+      "@id": "https://w3id.org/atrium/scheme/quality-band",
+      "@type": "DefinedTermSet",
+      "name": "quality-band"
+    },
+    {
+      "@id": "https://w3id.org/ro/wfrun/process/0.5",
+      "@type": [
+        "CreativeWork",
+        "Profile"
+      ],
+      "name": "Process Run Crate",
+      "version": "0.5"
+    },
+    {
+      "@id": "urn:uuid:0b5a92eb-dcde-4121-818b-ea9032ec9dd7",
+      "@type": "CreateAction",
+      "actionStatus": "http://schema.org/CompletedActionStatus",
+      "description": "One call of atrium-nlp-enrich 2.0.0-beta: what it read (object), what it wrote (result), and its paradata.",
+      "endTime": "2026-11-25T14:39:45+00:00",
+      "instrument": {
+        "@id": "https://github.com/ufal/atrium-nlp-enrich/releases/tag/v2.0.0-beta"
+      },
+      "name": "atrium-nlp-enrich run 261125-143944",
+      "paradataRecord": "{\"action_status\": \"completed\", \"components\": [{\"license\": \"CC BY-NC-SA 4.0\", \"license_url\": \"https://creativecommons.org/licenses/by-nc-sa/4.0/\", \"name\": \"nametag3_models\"}, {\"license\": \"CC BY-NC-SA 4.0\", \"license_url\": \"https://creativecommons.org/licenses/by-nc-sa/4.0/\", \"name\": \"udpipe2_models\"}], \"config\": {\"conllu_input_dir\": \"../_chain/nlp_out/UDP\", \"max_retries\": \"5\", \"model_nametag\": \"nametag3-multilingual-onto-260521\", \"nametag_url\": \"https://lindat.mff.cuni.cz/services/nametag/api/recognize\", \"output_dir\": \"../_chain/nlp_out/NE\", \"script\": \"api_3_nt\", \"timeout\": \"60\"}, \"docker_image\": \"\", \"duration_seconds\": 0.474, \"end_time\": \"2026-11-25T14:39:45.095832+00:00\", \"inputs\": [], \"limits\": [], \"outputs\": [], \"parameters\": {}, \"program\": \"nlp-enrich\", \"python_version\": \"3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]\", \"repository\": \"https://github.com/ufal/atrium-nlp-enrich\", \"run_agent\": \"\", \"run_id\": \"261125-143944\", \"run_uuid\": \"urn:uuid:0b5a92eb-dcde-4121-818b-ea9032ec9dd7\", \"runner_ref\": \"48c0e73d0c8825063e699b864ee0dda520c4a7ae\", \"schema_version\": \"3.0\", \"skipped_files_detail\": [], \"start_time\": \"2026-11-25T14:39:44.622131+00:00\", \"statistics\": {\"input_files_total\": 1, \"output_counts_by_type\": {\"tsv\": 1}, \"performance_per_minute\": {\"tsv\": 126.6622}, \"skipped_files\": 0, \"successfully_processed\": 1}, \"tool_version\": \"v2.0.0-beta\"}",
+      "startTime": "2026-11-25T14:39:44+00:00"
+    },
+    {
+      "@id": "urn:uuid:23e34c0b-3889-431f-8f9f-225e00e1638e",
+      "@type": "CreateAction",
+      "actionStatus": "http://schema.org/CompletedActionStatus",
+      "description": "One call of atrium-nlp-enrich 2.0.0-beta: what it read (object), what it wrote (result), and its paradata.",
+      "endTime": "2026-11-25T14:39:44+00:00",
+      "instrument": {
+        "@id": "https://github.com/ufal/atrium-nlp-enrich/releases/tag/v2.0.0-beta"
+      },
+      "name": "atrium-nlp-enrich run 261125-143943",
+      "paradataRecord": "{\"action_status\": \"completed\", \"components\": [{\"license\": \"CC BY-NC-SA 4.0\", \"license_url\": \"https://creativecommons.org/licenses/by-nc-sa/4.0/\", \"name\": \"nametag3_models\"}, {\"license\": \"CC BY-NC-SA 4.0\", \"license_url\": \"https://creativecommons.org/licenses/by-nc-sa/4.0/\", \"name\": \"udpipe2_models\"}], \"config\": {\"manifest\": \"../_chain/nlp_out/manifest.tsv\", \"max_retries\": \"5\", \"model_udpipe\": \"czech-pdt-ud-2.15-241121\", \"output_dir\": \"../_chain/nlp_out/UDP\", \"script\": \"api_2_udp\", \"timeout\": \"60\", \"udpipe_url\": \"https://lindat.mff.cuni.cz/services/udpipe/api/process\", \"word_chunk_limit\": \"900\"}, \"docker_image\": \"\", \"duration_seconds\": 0.814, \"end_time\": \"2026-11-25T14:39:44.339458+00:00\", \"inputs\": [], \"limits\": [], \"outputs\": [], \"parameters\": {}, \"program\": \"nlp-enrich\", \"python_version\": \"3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]\", \"repository\": \"https://github.com/ufal/atrium-nlp-enrich\", \"run_agent\": \"\", \"run_id\": \"261125-143943\", \"run_uuid\": \"urn:uuid:23e34c0b-3889-431f-8f9f-225e00e1638e\", \"runner_ref\": \"48c0e73d0c8825063e699b864ee0dda520c4a7ae\", \"schema_version\": \"3.0\", \"skipped_files_detail\": [], \"start_time\": \"2026-11-25T14:39:43.524986+00:00\", \"statistics\": {\"input_files_total\": 1, \"output_counts_by_type\": {\"conllu\": 1}, \"performance_per_minute\": {\"conllu\": 73.6674}, \"skipped_files\": 0, \"successfully_processed\": 1}, \"tool_version\": \"v2.0.0-beta\"}",
+      "startTime": "2026-11-25T14:39:43+00:00"
+    },
+    {
+      "@id": "urn:uuid:31c8a535-2ff8-45c9-b8e0-b068a045c2e6",
+      "@type": "CreateAction",
+      "actionStatus": "http://schema.org/CompletedActionStatus",
+      "description": "One call of atrium-keyword-extract 2.0.0-beta: what it read (object), what it wrote (result), and its paradata.",
+      "endTime": "2026-11-25T14:41:29+00:00",
+      "instrument": {
+        "@id": "https://github.com/ufal/atrium-keyword-extract/releases/tag/v2.0.0-beta"
+      },
+      "name": "atrium-keyword-extract run 261125-144107",
+      "object": [
+        {
+          "@id": "#atrium/document-json@2d50acbda787afb6"
+        }
+      ],
+      "paradataRecord": "{\"action_status\": \"completed\", \"components\": [{\"license\": \"MIT\", \"license_url\": \"https://opensource.org/license/mit/\", \"name\": \"keybert\"}, {\"license\": \"Apache-2.0\", \"license_url\": \"https://www.apache.org/licenses/LICENSE-2.0\", \"name\": \"sentence_transformers\"}, {\"license\": \"Apache-2.0\", \"license_url\": \"https://www.apache.org/licenses/LICENSE-2.0\", \"name\": \"keybert_model\"}], \"config\": {\"batch_size\": 16, \"diversity\": 0.5, \"document_json_dir\": null, \"document_json_out_dir\": \"../_chain/kw_out\", \"input_dir\": \"../_chain/kw_in\", \"keybert_model\": \"paraphrase-multilingual-MiniLM-L12-v2\", \"lang\": \"cs\", \"max_words\": 3, \"method\": \"keybert\", \"mmr\": true, \"num_keywords\": 10, \"output_file\": \"../_chain/kw/keywords_summary.csv\", \"per_doc_out_dir\": \"../_chain/kw/per_doc\", \"per_page_out_dir\": \"../_chain/kw/per_page\", \"script\": \"keywords\"}, \"docker_image\": \"\", \"duration_seconds\": 22.145, \"end_time\": \"2026-11-25T14:41:29.354308+00:00\", \"inputs\": [{\"media_type\": \"application/json\", \"name\": \"atrium/document-json\", \"sha512\": \"2d50acbda787afb6f8989835f905fe06a263fbc8b54ede29656afe28a06ba629be29c2c3a57c2bed241ce8fbcb4316a5d6b83c4e3195e5f105fae83723068393\", \"stored\": true}], \"limits\": [], \"outputs\": [{\"media_type\": \"application/json\", \"name\": \"atrium/document-json\", \"record_fields\": {\"keywords\": [\"document\", \"pages\"]}, \"sha512\": \"aacbb79c26330fc3a85ae1e162bb3b50adf1594858959ad3e041ad2903d2921d29057f366558d62b76ce83e65ba512bb6145b03326cac66985ca6536b09c0b96\", \"stored\": true}], \"parameters\": {}, \"program\": \"keyword-extract\", \"python_version\": \"3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]\", \"repository\": \"https://github.com/ufal/atrium-keyword-extract\", \"run_agent\": \"\", \"run_id\": \"261125-144107\", \"run_uuid\": \"urn:uuid:31c8a535-2ff8-45c9-b8e0-b068a045c2e6\", \"runner_ref\": \"c6e9cc376bdb500b1dff5de3057fc8cf59a36e90\", \"schema_version\": \"3.0\", \"skipped_files_detail\": [], \"start_time\": \"2026-11-25T14:41:07.208985+00:00\", \"statistics\": {\"input_files_total\": 1, \"output_counts_by_type\": {\"csv_per_doc\": 1, \"csv_per_page\": 1, \"csv_summary_row\": 1, \"document_json\": 1}, \"performance_per_minute\": {\"csv_per_doc\": 2.7094, \"csv_per_page\": 2.7094, \"csv_summary_row\": 2.7094, \"document_json\": 2.7094}, \"skipped_files\": 0, \"successfully_processed\": 1}, \"tool_version\": \"v2.0.0-beta\"}",
+      "result": [
+        {
+          "@id": "#atrium/document-json@aacbb79c26330fc3"
+        }
+      ],
+      "startTime": "2026-11-25T14:41:07+00:00"
+    },
+    {
+      "@id": "urn:uuid:664eacf9-3cbe-4003-abcf-4ecf93e9b765",
+      "@type": "CreateAction",
+      "actionStatus": "http://schema.org/CompletedActionStatus",
+      "description": "One call of atrium-page-classification 2.0.0-beta: what it read (object), what it wrote (result), and its paradata.",
+      "endTime": "2026-11-25T14:39:34+00:00",
+      "instrument": {
+        "@id": "https://github.com/ufal/atrium-page-classification/releases/tag/v2.0.0-beta"
+      },
+      "name": "atrium-page-classification run 261125-143848",
+      "object": [
+        {
+          "@id": "#atrium/document-json@4cbb7d0ba412b85c"
+        }
+      ],
+      "paradataRecord": "{\"action_status\": \"completed\", \"components\": [{\"license\": \"CC BY-NC 4.0\", \"license_url\": \"https://creativecommons.org/licenses/by-nc/4.0/\", \"name\": \"vit_models\"}], \"config\": {\"base_model\": \"timm/regnety_160.swag_ft_in1k\", \"batch_size\": \"16\", \"best_models\": \"False\", \"file_format\": \"png\", \"inner_dirs\": \"True\", \"input_path\": \"input/CTX000000003-1.png\", \"mode\": \"file\", \"model_path\": \"model/model/model_v44\", \"parallel_best\": \"False\", \"raw_output\": \"False\", \"revision\": \"v4.4\", \"top_n\": 3, \"yolo\": \"False\"}, \"docker_image\": \"\", \"duration_seconds\": 45.768, \"end_time\": \"2026-11-25T14:39:34.283408+00:00\", \"inputs\": [{\"media_type\": \"application/json\", \"name\": \"atrium/document-json\", \"sha512\": \"4cbb7d0ba412b85ca12beba03b3f285a642e6eb926a14bad18b38a6ad35e40984fff5daeaebaa8455cb2cc6ee5fed8775efafc1f6494f95f4b0883ad115c6347\", \"stored\": true}], \"limits\": [], \"outputs\": [{\"media_type\": \"application/json\", \"name\": \"atrium/document-json\", \"record_fields\": {\"page_categories\": [\"1\"], \"pages\": [\"page_index\", \"category\", \"category_confidence\"]}, \"sha512\": \"96aa6d35f8f3b8226d49f463059bac9d71247262bb60ad1e819ea7843e2c59b73bc3db1b48eebae65d67ca6190054335b133926adb42af0e6cb14e1ccc11e68e\", \"stored\": true}], \"parameters\": {\"revisions\": [\"v4.4\"]}, \"program\": \"page-classification\", \"python_version\": \"3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]\", \"repository\": \"https://github.com/ufal/atrium-page-classification\", \"run_agent\": \"\", \"run_id\": \"261125-143848\", \"run_uuid\": \"urn:uuid:664eacf9-3cbe-4003-abcf-4ecf93e9b765\", \"runner_ref\": \"935ea01f5a05471cde1e2616c70f37c9c756acd3\", \"schema_version\": \"3.0\", \"skipped_files_detail\": [], \"start_time\": \"2026-11-25T14:38:48.515396+00:00\", \"statistics\": {\"input_files_total\": 1, \"output_counts_by_type\": {\"csv\": 1, \"png\": 0}, \"performance_per_minute\": {\"csv\": 1.311, \"png\": 0.0}, \"skipped_files\": 0, \"successfully_processed\": 1}, \"tool_version\": \"v2.0.0-beta\"}",
+      "result": [
+        {
+          "@id": "#atrium/document-json@96aa6d35f8f3b822"
+        }
+      ],
+      "startTime": "2026-11-25T14:38:48+00:00"
+    },
+    {
+      "@id": "urn:uuid:8d6aacc1-5e19-4431-aeda-0280fdec7897",
+      "@type": "CreateAction",
+      "actionStatus": "http://schema.org/CompletedActionStatus",
+      "description": "One call of atrium-nlp-enrich 2.0.0-beta: what it read (object), what it wrote (result), and its paradata.",
+      "endTime": "2026-11-25T14:39:47+00:00",
+      "instrument": {
+        "@id": "https://github.com/ufal/atrium-nlp-enrich/releases/tag/v2.0.0-beta"
+      },
+      "name": "atrium-nlp-enrich run 261125-143947",
+      "paradataRecord": "{\"action_status\": \"completed\", \"components\": [{\"license\": \"CC BY-NC-SA 4.0\", \"license_url\": \"https://creativecommons.org/licenses/by-nc-sa/4.0/\", \"name\": \"nametag3_models\"}, {\"license\": \"CC BY-NC-SA 4.0\", \"license_url\": \"https://creativecommons.org/licenses/by-nc-sa/4.0/\", \"name\": \"udpipe2_models\"}], \"docker_image\": \"\", \"end_time\": \"2026-11-25T14:39:47.287924+00:00\", \"intermediate_formats\": {\"conllu\": 2, \"csv\": 1, \"tsv\": 2, \"xml\": 1}, \"limits\": [], \"merged_at\": \"2026-11-25T14:39:47.306876+00:00\", \"method\": \"\", \"pipeline\": \"nlp-enrich\", \"pipeline_stages\": [{\"action_status\": \"completed\", \"docker_image\": \"\", \"duration_seconds\": 0.265, \"end_time\": \"2026-11-25T14:39:42.689486+00:00\", \"input_files_total\": 1, \"inputs\": [], \"method\": null, \"order\": 1, \"output_formats\": {\"tsv\": 1}, \"outputs\": [], \"program\": \"nlp-enrich\", \"repository\": \"https://github.com/ufal/atrium-nlp-enrich\", \"run_id\": \"261125-143942\", \"run_uuid\": \"urn:uuid:e3f2dea1-ed56-4093-b76c-f89beee63399\", \"script\": \"api_1_manifest\", \"skipped_files\": 0, \"start_time\": \"2026-11-25T14:39:42.424415+00:00\", \"successfully_processed\": 1, \"tool_version\": \"v2.0.0-beta\"}, {\"action_status\": \"completed\", \"docker_image\": \"\", \"duration_seconds\": 0.814, \"end_time\": \"2026-11-25T14:39:44.339458+00:00\", \"input_files_total\": 1, \"inputs\": [], \"method\": null, \"order\": 2, \"output_formats\": {\"conllu\": 1}, \"outputs\": [], \"program\": \"nlp-enrich\", \"repository\": \"https://github.com/ufal/atrium-nlp-enrich\", \"run_id\": \"261125-143943\", \"run_uuid\": \"urn:uuid:23e34c0b-3889-431f-8f9f-225e00e1638e\", \"script\": \"api_2_udp\", \"skipped_files\": 0, \"start_time\": \"2026-11-25T14:39:43.524986+00:00\", \"successfully_processed\": 1, \"tool_version\": \"v2.0.0-beta\"}, {\"action_status\": \"completed\", \"docker_image\": \"\", \"duration_seconds\": 0.474, \"end_time\": \"2026-11-25T14:39:45.095832+00:00\", \"input_files_total\": 1, \"inputs\": [], \"method\": null, \"order\": 3, \"output_formats\": {\"tsv\": 1}, \"outputs\": [], \"program\": \"nlp-enrich\", \"repository\": \"https://github.com/ufal/atrium-nlp-enrich\", \"run_id\": \"261125-143944\", \"run_uuid\": \"urn:uuid:0b5a92eb-dcde-4121-818b-ea9032ec9dd7\", \"script\": \"api_3_nt\", \"skipped_files\": 0, \"start_time\": \"2026-11-25T14:39:44.622131+00:00\", \"successfully_processed\": 1, \"tool_version\": \"v2.0.0-beta\"}, {\"action_status\": \"completed\", \"docker_image\": \"\", \"duration_seconds\": 1.567, \"end_time\": \"2026-11-25T14:39:47.287924+00:00\", \"input_files_total\": 1, \"inputs\": [{\"media_type\": \"application/json\", \"name\": \"atrium/document-json\", \"sha512\": \"96aa6d35f8f3b8226d49f463059bac9d71247262bb60ad1e819ea7843e2c59b73bc3db1b48eebae65d67ca6190054335b133926adb42af0e6cb14e1ccc11e68e\", \"stored\": true}], \"method\": null, \"order\": 4, \"output_formats\": {\"conllu\": 1, \"csv\": 1, \"xml\": 1}, \"outputs\": [{\"media_type\": \"application/xml\", \"name\": \"atr/teitok-xml\", \"sha512\": \"c6ce087d006fb73ccd022f0c99411f85daf30d08fd9b7852b2a33ed6774dbd96800a6bc75bbc757d898c21e734e3eda87435be3d17fccf81fb1e0fd397175ff6\", \"stored\": true}, {\"media_type\": \"application/json\", \"name\": \"atrium/document-json\", \"record_fields\": {\"entities\": [\"surface\", \"lemma\", \"type_teitok\", \"page\", \"line\", \"char_span\", \"teitok_ref\", \"type_onto\"], \"lines\": [\"page\", \"line\", \"lemma\", \"upos\", \"feats\", \"teitok_ref\"], \"pages\": [\"page_index\", \"teitok_surface\"]}, \"sha512\": \"2d50acbda787afb6f8989835f905fe06a263fbc8b54ede29656afe28a06ba629be29c2c3a57c2bed241ce8fbcb4316a5d6b83c4e3195e5f105fae83723068393\", \"stored\": true}], \"program\": \"nlp-enrich\", \"repository\": \"https://github.com/ufal/atrium-nlp-enrich\", \"run_id\": \"261125-143945\", \"run_uuid\": \"urn:uuid:be189f77-8205-46fa-a13e-aeac35ec0dd6\", \"script\": \"api_4_stats\", \"skipped_files\": 0, \"start_time\": \"2026-11-25T14:39:45.721387+00:00\", \"successfully_processed\": 1, \"tool_version\": \"v2.0.0-beta\"}], \"python_version\": \"3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]\", \"record_type\": \"pipeline-run-merged\", \"repository\": \"https://github.com/ufal/atrium-nlp-enrich\", \"request_id\": \"\", \"run_agent\": \"\", \"run_id\": \"261125-143947\", \"run_uuid\": \"urn:uuid:8d6aacc1-5e19-4431-aeda-0280fdec7897\", \"runner_ref\": \"48c0e73d0c8825063e699b864ee0dda520c4a7ae\", \"schema_version\": \"3.0\", \"skipped_files_detail\": [], \"skipped_stages\": [], \"stage_count\": 4, \"start_time\": \"2026-11-25T14:39:42.424415+00:00\", \"statistics\": {\"input_files_total\": 1, \"skipped_files\": 0, \"stages_total\": 4, \"successfully_processed\": 1}, \"tool_version\": \"v2.0.0-beta\", \"total_duration_seconds\": 3.12}",
+      "startTime": "2026-11-25T14:39:42+00:00"
+    },
+    {
+      "@id": "urn:uuid:be189f77-8205-46fa-a13e-aeac35ec0dd6",
+      "@type": "CreateAction",
+      "actionStatus": "http://schema.org/CompletedActionStatus",
+      "description": "One call of atrium-nlp-enrich 2.0.0-beta: what it read (object), what it wrote (result), and its paradata.",
+      "endTime": "2026-11-25T14:39:47+00:00",
+      "instrument": {
+        "@id": "https://github.com/ufal/atrium-nlp-enrich/releases/tag/v2.0.0-beta"
+      },
+      "name": "atrium-nlp-enrich run 261125-143945",
+      "object": [
+        {
+          "@id": "#atrium/document-json@96aa6d35f8f3b822"
+        }
+      ],
+      "paradataRecord": "{\"action_status\": \"completed\", \"components\": [{\"license\": \"CC BY-NC-SA 4.0\", \"license_url\": \"https://creativecommons.org/licenses/by-nc-sa/4.0/\", \"name\": \"nametag3_models\"}, {\"license\": \"CC BY-NC-SA 4.0\", \"license_url\": \"https://creativecommons.org/licenses/by-nc-sa/4.0/\", \"name\": \"udpipe2_models\"}], \"config\": {\"alto_dir\": \"\", \"alto_dpi\": \"\", \"bbox_origin\": \"page\", \"conllu_input_dir\": \"../_chain/nlp_out/UDP\", \"dpi\": \"\", \"flexiconv_annotate\": \"false\", \"output_dir\": \"../_chain/nlp_out/UDP_NE\", \"pages_dir\": \"\", \"regenerate_teitok\": \"false\", \"save_conllu_ne\": \"true\", \"save_csv\": \"true\", \"save_teitok\": \"true\", \"script\": \"api_4_stats\", \"tsv_input_dir\": \"../_chain/nlp_out/NE\"}, \"docker_image\": \"\", \"duration_seconds\": 1.567, \"end_time\": \"2026-11-25T14:39:47.287924+00:00\", \"inputs\": [{\"media_type\": \"application/json\", \"name\": \"atrium/document-json\", \"sha512\": \"96aa6d35f8f3b8226d49f463059bac9d71247262bb60ad1e819ea7843e2c59b73bc3db1b48eebae65d67ca6190054335b133926adb42af0e6cb14e1ccc11e68e\", \"stored\": true}], \"limits\": [], \"outputs\": [{\"media_type\": \"application/xml\", \"name\": \"atr/teitok-xml\", \"sha512\": \"c6ce087d006fb73ccd022f0c99411f85daf30d08fd9b7852b2a33ed6774dbd96800a6bc75bbc757d898c21e734e3eda87435be3d17fccf81fb1e0fd397175ff6\", \"stored\": true}, {\"media_type\": \"application/json\", \"name\": \"atrium/document-json\", \"record_fields\": {\"entities\": [\"surface\", \"lemma\", \"type_teitok\", \"page\", \"line\", \"char_span\", \"teitok_ref\", \"type_onto\"], \"lines\": [\"page\", \"line\", \"lemma\", \"upos\", \"feats\", \"teitok_ref\"], \"pages\": [\"page_index\", \"teitok_surface\"]}, \"sha512\": \"2d50acbda787afb6f8989835f905fe06a263fbc8b54ede29656afe28a06ba629be29c2c3a57c2bed241ce8fbcb4316a5d6b83c4e3195e5f105fae83723068393\", \"stored\": true}], \"parameters\": {}, \"program\": \"nlp-enrich\", \"python_version\": \"3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]\", \"repository\": \"https://github.com/ufal/atrium-nlp-enrich\", \"run_agent\": \"\", \"run_id\": \"261125-143945\", \"run_uuid\": \"urn:uuid:be189f77-8205-46fa-a13e-aeac35ec0dd6\", \"runner_ref\": \"48c0e73d0c8825063e699b864ee0dda520c4a7ae\", \"schema_version\": \"3.0\", \"skipped_files_detail\": [], \"start_time\": \"2026-11-25T14:39:45.721387+00:00\", \"statistics\": {\"input_files_total\": 1, \"output_counts_by_type\": {\"conllu\": 1, \"csv\": 1, \"xml\": 1}, \"performance_per_minute\": {\"conllu\": 38.301, \"csv\": 38.301, \"xml\": 38.301}, \"skipped_files\": 0, \"successfully_processed\": 1}, \"tool_version\": \"v2.0.0-beta\"}",
+      "result": [
+        {
+          "@id": "#atr/teitok-xml@c6ce087d006fb73c"
+        },
+        {
+          "@id": "#atrium/document-json@2d50acbda787afb6"
+        }
+      ],
+      "startTime": "2026-11-25T14:39:45+00:00"
+    },
+    {
+      "@id": "urn:uuid:cbcabc35-4b2f-4043-ad59-6eb61af2a456",
+      "@type": "CreateAction",
+      "actionStatus": "http://schema.org/CompletedActionStatus",
+      "description": "One call of atrium-ocr-postprocess 2.0.0-beta: what it read (object), what it wrote (result), and its paradata.",
+      "endTime": "2026-11-25T14:38:36+00:00",
+      "instrument": {
+        "@id": "https://github.com/ufal/atrium-ocr-postprocess/releases/tag/v2.0.0-beta"
+      },
+      "name": "atrium-ocr-postprocess run 261125-143836",
+      "object": [
+        {
+          "@id": "#atr/docproc-json@d57259f63f2699cb"
+        }
+      ],
+      "paradataRecord": "{\"action_status\": \"completed\", \"components\": [{\"license\": \"Apache-2.0\", \"license_url\": \"https://www.apache.org/licenses/LICENSE-2.0\", \"name\": \"alto_tools\"}, {\"license\": \"CC BY-NC 4.0\", \"license_url\": \"https://creativecommons.org/licenses/by-nc/4.0/\", \"name\": \"fasttext\"}, {\"license\": \"Apache-2.0\", \"license_url\": \"https://www.apache.org/licenses/LICENSE-2.0\", \"name\": \"qwen2.5_0.5b\"}], \"config\": {\"command\": \"build_record\", \"score\": true}, \"docker_image\": \"\", \"duration_seconds\": 0.709, \"end_time\": \"2026-11-25T14:38:36.924973+00:00\", \"inputs\": [{\"media_type\": \"application/json\", \"name\": \"atr/docproc-json\", \"sha512\": \"d57259f63f2699cb989346a46784e9903d74b4bce9c3953e6e5562c8bd827c1b42424df885bb955eb31c8403ebf33e1dc2fdf4511f697634ad27960c800e0892\", \"stored\": true}], \"limits\": [], \"outputs\": [{\"media_type\": \"application/json\", \"name\": \"atrium/document-json\", \"record_fields\": {\"content\": [\"text\"], \"lines\": [\"page\", \"line\", \"text\", \"block\", \"text_source\", \"bbox_precision\", \"bbox\", \"categ\", \"quality_score\", \"lang\"], \"pages\": [\"page_index\", \"page\", \"content_status\", \"canvas\", \"quality_score\", \"quality_band\"], \"quality_summary\": [\"pages\", \"lines\"], \"source\": [\"origin\", \"page_count\", \"language\"]}, \"sha512\": \"4cbb7d0ba412b85ca12beba03b3f285a642e6eb926a14bad18b38a6ad35e40984fff5daeaebaa8455cb2cc6ee5fed8775efafc1f6494f95f4b0883ad115c6347\", \"stored\": true}], \"parameters\": {\"docproc_version\": \"1.0\", \"scored\": true}, \"program\": \"ocr-postprocess\", \"python_version\": \"3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]\", \"repository\": \"https://github.com/ufal/atrium-ocr-postprocess\", \"run_agent\": \"\", \"run_id\": \"261125-143836\", \"run_uuid\": \"urn:uuid:cbcabc35-4b2f-4043-ad59-6eb61af2a456\", \"runner_ref\": \"14f8a3ba464e22777406f11fb802740784f5d3c6\", \"schema_version\": \"3.0\", \"skipped_files_detail\": [], \"start_time\": \"2026-11-25T14:38:36.216310+00:00\", \"statistics\": {\"input_files_total\": 1, \"output_counts_by_type\": {}, \"performance_per_minute\": {}, \"skipped_files\": 0, \"successfully_processed\": 1}, \"tool_version\": \"v2.0.0-beta\"}",
+      "result": [
+        {
+          "@id": "#atrium/document-json@4cbb7d0ba412b85c"
+        }
+      ],
+      "startTime": "2026-11-25T14:38:36+00:00"
+    },
+    {
+      "@id": "urn:uuid:e3f2dea1-ed56-4093-b76c-f89beee63399",
+      "@type": "CreateAction",
+      "actionStatus": "http://schema.org/CompletedActionStatus",
+      "description": "One call of atrium-nlp-enrich 2.0.0-beta: what it read (object), what it wrote (result), and its paradata.",
+      "endTime": "2026-11-25T14:39:42+00:00",
+      "instrument": {
+        "@id": "https://github.com/ufal/atrium-nlp-enrich/releases/tag/v2.0.0-beta"
+      },
+      "name": "atrium-nlp-enrich run 261125-143942",
+      "paradataRecord": "{\"action_status\": \"completed\", \"components\": [{\"license\": \"CC BY-NC-SA 4.0\", \"license_url\": \"https://creativecommons.org/licenses/by-nc-sa/4.0/\", \"name\": \"nametag3_models\"}, {\"license\": \"CC BY-NC-SA 4.0\", \"license_url\": \"https://creativecommons.org/licenses/by-nc-sa/4.0/\", \"name\": \"udpipe2_models\"}], \"config\": {\"flexiconv_input_dir\": \"\", \"input_dir\": \"../_chain/nlp_out/DOC_TEXT\", \"output_manifest\": \"../_chain/nlp_out/manifest.tsv\", \"script\": \"api_1_manifest\", \"skip_untrustworthy_lines\": \"false\"}, \"docker_image\": \"\", \"duration_seconds\": 0.265, \"end_time\": \"2026-11-25T14:39:42.689486+00:00\", \"inputs\": [], \"limits\": [], \"outputs\": [], \"parameters\": {}, \"program\": \"nlp-enrich\", \"python_version\": \"3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]\", \"repository\": \"https://github.com/ufal/atrium-nlp-enrich\", \"run_agent\": \"\", \"run_id\": \"261125-143942\", \"run_uuid\": \"urn:uuid:e3f2dea1-ed56-4093-b76c-f89beee63399\", \"runner_ref\": \"48c0e73d0c8825063e699b864ee0dda520c4a7ae\", \"schema_version\": \"3.0\", \"skipped_files_detail\": [], \"start_time\": \"2026-11-25T14:39:42.424415+00:00\", \"statistics\": {\"input_files_total\": 1, \"output_counts_by_type\": {\"tsv\": 1}, \"performance_per_minute\": {\"tsv\": 226.3544}, \"skipped_files\": 0, \"successfully_processed\": 1}, \"tool_version\": \"v2.0.0-beta\"}",
+      "startTime": "2026-11-25T14:39:42+00:00"
+    }
+  ]
+}

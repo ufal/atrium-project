@@ -1,0 +1,188 @@
+{
+  "schema_version": "3.0",
+  "record_type": "pipeline-run-merged",
+  "pipeline": "nlp-enrich",
+  "method": "",
+  "repository": "https://github.com/ufal/atrium-nlp-enrich",
+  "tool_version": "v2.0.0-beta",
+  "docker_image": "",
+  "runner_ref": "48c0e73d0c8825063e699b864ee0dda520c4a7ae",
+  "request_id": "",
+  "python_version": "3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]",
+  "run_id": "261125-143947",
+  "run_uuid": "urn:uuid:8d6aacc1-5e19-4431-aeda-0280fdec7897",
+  "run_agent": "",
+  "action_status": "completed",
+  "stage_count": 4,
+  "pipeline_stages": [
+    {
+      "order": 1,
+      "program": "nlp-enrich",
+      "script": "api_1_manifest",
+      "method": null,
+      "run_id": "261125-143942",
+      "run_uuid": "urn:uuid:e3f2dea1-ed56-4093-b76c-f89beee63399",
+      "action_status": "completed",
+      "repository": "https://github.com/ufal/atrium-nlp-enrich",
+      "tool_version": "v2.0.0-beta",
+      "docker_image": "",
+      "inputs": [],
+      "outputs": [],
+      "output_formats": {
+        "tsv": 1
+      },
+      "start_time": "2026-11-25T14:39:42.424415+00:00",
+      "end_time": "2026-11-25T14:39:42.689486+00:00",
+      "duration_seconds": 0.265,
+      "input_files_total": 1,
+      "successfully_processed": 1,
+      "skipped_files": 0
+    },
+    {
+      "order": 2,
+      "program": "nlp-enrich",
+      "script": "api_2_udp",
+      "method": null,
+      "run_id": "261125-143943",
+      "run_uuid": "urn:uuid:23e34c0b-3889-431f-8f9f-225e00e1638e",
+      "action_status": "completed",
+      "repository": "https://github.com/ufal/atrium-nlp-enrich",
+      "tool_version": "v2.0.0-beta",
+      "docker_image": "",
+      "inputs": [],
+      "outputs": [],
+      "output_formats": {
+        "conllu": 1
+      },
+      "start_time": "2026-11-25T14:39:43.524986+00:00",
+      "end_time": "2026-11-25T14:39:44.339458+00:00",
+      "duration_seconds": 0.814,
+      "input_files_total": 1,
+      "successfully_processed": 1,
+      "skipped_files": 0
+    },
+    {
+      "order": 3,
+      "program": "nlp-enrich",
+      "script": "api_3_nt",
+      "method": null,
+      "run_id": "261125-143944",
+      "run_uuid": "urn:uuid:0b5a92eb-dcde-4121-818b-ea9032ec9dd7",
+      "action_status": "completed",
+      "repository": "https://github.com/ufal/atrium-nlp-enrich",
+      "tool_version": "v2.0.0-beta",
+      "docker_image": "",
+      "inputs": [],
+      "outputs": [],
+      "output_formats": {
+        "tsv": 1
+      },
+      "start_time": "2026-11-25T14:39:44.622131+00:00",
+      "end_time": "2026-11-25T14:39:45.095832+00:00",
+      "duration_seconds": 0.474,
+      "input_files_total": 1,
+      "successfully_processed": 1,
+      "skipped_files": 0
+    },
+    {
+      "order": 4,
+      "program": "nlp-enrich",
+      "script": "api_4_stats",
+      "method": null,
+      "run_id": "261125-143945",
+      "run_uuid": "urn:uuid:be189f77-8205-46fa-a13e-aeac35ec0dd6",
+      "action_status": "completed",
+      "repository": "https://github.com/ufal/atrium-nlp-enrich",
+      "tool_version": "v2.0.0-beta",
+      "docker_image": "",
+      "inputs": [
+        {
+          "name": "atrium/document-json",
+          "sha512": "96aa6d35f8f3b8226d49f463059bac9d71247262bb60ad1e819ea7843e2c59b73bc3db1b48eebae65d67ca6190054335b133926adb42af0e6cb14e1ccc11e68e",
+          "media_type": "application/json",
+          "stored": true
+        }
+      ],
+      "outputs": [
+        {
+          "name": "atr/teitok-xml",
+          "sha512": "c6ce087d006fb73ccd022f0c99411f85daf30d08fd9b7852b2a33ed6774dbd96800a6bc75bbc757d898c21e734e3eda87435be3d17fccf81fb1e0fd397175ff6",
+          "media_type": "application/xml",
+          "stored": true
+        },
+        {
+          "name": "atrium/document-json",
+          "sha512": "2d50acbda787afb6f8989835f905fe06a263fbc8b54ede29656afe28a06ba629be29c2c3a57c2bed241ce8fbcb4316a5d6b83c4e3195e5f105fae83723068393",
+          "media_type": "application/json",
+          "stored": true,
+          "record_fields": {
+            "entities": [
+              "surface",
+              "lemma",
+              "type_teitok",
+              "page",
+              "line",
+              "char_span",
+              "teitok_ref",
+              "type_onto"
+            ],
+            "pages": [
+              "page_index",
+              "teitok_surface"
+            ],
+            "lines": [
+              "page",
+              "line",
+              "lemma",
+              "upos",
+              "feats",
+              "teitok_ref"
+            ]
+          }
+        }
+      ],
+      "output_formats": {
+        "csv": 1,
+        "conllu": 1,
+        "xml": 1
+      },
+      "start_time": "2026-11-25T14:39:45.721387+00:00",
+      "end_time": "2026-11-25T14:39:47.287924+00:00",
+      "duration_seconds": 1.567,
+      "input_files_total": 1,
+      "successfully_processed": 1,
+      "skipped_files": 0
+    }
+  ],
+  "intermediate_formats": {
+    "tsv": 2,
+    "conllu": 2,
+    "csv": 1,
+    "xml": 1
+  },
+  "components": [
+    {
+      "name": "nametag3_models",
+      "license": "CC BY-NC-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/"
+    },
+    {
+      "name": "udpipe2_models",
+      "license": "CC BY-NC-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/"
+    }
+  ],
+  "start_time": "2026-11-25T14:39:42.424415+00:00",
+  "end_time": "2026-11-25T14:39:47.287924+00:00",
+  "total_duration_seconds": 3.12,
+  "statistics": {
+    "stages_total": 4,
+    "input_files_total": 1,
+    "successfully_processed": 1,
+    "skipped_files": 0
+  },
+  "skipped_files_detail": [],
+  "limits": [],
+  "skipped_stages": [],
+  "merged_at": "2026-11-25T14:39:47.306876+00:00"
+}

@@ -1,0 +1,84 @@
+{
+  "schema_version": "3.0",
+  "program": "page-classification",
+  "tool_version": "v2.0.0-beta",
+  "repository": "https://github.com/ufal/atrium-page-classification",
+  "runner_ref": "935ea01f5a05471cde1e2616c70f37c9c756acd3",
+  "docker_image": "",
+  "python_version": "3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]",
+  "run_id": "261125-143848",
+  "run_uuid": "urn:uuid:664eacf9-3cbe-4003-abcf-4ecf93e9b765",
+  "run_agent": "",
+  "action_status": "completed",
+  "start_time": "2026-11-25T14:38:48.515396+00:00",
+  "end_time": "2026-11-25T14:39:34.283408+00:00",
+  "duration_seconds": 45.768,
+  "config": {
+    "model_path": "model/model/model_v44",
+    "revision": "v4.4",
+    "base_model": "timm/regnety_160.swag_ft_in1k",
+    "top_n": 3,
+    "batch_size": "16",
+    "input_path": "input/CTX000000003-1.png",
+    "inner_dirs": "True",
+    "file_format": "png",
+    "mode": "file",
+    "raw_output": "False",
+    "best_models": "False",
+    "parallel_best": "False",
+    "yolo": "False"
+  },
+  "parameters": {
+    "revisions": [
+      "v4.4"
+    ]
+  },
+  "inputs": [
+    {
+      "name": "atrium/document-json",
+      "sha512": "4cbb7d0ba412b85ca12beba03b3f285a642e6eb926a14bad18b38a6ad35e40984fff5daeaebaa8455cb2cc6ee5fed8775efafc1f6494f95f4b0883ad115c6347",
+      "media_type": "application/json",
+      "stored": true
+    }
+  ],
+  "outputs": [
+    {
+      "name": "atrium/document-json",
+      "sha512": "96aa6d35f8f3b8226d49f463059bac9d71247262bb60ad1e819ea7843e2c59b73bc3db1b48eebae65d67ca6190054335b133926adb42af0e6cb14e1ccc11e68e",
+      "media_type": "application/json",
+      "stored": true,
+      "record_fields": {
+        "page_categories": [
+          "1"
+        ],
+        "pages": [
+          "page_index",
+          "category",
+          "category_confidence"
+        ]
+      }
+    }
+  ],
+  "components": [
+    {
+      "name": "vit_models",
+      "license": "CC BY-NC 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-nc/4.0/"
+    }
+  ],
+  "statistics": {
+    "input_files_total": 1,
+    "successfully_processed": 1,
+    "skipped_files": 0,
+    "output_counts_by_type": {
+      "csv": 1,
+      "png": 0
+    },
+    "performance_per_minute": {
+      "csv": 1.311,
+      "png": 0.0
+    }
+  },
+  "skipped_files_detail": [],
+  "limits": []
+}

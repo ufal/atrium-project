@@ -148,7 +148,8 @@ flowchart LR
 
 digital-convert gives every page of a PDF or office file a verdict on its text layer. If any page needs
 text recognition, the whole document goes through the ATR, AIS CR's text-recognition service, and
-page-classification classifies those pages beside it. ocr-postprocess builds the record from the layout,
+page-classification classifies those pages beside it. An office document never needs the ATR: its text is read
+from the file. ocr-postprocess builds the record from the layout,
 docproc, and nlp-enrich and keyword-extract add to it. A step that cannot finish fails the job, and AMČR
 stores nothing of it. The translator runs apart, when a record is archived. The route in full:
 [Pipelines](pipelines.md#the-route-through-the-pipeline).

@@ -16,7 +16,8 @@ institution. Unfamiliar words are explained in the [glossary](glossary.md).
 In the AMČR pilot, a document uploaded to AMČR goes through the tools in one job:
 
 1. **digital-convert** reads a PDF or an office file directly, with no OCR, and gives each page a
-   verdict: is its text usable? It never refuses a document.
+   verdict: is its text usable? It never refuses a document. An office file's text is always its own,
+   and each page also says whether it shows pictures or tables.
 2. **The ATR**, the text-recognition service of AIS CR, reads what has no usable text: an image, or a
    whole document of which any page needs text recognition, with those pages marked.
    **page-classification** looks at those pages beside it and says what kind of page each is: one of

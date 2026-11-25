@@ -1,0 +1,92 @@
+{
+  "schema_version": "3.0",
+  "program": "keyword-extract",
+  "tool_version": "v2.0.0-beta",
+  "repository": "https://github.com/ufal/atrium-keyword-extract",
+  "runner_ref": "c6e9cc376bdb500b1dff5de3057fc8cf59a36e90",
+  "docker_image": "",
+  "python_version": "3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]",
+  "run_id": "261125-144107",
+  "run_uuid": "urn:uuid:31c8a535-2ff8-45c9-b8e0-b068a045c2e6",
+  "run_agent": "",
+  "action_status": "completed",
+  "start_time": "2026-11-25T14:41:07.208985+00:00",
+  "end_time": "2026-11-25T14:41:29.354308+00:00",
+  "duration_seconds": 22.145,
+  "config": {
+    "script": "keywords",
+    "method": "keybert",
+    "input_dir": "../_chain/kw_in",
+    "lang": "cs",
+    "max_words": 3,
+    "num_keywords": 10,
+    "per_doc_out_dir": "../_chain/kw/per_doc",
+    "output_file": "../_chain/kw/keywords_summary.csv",
+    "per_page_out_dir": "../_chain/kw/per_page",
+    "document_json_dir": null,
+    "document_json_out_dir": "../_chain/kw_out",
+    "keybert_model": "paraphrase-multilingual-MiniLM-L12-v2",
+    "mmr": true,
+    "diversity": 0.5,
+    "batch_size": 16
+  },
+  "parameters": {},
+  "inputs": [
+    {
+      "name": "atrium/document-json",
+      "sha512": "2d50acbda787afb6f8989835f905fe06a263fbc8b54ede29656afe28a06ba629be29c2c3a57c2bed241ce8fbcb4316a5d6b83c4e3195e5f105fae83723068393",
+      "media_type": "application/json",
+      "stored": true
+    }
+  ],
+  "outputs": [
+    {
+      "name": "atrium/document-json",
+      "sha512": "aacbb79c26330fc3a85ae1e162bb3b50adf1594858959ad3e041ad2903d2921d29057f366558d62b76ce83e65ba512bb6145b03326cac66985ca6536b09c0b96",
+      "media_type": "application/json",
+      "stored": true,
+      "record_fields": {
+        "keywords": [
+          "document",
+          "pages"
+        ]
+      }
+    }
+  ],
+  "components": [
+    {
+      "name": "keybert",
+      "license": "MIT",
+      "license_url": "https://opensource.org/license/mit/"
+    },
+    {
+      "name": "sentence_transformers",
+      "license": "Apache-2.0",
+      "license_url": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "name": "keybert_model",
+      "license": "Apache-2.0",
+      "license_url": "https://www.apache.org/licenses/LICENSE-2.0"
+    }
+  ],
+  "statistics": {
+    "input_files_total": 1,
+    "successfully_processed": 1,
+    "skipped_files": 0,
+    "output_counts_by_type": {
+      "csv_per_doc": 1,
+      "csv_summary_row": 1,
+      "csv_per_page": 1,
+      "document_json": 1
+    },
+    "performance_per_minute": {
+      "csv_per_doc": 2.7094,
+      "csv_summary_row": 2.7094,
+      "csv_per_page": 2.7094,
+      "document_json": 2.7094
+    }
+  },
+  "skipped_files_detail": [],
+  "limits": []
+}
