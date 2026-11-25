@@ -4230,5 +4230,13 @@ candidates are six `.3` releases carrying #6's step 1.
   summarize step failed on an untracked document).
 * **Written here (not pushed):** `docs/k8s_deployment.md` without `RENDER_TEXT_COVERAGE` (`test_env_doc_contract`
   failed with the tools at their heads); the #84 digest, plan and export.
-* **Next:** nlp-enrich's rerun; merge digital-convert #17 first, then the four tools; the hub after the six releases.
+* **Addendum (11-25, evening):**
+  * nlp-enrich's rerun is in (`e6f0788`): three documents, five paradata `completed`. Every sample is now clean
+    (ocr-postprocess 9/9, page-classification 2/2, nlp-enrich 5/5, translator 2/2, the chain 8/8).
+  * Two transient CI failures, re-run: keyword-extract #9 `docker-build-smoke (api)` (the container was still
+    loading KeyBERT from the Hub, without `HF_TOKEN`, when the step gave up) and this PR's CodeQL `analyze` (the
+    SARIF was made; the upload failed).
+  * Merge order: digital-convert #17, then `:test` republished and `digital-branch` re-run here; then
+    keyword-extract, nlp-enrich, ocr-postprocess, page-classification and translator; the pre-tag checks; the tags
+    on 26 November; this PR after the six releases.
 * Logs only; not pushed.
