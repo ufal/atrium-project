@@ -69,10 +69,9 @@ is in each run's `e2e-manifest` artifact ([`ci_policy.md`](ci_policy.md)).
    `controlled.ready: false` with the reason, and `kind=controlled` answers 501. The smoke request below uses
    the statistical kind, which needs no key. To accept the controlled kind as well, create the Secret and
    uncomment its `secretKeyRef` stanza first (`k8s_deployment.md` §"Environment variables").
-3. **digital-convert is accepted on `/reformat`.** Its `/describe`, which calls two other stages, is parked
-   during the AMČR pilot: not part of the pipeline. Its request stays below for reference; it needs
-   `PAGE_CLASSIFICATION_URL` and `OCR_POSTPROCESS_URL` set to their Services, and `STAGE_TIMEOUT_S`,
-   `GRACEFUL_SHUTDOWN_S` and `terminationGracePeriodSeconds` raised together (`k8s_deployment.md` Table B).
+3. **digital-convert is accepted on `/reformat`.** Its `/describe` is parked during the AMČR pilot: not part
+   of the pipeline. Its request stays below for reference. Since 2.0.0-beta neither endpoint calls another
+   service, so neither needs another Service's address.
 4. **`ALLOWED_ORIGINS` defaults to `*`.** Set it in the manifest before applying if the cluster is reachable
    from browsers on a network where that matters.
 5. **`replicas: 1` stays 1 for nlp-enrich.** Its job registry is in memory, per replica (`service/jobs.py`),
@@ -210,16 +209,15 @@ FORM=(-F "document_json=@<record.json>" -F kind=statistical); KEYS=(doc_id keywo
 
 # digital-convert: the converter only
 ENDPOINT=/reformat; UPLOAD_FIELD=file
-FORM=(-F "file=@<born-digital.pdf>"); KEYS=(service doc_id document_json limits_applied paradata)
+FORM=(-F "file=@<born-digital.pdf>"); KEYS=(service doc_id docproc limits_applied paradata)
 
 # digital-convert's /describe: parked during the AMČR pilot, kept for reference ("Before you start" item 3)
 ENDPOINT=/describe; UPLOAD_FIELD=file
-FORM=(-F "file=@<born-digital.pdf>"); KEYS=(service doc_id document_json pages summary stages)
+FORM=(-F "file=@<born-digital.pdf>"); KEYS=(service doc_id docproc pages summary)
 ```
 
 Run digital-convert's procedure for `/reformat`. `/describe` is parked during the AMČR pilot; if it is run
-for reference, its `stages` field reports each stage's status (`ok`, `not_configured`, `unavailable`, …; the
-full list is in the service's `service/openapi.json`).
+for reference, it answers from the converter alone, as `/reformat` does.
 
 ### nlp-enrich: jobs are not durable
 

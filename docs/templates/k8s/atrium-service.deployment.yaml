@@ -248,11 +248,9 @@ spec:
                                           # across pod restarts and avoid re-downloading
 
 ---
-# The in-cluster address of the service: `atrium-<tool>-api:8000`. digital-convert's
-# `/describe` reaches page-classification and ocr-postprocess through theirs
-# (PAGE_CLASSIFICATION_URL, OCR_POSTPROCESS_URL), and the acceptance runbook
-# port-forwards it. ClusterIP only; exposing it outside the cluster is the operator's
-# ingress decision.
+# The in-cluster address of the service: `atrium-<tool>-api:8000`, which the pipeline's
+# orchestrator calls and the acceptance runbook port-forwards. ClusterIP only; exposing it
+# outside the cluster is the operator's ingress decision.
 apiVersion: v1
 kind: Service
 metadata:
