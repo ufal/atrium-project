@@ -1,0 +1,100 @@
+{
+  "schema_version": "3.0",
+  "program": "ocr-postprocess",
+  "tool_version": "v2.0.0-beta",
+  "repository": "https://github.com/ufal/atrium-ocr-postprocess",
+  "runner_ref": "14f8a3ba464e22777406f11fb802740784f5d3c6",
+  "docker_image": "",
+  "python_version": "3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]",
+  "run_id": "261125-143836",
+  "run_uuid": "urn:uuid:cbcabc35-4b2f-4043-ad59-6eb61af2a456",
+  "run_agent": "",
+  "action_status": "completed",
+  "start_time": "2026-11-25T14:38:36.216310+00:00",
+  "end_time": "2026-11-25T14:38:36.924973+00:00",
+  "duration_seconds": 0.709,
+  "config": {
+    "command": "build_record",
+    "score": true
+  },
+  "parameters": {
+    "docproc_version": "1.0",
+    "scored": true
+  },
+  "inputs": [
+    {
+      "name": "atr/docproc-json",
+      "sha512": "d57259f63f2699cb989346a46784e9903d74b4bce9c3953e6e5562c8bd827c1b42424df885bb955eb31c8403ebf33e1dc2fdf4511f697634ad27960c800e0892",
+      "media_type": "application/json",
+      "stored": true
+    }
+  ],
+  "outputs": [
+    {
+      "name": "atrium/document-json",
+      "sha512": "4cbb7d0ba412b85ca12beba03b3f285a642e6eb926a14bad18b38a6ad35e40984fff5daeaebaa8455cb2cc6ee5fed8775efafc1f6494f95f4b0883ad115c6347",
+      "media_type": "application/json",
+      "stored": true,
+      "record_fields": {
+        "source": [
+          "origin",
+          "page_count",
+          "language"
+        ],
+        "pages": [
+          "page_index",
+          "page",
+          "content_status",
+          "canvas",
+          "quality_score",
+          "quality_band"
+        ],
+        "lines": [
+          "page",
+          "line",
+          "text",
+          "block",
+          "text_source",
+          "bbox_precision",
+          "bbox",
+          "categ",
+          "quality_score",
+          "lang"
+        ],
+        "content": [
+          "text"
+        ],
+        "quality_summary": [
+          "pages",
+          "lines"
+        ]
+      }
+    }
+  ],
+  "components": [
+    {
+      "name": "alto_tools",
+      "license": "Apache-2.0",
+      "license_url": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    {
+      "name": "fasttext",
+      "license": "CC BY-NC 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-nc/4.0/"
+    },
+    {
+      "name": "qwen2.5_0.5b",
+      "license": "Apache-2.0",
+      "license_url": "https://www.apache.org/licenses/LICENSE-2.0"
+    }
+  ],
+  "statistics": {
+    "input_files_total": 1,
+    "successfully_processed": 1,
+    "skipped_files": 0,
+    "output_counts_by_type": {},
+    "performance_per_minute": {}
+  },
+  "skipped_files_detail": [],
+  "limits": []
+}

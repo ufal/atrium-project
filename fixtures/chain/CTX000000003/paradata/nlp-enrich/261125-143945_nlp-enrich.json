@@ -1,0 +1,108 @@
+{
+  "schema_version": "3.0",
+  "program": "nlp-enrich",
+  "tool_version": "v2.0.0-beta",
+  "repository": "https://github.com/ufal/atrium-nlp-enrich",
+  "runner_ref": "48c0e73d0c8825063e699b864ee0dda520c4a7ae",
+  "docker_image": "",
+  "python_version": "3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]",
+  "run_id": "261125-143945",
+  "run_uuid": "urn:uuid:be189f77-8205-46fa-a13e-aeac35ec0dd6",
+  "run_agent": "",
+  "action_status": "completed",
+  "start_time": "2026-11-25T14:39:45.721387+00:00",
+  "end_time": "2026-11-25T14:39:47.287924+00:00",
+  "duration_seconds": 1.567,
+  "config": {
+    "script": "api_4_stats",
+    "conllu_input_dir": "../_chain/nlp_out/UDP",
+    "tsv_input_dir": "../_chain/nlp_out/NE",
+    "output_dir": "../_chain/nlp_out/UDP_NE",
+    "save_conllu_ne": "true",
+    "save_csv": "true",
+    "save_teitok": "true",
+    "alto_dir": "",
+    "pages_dir": "",
+    "dpi": "",
+    "alto_dpi": "",
+    "bbox_origin": "page",
+    "regenerate_teitok": "false",
+    "flexiconv_annotate": "false"
+  },
+  "parameters": {},
+  "inputs": [
+    {
+      "name": "atrium/document-json",
+      "sha512": "96aa6d35f8f3b8226d49f463059bac9d71247262bb60ad1e819ea7843e2c59b73bc3db1b48eebae65d67ca6190054335b133926adb42af0e6cb14e1ccc11e68e",
+      "media_type": "application/json",
+      "stored": true
+    }
+  ],
+  "outputs": [
+    {
+      "name": "atr/teitok-xml",
+      "sha512": "c6ce087d006fb73ccd022f0c99411f85daf30d08fd9b7852b2a33ed6774dbd96800a6bc75bbc757d898c21e734e3eda87435be3d17fccf81fb1e0fd397175ff6",
+      "media_type": "application/xml",
+      "stored": true
+    },
+    {
+      "name": "atrium/document-json",
+      "sha512": "2d50acbda787afb6f8989835f905fe06a263fbc8b54ede29656afe28a06ba629be29c2c3a57c2bed241ce8fbcb4316a5d6b83c4e3195e5f105fae83723068393",
+      "media_type": "application/json",
+      "stored": true,
+      "record_fields": {
+        "entities": [
+          "surface",
+          "lemma",
+          "type_teitok",
+          "page",
+          "line",
+          "char_span",
+          "teitok_ref",
+          "type_onto"
+        ],
+        "pages": [
+          "page_index",
+          "teitok_surface"
+        ],
+        "lines": [
+          "page",
+          "line",
+          "lemma",
+          "upos",
+          "feats",
+          "teitok_ref"
+        ]
+      }
+    }
+  ],
+  "components": [
+    {
+      "name": "nametag3_models",
+      "license": "CC BY-NC-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/"
+    },
+    {
+      "name": "udpipe2_models",
+      "license": "CC BY-NC-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/"
+    }
+  ],
+  "statistics": {
+    "input_files_total": 1,
+    "successfully_processed": 1,
+    "skipped_files": 0,
+    "output_counts_by_type": {
+      "csv": 1,
+      "conllu": 1,
+      "xml": 1
+    },
+    "performance_per_minute": {
+      "csv": 38.301,
+      "conllu": 38.301,
+      "xml": 38.301
+    }
+  },
+  "skipped_files_detail": [],
+  "limits": []
+}
