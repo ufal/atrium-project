@@ -236,11 +236,53 @@ def test_the_expected_forced_pages_are_checked():
     assert any("forced pages [2], expected []" in p for p in da.check(doc, expect_forced="none"))
 
 
-def test_the_pages_showing_graphics_are_checked():
+def test_the_pages_showing_graphics_are_checked_against_the_hand_over(tmp_path):
+    """#84 decisions 4 and 6: the pages that show graphics come with the run, not in docproc."""
     doc = _digital()
-    doc["metadata"]["routing"]["pages"][0].update(graphics=0, tables=1)
+    assert da.check(doc, expect_graphics="2", graphics_pages=[2]) == []
+    assert any(
+        "showing graphics are [2], expected []" in p for p in da.check(doc, expect_graphics="none", graphics_pages=[2])
+    )
+    assert any("needs the hand-over" in p for p in da.check(doc, expect_graphics="2"))
+    assert any("does not list" in p for p in da.check(doc, expect_graphics="9", graphics_pages=[9]))
+    path = tmp_path / "g.json"
+    path.write_text(json.dumps({"graphics_pages": [2]}), encoding="utf-8")
+    assert da.read_graphics_pages(path) == [2]
+    docproc = tmp_path / "d.docproc.json"
+    docproc.write_text(json.dumps(doc), encoding="utf-8")
+    assert da.main([str(docproc), "--expect-graphics-pages", "2", "--graphics-pages-from", str(path)]) == 0
+
+
+def test_a_routing_entry_that_says_what_a_page_shows_fails():
+    """Ask 14 is withdrawn (#84 decision 6): `graphics` and `tables` stay out of docproc."""
+    doc = _digital()
     doc["metadata"]["routing"]["pages"][1].update(graphics=1, tables=0)
-    assert da.check(doc, expect_graphics="2") == []
-    assert any("showing graphics are [2], expected []" in p for p in da.check(doc, expect_graphics="none"))
-    del doc["metadata"]["routing"]["pages"][1]["graphics"]
-    assert any("showing graphics are [], expected [2]" in p for p in da.check(doc, expect_graphics="2"))
+    assert any("routing carries ['graphics', 'tables']" in p for p in da.check(doc))
+
+
+# ── keep_native_assert.py: an office document's forced page keeps its own text (#84 R8) ─────────────
+
+kna = _load("keep_native_assert")
+
+
+def _office_record(caption_source="text-layer", scan_source="atr"):
+    return {
+        "pages": [{"page": "1", "page_index": 1}, {"page": "2", "page_index": 2}],
+        "lines": [
+            {"page": "1", "line": 1, "text": "Nálezová zpráva", "text_source": "text-layer"},
+            {"page": "2", "line": 1, "text": "Obr. 2: Plán sondy II, sken", "text_source": caption_source},
+            {"page": "2", "line": 2, "text": "Plán sondy S1", "text_source": scan_source},
+        ],
+    }
+
+
+def test_a_forced_office_page_with_its_caption_and_the_atrs_reading_holds(tmp_path):
+    assert kna.problems(_office_record()) == []
+    path = tmp_path / "r.json"
+    path.write_text(json.dumps(_office_record()), encoding="utf-8")
+    assert kna.main([str(path)]) == 0
+
+
+def test_a_dropped_caption_or_a_dropped_scan_reading_fails():
+    assert any("caption was dropped" in p for p in kna.problems(_office_record(caption_source="atr")))
+    assert any("reading was dropped" in p for p in kna.problems(_office_record(scan_source="text-layer")))

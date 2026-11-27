@@ -15,6 +15,27 @@ a quote are as of when it was written; the workflow is the authority on what hol
 What each lane proves, and its gaps, is in the responsibility map of [`ci_policy.md`](../ci_policy.md);
 the image side of both lanes is in [`docker-tool-reusable.md`](docker-tool-reusable.md).
 
+## 2026-11-26 — an office page without running text goes to the ATR; graphics handed over (atrium-project#84)
+
+**Decision.** The non-A options of #84's six questions to ARÚP (decisions 3 to 6). An office page with no running
+text that shows an object goes to the ATR, and the whole document as its rendered PDF; the record keeps the page's
+own lines beside the ATR's (keep-native). digital-convert hands the pages that show graphics over with the run
+(`graphics_pages`: `/reformat`'s answer, `--graphics-pages-out`), never in the docproc, and the rendered PDF is a
+stored distribution whenever the ATR or page-classification reads it. The born-digital lane follows:
+`scan_page.docx` (a scan with its caption in a text box) is a mixed document like `scan_page.pdf`, built with the
+stand-in, and `tools/e2e/keep_native_assert.py` checks that its page 2 holds the caption and the stand-in's
+reading; `photo_text.docx` keeps its text and hands over its rendered PDF for its photo; every digital-convert run
+passes `--rendered-out` and `--graphics-pages-out`, and the paradata must name the rendered PDF, stored, exactly
+when it is written or returned. `docproc_assert.py` fails a routing entry that carries `graphics` or `tables` and
+reads `--expect-graphics-pages` from the hand-over (`--graphics-pages-from`); `e2e_assert.py` takes the forced
+pages from the stored docproc's echo (R9) and allows page categories on the forced and graphics pages.
+**Status:** prepared for the PRs that follow ARÚP's answers on #84 (not answered yet); supersedes the 11-25 entry
+below for office documents.
+**Why.** A pasted scan holds text the office file does not; the route sends it to the ATR without losing the
+file's exact text. The stored docproc is the ATR's for such a document, so what a page shows cannot travel in it.
+**Consequence.** The lane needs the digital-convert and ocr-postprocess `test` images of those PRs; until then its
+digital-branch run on the hub PR is red, as with #86.
+
 ## 2026-11-25 — an office document never goes to the ATR (atrium-digital-convert#9)
 
 **Decision.** digital-convert reads an office document's text from the file in full and routes none of its pages

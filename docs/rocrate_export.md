@@ -189,7 +189,8 @@ so no ATRIUM identifier is minted for a person.
 ### 4.2 Distributions, not files
 
 AMČR stores a document's outputs as **distributions** (`atrium/document-json`, `atr/docproc-json`,
-`atr/teitok-xml`, `metadata`, `metadata-en`), and the crate names them the same way: every input and
+`atr/teitok-xml`, `metadata`, `metadata-en`; an office document's rendered PDF, `rendered-pdf` until AMČR
+names it, when the ATR or page-classification reads it), and the crate names them the same way: every input and
 output of a run is a `CreativeWork` with the distribution's `name` and its `sha512`, and an `@id`
 that joins the two (`#atr/docproc-json@<first 16 hex of the digest>`). So the output of one step and
 the input of the next are one entity, and a crate never names a local path or a SHA-256 `ni:` URI.

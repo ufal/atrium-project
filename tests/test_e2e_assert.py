@@ -956,20 +956,47 @@ def test_a_page_routed_empty_needs_its_empty_row(tmp_path):
     e2e_assert.assert_document_contract(final, llm_stage_ran=False, docproc=docproc)
 
 
-def test_page_categories_on_a_mixed_record_only_on_the_atrs_pages(tmp_path, capsys):
-    """H3: page-classification runs on the pages that need the ATR, so a born-digital record may
-    carry categories there, and never on a page whose text layer was kept."""
+def test_page_categories_on_a_mixed_record_only_on_the_forced_and_graphics_pages(tmp_path, capsys):
+    """H3 as #84 decision 4 has it: page-classification reads the pages forced to the ATR and the pages
+    that show graphics, so a born-digital record may carry categories there, and on no other page."""
     record = _with_atr_page(_digital_record())
     record["page_categories"] = {"2": "TEXT_T"}
     record["pages"][1].update(category="TEXT_T", category_confidence=0.9)
     final = _write(tmp_path, "mixed.json", record)
     e2e_assert.assert_document_contract(final, llm_stage_ran=False, expect_atr_pages=True)
-    assert "page categories on the ATR's pages only: ['2']" in capsys.readouterr().out
+    assert "page categories on the forced and graphics pages only: ['2']" in capsys.readouterr().out
     record["pages"][0].update(category="TEXT_T", category_confidence=0.9)
-    with pytest.raises(AssertionError, match="kept their text layer"):
-        e2e_assert.assert_document_contract(
-            _write(tmp_path, "wrong.json", record), llm_stage_ran=False, expect_atr_pages=True
-        )
+    wrong = _write(tmp_path, "wrong.json", record)
+    with pytest.raises(AssertionError, match="neither forced to the ATR nor show graphics"):
+        e2e_assert.assert_document_contract(wrong, llm_stage_ran=False, expect_atr_pages=True)
+    # Page 1 kept its text layer but shows a picture: digital-convert hands it over, so it is classified.
+    graphics = _write(tmp_path, "graphics.json", {"graphics_pages": [1]})
+    e2e_assert.assert_document_contract(wrong, llm_stage_ran=False, expect_atr_pages=True, graphics_pages_from=graphics)
+    assert "page categories on the forced and graphics pages only: ['1', '2']" in capsys.readouterr().out
+
+
+def test_a_forced_office_page_that_kept_its_lines_is_read_from_the_docproc(tmp_path, capsys):
+    """R9: an office document's forced page keeps its own lines beside the ATR's (#84 decision 3), so
+    which pages the ATR read is the stored docproc's forced echo (D27), not the lines' source alone."""
+    record = _digital_record()
+    record["lines"].append({"page": "2", "line": 2, "text": "Plán sondy", "block": "p2-b1", "text_source": "atr"})
+    record["lines"][3]["text_source"] = "text-layer"  # the page's own caption, kept
+    record["page_categories"] = {"2": "TEXT_T"}
+    record["pages"][1].update(category="TEXT_T", category_confidence=0.9)
+    stored = _stored_docproc()
+    stored["metadata"]["routing"]["pages"][1].update(forced=True, forced_reason="an office page without running text")
+    final = _write(tmp_path, "office.json", record)
+    docproc = _write(tmp_path, "office.atr.docproc.json", stored)
+    e2e_assert.assert_document_contract(final, llm_stage_ran=False, expect_atr_pages=True, docproc=docproc)
+    out = capsys.readouterr().out
+    assert "page(s) ['2'] re-acquired by the ATR" in out
+    assert "page categories on the forced and graphics pages only: ['2']" in out
+
+
+def test_cli_accepts_graphics_pages_from(tmp_path):
+    final = _write(tmp_path, "rich.json", _digital_record())
+    graphics = _write(tmp_path, "graphics.json", {"graphics_pages": []})
+    assert e2e_assert.main([final, "--llm-stage-ran", "false", "--graphics-pages-from", graphics]) == 0
 
 
 def test_cli_accepts_docproc(tmp_path):

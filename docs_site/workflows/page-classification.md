@@ -19,8 +19,8 @@ Archival documents mix typed reports, handwritten notes, printed forms, tables, 
 and photographs. This workflow looks at every scanned page and assigns it one of eleven
 categories that describe what the page holds, so that a collection can be reviewed, searched and
 analysed by kind of page. In the AMČR pipeline it classifies the pages that go to the ATR, AIS CR's
-text-recognition service, beside the ATR, and the category is recorded with the page; nothing
-routes on it. It works on the page image alone, so the language of the page does not matter.
+text-recognition service, beside the ATR, and the pages that show graphics, of a PDF or of an office
+document (read from its rendered PDF); the category is recorded with the page, and nothing routes on it. It works on the page image alone, so the language of the page does not matter.
 
 ## At a glance
 
@@ -131,8 +131,9 @@ rows ocr-postprocess builds.
 
 ## Where it sits
 
-* **Beside the ATR** in the AMČR pipeline: it classifies the pages that go to the ATR, and its
-  categories join the page rows of the record ocr-postprocess builds —
+* **Beside the ATR** in the AMČR pipeline: it classifies the pages that go to the ATR and the pages that
+  show graphics (digital-convert's `graphics_pages`), and its categories join the page rows of the record
+  ocr-postprocess builds —
   [Pipelines → The route through the pipeline](../pipelines.md#the-route-through-the-pipeline) and
   [W1](../pipelines.md#w1--scanned--ocr-document-pipeline).
 * **Page classification** step of the AMČR text workflow

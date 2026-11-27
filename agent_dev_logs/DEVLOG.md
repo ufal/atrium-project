@@ -4240,3 +4240,26 @@ candidates are six `.3` releases carrying #6's step 1.
     keyword-extract, nlp-enrich, ocr-postprocess, page-classification and translator; the pre-tag checks; the tags
     on 26 November; this PR after the six releases.
 * Logs only; not pushed.
+
+## 2026-11-27 — #84: the six decisions to ARÚP, the non-A options prepared
+
+* **#84:** comment 6 (K4TEL, 11-25 17:11) puts six decisions to ARÚP before the `v2.0.0-beta` tags; its UPD
+  (11-26 17:51): the release-prep PRs merged, PRs for the B options being prepared, 6(c) for the docproc. No answer
+  from ARÚP yet (checked 11-27). The issue export, digest and plan are refreshed; the plan's "Status — 11-27" and Q26.
+* **Prepared in all seven repositories, one PR each, not pushed** (K4TEL's choices of 11-26, refined R2–R9 against
+  the code): 1(b) names only (`name_only`, `start --config-name`); 2(b) SHA-512 for the translator's vocabulary and
+  keyword-extract's prompt; 3(b) an office page with no running text that shows an object goes to the ATR, the
+  record keeping its own lines (keep-native); 4(b) the forced pages and `graphics_pages`; 5(b) the rendered PDF
+  stored when read; 6(c) `graphics`/`tables` out of the docproc. The shared record schema's H3 text follows 4(b).
+* **Hub side:** the shared modules; `docproc_assert.py`, `e2e_assert.py` (R9), new `keep_native_assert.py`;
+  `e2e-digital-smoke.yml` (both mixed documents, the rendered PDF named exactly when written or returned);
+  `pipelines.md` and the route pages, `paradata_schema.md`, `rocrate_export.md`, a decision entry in
+  `docs/decisions/e2e-lanes.md`.
+* **Checked here:** the seven suites against their pristine `test` heads (hub 799/776, digital-convert 1038/1032,
+  ocr-postprocess 2367/2360, page-classification 893/882, nlp-enrich 1093/1090, translator 1182/1180,
+  keyword-extract 980/977); vendored copies byte-identical; the digital lane's CLI and service steps replayed
+  locally, scoring off; workflow lint.
+* **Merge order:** this PR first (`siblings:<branch>`; its digital lane red until the tools' `:test`), then `v1` to
+  its squash commit and the six tools pinned; digital-convert and ocr-postprocess; the other four; both lanes at
+  `test`; the samples regenerated; the tags.
+* Logs only; not pushed.
