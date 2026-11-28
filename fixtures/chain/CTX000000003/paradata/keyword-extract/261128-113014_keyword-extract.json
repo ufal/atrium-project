@@ -3,28 +3,23 @@
   "program": "keyword-extract",
   "tool_version": "v2.0.0-beta",
   "repository": "https://github.com/ufal/atrium-keyword-extract",
-  "runner_ref": "c6e9cc376bdb500b1dff5de3057fc8cf59a36e90",
+  "runner_ref": "1d0164cc5f39ef31d5f5c8bc1efddd8db89f5592",
   "docker_image": "",
   "python_version": "3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]",
-  "run_id": "261125-144107",
-  "run_uuid": "urn:uuid:31c8a535-2ff8-45c9-b8e0-b068a045c2e6",
+  "run_id": "261128-113014",
+  "run_uuid": "urn:uuid:212d75c7-44b2-411e-9982-47080920ce37",
   "run_agent": "",
   "action_status": "completed",
-  "start_time": "2026-11-25T14:41:07.208985+00:00",
-  "end_time": "2026-11-25T14:41:29.354308+00:00",
-  "duration_seconds": 22.145,
+  "start_time": "2026-11-28T11:30:14.630482+00:00",
+  "end_time": "2026-11-28T11:30:34.760764+00:00",
+  "duration_seconds": 20.13,
   "config": {
     "script": "keywords",
     "method": "keybert",
-    "input_dir": "../_chain/kw_in",
     "lang": "cs",
     "max_words": 3,
     "num_keywords": 10,
-    "per_doc_out_dir": "../_chain/kw/per_doc",
-    "output_file": "../_chain/kw/keywords_summary.csv",
-    "per_page_out_dir": "../_chain/kw/per_page",
-    "document_json_dir": null,
-    "document_json_out_dir": "../_chain/kw_out",
+    "per_page": true,
     "keybert_model": "paraphrase-multilingual-MiniLM-L12-v2",
     "mmr": true,
     "diversity": 0.5,
@@ -33,6 +28,11 @@
   "parameters": {},
   "inputs": [
     {
+      "name": "CTX000000003.document.json",
+      "sha512": "2d50acbda787afb6f8989835f905fe06a263fbc8b54ede29656afe28a06ba629be29c2c3a57c2bed241ce8fbcb4316a5d6b83c4e3195e5f105fae83723068393",
+      "stored": false
+    },
+    {
       "name": "atrium/document-json",
       "sha512": "2d50acbda787afb6f8989835f905fe06a263fbc8b54ede29656afe28a06ba629be29c2c3a57c2bed241ce8fbcb4316a5d6b83c4e3195e5f105fae83723068393",
       "media_type": "application/json",
@@ -40,6 +40,16 @@
     }
   ],
   "outputs": [
+    {
+      "name": "CTX000000003_keywords.csv",
+      "sha512": "6c92582e48a5c66363ff0139406cf0ad42252f957b6330b0b80ca9d0ee7cc6e8442d2b7857656886da6a0c2125ae413240891d8a69ea1c8224f33642a67ffcf4",
+      "stored": false
+    },
+    {
+      "name": "CTX000000003_keywords.csv",
+      "sha512": "e5a76fefdb80adc0b5b4015f760cde668151cc275b64adc3de590b29ec51617ca372ce3f0ea9663659c47ee357e7496e61f6651a335723aee35af5fa6f779ea7",
+      "stored": false
+    },
     {
       "name": "atrium/document-json",
       "sha512": "aacbb79c26330fc3a85ae1e162bb3b50adf1594858959ad3e041ad2903d2921d29057f366558d62b76ce83e65ba512bb6145b03326cac66985ca6536b09c0b96",
@@ -51,6 +61,11 @@
           "pages"
         ]
       }
+    },
+    {
+      "name": "keywords_summary.csv",
+      "sha512": "da89958b784a4556862f0dea5c78385ab9faf07b087c194e59418d601f686f90207405dcfb1cd8638de490e63beb8f5420bb7d6655487866175fafc701012471",
+      "stored": false
     }
   ],
   "components": [
@@ -81,10 +96,10 @@
       "document_json": 1
     },
     "performance_per_minute": {
-      "csv_per_doc": 2.7094,
-      "csv_summary_row": 2.7094,
-      "csv_per_page": 2.7094,
-      "document_json": 2.7094
+      "csv_per_doc": 2.9806,
+      "csv_summary_row": 2.9806,
+      "csv_per_page": 2.9806,
+      "document_json": 2.9806
     }
   },
   "skipped_files_detail": [],

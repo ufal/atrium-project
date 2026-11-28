@@ -3,24 +3,22 @@
   "program": "page-classification",
   "tool_version": "v2.0.0-beta",
   "repository": "https://github.com/ufal/atrium-page-classification",
-  "runner_ref": "935ea01f5a05471cde1e2616c70f37c9c756acd3",
+  "runner_ref": "f45743069b18c5e4c9ff221b85943517c6bf3cec",
   "docker_image": "",
   "python_version": "3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]",
-  "run_id": "261125-143848",
-  "run_uuid": "urn:uuid:664eacf9-3cbe-4003-abcf-4ecf93e9b765",
+  "run_id": "261128-112819",
+  "run_uuid": "urn:uuid:6ee9943c-b3a5-47a3-9d8f-abe80e6db429",
   "run_agent": "",
   "action_status": "completed",
-  "start_time": "2026-11-25T14:38:48.515396+00:00",
-  "end_time": "2026-11-25T14:39:34.283408+00:00",
-  "duration_seconds": 45.768,
+  "start_time": "2026-11-28T11:28:19.624450+00:00",
+  "end_time": "2026-11-28T11:29:06.938235+00:00",
+  "duration_seconds": 47.314,
   "config": {
-    "model_path": "model/model/model_v44",
+    "model_path": "model_v44",
     "revision": "v4.4",
     "base_model": "timm/regnety_160.swag_ft_in1k",
     "top_n": 3,
     "batch_size": "16",
-    "input_path": "input/CTX000000003-1.png",
-    "inner_dirs": "True",
     "file_format": "png",
     "mode": "file",
     "raw_output": "False",
@@ -31,7 +29,11 @@
   "parameters": {
     "revisions": [
       "v4.4"
-    ]
+    ],
+    "page_selection": {
+      "rule": "all",
+      "statement": "every page of the document"
+    }
   },
   "inputs": [
     {
@@ -39,6 +41,11 @@
       "sha512": "4cbb7d0ba412b85ca12beba03b3f285a642e6eb926a14bad18b38a6ad35e40984fff5daeaebaa8455cb2cc6ee5fed8775efafc1f6494f95f4b0883ad115c6347",
       "media_type": "application/json",
       "stored": true
+    },
+    {
+      "name": "CTX000000003-1.png",
+      "sha512": "cb24ae082478ea3cb9ae71d48be3f3ca33e7988168429aa3f3c5bd49a03fc216654dd50ca80120caf2f1b76cf00323d57aeb065800e222735fb60a278ce8a465",
+      "stored": false
     }
   ],
   "outputs": [
@@ -57,6 +64,11 @@
           "category_confidence"
         ]
       }
+    },
+    {
+      "name": "20261128-1228_model_v44_TOP-3.csv",
+      "sha512": "beec319a36ccc50863e3dbb90931182b880af92695ddbfeb01b927ab3551a53d61afb566c7715ced62d94e5f4314dfdd8d5617cf1683f5bea6e6e4a58aae53ee",
+      "stored": false
     }
   ],
   "components": [
@@ -75,7 +87,7 @@
       "png": 0
     },
     "performance_per_minute": {
-      "csv": 1.311,
+      "csv": 1.2681,
       "png": 0.0
     }
   },
