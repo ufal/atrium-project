@@ -11,7 +11,10 @@ has no ATR, so this writes a docproc in the ATR's shape from digital-convert's d
   * a text-layer page gets the ATR's own blocks, not digital-convert's: two consecutive blocks become one
     `text` block (a table stays a table), with new ids `p<page>-b<n>`, the union of their boxes, their
     text as `content` with a line break per line (ask 7) and no `lines[]`, as the ATR writes them. The
-    record builder must therefore link each kept line to the ATR block that holds it, by box;
+    record builder must therefore link each kept line to the ATR block that holds it, by box. A `figure`
+    block with a box (a picture on the page, #84 decision 6) stays a `figure` of its own, with an
+    `imageRef` as the ATR writes one; a figure without a box is left out (the ATR finds pictures on the
+    rendering, the lane's checks read digital-convert's docproc for it too);
   * a forced page (`needsAtr`) is read from `--ocr-text PAGE=FILE`: a `figure` block for the page's
     picture and a `.t0` OCR child holding the file's lines, as the ATR writes figure OCR. A forced page
     without a text file comes out empty (routed `empty`);
@@ -42,6 +45,8 @@ RENDER_DPI = 200
 #: The forced page's picture keeps this margin to the page edge, its OCR text a further one.
 MARGIN = 36.0
 LINE_HEIGHT = 14.0
+#: digital-convert's block types the stand-in keeps as one ATR block each.
+SINGLE_TYPES = ("table", "figure")
 
 
 def _union(boxes: Sequence[Sequence[float]]) -> Optional[List[float]]:
@@ -57,10 +62,14 @@ def _text(block: Dict[str, Any]) -> str:
 
 
 def _text_layer_blocks(number: int, blocks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """The ATR's blocks over digital-convert's: pairs of text blocks, tables kept (see the docstring)."""
+    """The ATR's blocks over digital-convert's: pairs of text blocks, tables and figures kept (see the
+    docstring)."""
     groups: List[List[Dict[str, Any]]] = []
     for block in sorted(blocks, key=lambda b: int(b.get("readingOrder", 0))):
-        if block.get("type") == "table" or not groups or groups[-1][0].get("type") == "table" or len(groups[-1]) == 2:
+        if block.get("type") == "figure" and not block.get("bbox"):
+            continue
+        single = block.get("type") in SINGLE_TYPES
+        if single or not groups or groups[-1][0].get("type") in SINGLE_TYPES or len(groups[-1]) == 2:
             groups.append([block])
         else:
             groups[-1].append(block)
@@ -75,6 +84,9 @@ def _text_layer_blocks(number: int, blocks: List[Dict[str, Any]]) -> List[Dict[s
             entry["content"] = str(group[0].get("content") or "")
             if isinstance(group[0].get("cellGrid"), dict):
                 entry["cellGrid"] = group[0]["cellGrid"]
+        elif group[0].get("type") == "figure":
+            entry["type"] = "figure"
+            entry["imageRef"] = f"assets/{entry['id']}.png"
         else:
             entry["content"] = "\n".join(_text(b) for b in group)
         out.append(entry)

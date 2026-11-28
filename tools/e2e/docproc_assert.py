@@ -14,10 +14,13 @@ built, against the hand-over rules of ARÚP's contract of 12 November 2026:
     ask 5) must name exactly the pages it was forced to read (`--expect-forced`);
   * nothing is refused (H12): a page the converter cannot use is routed to the ATR;
   * no run data and no licence anywhere in it (D1, D2): no `run_uuid`, `provenance`, `license`;
+  * a routing entry says nothing of what the page shows: no `graphics` or `tables` (#84 decision 6, ask 14
+    withdrawn); what a page shows is its blocks. In digital-convert's docproc (no `pipeline`) a `figure`
+    block holds where a picture is, not the picture: no `lines`, `content` or `imageRef` (answer 12);
   * `--expect-atr-pages`: `none`, `all` (every page not routed `empty`), or a comma-separated list of
     the page numbers routed `atr`;
-  * `--expect-graphics-pages`: `none` or a comma-separated list of the page numbers whose routing says
-    they show graphics (`graphics` > 0, digital-convert's ask 14): the pages for page-classification.
+  * `--expect-figure-pages`: `none` or a comma-separated list of the pages holding a `figure` block (#84
+    decisions 4 and 6): with the forced pages, the pages for page-classification.
 
 Usage:
     python tools/e2e/docproc_assert.py work/docproc/minimal.docproc.json \\
@@ -38,6 +41,10 @@ from typing import Any, Dict, Iterable, List, Optional, Set
 ROUTES = ("text-layer", "atr", "empty")
 #: Keys that would carry run data or a licence into docproc (D1, D2).
 BANNED_KEYS = ("run_uuid", "provenance", "license", "license_url", "license_detail", "effective_license")
+#: What a page shows is its blocks, not its routing (#84 decision 6: ask 14 withdrawn).
+WITHDRAWN_ROUTING_KEYS = ("graphics", "tables")
+#: What digital-convert's figure block never carries: the docproc holds where a picture is, not the picture.
+FIGURE_KEYS_ABSENT = ("lines", "content", "imageRef")
 
 
 def _walk_keys(node: Any) -> Iterable[str]:
@@ -65,7 +72,7 @@ def check(
     schema: Optional[Dict[str, Any]] = None,
     expect_atr: Optional[str] = None,
     expect_forced: Optional[str] = None,
-    expect_graphics: Optional[str] = None,
+    expect_figures: Optional[str] = None,
 ) -> List[str]:
     """The failures of `document` (empty when every check holds)."""
     problems: List[str] = []
@@ -102,6 +109,25 @@ def check(
     banned = sorted(set(_walk_keys(document)) & set(BANNED_KEYS))
     if banned:
         problems.append(f"docproc carries run data or a licence: {banned} (D1, D2)")
+    for row in routing:
+        withdrawn = sorted(set(row) & set(WITHDRAWN_ROUTING_KEYS)) if isinstance(row, dict) else []
+        if withdrawn:
+            problems.append(
+                f"page {row.get('page')}: routing carries {withdrawn}: what a page shows is its blocks, not "
+                "its routing (#84 decision 6)"
+            )
+    figure_pages = set()
+    for number, page in pages.items():
+        for block in page.get("blocks") or []:
+            if not isinstance(block, dict) or block.get("type") != "figure":
+                continue
+            figure_pages.add(number)
+            carried = sorted(set(block) & set(FIGURE_KEYS_ABSENT))
+            if carried and "pipeline" not in document:
+                problems.append(
+                    f"page {number}: figure {block.get('id')} carries {carried}: digital-convert's figure block holds "
+                    "where a picture is, not the picture (#84 decision 6)"
+                )
 
     wanted = _expected(expect_atr, numbers, {n for n, route in routes.items() if route == "empty"})
     if wanted is not None:
@@ -113,15 +139,11 @@ def check(
         forced = {row.get("page") for row in routing if isinstance(row, dict) and row.get("forced") is True}
         if forced != forced_wanted:
             problems.append(f"the routing echoes forced pages {sorted(forced)}, expected {sorted(forced_wanted)} (D27)")
-    graphics_wanted = _expected(expect_graphics, numbers, set())
-    if graphics_wanted is not None:
-        shown = {
-            row.get("page")
-            for row in routing
-            if isinstance(row, dict) and isinstance(row.get("graphics"), int) and row["graphics"] > 0
-        }
-        if shown != graphics_wanted:
-            problems.append(f"pages showing graphics are {sorted(shown)}, expected {sorted(graphics_wanted)} (ask 14)")
+    figures_wanted = _expected(expect_figures, numbers, set())
+    if figures_wanted is not None and figure_pages != figures_wanted:
+        problems.append(
+            f"pages with figure blocks are {sorted(figure_pages)}, expected {sorted(figures_wanted)} (#84 decision 4)"
+        )
     return problems
 
 
@@ -140,18 +162,18 @@ def main(argv: Optional[List[str]] = None) -> int:
         help="the ATR's docproc: `none` or comma-separated page numbers its routing must echo as forced (ask 5)",
     )
     parser.add_argument(
-        "--expect-graphics-pages",
+        "--expect-figure-pages",
         default=None,
-        help="`none` or comma-separated page numbers whose routing says they show graphics (ask 14)",
+        help="`none` or comma-separated page numbers that must hold a `figure` block (#84 decisions 4 and 6)",
     )
     args = parser.parse_args(argv)
     try:
         document = json.loads(args.docproc.read_text(encoding="utf-8"))
         schema = json.loads(args.schema.read_text(encoding="utf-8")) if args.schema else None
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, ValueError) as exc:
         print(f"docproc_assert: {exc}", file=sys.stderr)
         return 2
-    problems = check(document, schema, args.expect_atr_pages, args.expect_forced, args.expect_graphics_pages)
+    problems = check(document, schema, args.expect_atr_pages, args.expect_forced, args.expect_figure_pages)
     for problem in problems:
         print(f"❌ {args.docproc.name}: {problem}")
     if problems:

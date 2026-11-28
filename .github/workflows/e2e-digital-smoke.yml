@@ -45,6 +45,9 @@ on:
       - ".github/workflows/e2e-digital-smoke.yml"
       - "tools/e2e/e2e_assert.py"
       - "tools/e2e/docproc_assert.py"
+      - "tools/e2e/atr_standin.py"
+      - "tools/e2e/make_seed.py"
+      - "docs/templates/shared/atrium_page_selection.py"
       - "tools/e2e/requirements.txt"
 
 concurrency:
@@ -192,12 +195,17 @@ jobs:
       # from (--docproc). A fixture whose pages go to the ATR (garbled text layer, earlier OCR layer) is
       # routed so and nothing refused; building the record from that docproc alone fails (`needs_atr`)
       # and writes nothing (D13). blank_page.pdf's blank verso is routed `empty`, not to the ATR (D29).
-      # The mixed document (H6): scan_page.pdf's docproc and an ATR stand-in built from it
-      # (tools/e2e/atr_standin.py: the ATR's own blocks, page 2 read as figure OCR from
-      # fixtures/e2e/mixed/, the force echoed) give one record, the text layer kept on pages 1 and 3.
-      # atrium-digital-convert#9: an office document is its native text on the pages of its
-      # LibreOffice rendering and never goes to the ATR, so scan_page.docx's picture page (2) is
-      # routed `empty` and described by its graphics, as photo_text.docx's photo is; sample.csv and sample.txt take the textual workflow (no geometry,
+      # The mixed documents (H6): scan_page.pdf's and scan_page.docx's docprocs, each with an ATR
+      # stand-in built from it (tools/e2e/atr_standin.py: the ATR's own blocks, page 2 read as figure
+      # OCR from fixtures/e2e/mixed/, the force echoed), give one record each, the text layer kept on
+      # pages 1 and 3. scan_page.docx's page 2 shows only a picture (a pasted scan), so it goes to the
+      # ATR as the rendered PDF (atrium-project#84 decision 3, the PDF rule) and its record lines are
+      # the ATR's, as on a forced PDF page. A picture is a `figure` block (decision 6): with the
+      # forced pages, the pages page-classification reads (decision 4, atrium_page_selection.py);
+      # photo_text.docx keeps its text and has one on page 1. Every run passes `--rendered-out`, which
+      # writes an office document's rendering only when the ATR or page-classification reads it; the
+      # paradata name it, not stored, for every office document (decision 5), and never for a PDF or
+      # a textual input. sample.csv and sample.txt take the textual workflow (no geometry,
       # never the ATR) and need ocr-postprocess with their `sourceFormat`s as born-digital.
       # sample.xlsx keeps every cell as the sheet displays it (#9, motyc 2026-11-18): LibreOffice
       # shows it in cs-CZ, and the record's lines carry its numbers, dates and booleans in that form.
@@ -207,10 +215,39 @@ jobs:
         run: |
           set -euo pipefail
           SCHEMA=work/digital-convert-src/schemas/docproc/document.atrium-proposal.schema.json
+          rendered_named() {  # $1 = the --rendered-out path, $2 = the run's paradata dir,
+                              # $3 = no (not rendered) / named (not read, so not written) / written
+            python - "$@" <<'PY'
+          import glob
+          import hashlib
+          import json
+          import os
+          import re
+          import sys
+
+          rendered, paradata_dir, state = sys.argv[1:4]
+          (path,) = glob.glob(os.path.join(paradata_dir, "*.json"))
+          outputs = [o for o in json.load(open(path, encoding="utf-8"))["outputs"] if o["name"] == "rendered-pdf"]
+          written = os.path.exists(rendered)
+          assert written == (state == "written"), f"{rendered}: written {written}, expected {state}"
+          if state == "no":
+              assert not outputs, f"a document that is not rendered names a rendering: {outputs}"
+              print("✅ not rendered: no rendered PDF written or named")
+              raise SystemExit(0)
+          (entry,) = outputs
+          assert entry["stored"] is False and entry["media_type"] == "application/pdf", entry
+          assert re.fullmatch("[0-9a-f]{128}", entry["sha512"]), entry
+          if written:
+              assert entry["sha512"] == hashlib.sha512(open(rendered, "rb").read()).hexdigest(), entry
+          what = "written" if written else "not written (nothing reads it)"
+          print(f"✅ rendered PDF {what}, named rendered-pdf by its SHA-512, not stored (decision 5)")
+          PY
+          }
           case_of() {  # $1 = fixture, $2 = media type, $3 = pages routed to the ATR (none/all/a list),
-                       # $4 = pages showing graphics (none/a list), then e2e_assert flags
-            local fixture="$1" media="$2" atr="$3" graphics="$4"
-            shift 4
+                       # $4 = pages with figure blocks (none/a list), $5 = the rendered PDF (no/named/written),
+                       # then e2e_assert flags
+            local fixture="$1" media="$2" atr="$3" figures="$4" rendered="$5"
+            shift 5
             # the extension too: the textual fixtures share a stem (sample.csv, sample.txt)
             local name="${fixture%.*}-${fixture##*.}"
             local doc="AMCR-F-${name}"
@@ -223,9 +260,11 @@ jobs:
               "/workspace/work/digital_in/$fixture" \
               --document-json "/workspace/work/doc_json/$name.seed.json" \
               --docproc-out "/workspace/work/docproc/$name.docproc.json" \
+              --rendered-out "/workspace/work/docproc/$name.rendered.pdf" \
               --paradata-dir "/workspace/work/paradata/dc_$name"
             python tools/e2e/docproc_assert.py "work/docproc/$name.docproc.json" \
-              --schema "$SCHEMA" --expect-atr-pages "$atr" --expect-graphics-pages "$graphics"
+              --schema "$SCHEMA" --expect-atr-pages "$atr" --expect-figure-pages "$figures"
+            rendered_named "work/docproc/$name.rendered.pdf" "work/paradata/dc_$name" "$rendered"
             set +e
             docker run --rm -v "$GITHUB_WORKSPACE:/workspace" \
               -v "$GITHUB_WORKSPACE/hf-cache:/cache/huggingface" -e HF_TOKEN \
@@ -249,19 +288,19 @@ jobs:
             echo "::endgroup::"
           }
           DOCX=application/vnd.openxmlformats-officedocument.wordprocessingml.document
-          case_of minimal.pdf application/pdf none none
-          case_of blank_page.pdf application/pdf none none
-          case_of enrichable.pdf application/pdf none none
-          case_of two_column.pdf application/pdf none none --expect-layout
-          case_of rich.docx "$DOCX" none none --expect-layout
-          case_of garbled.pdf application/pdf all none
-          case_of ocr_layer.pdf application/pdf all 1,2
-          case_of scan_page.pdf application/pdf 2 2
-          case_of scan_page.docx "$DOCX" none 2
-          case_of photo_text.docx "$DOCX" none 1 --expect-layout
-          case_of sample.csv text/csv none none
-          case_of sample.txt text/plain none none
-          case_of sample.xlsx application/vnd.openxmlformats-officedocument.spreadsheetml.sheet none none
+          case_of minimal.pdf application/pdf none none no
+          case_of blank_page.pdf application/pdf none none no
+          case_of enrichable.pdf application/pdf none none no
+          case_of two_column.pdf application/pdf none none no --expect-layout
+          case_of rich.docx "$DOCX" none none named --expect-layout
+          case_of garbled.pdf application/pdf all none no
+          case_of ocr_layer.pdf application/pdf all 1,2 no
+          case_of scan_page.pdf application/pdf 2 2 no
+          case_of scan_page.docx "$DOCX" 2 2 written
+          case_of photo_text.docx "$DOCX" none 1 written --expect-layout
+          case_of sample.csv text/csv none none no
+          case_of sample.txt text/plain none none no
+          case_of sample.xlsx application/vnd.openxmlformats-officedocument.spreadsheetml.sheet none none no
           python - work/records/sample-xlsx/AMCR-F-sample-xlsx.document.json <<'PY'
           import json
           import sys
@@ -273,29 +312,31 @@ jobs:
           print("✅ sample.xlsx: every cell, numbers and dates as cs-CZ displays them")
           PY
 
-          # The mixed document (H6): the ATR's docproc (the stand-in) is the stored one, and
+          # The mixed documents (H6): the ATR's docproc (the stand-in) is the stored one, and
           # digital-convert's comes beside it, not stored.
-          echo "::group::scan_page.pdf, mixed"
-          name=scan_page-pdf
-          doc="AMCR-F-${name}"
-          python tools/e2e/atr_standin.py "work/docproc/$name.docproc.json" \
-            --ocr-text 2=fixtures/e2e/mixed/scan_page.page2.txt --out "work/docproc/$name.atr.docproc.json"
-          python tools/e2e/docproc_assert.py "work/docproc/$name.atr.docproc.json" \
-            --schema "$SCHEMA" --expect-atr-pages all --expect-forced 2
-          mkdir -p "work/records/$name-mixed" "work/paradata/ocr_$name-mixed"
-          chmod a+rwX "work/records/$name-mixed" "work/paradata/ocr_$name-mixed"
-          docker run --rm -v "$GITHUB_WORKSPACE:/workspace" \
-            -v "$GITHUB_WORKSPACE/hf-cache:/cache/huggingface" -e HF_TOKEN \
-            "${OCR_IMAGE}:${IMAGE_TAG}" \
-            python3 /app/build_record.py "/workspace/work/docproc/$name.atr.docproc.json" \
-            --text-layer-docproc "/workspace/work/docproc/$name.docproc.json" \
-            --seed "/workspace/work/doc_json/$name.seed.json" \
-            --out-dir "/workspace/work/records/$name-mixed" \
-            --paradata-dir "/workspace/work/paradata/ocr_$name-mixed"
-          python tools/e2e/e2e_assert.py "work/records/$name-mixed/$doc.document.json" \
-            --llm-stage-ran false --seed "work/doc_json/$name.seed.json" --require-current-major \
-            --expect-atr-pages --expect-layout --docproc "work/docproc/$name.atr.docproc.json"
-          echo "::endgroup::"
+          for name in scan_page-pdf scan_page-docx; do
+            doc="AMCR-F-${name}"
+            echo "::group::${name}, mixed"
+            python tools/e2e/atr_standin.py "work/docproc/$name.docproc.json" \
+              --ocr-text 2=fixtures/e2e/mixed/scan_page.page2.txt --out "work/docproc/$name.atr.docproc.json"
+            python tools/e2e/docproc_assert.py "work/docproc/$name.atr.docproc.json" \
+              --schema "$SCHEMA" --expect-atr-pages all --expect-forced 2 --expect-figure-pages 2
+            mkdir -p "work/records/$name-mixed" "work/paradata/ocr_$name-mixed"
+            chmod a+rwX "work/records/$name-mixed" "work/paradata/ocr_$name-mixed"
+            docker run --rm -v "$GITHUB_WORKSPACE:/workspace" \
+              -v "$GITHUB_WORKSPACE/hf-cache:/cache/huggingface" -e HF_TOKEN \
+              "${OCR_IMAGE}:${IMAGE_TAG}" \
+              python3 /app/build_record.py "/workspace/work/docproc/$name.atr.docproc.json" \
+              --text-layer-docproc "/workspace/work/docproc/$name.docproc.json" \
+              --seed "/workspace/work/doc_json/$name.seed.json" \
+              --out-dir "/workspace/work/records/$name-mixed" \
+              --paradata-dir "/workspace/work/paradata/ocr_$name-mixed"
+            python tools/e2e/e2e_assert.py "work/records/$name-mixed/$doc.document.json" \
+              --llm-stage-ran false --seed "work/doc_json/$name.seed.json" --require-current-major \
+              --expect-atr-pages --expect-layout --docproc "work/docproc/$name.atr.docproc.json" \
+              --text-layer-docproc "work/docproc/$name.docproc.json"
+            echo "::endgroup::"
+          done
 
       # ── The services: digital-convert `-api`, then ocr-postprocess `-api` ─────────
       # What AMČR's Temporal activities call. Through the two services:
@@ -303,14 +344,16 @@ jobs:
       #     CreateAction naming its inputs and outputs by distribution name and SHA-512;
       #   * garbled.pdf comes back routed to the ATR, and /build_record refuses it alone (422
       #     `needs_atr`);
-      #   * scan_page.docx (atrium-digital-convert#9) comes back with no page for the ATR, its picture
-      #     page described by its graphics, and the rendered PDF page-classification reads
-      #     (`rendered_pdf`), named in the paradata by the same SHA-512 and not stored; /build_record
-      #     builds it alone;
+      #   * scan_page.docx comes back with its picture-only page routed to the ATR (atrium-project#84
+      #     decision 3) and the rendered PDF the ATR reads (`rendered_pdf`), named in the paradata by
+      #     the same SHA-512, not stored (decision 5); /build_record refuses it alone, and builds it
+      #     with the ATR stand-in's docproc, page 2 from the ATR alone;
+      #   * photo_text.docx keeps its text; its photo is a `figure` block (decision 6), so its page is
+      #     one page-classification reads (decision 4) and the rendered PDF comes back;
       #   * scan_page.pdf comes back with its picture page routed to the ATR; /build_record refuses it
       #     alone, and builds it with the ATR stand-in's docproc (H6), naming digital-convert's docproc
-      #     as not stored (D23);
-      #   * sample.csv, a text-only input, is built into a born-digital record;
+      #     as not stored (D23); a PDF never comes with `rendered_pdf`;
+      #   * sample.csv, a text-only input, is built into a born-digital record, with no figure blocks;
       #   * a seed whose sha512 is not the file's is 422 `source_digest_mismatch`.
       # A missing `-api` image is a warning: it reaches `:latest` only via a release.
       - name: The services - /reformat, then /build_record
@@ -369,6 +412,31 @@ jobs:
             fi
             echo "✅ $3: $1${2:+ $2}"
           }
+          handed_over() {  # $1 = /reformat answer, $2 = yes/no: the rendered PDF handed over
+                           # (an office document read by the ATR or page-classification), named, not stored
+            python - "$@" <<'PY'
+          import base64
+          import hashlib
+          import json
+          import sys
+
+          body, expected = json.load(open(sys.argv[1], encoding="utf-8")), sys.argv[2] == "yes"
+          named = [r for r in body["paradata"].get("result") or [] if r.get("name") == "rendered-pdf"]
+          rendered = body.get("rendered_pdf")
+          assert bool(rendered) == expected, f"{sys.argv[1]}: rendered_pdf handed over {bool(rendered)}, expected {expected}"
+          if not expected:
+              assert not named, f"{sys.argv[1]}: a document that is not rendered names a rendering: {named}"
+              print(f"✅ {sys.argv[1]}: no rendered PDF handed over or named")
+              raise SystemExit(0)
+          data = base64.b64decode(rendered["data"])
+          assert data.startswith(b"%PDF"), "rendered_pdf is not a PDF"
+          digest = hashlib.sha512(data).hexdigest()
+          assert digest == rendered["sha512"], "rendered_pdf.sha512 is not the digest of its bytes"
+          assert [r.get("sha512") for r in named] == [digest], "the paradata do not name the rendered PDF by its SHA-512"
+          assert all(r.get("stored") is False for r in named), "the rendered PDF is not stored (decision 5)"
+          print(f"✅ {sys.argv[1]}: rendered PDF handed over ({len(data)} bytes), named rendered-pdf, not stored")
+          PY
+          }
           actions() {  # each response's CreateAction meets the shared contract; $@ = response files
             PYTHONPATH=docs/templates/shared python - "$@" <<'PY'
           import json
@@ -409,51 +477,60 @@ jobs:
           code=$(build work/api/garbled.record.json work/api/garbled.docproc.json -F doc_id=AMCR-F-garbled)
           expect 422 needs_atr work/api/garbled.record.json "$code"
 
-          # An office document (atrium-digital-convert#9): its native text on the pages of its
-          # LibreOffice rendering, never the ATR. Its picture page shows a graphic, so the rendered
-          # PDF comes back: the bytes page-classification reads, named by the same SHA-512 in the
-          # paradata, not stored. The record is built from this docproc alone.
+          # An office document whose page 2 shows only a picture (atrium-project#84 decision 3): that
+          # page goes to the ATR, and the whole document as the rendered PDF, handed over and named, not
+          # stored (decision 5). The record waits for the ATR's docproc; page 2 is then the ATR's alone.
           code=$(MEDIA=$DOCX reformat work/api/scan_page_docx.json work/digital_in/scan_page.docx \
             -F "document_json=@work/doc_json/scan_page-docx.seed.json;type=application/json")
           expect 200 "" work/api/scan_page_docx.json "$code"
           part work/api/scan_page_docx.json docproc work/api/scan_page_docx.docproc.json
           python tools/e2e/docproc_assert.py work/api/scan_page_docx.docproc.json --schema "$SCHEMA" \
-            --expect-atr-pages none --expect-graphics-pages 2
-          python - work/api/scan_page_docx.json <<'PY'
-          import base64
-          import hashlib
-          import json
-          import sys
-
-          body = json.load(open(sys.argv[1], encoding="utf-8"))
-          rendered = body.get("rendered_pdf")
-          assert rendered, "a page shows graphics: /reformat must hand over the rendered PDF"
-          data = base64.b64decode(rendered["data"])
-          assert data.startswith(b"%PDF"), "rendered_pdf is not a PDF"
-          digest = hashlib.sha512(data).hexdigest()
-          assert digest == rendered["sha512"], "rendered_pdf.sha512 is not the digest of its bytes"
-          named = [r for r in body["paradata"]["result"] if r.get("sha512") == digest]
-          assert named, "the paradata do not name the rendered PDF by its SHA-512"
-          assert all(r.get("stored") is False for r in named), "the rendered PDF is not stored (D23)"
-          print(f"✅ scan_page.docx: rendered PDF handed over ({len(data)} bytes), named {named[0]['name']}, not stored")
-          PY
+            --expect-atr-pages 2 --expect-figure-pages 2
+          handed_over work/api/scan_page_docx.json yes
           code=$(build work/api/scan_page_docx.record.json work/api/scan_page_docx.docproc.json \
             -F "document_json=@work/doc_json/scan_page-docx.seed.json;type=application/json")
-          expect 200 "" work/api/scan_page_docx.record.json "$code"
-          part work/api/scan_page_docx.record.json document_json work/api/scan_page_docx.document.json
+          expect 422 needs_atr work/api/scan_page_docx.record.json "$code"
+          actions work/api/scan_page_docx.json
+          python tools/e2e/atr_standin.py work/api/scan_page_docx.docproc.json \
+            --ocr-text 2=fixtures/e2e/mixed/scan_page.page2.txt --out work/api/scan_page_docx.atr.docproc.json
+          code=$(build work/api/scan_page_docx.mixed.json work/api/scan_page_docx.atr.docproc.json \
+            -F "text_layer_docproc=@work/api/scan_page_docx.docproc.json;type=application/json" \
+            -F "document_json=@work/doc_json/scan_page-docx.seed.json;type=application/json")
+          expect 200 "" work/api/scan_page_docx.mixed.json "$code"
+          part work/api/scan_page_docx.mixed.json document_json work/api/scan_page_docx.document.json
           python tools/e2e/e2e_assert.py work/api/scan_page_docx.document.json \
             --llm-stage-ran false --seed work/doc_json/scan_page-docx.seed.json --require-current-major \
-            --docproc work/api/scan_page_docx.docproc.json
-          actions work/api/scan_page_docx.json work/api/scan_page_docx.record.json
+            --expect-atr-pages --docproc work/api/scan_page_docx.atr.docproc.json \
+            --text-layer-docproc work/api/scan_page_docx.docproc.json
+          actions work/api/scan_page_docx.mixed.json
+
+          # An office document with running text and a photo: no page for the ATR, but a `figure` block
+          # on page 1 (decision 6), a page page-classification reads (decision 4), so the rendered PDF
+          # comes back, named, not stored.
+          code=$(MEDIA=$DOCX reformat work/api/photo_text.json work/digital_in/photo_text.docx \
+            -F "document_json=@work/doc_json/photo_text-docx.seed.json;type=application/json")
+          expect 200 "" work/api/photo_text.json "$code"
+          part work/api/photo_text.json docproc work/api/photo_text.docproc.json
+          python tools/e2e/docproc_assert.py work/api/photo_text.docproc.json --schema "$SCHEMA" \
+            --expect-atr-pages none --expect-figure-pages 1
+          handed_over work/api/photo_text.json yes
+          code=$(build work/api/photo_text.record.json work/api/photo_text.docproc.json \
+            -F "document_json=@work/doc_json/photo_text-docx.seed.json;type=application/json")
+          expect 200 "" work/api/photo_text.record.json "$code"
+          part work/api/photo_text.record.json document_json work/api/photo_text.document.json
+          python tools/e2e/e2e_assert.py work/api/photo_text.document.json \
+            --llm-stage-ran false --seed work/doc_json/photo_text-docx.seed.json --require-current-major \
+            --docproc work/api/photo_text.docproc.json
+          actions work/api/photo_text.json work/api/photo_text.record.json
 
           # A PDF with a picture page: that page goes to the ATR, and the record waits for its docproc.
           code=$(reformat work/api/scan_page.json work/digital_in/scan_page.pdf \
             -F "document_json=@work/doc_json/scan_page-pdf.seed.json;type=application/json")
           expect 200 "" work/api/scan_page.json "$code"
-          python -c 'import json, sys; b = json.load(open(sys.argv[1], encoding="utf-8")); assert "rendered_pdf" not in b, "a PDF is its own pages"' work/api/scan_page.json
+          handed_over work/api/scan_page.json no
           part work/api/scan_page.json docproc work/api/scan_page.docproc.json
           python tools/e2e/docproc_assert.py work/api/scan_page.docproc.json --schema "$SCHEMA" \
-            --expect-atr-pages 2 --expect-graphics-pages 2
+            --expect-atr-pages 2 --expect-figure-pages 2
           code=$(build work/api/scan_page.record.json work/api/scan_page.docproc.json -F doc_id=AMCR-F-scan_page-pdf)
           expect 422 needs_atr work/api/scan_page.record.json "$code"
           actions work/api/scan_page.json
@@ -467,7 +544,8 @@ jobs:
           part work/api/scan_page.mixed.json document_json work/api/scan_page.document.json
           python tools/e2e/e2e_assert.py work/api/scan_page.document.json \
             --llm-stage-ran false --seed work/doc_json/scan_page-pdf.seed.json --require-current-major \
-            --expect-atr-pages --expect-layout --docproc work/api/scan_page.atr.docproc.json
+            --expect-atr-pages --expect-layout --docproc work/api/scan_page.atr.docproc.json \
+            --text-layer-docproc work/api/scan_page.docproc.json
           python - work/api/scan_page.mixed.json work/api/scan_page.docproc.json <<'PY'
           import hashlib
           import json
@@ -486,9 +564,10 @@ jobs:
           code=$(MEDIA=text/csv reformat work/api/sample_csv.json work/digital_in/sample.csv \
             -F "document_json=@work/doc_json/sample-csv.seed.json;type=application/json")
           expect 200 "" work/api/sample_csv.json "$code"
-          python -c 'import json, sys; b = json.load(open(sys.argv[1], encoding="utf-8")); assert "rendered_pdf" not in b, "a CSV has no rendering"' work/api/sample_csv.json
+          handed_over work/api/sample_csv.json no
           part work/api/sample_csv.json docproc work/api/sample_csv.docproc.json
-          python tools/e2e/docproc_assert.py work/api/sample_csv.docproc.json --schema "$SCHEMA" --expect-atr-pages none
+          python tools/e2e/docproc_assert.py work/api/sample_csv.docproc.json --schema "$SCHEMA" --expect-atr-pages none \
+            --expect-figure-pages none
           code=$(build work/api/sample_csv.record.json work/api/sample_csv.docproc.json \
             -F "document_json=@work/doc_json/sample-csv.seed.json;type=application/json")
           expect 200 "" work/api/sample_csv.record.json "$code"

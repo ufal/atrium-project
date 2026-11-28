@@ -4240,3 +4240,53 @@ candidates are six `.3` releases carrying #6's step 1.
     keyword-extract, nlp-enrich, ocr-postprocess, page-classification and translator; the pre-tag checks; the tags
     on 26 November; this PR after the six releases.
 * Logs only; not pushed.
+
+## 2026-11-27 — #84: the six decisions to ARÚP, the non-A options prepared
+
+* **#84:** comment 6 (K4TEL, 11-25 17:11) puts six decisions to ARÚP before the `v2.0.0-beta` tags; its UPD
+  (11-26 17:51): the release-prep PRs merged, PRs for the B options being prepared, 6(c) for the docproc. No answer
+  from ARÚP yet (checked 11-27). The issue export, digest and plan are refreshed; the plan's "Status — 11-27" and Q26.
+* **Prepared in all seven repositories, one PR each, not pushed** (K4TEL's choices of 11-26, refined R2–R9 against
+  the code): 1(b) names only (`name_only`, `start --config-name`); 2(b) SHA-512 for the translator's vocabulary and
+  keyword-extract's prompt; 3(b) an office page with no running text that shows an object goes to the ATR, the
+  record keeping its own lines (keep-native); 4(b) the forced pages and `graphics_pages`; 5(b) the rendered PDF
+  stored when read; 6(c) `graphics`/`tables` out of the docproc. The shared record schema's H3 text follows 4(b).
+* **Hub side:** the shared modules; `docproc_assert.py`, `e2e_assert.py` (R9), new `keep_native_assert.py`;
+  `e2e-digital-smoke.yml` (both mixed documents, the rendered PDF named exactly when written or returned);
+  `pipelines.md` and the route pages, `paradata_schema.md`, `rocrate_export.md`, a decision entry in
+  `docs/decisions/e2e-lanes.md`.
+* **Checked here:** the seven suites against their pristine `test` heads (hub 799/776, digital-convert 1038/1032,
+  ocr-postprocess 2367/2360, page-classification 893/882, nlp-enrich 1093/1090, translator 1182/1180,
+  keyword-extract 980/977); vendored copies byte-identical; the digital lane's CLI and service steps replayed
+  locally, scoring off; workflow lint.
+* **Merge order:** this PR first (`siblings:<branch>`; its digital lane red until the tools' `:test`), then `v1` to
+  its squash commit and the six tools pinned; digital-convert and ocr-postprocess; the other four; both lanes at
+  `test`; the samples regenerated; the tags.
+* Logs only; not pushed.
+
+## 2026-11-27 (evening) — #84: ARÚP's answers, #95 and the six tool PRs adjusted
+
+* **#84:** comment 7 (motyc, 16:25) answers the six decisions: 1(c) `config` holds only settings and models, files go
+  to `inputs`/`outputs` by name and SHA-512; 2(b) SHA-512 everywhere; 3(b) a page holding only a picture is forced,
+  the PDF rule; 4(b) forced ∪ pages with graphics, the rule stated in `parameters`; 5(a) with a change: the rendered
+  PDF named for every office document, not stored; 6(c) pictures as `figure` blocks, no `imageRef`. The tags follow
+  once #95 and the six tool PRs are adjusted and merged. Issue export (comment 7; the trailing space pre-commit
+  flagged is gone), digest and plan ("Status — 11-27 (evening)", Q26 answered) refreshed.
+* **PRs:** hub #95 and the six tools' (digital-convert #18, ocr-postprocess #19, page-classification #79, nlp-enrich
+  #50, translator #67, keyword-extract #10) open from `non-a-option`, no review. The adjustment starts from their
+  heads; K4TEL's choices: keep-native reverted, the caller selects the pages (shared `atrium_page_selection`),
+  non-distribution files as `inputs` entries, header and footer lines not readable text, drawings boxed.
+* **Found:** page-classification's adapter hashes an in-place baseline after overwriting it; the ATR stand-in turns
+  figure blocks into text; the digital lane never calls page-classification.
+* **The container was reset** before the gaps of 11-27 were delivered: G1 (ocr-postprocess model ids in
+  `parameters`) and G3 (the export's trailing space) are redone here, G2 is replaced by 1(c), the light samples are
+  regenerated from this round's code.
+* **Hub lane:** `docproc_assert.py --expect-figure-pages`; `e2e_assert.py --text-layer-docproc` (page categories on
+  the union of the pages the docprocs select; a forced page holds the ATR's lines only); `atr_standin.py` keeps
+  boxed figures; `keep_native_assert.py` removed; the digital lane's office cases name `rendered-pdf`
+  `stored: false`; a new 11-27 entry in `docs/decisions/e2e-lanes.md`; the user docs follow the answers.
+* **Verified:** hub 810 passed, 43 skipped; shared 210/8; pre-commit (ShellCheck needs Docker, so it ran directly on
+  nlp-enrich's changed scripts); workflow lint; vendored copies byte-equal; image closure of all six tools; the
+  digital lane replayed locally (digital-convert CLI and `/reformat`, the stand-in, `build_record.py --no-score`, both
+  asserts) on its 13 CLI fixtures and both mixed documents; the paradata gate on every run and regenerated sample.
+* Not pushed.

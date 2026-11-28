@@ -841,8 +841,9 @@ and text as docproc. It is AIS CR's own service, outside the six ATRIUM tools; c
 belongs to AMČR.
 
 **Where ATRIUM uses it.** In the AMČR pipeline, an image goes to the ATR directly, and a PDF or office
-file goes through it whole when digital-convert finds a page without usable text, with those pages
-marked. page-classification classifies those pages beside it, and ocr-postprocess builds the record from
+file goes through it whole when digital-convert finds a page without usable text (for an office file, a page
+with no text of its own that shows a picture), with those pages marked. page-classification classifies those
+pages and the pages with a picture, chart or drawing beside it, and ocr-postprocess builds the record from
 the ATR's docproc. An ATR failure fails the job.
 
 **Onward:** [the route through the pipeline](pipelines.md#the-route-through-the-pipeline)

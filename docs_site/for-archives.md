@@ -16,12 +16,14 @@ institution. Unfamiliar words are explained in the [glossary](glossary.md).
 In the AMČR pilot, a document uploaded to AMČR goes through the tools in one job:
 
 1. **digital-convert** reads a PDF or an office file directly, with no OCR, and gives each page a
-   verdict: is its text usable? It never refuses a document. An office file's text is always its own,
-   and each page also says whether it shows pictures or tables.
+   verdict: is its text usable? It never refuses a document. An office file's text is always its own;
+   only a page that holds nothing but a picture, such as a pasted scan, needs text recognition. Every
+   picture, chart or drawing is marked with its place on the page.
 2. **The ATR**, the text-recognition service of AIS CR, reads what has no usable text: an image, or a
    whole document of which any page needs text recognition, with those pages marked.
-   **page-classification** looks at those pages beside it and says what kind of page each is: one of
-   eleven types, such as typed text, a handwritten table, a drawing or a photograph.
+   **page-classification** looks at those pages, and at the pages that show pictures, charts or drawings,
+   and says what kind of page each is: one of eleven types, such as typed text, a handwritten table, a
+   drawing or a photograph.
 3. **ocr-postprocess** builds the record of the document from the page layout, keeping the born-digital
    text where it is good, and labels every line's quality. You see which lines can be used as they
    are, and which cannot be read.

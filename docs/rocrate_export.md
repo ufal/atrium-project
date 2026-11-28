@@ -194,7 +194,10 @@ output of a run is a `CreativeWork` with the distribution's `name` and its `sha5
 that joins the two (`#atr/docproc-json@<first 16 hex of the digest>`). So the output of one step and
 the input of the next are one entity, and a crate never names a local path or a SHA-256 `ni:` URI.
 An intermediate that is not stored but reaches a stored distribution, such as digital-convert's
-docproc of a mixed document, is still named by its SHA-512 and carries `stored: false`.
+docproc of a mixed document or an office document's rendered PDF (`rendered-pdf`, a stand-in name;
+#84 decision 5), is still named by its SHA-512 and carries `stored: false`. A command line's other
+files (page images, texts, tables, a vocabulary) are entities of the same kind, named by their file
+name and SHA-512, `stored: false` (#84 decision 1).
 
 The document crate has no `hasPart`: the files are AMČR's, held in its own crate, and a record names
 none. The original is archive-managed and not in the crate, so `source` becomes the root's

@@ -209,6 +209,22 @@ def test_the_stand_in_has_the_atrs_own_blocks_and_echoes_the_force():
     assert da.check(doc, expect_atr="all", expect_forced="2") == []
 
 
+def test_the_stand_in_keeps_a_text_layer_pages_figure():
+    """#84 decision 6: a picture on a text-layer page is a `figure` block in digital-convert's docproc; the
+    ATR's docproc has it too (its own, with an `imageRef`), so page-classification reads the page."""
+    digital = _mixed_digital()
+    digital["pages"][0]["blocks"].insert(
+        2, {"id": "p1-b3", "type": "figure", "bbox": [72, 200, 300, 400], "readingOrder": 3, "confidence": 1.0}
+    )
+    digital["pages"][0]["blocks"].append({"id": "p1-b4", "type": "figure", "readingOrder": 4, "confidence": 1.0})
+    doc = ats.standin(digital, {2: ["Plán sondy S1"]})
+    blocks = doc["pages"][0]["blocks"]
+    assert [(b["id"], b["type"]) for b in blocks] == [("p1-b0", "text"), ("p1-b1", "text"), ("p1-b2", "figure")]
+    assert blocks[2]["bbox"] == [72, 200, 300, 400] and blocks[2]["imageRef"] == "assets/p1-b2.png"
+    assert blocks[1]["content"] == "Strana 1", "a figure ends the text pair before it"
+    assert da.check(doc, expect_atr="all", expect_forced="2", expect_figures="1,2") == []
+
+
 def test_a_forced_page_without_ocr_text_comes_out_empty():
     doc = ats.standin(_mixed_digital(), {})
     assert [p["pageNumber"] for p in doc["pages"]] == [1]
@@ -236,11 +252,32 @@ def test_the_expected_forced_pages_are_checked():
     assert any("forced pages [2], expected []" in p for p in da.check(doc, expect_forced="none"))
 
 
-def test_the_pages_showing_graphics_are_checked():
+def test_the_pages_with_figure_blocks_are_checked(tmp_path):
+    """#84 decisions 4 and 6: what a page shows is its blocks; the pages with a `figure` block are, with
+    the forced pages, the pages for page-classification."""
     doc = _digital()
-    doc["metadata"]["routing"]["pages"][0].update(graphics=0, tables=1)
+    doc["pages"][1]["blocks"] = [{"id": "p2-b0", "type": "figure", "bbox": [0, 0, 595, 842], "readingOrder": 0}]
+    assert da.check(doc, expect_figures="2") == []
+    assert any("figure blocks are [2], expected []" in p for p in da.check(doc, expect_figures="none"))
+    docproc = tmp_path / "d.docproc.json"
+    docproc.write_text(json.dumps(doc), encoding="utf-8")
+    assert da.main([str(docproc), "--expect-figure-pages", "2"]) == 0
+    assert da.main([str(docproc), "--expect-figure-pages", "1"]) == 1
+
+
+def test_digital_converts_figure_block_holds_no_picture():
+    """Answer 12: digital-convert's figure block (its docproc has no `pipeline`) has a box and nothing of
+    the picture: no `lines`, `content` or `imageRef`. The ATR's may carry an `imageRef`."""
+    doc = _digital()
+    figure = {"id": "p2-b0", "type": "figure", "bbox": [0, 0, 595, 842], "readingOrder": 0, "imageRef": "assets/x.png"}
+    doc["pages"][1]["blocks"] = [figure]
+    assert da.check(doc) == [], "the ATR's docproc"
+    del doc["pipeline"]
+    assert any("carries ['imageRef']" in p for p in da.check(doc))
+
+
+def test_a_routing_entry_that_says_what_a_page_shows_fails():
+    """Ask 14 is withdrawn (#84 decision 6): `graphics` and `tables` stay out of docproc."""
+    doc = _digital()
     doc["metadata"]["routing"]["pages"][1].update(graphics=1, tables=0)
-    assert da.check(doc, expect_graphics="2") == []
-    assert any("showing graphics are [2], expected []" in p for p in da.check(doc, expect_graphics="none"))
-    del doc["metadata"]["routing"]["pages"][1]["graphics"]
-    assert any("showing graphics are [], expected [2]" in p for p in da.check(doc, expect_graphics="2"))
+    assert any("routing carries ['graphics', 'tables']" in p for p in da.check(doc))
