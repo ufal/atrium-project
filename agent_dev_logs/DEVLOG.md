@@ -4304,7 +4304,8 @@ candidates are six `.3` releases carrying #6's step 1.
 * **Checked here:** no issue comment, closure or PR since the exports (11-28 11:11); every release run's jobs; the
   version strings at the tags; the pins (`ff0a8ea`, 10 refs per tool).
 * **Not yet:** neither E2E lane has run on the merged or released images; Hub Self-Check not run on `becdaeb`.
-* **Next (K4TEL):** both lanes on `test` with `image-tag=2.0.0-beta`; the chain sample re-run at the tags; then the
+* **Next (K4TEL):** both lanes on `test` (digital `image-tag=latest`, which is the 2.0.0-beta images since its input
+  offers only `latest`/`test`; pipeline `image-tag=2.0.0-beta`); the chain sample re-run at the tags; then the
   #84 summary with the `doc-schema-v2` question to motyc, and the digital-convert#9 close (drafted, not posted).
   Snapshot: `digests/project_state_2811.md`.
 * Logs only; not pushed.

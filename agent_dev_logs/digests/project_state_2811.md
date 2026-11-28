@@ -50,7 +50,8 @@
 
 ## §3 — Open, in order
 
-1. Both hub E2E lanes on `test` with `image-tag=2.0.0-beta`; Hub Self-Check on `test` (`becdaeb`).
+1. Both hub E2E lanes on `test` on the 2.0.0-beta images (digital `image-tag=latest`, its input offers only
+   `latest`/`test`; pipeline `image-tag=2.0.0-beta`); Hub Self-Check on `test` (`becdaeb`).
 2. The chain sample re-run on the cluster at the four tools' tags (its paradata now name the PR heads); a small hub
    PR replacing `fixtures/chain/CTX000000003`.
 3. The summary for motyc on #84, with the `doc-schema-v2` question: tag now on the validator, the lanes and the chain
