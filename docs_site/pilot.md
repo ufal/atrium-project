@@ -19,7 +19,7 @@ measured and what is experimental: [Status](status.md).
 The pilot is assembled step by step: each step joins the chain with the release that is proven when it is
 put together, which may be newer than the ones below. The release set agreed in
 [#77](https://github.com/ufal/atrium-project/issues/77) is the starting point. The route these pages
-describe, with record schema 2.0 and docproc, comes with the 2.0.0-beta releases of 26 November 2026; AMČR
+describe, with record schema 2.0 and docproc, comes with the 2.0.0-beta releases of 28 November 2026; AMČR
 chooses when each step moves to them. Each tool's command line and service give the same results from
 the same input; what still differs, and why, is in one table in each tool's `docs/usage.md`.
 

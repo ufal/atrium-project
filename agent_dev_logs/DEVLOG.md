@@ -1,6 +1,6 @@
 # 📓 atrium-project — agent_dev_logs/DEVLOG.md (timeline index)
-> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #77, #78, #79, #83, #84); #72 and #81 closed 11-16. The starting set of the pilot phase (11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Released since, the starting set unchanged: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5 and v1.4.7, keyword-extract v1.6.5, page-classification v1.13.0 and v1.14.2, translator v1.7.8-beta; each tool's `test` is 16–25 commits past its last tag and declares the unreleased v2.0.0-beta (record 2.0). Hub workflows pinned to `fbffe25` (`v1`, 11-22), which all six tools call by commit; `test` = `main` = `fbffe25` (11-22), the merge of #93. The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-25 (v2.0.0-beta release prep), at the end of the file (this file is not in date order)._
-> _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` (#84: `84.*` since 11-16; the CAA manuscript checked: `digests/13.findings.md`) · `issues/` exports (source of truth). Pairs of closed issues removed 2026-11-19: #51, #72, #81, #82; kept: #18, #31, #32, #53, #55, #57 (cited elsewhere). Cross-repo snapshot: `digests/project_state_1911.md` (prior: `project_state_1111.md`, `project_state_0411.md`, `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
+> _Hub/planning repo. 18 open issues (#4, #6, #10, #13, #15, #16, #17, #22, #24, #40, #56, #66, #67, #77, #78, #79, #83, #84); #72 and #81 closed 11-16. The starting set of the pilot phase (11-04, #77): page-classification v1.12.3, ocr-postprocess v1.15.3, nlp-enrich v1.3.3, digital-convert v1.4.4, keyword-extract v1.6.4, translator v1.7.5-beta. Released since, the starting set unchanged: ocr-postprocess v1.15.4, nlp-enrich v1.3.4, digital-convert v1.4.5 and v1.4.7, keyword-extract v1.6.5, page-classification v1.13.0 and v1.14.2, translator v1.7.8-beta; and on 11-28 all six as **v2.0.0-beta** (record 2.0; digital-convert `27f94a5`, ocr-postprocess `6008e0c`, page-classification `9d5f4b8`, nlp-enrich `328da74`, translator `a2559aa`, keyword-extract `e93cc67`), each on its `test` head, which its default branch equals. Hub workflows pinned to `ff0a8ea` (`v1`, 11-28, the merge of #95), which all six tools call by commit; `main` = `ff0a8ea`, `test` = `becdaeb` (the chain sample from the cluster). The `v*` tag ruleset is on all six (10-29); freeze tag `doc-schema-v1` = `544298b` (#54), not covered by any hub ruleset. Latest entry: 2026-11-28 (#84: merged, v2.0.0-beta released), at the end of the file (this file is not in date order)._
+> _Per-issue detail: `digests/{id}.digest.md` · `plans/{id}.plan.md` (#84: `84.*` since 11-16; the CAA manuscript checked: `digests/13.findings.md`) · `issues/` exports (source of truth). Pairs of closed issues removed 2026-11-19: #51, #72, #81, #82; kept: #18, #31, #32, #53, #55, #57 (cited elsewhere). Cross-repo snapshot: `digests/project_state_2811.md` (prior: `project_state_1911.md`, `project_state_1111.md`, `project_state_0411.md`, `project_state_3009.md`, `project_state_2609.md`, `project_state_0709.md`, `project_state_3007.md`, `project_state_0208.md`, `project_state_2207.md`, `project_state_1307.md`, `project_state_2706.md`)._
 
 ## 2026-03-13
 - **#4 SSH Open Marketplace records** — Opened by stranak: create SSHOMP records for every tool in our workflows (UDPipe ✅,
@@ -4290,3 +4290,21 @@ candidates are six `.3` releases carrying #6's step 1.
   digital lane replayed locally (digital-convert CLI and `/reformat`, the stand-in, `build_record.py --no-score`, both
   asserts) on its 13 CLI fixtures and both mixed documents; the paradata gate on every run and regenerated sample.
 * Not pushed.
+
+## 2026-11-28 — #84: merged, v2.0.0-beta released
+
+* **Merged:** #95 (`ff0a8ea`, 10:31) and `v1` moved to it; the six tool PRs re-pinned, with their cluster samples,
+  squash-merged 11:34–11:45 (digital-convert #18, ocr-postprocess #19, page-classification #79, nlp-enrich #50,
+  translator #67, keyword-extract #10), then a CITATION date commit each.
+* **Released:** `v2.0.0-beta` in all six (11:44–12:03) on the `test` heads; immutable releases with curated notes
+  above the generated part, release runs green, certified images; default branches = `test` = the tag.
+* **Samples:** regenerated on ÚFAL's cluster from the synced heads and gated (schema 3.0, `completed`,
+  settings-only `config`, no SHA-256, no licence field, stored SHA-512s resolving); the chain sample `CTX000000003`
+  through four tools (`becdaeb`), its paradata naming the PR heads (the tags' code).
+* **Checked here:** no issue comment, closure or PR since the exports (11-28 11:11); every release run's jobs; the
+  version strings at the tags; the pins (`ff0a8ea`, 10 refs per tool).
+* **Not yet:** neither E2E lane has run on the merged or released images; Hub Self-Check not run on `becdaeb`.
+* **Next (K4TEL):** both lanes on `test` with `image-tag=2.0.0-beta`; the chain sample re-run at the tags; then the
+  #84 summary with the `doc-schema-v2` question to motyc, and the digital-convert#9 close (drafted, not posted).
+  Snapshot: `digests/project_state_2811.md`.
+* Logs only; not pushed.
