@@ -3,16 +3,16 @@
   "program": "nlp-enrich",
   "tool_version": "v2.0.0-beta",
   "repository": "https://github.com/ufal/atrium-nlp-enrich",
-  "runner_ref": "f6755d97fdd9bbb0c6ea60f7fd66de378eeb031a",
+  "runner_ref": "328da74640e285cabb9698078dcb57cf6a258250",
   "docker_image": "",
   "python_version": "3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]",
-  "run_id": "261128-112917",
-  "run_uuid": "urn:uuid:ef4a776b-dfc1-49e2-8afc-9054a114aa81",
+  "run_id": "261128-124206",
+  "run_uuid": "urn:uuid:c18475f5-f98e-426f-95b2-594ad5c19c88",
   "run_agent": "",
   "action_status": "completed",
-  "start_time": "2026-11-28T11:29:17.966474+00:00",
-  "end_time": "2026-11-28T11:29:18.639852+00:00",
-  "duration_seconds": 0.673,
+  "start_time": "2026-11-28T12:42:06.443126+00:00",
+  "end_time": "2026-11-28T12:42:07.136876+00:00",
+  "duration_seconds": 0.694,
   "config": {
     "script": "api_3_nt",
     "model_nametag": "nametag3-multilingual-onto-260521",
@@ -55,7 +55,7 @@
       "tsv": 1
     },
     "performance_per_minute": {
-      "tsv": 89.103
+      "tsv": 86.4865
     }
   },
   "skipped_files_detail": [],

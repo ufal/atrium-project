@@ -3,16 +3,16 @@
   "program": "keyword-extract",
   "tool_version": "v2.0.0-beta",
   "repository": "https://github.com/ufal/atrium-keyword-extract",
-  "runner_ref": "1d0164cc5f39ef31d5f5c8bc1efddd8db89f5592",
+  "runner_ref": "e93cc674d3056a2c34fe8dbb49bc4ae5c5adb57b",
   "docker_image": "",
   "python_version": "3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]",
-  "run_id": "261128-113014",
-  "run_uuid": "urn:uuid:212d75c7-44b2-411e-9982-47080920ce37",
+  "run_id": "261128-124258",
+  "run_uuid": "urn:uuid:ed8db65f-606a-49b7-87b7-1601a912f8dc",
   "run_agent": "",
   "action_status": "completed",
-  "start_time": "2026-11-28T11:30:14.630482+00:00",
-  "end_time": "2026-11-28T11:30:34.760764+00:00",
-  "duration_seconds": 20.13,
+  "start_time": "2026-11-28T12:42:58.877361+00:00",
+  "end_time": "2026-11-28T12:43:20.951650+00:00",
+  "duration_seconds": 22.074,
   "config": {
     "script": "keywords",
     "method": "keybert",
@@ -96,10 +96,10 @@
       "document_json": 1
     },
     "performance_per_minute": {
-      "csv_per_doc": 2.9806,
-      "csv_summary_row": 2.9806,
-      "csv_per_page": 2.9806,
-      "document_json": 2.9806
+      "csv_per_doc": 2.7181,
+      "csv_summary_row": 2.7181,
+      "csv_per_page": 2.7181,
+      "document_json": 2.7181
     }
   },
   "skipped_files_detail": [],

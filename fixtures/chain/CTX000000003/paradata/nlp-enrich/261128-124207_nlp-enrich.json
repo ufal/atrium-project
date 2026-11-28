@@ -3,16 +3,16 @@
   "program": "nlp-enrich",
   "tool_version": "v2.0.0-beta",
   "repository": "https://github.com/ufal/atrium-nlp-enrich",
-  "runner_ref": "f6755d97fdd9bbb0c6ea60f7fd66de378eeb031a",
+  "runner_ref": "328da74640e285cabb9698078dcb57cf6a258250",
   "docker_image": "",
   "python_version": "3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]",
-  "run_id": "261128-112919",
-  "run_uuid": "urn:uuid:fdd7d475-cf15-4846-8c09-d44f1b0e7401",
+  "run_id": "261128-124207",
+  "run_uuid": "urn:uuid:caaf2178-dc2f-4da1-8a39-cd9dcf841dc7",
   "run_agent": "",
   "action_status": "completed",
-  "start_time": "2026-11-28T11:29:19.068848+00:00",
-  "end_time": "2026-11-28T11:29:20.743699+00:00",
-  "duration_seconds": 1.675,
+  "start_time": "2026-11-28T12:42:07.547133+00:00",
+  "end_time": "2026-11-28T12:42:09.178520+00:00",
+  "duration_seconds": 1.631,
   "config": {
     "script": "api_4_stats",
     "save_conllu_ne": "true",
@@ -123,9 +123,9 @@
       "xml": 1
     },
     "performance_per_minute": {
-      "csv": 35.8241,
-      "conllu": 35.8241,
-      "xml": 35.8241
+      "csv": 36.7785,
+      "conllu": 36.7785,
+      "xml": 36.7785
     }
   },
   "skipped_files_detail": [],

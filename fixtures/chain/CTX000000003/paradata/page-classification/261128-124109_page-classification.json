@@ -3,16 +3,16 @@
   "program": "page-classification",
   "tool_version": "v2.0.0-beta",
   "repository": "https://github.com/ufal/atrium-page-classification",
-  "runner_ref": "f45743069b18c5e4c9ff221b85943517c6bf3cec",
+  "runner_ref": "9d5f4b8a7abd2c06628b2a0882e8fb2aa48336ae",
   "docker_image": "",
   "python_version": "3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]",
-  "run_id": "261128-112819",
-  "run_uuid": "urn:uuid:6ee9943c-b3a5-47a3-9d8f-abe80e6db429",
+  "run_id": "261128-124109",
+  "run_uuid": "urn:uuid:a549e795-6a1e-4671-93ac-2f11cd0e5a93",
   "run_agent": "",
   "action_status": "completed",
-  "start_time": "2026-11-28T11:28:19.624450+00:00",
-  "end_time": "2026-11-28T11:29:06.938235+00:00",
-  "duration_seconds": 47.314,
+  "start_time": "2026-11-28T12:41:09.296536+00:00",
+  "end_time": "2026-11-28T12:41:56.352421+00:00",
+  "duration_seconds": 47.056,
   "config": {
     "model_path": "model_v44",
     "revision": "v4.4",
@@ -66,7 +66,7 @@
       }
     },
     {
-      "name": "20261128-1228_model_v44_TOP-3.csv",
+      "name": "20261128-1341_model_v44_TOP-3.csv",
       "sha512": "beec319a36ccc50863e3dbb90931182b880af92695ddbfeb01b927ab3551a53d61afb566c7715ced62d94e5f4314dfdd8d5617cf1683f5bea6e6e4a58aae53ee",
       "stored": false
     }
@@ -87,7 +87,7 @@
       "png": 0
     },
     "performance_per_minute": {
-      "csv": 1.2681,
+      "csv": 1.2751,
       "png": 0.0
     }
   },

@@ -6,11 +6,11 @@
   "repository": "https://github.com/ufal/atrium-nlp-enrich",
   "tool_version": "v2.0.0-beta",
   "docker_image": "",
-  "runner_ref": "f6755d97fdd9bbb0c6ea60f7fd66de378eeb031a",
+  "runner_ref": "328da74640e285cabb9698078dcb57cf6a258250",
   "request_id": "",
   "python_version": "3.11.4 (main, Jul 26 2023, 14:53:35) [GCC 11.3.0]",
-  "run_id": "261128-112920",
-  "run_uuid": "urn:uuid:a2d64d5e-911d-4f36-bff2-e42a9c3b4aec",
+  "run_id": "261128-124209",
+  "run_uuid": "urn:uuid:6c4ca686-3f0a-4297-86ed-07b9a23fcb71",
   "run_agent": "",
   "action_status": "completed",
   "stage_count": 4,
@@ -20,8 +20,8 @@
       "program": "nlp-enrich",
       "script": "api_1_manifest",
       "method": null,
-      "run_id": "261128-112915",
-      "run_uuid": "urn:uuid:da8185c8-83fd-41db-896a-09415af4fa13",
+      "run_id": "261128-124204",
+      "run_uuid": "urn:uuid:575877f5-35b3-4a82-a9fa-50f8bc015f2f",
       "action_status": "completed",
       "repository": "https://github.com/ufal/atrium-nlp-enrich",
       "tool_version": "v2.0.0-beta",
@@ -53,9 +53,9 @@
       "output_formats": {
         "tsv": 1
       },
-      "start_time": "2026-11-28T11:29:15.584586+00:00",
-      "end_time": "2026-11-28T11:29:16.041125+00:00",
-      "duration_seconds": 0.457,
+      "start_time": "2026-11-28T12:42:04.095238+00:00",
+      "end_time": "2026-11-28T12:42:04.553303+00:00",
+      "duration_seconds": 0.458,
       "input_files_total": 1,
       "successfully_processed": 1,
       "skipped_files": 0
@@ -65,8 +65,8 @@
       "program": "nlp-enrich",
       "script": "api_2_udp",
       "method": null,
-      "run_id": "261128-112916",
-      "run_uuid": "urn:uuid:c0a9726b-21f4-4dc9-815d-b90a3813148e",
+      "run_id": "261128-124205",
+      "run_uuid": "urn:uuid:d1d54a63-3b14-4fb7-9cc8-c97b013f3d26",
       "action_status": "completed",
       "repository": "https://github.com/ufal/atrium-nlp-enrich",
       "tool_version": "v2.0.0-beta",
@@ -103,9 +103,9 @@
       "output_formats": {
         "conllu": 1
       },
-      "start_time": "2026-11-28T11:29:16.656745+00:00",
-      "end_time": "2026-11-28T11:29:17.884130+00:00",
-      "duration_seconds": 1.227,
+      "start_time": "2026-11-28T12:42:05.162723+00:00",
+      "end_time": "2026-11-28T12:42:06.360668+00:00",
+      "duration_seconds": 1.198,
       "input_files_total": 1,
       "successfully_processed": 1,
       "skipped_files": 0
@@ -115,8 +115,8 @@
       "program": "nlp-enrich",
       "script": "api_3_nt",
       "method": null,
-      "run_id": "261128-112917",
-      "run_uuid": "urn:uuid:ef4a776b-dfc1-49e2-8afc-9054a114aa81",
+      "run_id": "261128-124206",
+      "run_uuid": "urn:uuid:c18475f5-f98e-426f-95b2-594ad5c19c88",
       "action_status": "completed",
       "repository": "https://github.com/ufal/atrium-nlp-enrich",
       "tool_version": "v2.0.0-beta",
@@ -138,9 +138,9 @@
       "output_formats": {
         "tsv": 1
       },
-      "start_time": "2026-11-28T11:29:17.966474+00:00",
-      "end_time": "2026-11-28T11:29:18.639852+00:00",
-      "duration_seconds": 0.673,
+      "start_time": "2026-11-28T12:42:06.443126+00:00",
+      "end_time": "2026-11-28T12:42:07.136876+00:00",
+      "duration_seconds": 0.694,
       "input_files_total": 1,
       "successfully_processed": 1,
       "skipped_files": 0
@@ -150,8 +150,8 @@
       "program": "nlp-enrich",
       "script": "api_4_stats",
       "method": null,
-      "run_id": "261128-112919",
-      "run_uuid": "urn:uuid:fdd7d475-cf15-4846-8c09-d44f1b0e7401",
+      "run_id": "261128-124207",
+      "run_uuid": "urn:uuid:caaf2178-dc2f-4da1-8a39-cd9dcf841dc7",
       "action_status": "completed",
       "repository": "https://github.com/ufal/atrium-nlp-enrich",
       "tool_version": "v2.0.0-beta",
@@ -237,9 +237,9 @@
         "conllu": 1,
         "xml": 1
       },
-      "start_time": "2026-11-28T11:29:19.068848+00:00",
-      "end_time": "2026-11-28T11:29:20.743699+00:00",
-      "duration_seconds": 1.675,
+      "start_time": "2026-11-28T12:42:07.547133+00:00",
+      "end_time": "2026-11-28T12:42:09.178520+00:00",
+      "duration_seconds": 1.631,
       "input_files_total": 1,
       "successfully_processed": 1,
       "skipped_files": 0
@@ -263,9 +263,9 @@
       "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/"
     }
   ],
-  "start_time": "2026-11-28T11:29:15.584586+00:00",
-  "end_time": "2026-11-28T11:29:20.743699+00:00",
-  "total_duration_seconds": 4.032,
+  "start_time": "2026-11-28T12:42:04.095238+00:00",
+  "end_time": "2026-11-28T12:42:09.178520+00:00",
+  "total_duration_seconds": 3.981,
   "statistics": {
     "stages_total": 4,
     "input_files_total": 1,
@@ -275,5 +275,5 @@
   "skipped_files_detail": [],
   "limits": [],
   "skipped_stages": [],
-  "merged_at": "2026-11-28T11:29:20.762175+00:00"
+  "merged_at": "2026-11-28T12:42:09.197977+00:00"
 }
