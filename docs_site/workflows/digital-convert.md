@@ -33,8 +33,9 @@ OCR on it would only add errors. This workflow reads such a file directly and wr
 the blocks in reading order with their lines (with their boxes, in a PDF or an office document), the headings,
 running headers and footers, footnotes and tables. It also checks the text layer of every page. A page whose layer
 is missing, does not decode to readable text or comes from an earlier OCR run is marked `needsAtr`, so that the
-whole document goes through the ATR with those pages forced; so is an office document's page with no running text
-that shows an object (a pasted scan, a chart or a table alone). No document is refused for its pages.
+whole document goes through the ATR with those pages forced; so is an office document's page with no text of its
+own (none outside its header and footer) that shows a picture, such as a pasted scan. No document is refused for its
+pages.
 [ocr-postprocess](ocr-postprocess.md) builds the ATRIUM document record from the docproc.
 
 ## At a glance
@@ -42,7 +43,7 @@ that shows an object (a pasted scan, a chart or a table alone). No document is r
 |                        |                                                                                                                                                                                                                                                                                                                                                                                                           |
 |------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **In**                 | PDF, office documents (DOCX, DOC, ODT, RTF) read as their own text on the pages of a LibreOffice rendering, and, without pages to render, spreadsheets (ODS, XLSX, XLS) and text files (TXT, CSV, TSV, JSON), recognised by their content, not their extension; images go to the ATR instead; optionally AMČR's seed of the record (the document's identifier and the checksum of its original)           |
-| **Out**                | the docproc (JSON), with a verdict on every page's text layer and the route of every page; the pages that show graphics (`graphics_pages`), for page-classification; an office document's rendered PDF when the ATR or page-classification reads it, stored; on request, the document as annotated Markdown; the run's paradata (JSON)                                                                    |
+| **Out**                | the docproc (JSON), with a verdict on every page's text layer, the route of every page and a `figure` block for every picture, chart or drawing; an office document's rendered PDF when the ATR or page-classification reads it, not stored (the paradata name it by its SHA-512); on request, the document as annotated Markdown; the run's paradata (JSON)                                              |
 | **Runs as**            | an HTTP service, `api-digital` (image `-api`: `POST /reformat`), and a command-line tool (`api_util/digital_to_json.py`, image `-digital`)                                                                                                                                                                                                                                                                |
 | **Compute**            | CPU, no GPU; memory follows the text a document holds, not its file size; the optional layout-model engine for complex PDFs is a local, opt-in build                                                                                                                                                                                                                                                      |
 | **Network**            | none; the optional layout-model engine fetches its models at build time                                                                                                                                                                                                                                                                                                                                   |
@@ -52,12 +53,12 @@ that shows an object (a pasted scan, a chart or a table alone). No document is r
 
 ## Steps
 
-| # | Step                   | What happens                                                                                                                                                                                                                                                                                                                                                                                                                                                              | In → out                    | Activity   |
-|---|------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------|------------|
-| 1 | Read the file          | When an AMČR seed is sent, its `source.sha512` is checked against the file's bytes first, and a mismatch is refused. The type is recognised from the content, and decides the workflow. Visual: a light engine reads a PDF on its own pages, and an office document as its own text placed on the pages of a LibreOffice rendering. Textual: a spreadsheet keeps every non-empty cell as the sheet displays it, and a text file its lines.                                | file → pages, blocks, lines | Converting |
-| 2 | Check the text layer   | Every page's text layer is tested: `digital` (it decodes), `garbled` (it does not), `ocr` (an earlier OCR run) or `none` (no text). A PDF page that is not `digital` is `needsAtr`, with a reason; an office page is `needsAtr` only when it has no running text and shows an object. A line that does not decode keeps the flag `decode:garbled` (`decode:inverted` for mirrored text): a verdict on its characters, apart from the line quality ocr-postprocess scores. | pages → verdicts            | —          |
-| 3 | Write the docproc      | Pages, blocks with their lines and boxes, headings, tables as cell grids, and the route of every page in `metadata.routing`: `text-layer`, `atr` or `empty`; the pages that show graphics are handed over beside it (`graphics_pages`). An empty page is routed `empty` and left out of `pages[]`. The docproc is validated against its schema; one that fails is never returned, and a limit that would cut content fails the job.                                       | → docproc (JSON), paradata  | Converting |
-| 4 | Render, when asked for | The document is turned into annotated Markdown, page by page in reading order, with the layout carried in HTML comments: the one form in which a document is given to a language model, as in keyword-extract's whole-document runs.                                                                                                                                                                                                                                      | → Markdown                  | —          |
+| # | Step                   | What happens                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | In → out                    | Activity   |
+|---|------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------|------------|
+| 1 | Read the file          | When an AMČR seed is sent, its `source.sha512` is checked against the file's bytes first, and a mismatch is refused. The type is recognised from the content, and decides the workflow. Visual: a light engine reads a PDF on its own pages, and an office document as its own text placed on the pages of a LibreOffice rendering. Textual: a spreadsheet keeps every non-empty cell as the sheet displays it, and a text file its lines.                                                                       | file → pages, blocks, lines | Converting |
+| 2 | Check the text layer   | Every page's text layer is tested: `digital` (it decodes), `garbled` (it does not), `ocr` (an earlier OCR run) or `none` (no text). A PDF page that is not `digital` is `needsAtr`, with a reason; an office page is `needsAtr` only by the PDF rule: no text of its own (none outside its header and footer) and a picture. A line that does not decode keeps the flag `decode:garbled` (`decode:inverted` for mirrored text): a verdict on its characters, apart from the line quality ocr-postprocess scores. | pages → verdicts            | —          |
+| 3 | Write the docproc      | Pages, blocks with their lines and boxes, headings, tables as cell grids, and the route of every page in `metadata.routing`: `text-layer`, `atr` or `empty`; a picture, chart or drawing is a `figure` block with its box. An empty page is routed `empty` and left out of `pages[]`. The docproc is validated against its schema; one that fails is never returned, and a limit that would cut content fails the job.                                                                                           | → docproc (JSON), paradata  | Converting |
+| 4 | Render, when asked for | The document is turned into annotated Markdown, page by page in reading order, with the layout carried in HTML comments: the one form in which a document is given to a language model, as in keyword-extract's whole-document runs.                                                                                                                                                                                                                                                                             | → Markdown                  | —          |
 
 ## What you get
 
@@ -65,20 +66,22 @@ The docproc: for every page, its size, its blocks in reading order with their li
 `textLayer`; for every page of the original, its route in `metadata.routing`. When no page needs the ATR, this
 docproc is the one stored for the document. When a page needs it, the ATR's docproc is the stored one, and this one
 is an intermediate that ocr-postprocess merges with it. An office document's text is what the file holds, read in
-full; one of its pages needs the ATR when it has no running text and shows an object, and the record then keeps the
-page's own lines beside the ATR's. The pages that show pictures, charts or drawings come beside the docproc
-(`graphics_pages`); with the forced pages they are the ones page-classification reads. When the ATR or
-page-classification reads an office document, its rendered PDF comes with it and is stored, because its pages are
-the ones the docproc's page numbers and boxes refer to.
+full; one of its pages needs the ATR by the PDF rule, when it has no text of its own (none outside its header and
+footer) and shows a picture, such as a pasted scan, and the ATR then reads that page as it reads a PDF page. A
+picture, chart or drawing is a `figure` block with its box and nothing of the picture; with the forced pages, the
+pages with `figure` blocks are the ones page-classification reads. In a PDF only raster images are figures; a chart
+drawn as vectors is not. When the ATR or page-classification reads an office document, its rendered PDF comes with
+it; it is not stored, and every office document's paradata name it by its SHA-512, because its pages are the ones
+the docproc's page numbers and boxes refer to.
 
 ## Limits
 
 * Unruled tables are read by column, and letter-spaced captions and map labels split into pieces.
 * An office document's pages are LibreOffice's, which can break pages differently from Word; the docproc and the
   rendered PDF use the same pages.
-* Text inside a picture on an office page that has running text (a photo of a page beside a paragraph) is not
-  read. ODT and RTF are read as plain lines, so only such a page with no text at all that shows a picture goes to
-  the ATR.
+* Text inside a picture on an office page that has text of its own (a photo of a page beside a paragraph, a
+  caption under a scan) is not read: the page keeps its text, and its `figure` block puts it among the pages for
+  page-classification.
 * Spreadsheets and text files have no geometry: their pages and lines have no positions.
 * The converter was tried on 15 AMČR excavation reports, which showed its defects; there is no accuracy figure.
 
@@ -105,8 +108,7 @@ the converter as `digital-convert`, the program id it keeps.
   `/reformat`, which calls no other service: the pipeline's orchestrator (Temporal) chains the steps.
 * **Mixed documents** — [Pipelines → W3](../pipelines.md#other-workflows). When some pages need the ATR, the whole
   document goes through the ATR with those pages forced, and page-classification classifies those pages and the
-  pages that show graphics beside it; ocr-postprocess keeps this docproc's exact lines on the other pages, and an
-  office document's own lines on its forced pages too.
+  pages with `figure` blocks beside it; ocr-postprocess keeps this docproc's exact lines on the other pages.
 * **What follows it.** The record ocr-postprocess builds goes on to [nlp-enrich](nlp-enrich.md) and
   [keyword-extract](keyword-extract.md).
 * **Born-digital extraction** step of the AMČR text workflow

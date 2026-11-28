@@ -52,8 +52,9 @@ The branch follows ``source.origin``: ``digital`` is the born-digital branch
 born-digital record some of whose pages the ATR re-acquired (a mixed document, H6); ``--expect-layout``
 for lines that keep the docproc block they came from (``lines[].block``), from more than one block;
 ``--docproc`` joins the record to the stored docproc it was built from (`assert_against_docproc()`), and names the
-pages forced to the ATR (its routing's `forced` echo, D27); ``--graphics-pages-from`` digital-convert's hand-over of
-the pages that show graphics. Page categories are allowed on those two sets only (H3, #84 decision 4). A 1.x record
+pages forced to the ATR (its routing's `forced` echo, D27); ``--text-layer-docproc`` digital-convert's docproc of
+a mixed document. Page categories are allowed only on the pages `atrium_page_selection.select_pages_of()` selects
+from the docprocs given: the forced pages and the pages with `figure` blocks (H3, #84 decisions 4 and 6). A 1.x record
 is checked on its own evidence (``needs_ocr`` pages; ``style`` and ``tables``), which 2.0 moved out
 of the record.
 
@@ -100,6 +101,7 @@ from atrium_document import (  # noqa: E402  (needs the path above)
     validate_document,
     validate_seed,
 )
+from atrium_page_selection import select_pages_of  # noqa: E402  (needs the path above)
 
 _CURRENT_MAJOR = int(SCHEMA_VERSION.split(".")[0])
 
@@ -648,10 +650,10 @@ def _labels(doc, indices):
 def _atr_pages(doc, written, forced=None):
     """The pages of a born-digital record whose text the ATR re-acquired, as page labels.
 
-    2.0: the pages the stored docproc echoes as forced (`forced`, its routing's `forced: true`, D27;
-    #84 R9), since an office document's forced page keeps its own lines beside the ATR's (#84
-    decision 3); when none are echoed, the pages of the lines whose `text_source` is `atr` (the
-    route step sent them to the ATR, and the record builder kept the source of each line, D25).
+    2.0: the pages the stored docproc echoes as forced (`forced`, its routing's `forced: true`, D27),
+    the ATR's own account of what it was sent; when none are echoed, the pages of the lines whose
+    `text_source` is `atr` (the route step sent them to the ATR, and the record builder kept the
+    source of each line, D25).
     A 1.x record has no such field (its migration takes every line's source from
     `source.origin`), so its evidence is the converter's `needs_ocr` page verdict, which 2.0 moved
     out of the record.
@@ -675,15 +677,11 @@ def docproc_forced_pages(docproc_path):
     )
 
 
-def read_graphics_pages(path):
-    """`graphics_pages` from digital-convert's hand-over (`--graphics-pages-out`'s file or a `/reformat`
-    answer): the pages that show graphics (#84 decisions 4 and 6)."""
-    data = json.loads(Path(path).read_text(encoding="utf-8"))
-    pages = data.get("graphics_pages") if isinstance(data, dict) else None
-    assert isinstance(pages, list) and all(isinstance(n, int) and not isinstance(n, bool) for n in pages), (
-        f"❌ --graphics-pages-from: {path} has no `graphics_pages` list of page numbers"
-    )
-    return sorted(pages)
+def docproc_selected_pages(docproc_paths):
+    """The pages page-classification reads, from the docprocs of one document (the stored one and, for a
+    mixed document, digital-convert's): forced pages and pages with `figure` blocks, united over the
+    docprocs, since the ATR may find figures on other pages than digital-convert (#84 decisions 4 and 6)."""
+    return select_pages_of(json.loads(Path(path).read_text(encoding="utf-8")) for path in docproc_paths)
 
 
 def assert_positional_blocks(doc):
@@ -772,15 +770,15 @@ def assert_against_docproc(doc, docproc_path):
     )
 
 
-def assert_digital_contract(doc, json_path, written=None, forced=None, graphics=None):
+def assert_digital_contract(doc, json_path, written=None, forced=None, selected=None):
     """The born-digital branch (`source.origin: digital`).
 
     W10. This is NOT a shorter version of the scanned contract — it is a different
     one, and the difference is the point. A born-digital record carries no `translations`
     (reserved since 2.0, contract §5), and `page_categories` only for the pages page-classification
     reads: the pages forced to the ATR (`forced`, from the stored docproc; else the ATR's lines)
-    and the pages that show graphics (`graphics`, digital-convert's hand-over; H3 as #84 decision
-    4 has it). A 1.x record carries neither. A 1.x record can carry no `entities` either; since 2.0
+    and the pages the docprocs select (`selected`: forced or with a `figure` block; H3 as #84
+    decisions 4 and 6 have it). A 1.x record carries neither. A 1.x record can carry no `entities` either; since 2.0
     nlp-enrich enriches the record builder's lines whatever their source (D20, nlp-enrich#42),
     so a 2.x record may, and they are then checked as on the scanned branch. Asserting the
     scanned blocks here would not be "stricter", it would be wrong.
@@ -806,7 +804,7 @@ def assert_digital_contract(doc, json_path, written=None, forced=None, graphics=
         forbidden_blocks.append(("page_categories", "a 1.x born-digital record has no page image to classify"))
         forbidden_blocks.append(("entities", "nlp-enrich needs the DOC_LINE_CATEG classify CSV and INPUT_ALTO_DIR"))
     else:
-        _assert_categories_on_selected_pages(doc, written, forced, graphics)
+        _assert_categories_on_selected_pages(doc, written, forced, selected)
     for forbidden, why in forbidden_blocks:
         assert forbidden not in doc, (
             f"❌ '{forbidden}' present on a born-digital record — {why}. Either the fixture "
@@ -816,21 +814,39 @@ def assert_digital_contract(doc, json_path, written=None, forced=None, graphics=
     return doc.get("pages") or [], _atr_pages(doc, written, forced)
 
 
-def _assert_categories_on_selected_pages(doc, written, forced=None, graphics=None):
-    """H3 on a born-digital record (#84 decision 4): page categories only on the pages page-classification
-    reads, the pages forced to the ATR and the pages that show graphics. Without the hand-over
-    (`graphics` None) the forced pages alone are allowed."""
-    allowed = set(_atr_pages(doc, written, forced)) | set(_labels(doc, set(graphics or [])))
+def _assert_forced_pages_from_the_atr(doc, forced):
+    """A page forced to the ATR takes the ATR's lines only, an office page as a PDF page (#84 decision 3,
+    the PDF rule; ocr-postprocess's merge, H6): no text-layer line is kept beside them."""
+    labels = set(_labels(doc, set(forced)))
+    kept = sorted(
+        {
+            str(ln.get("page"))
+            for ln in doc.get("lines") or []
+            if str(ln.get("page")) in labels and ln.get("text_source") != "atr"
+        }
+    )
+    assert not kept, (
+        f"❌ forced page(s) {kept} keep lines that are not the ATR's: a forced page is read by the ATR alone "
+        "(#84 decision 3)"
+    )
+    print(f"✅ forced page(s) {sorted(labels)}: the ATR's lines only")
+
+
+def _assert_categories_on_selected_pages(doc, written, forced=None, selected=None):
+    """H3 on a born-digital record (#84 decisions 4 and 6): page categories only on the pages
+    page-classification reads, the pages forced to the ATR and the pages with `figure` blocks in the
+    docprocs (`selected`). Without a docproc (`selected` None) the forced pages alone are allowed."""
+    allowed = set(_atr_pages(doc, written, forced)) | set(_labels(doc, set(selected or [])))
     classified = sorted(
         str(row.get("page", row.get("page_index"))) for row in doc.get("pages") or [] if "category" in row
     )
     outside = [page for page in classified if page not in allowed]
     assert not outside, (
-        f"❌ page(s) {outside} carry a page category but were neither forced to the ATR nor show graphics "
-        f"(allowed: {sorted(allowed)}): page-classification reads those pages only (H3, #84 decision 4)."
+        f"❌ page(s) {outside} carry a page category but were neither forced to the ATR nor hold a figure "
+        f"block (allowed: {sorted(allowed)}): page-classification reads those pages only (H3, #84 decision 4)."
     )
     if "page_categories" in doc or classified:
-        print(f"✅ page categories on the forced and graphics pages only: {classified}")
+        print(f"✅ page categories on the forced and figure pages only: {classified}")
 
 
 def _assert_layout_1x(written):
@@ -924,7 +940,7 @@ def assert_document_contract(
     quality_summary_expected="auto",
     require_current_major=False,
     docproc=None,
-    graphics_pages_from=None,
+    text_layer_docproc=None,
 ):
     written, doc = _read(json_path)
     written_major = _major(written)
@@ -944,14 +960,15 @@ def assert_document_contract(
         assert written_major == _CURRENT_MAJOR, f"❌ --docproc needs a record written at {_CURRENT_MAJOR}.x"
         assert_against_docproc(doc, docproc)
         forced = docproc_forced_pages(docproc)
-    graphics = read_graphics_pages(graphics_pages_from) if graphics_pages_from else None
+    docprocs = [path for path in (docproc, text_layer_docproc) if path]
+    selected = docproc_selected_pages(docprocs) if docprocs else None
 
     # 0b. W10: which contract applies is derived from the RECORD, not from a flag:
     #     `source.origin` says how the text was obtained, and only the born-digital branch
     #     reads a text layer.
     origin = (doc.get("source") or {}).get("origin")
     if origin == "digital":
-        pages, atr_pages = assert_digital_contract(doc, json_path, written, forced, graphics)
+        pages, atr_pages = assert_digital_contract(doc, json_path, written, forced, selected)
 
         if expect_atr_pages:
             # The garbled fixture's whole purpose is to send pages to the ATR. This is the
@@ -963,6 +980,8 @@ def assert_document_contract(
                 "this gate is now vacuous and the hand-off to the ATR is untested."
             )
             print(f"✅ page(s) {atr_pages} re-acquired by the ATR")
+            if forced:
+                _assert_forced_pages_from_the_atr(doc, forced)
         else:
             assert not atr_pages, (
                 f"❌ page(s) {atr_pages} unexpectedly went to the ATR on the happy-path fixture. "
@@ -1132,11 +1151,11 @@ def main(argv=None):
         "its routing's forced pages are the pages the ATR read (D27).",
     )
     parser.add_argument(
-        "--graphics-pages-from",
+        "--text-layer-docproc",
         default=None,
-        metavar="FILE",
-        help="digital-convert's hand-over of the pages that show graphics (--graphics-pages-out's file or a "
-        "/reformat answer): page categories are allowed there too (#84 decision 4).",
+        metavar="DOCPROC",
+        help="digital-convert's docproc of a mixed document (the ATR's is --docproc): its forced pages and "
+        "pages with figure blocks are page-classification's too (#84 decisions 4 and 6).",
     )
     args = parser.parse_args(argv)
 
@@ -1152,7 +1171,7 @@ def main(argv=None):
         quality_summary_expected=args.quality_summary,
         require_current_major=args.require_current_major,
         docproc=args.docproc,
-        graphics_pages_from=args.graphics_pages_from,
+        text_layer_docproc=args.text_layer_docproc,
     )
     return 0
 

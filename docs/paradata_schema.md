@@ -12,17 +12,17 @@ They are the only home of run data: the document record carries none
 
 ## Schema `3.0`
 
-| Key                                                        | Meaning                                                                                                                                                                                                                                                                                          |
-|------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `program`, `tool_version`, `repository`, `docker_image`, … | the software that ran                                                                                                                                                                                                                                                                            |
-| `run_id`, `run_uuid`, `run_agent`                          | the run's ids and the operating organisation (below)                                                                                                                                                                                                                                             |
-| `action_status`                                            | `completed`, or `failed` with `error` (a short message). What AMČR stores is always `completed`                                                                                                                                                                                                  |
-| `start_time`, `end_time`, `duration_seconds`               | when the run ran                                                                                                                                                                                                                                                                                 |
-| `inputs`, `outputs`                                        | each by AMČR distribution **`name`** and **`sha512`**, with `media_type` and `stored` (below)                                                                                                                                                                                                    |
-| `parameters`                                               | only what shaped the output: a model revision, a threshold, the forced pages, the translator's field list. Never a path                                                                                                                                                                          |
-| `limits`                                                   | the sampling and splitting notes (below)                                                                                                                                                                                                                                                         |
-| `components`                                               | each component used: `name`, `version` when known, and its own `license` or terms, as facts (`para_licenses.component_terms`)                                                                                                                                                                    |
-| `config`, `statistics`, `skipped_files_detail`             | the tool's configuration and counters, as in 2.0. Files and folders by name, never their paths (`name_only()`, #84 decision 1); a model id as given; a fingerprint of an input that is not a distribution (a vocabulary, a prompt) by SHA-512 (decision 2); a skipped file by its file name only |
+| Key                                                        | Meaning                                                                                                                                                                                                                                                                                                                                  |
+|------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `program`, `tool_version`, `repository`, `docker_image`, … | the software that ran                                                                                                                                                                                                                                                                                                                    |
+| `run_id`, `run_uuid`, `run_agent`                          | the run's ids and the operating organisation (below)                                                                                                                                                                                                                                                                                     |
+| `action_status`                                            | `completed`, or `failed` with `error` (a short message). What AMČR stores is always `completed`                                                                                                                                                                                                                                          |
+| `start_time`, `end_time`, `duration_seconds`               | when the run ran                                                                                                                                                                                                                                                                                                                         |
+| `inputs`, `outputs`                                        | each by AMČR distribution **`name`** and **`sha512`**, with `media_type` and `stored` (below); a command line's other files by their file name and SHA-512                                                                                                                                                                               |
+| `parameters`                                               | only what shaped the output: a model revision, a threshold, the forced pages, the pages page-classification read and the rule that selected them, the translator's field list. Never a path                                                                                                                                              |
+| `limits`                                                   | the sampling and splitting notes (below)                                                                                                                                                                                                                                                                                                 |
+| `components`                                               | each component used: `name`, `version` when known, and its own `license` or terms, as facts (`para_licenses.component_terms`)                                                                                                                                                                                                            |
+| `config`, `statistics`, `skipped_files_detail`             | the tool's settings and counters, as in 2.0. `config` holds only what shaped the output: settings, models (a Hugging Face id as given, a local model by its name) and revisions; never a path, nor the name of a file the run read or wrote: those are `inputs` and `outputs` (#84 decisions 1, 2). A skipped file by its file name only |
 
 **No licence.** There is no `license`, `license_url` or `license_detail`, and nothing is
 computed or merged: the rights in an output depend on the source document and are stated only by
@@ -46,14 +46,18 @@ facts, never reduced to one value. `para_licenses` keeps only the spelling of li
   blocks **and fields** the run wrote, `record_fields` = `DocumentRecord.written()`.
 * `stored: false`: an intermediate that is not stored but reaches a stored distribution, such as
   digital-convert's docproc of a mixed document, where the ATR's docproc is the stored one. It is
-  still named by its SHA-512. An
-  intermediate that reaches no stored distribution is not recorded.
+  still named by its SHA-512. An intermediate that reaches no stored distribution is not recorded,
+  except a command line's files (next item).
+* **A command line's files** (#84 decisions 1, 2): every file a batch run reads or writes that is not a
+  distribution (a page image, a text, a table, a vocabulary, a prompt template) is an entry named by its
+  file name and SHA-512, `stored: false`: `add_input_files(*paths)` and `add_output_files(*paths)`, a
+  folder adding every file beneath it, sorted. Shell callers use `atrium_paradata.py input --file F…`
+  (and `output`) without `--name`; with `--name`, one file is a distribution entry.
 * An office document's rendered PDF (`RENDERED_PDF_DISTRIBUTION`, `rendered-pdf`: a stand-in name until AMČR
-  gives one) is a stored distribution whenever the ATR or page-classification reads it (#84 decision 5):
-  digital-convert names it in `result` when it hands it over, and the step that reads it names it in
-  `object`. A rendering nothing reads is neither handed over nor named.
-* **Shell callers** record a file or folder setting by name with `atrium_paradata.py start --config-name
-  KEY=PATH` (beside `--config KEY=VALUE`).
+  gives one) is **not stored** (#84 decision 5). digital-convert names it in `result` by its SHA-512,
+  `stored: false`, for every office document, because the docproc's page numbers and boxes refer to it;
+  the ATR and page-classification read it when it is handed over, and the step that reads it names it in
+  `object`, `stored: false`.
 
 **Failure and limits.** A failed or incomplete step fails the job, so nothing is written to
 AMČR. `ParadataLogger.fail(error)` marks the run failed, and so does leaving its `with` block with an

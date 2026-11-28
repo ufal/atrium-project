@@ -66,7 +66,7 @@ Or by question:
 
     Sorts each scanned page into one of **eleven page types**, which say what the page holds: typed,
     printed or handwritten text, tables, drawings, photographs. In the AMČR pipeline it classifies the
-    pages that go to the ATR and the pages that show graphics, beside it; the categories describe the pages
+    pages that go to the ATR and the pages with a picture, chart or drawing, beside it; the categories describe the pages
     and route nothing.
 
     [Workflow](workflows/page-classification.md) · [Documentation](https://github.com/ufal/atrium-page-classification/blob/test/README.md#documentation) · [Landing page](https://ufal.github.io/atrium-page-classification/) · [Source](https://github.com/ufal/atrium-page-classification)
@@ -149,9 +149,9 @@ flowchart LR
 
 digital-convert gives every page of a PDF or office file a verdict on its text layer. If any page needs
 text recognition, the whole document goes through the ATR, AIS CR's text-recognition service, and
-page-classification classifies those pages and the pages that show graphics beside it. An office document's text
-is read from the file; only a page of it with no running text that shows an object, such as a pasted scan, needs
-the ATR. ocr-postprocess builds the record from the layout,
+page-classification classifies those pages and the pages with a picture, chart or drawing beside it. An office
+document's text is read from the file; only a page of it with no text of its own that shows a picture, such as a
+pasted scan, needs the ATR, as a PDF page without text does. ocr-postprocess builds the record from the layout,
 docproc, and nlp-enrich and keyword-extract add to it. A step that cannot finish fails the job, and AMČR
 stores nothing of it. The translator runs apart, when a record is archived. The route in full:
 [Pipelines](pipelines.md#the-route-through-the-pipeline).

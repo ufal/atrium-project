@@ -19,8 +19,9 @@ Archival documents mix typed reports, handwritten notes, printed forms, tables, 
 and photographs. This workflow looks at every scanned page and assigns it one of eleven
 categories that describe what the page holds, so that a collection can be reviewed, searched and
 analysed by kind of page. In the AMČR pipeline it classifies the pages that go to the ATR, AIS CR's
-text-recognition service, beside the ATR, and the pages that show graphics, of a PDF or of an office
-document (read from its rendered PDF); the category is recorded with the page, and nothing routes on it. It works on the page image alone, so the language of the page does not matter.
+text-recognition service, beside the ATR, and the pages with a picture, chart or drawing (`figure` blocks in the
+docproc), of a PDF or of an office document (read from its rendered PDF); the caller selects the pages, the run
+records them and the rule that selected them, and nothing routes on the category. It works on the page image alone, so the language of the page does not matter.
 
 ## At a glance
 
@@ -131,8 +132,9 @@ rows ocr-postprocess builds.
 
 ## Where it sits
 
-* **Beside the ATR** in the AMČR pipeline: it classifies the pages that go to the ATR and the pages that
-  show graphics (digital-convert's `graphics_pages`), and its categories join the page rows of the record
+* **Beside the ATR** in the AMČR pipeline: it classifies the pages that go to the ATR and the pages with
+  `figure` blocks in digital-convert's docproc (the pipeline's route step selects them, and the run's paradata
+  state the rule in `parameters.page_selection`), and its categories join the page rows of the record
   ocr-postprocess builds —
   [Pipelines → The route through the pipeline](../pipelines.md#the-route-through-the-pipeline) and
   [W1](../pipelines.md#w1--scanned--ocr-document-pipeline).
@@ -158,7 +160,7 @@ AMČR pilot. The sheet describes the wrapper as delivered, for the batch image a
 |                               |                                                                                                                                                                                                                                                                                                                                                                    |
 |-------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Workflow inputs**           | a collection of page images — `png`, `jpg`, `tiff` — or a PDF                                                                                                                                                                                                                                                                                                      |
-| **Parameters**                | model revision; single model or ensemble; how many categories to keep per page; for a PDF, which pages to classify                                                                                                                                                                                                                                                 |
+| **Parameters**                | model revision; single model or ensemble; how many categories to keep per page; for a PDF, which pages to classify and the rule that selected them                                                                                                                                                                                                                 |
 | **Workflow outputs**          | Top-N table — `csv`; all-scores table — `csv`; votes per model — `csv` (ensemble); paradata — `json`; document record — `json` (a list of them for page images); the pages to route onward — `txt` (element identifiers for *Filter collection*)                                                                                                                   |
 | **Container**                 | `ghcr.io/ufal/atrium-page-classification:<version>` — the batch image (`run.py`); it runs the job script Galaxy hands it                                                                                                                                                                                                                                           |
 | **Galaxy tool**               | `atrium_page_classification` `1.12.3-beta+galaxy0` and the data manager *ATRIUM page-classification models*, in the hub's [`galaxy/`](https://github.com/ufal/atrium-project/tree/test/galaxy) folder with three workflows (page images; PDFs; classify, OCR and translate scanned pages); for DARIAH's test Galaxy (<https://galaxy.acdh-dev.oeaw.ac.at/galaxy/>) |

@@ -220,6 +220,16 @@
       "note": "checks this repo's own vendored schema against the doc-schema-v1 frozen copy (blob pin, no removals, a register of every post-freeze change) -- stdlib only; the checks that need the tag, the changelog or jsonschema stay in the hub's tests/test_schema_freeze_records.py"
     },
     {
+      "canonical": "atrium_page_selection.py",
+      "dest": "atrium_page_selection.py",
+      "selftest": false,
+      "ruff_format_exclude": true,
+      "isort_first_party": "atrium_page_selection",
+      "preconditions": [],
+      "issue": 84,
+      "note": "Which pages page-classification classifies (decision 4): forced pages and pages with figure blocks, and the rule's statement."
+    },
+    {
       "canonical": "atrium_limits.py",
       "dest": "atrium_limits.py",
       "selftest": true,

@@ -42,11 +42,12 @@ digital-convert reads every PDF or office file and gives each page a verdict on 
 refuses a document. If any page needs text recognition, the whole document goes through the ATR (AIS CR's
 text-recognition service) with those pages marked. A PDF page needs it when its text layer cannot be used; an
 office document (DOCX, DOC, ODT, RTF) is read as its own text, in full, and one of its pages needs the ATR only
-when it has no running text and shows an object, such as a pasted scan, a chart or a table alone. digital-convert
-also hands over the pages that show graphics (`graphics_pages`: pictures, charts, drawings). page-classification
-classifies the forced pages and those pages, beside the ATR. For an office document both read digital-convert's
-rendered PDF, whose pages and boxes the docproc's are; it is then stored as a distribution of its own
-([#84](https://github.com/ufal/atrium-project/issues/84), decisions 3 to 6). Images go to the ATR directly. Both write the same layout format, docproc; one docproc is stored per
+by the PDF rule: it has no text of its own (none outside its header and footer) and shows a picture, such as a
+pasted scan. A picture, chart or drawing is a `figure` block in the docproc, with its box. page-classification
+classifies the forced pages and the pages with `figure` blocks, beside the ATR, and records that rule. For an
+office document both read digital-convert's rendered PDF, whose pages and boxes the docproc's are; it is not
+stored, and the paradata name it by its SHA-512 ([#84](https://github.com/ufal/atrium-project/issues/84),
+decisions 3 to 6). Images go to the ATR directly. Both write the same layout format, docproc; one docproc is stored per
 document. ocr-postprocess builds the ATRIUM record from it, keeping born-digital lines where they are
 good, and scores every line; page-classification's categories join the record's page rows. nlp-enrich
 adds the linguistic layer and the TEITOK file; keyword-extract adds keywords. The pipeline validates the
@@ -76,10 +77,11 @@ media type and paradata:
 | `atr/docproc-json`        | the layout: pages with their verdicts, blocks and lines with positions, in reading order                                                                     | digital-convert when no page needs the ATR; otherwise the ATR                            |
 | `atrium/document-json`    | the ATRIUM record: identity, pages, lines, text and what the later steps add                                                                                 | ocr-postprocess builds it; page-classification, nlp-enrich and keyword-extract add to it |
 | `atr/teitok-xml`          | the document in TEITOK, every word with its lemma, tags and, where known, its box                                                                            | nlp-enrich                                                                               |
-| `rendered-pdf`            | an office document's rendered PDF, the pages the docproc numbers; stored when the ATR or page-classification reads it (a stand-in name until AMČR gives one) | digital-convert                                                                          |
 | `paradata/<distribution>` | one `CreateAction` per step that wrote the distribution's current version                                                                                    | every step                                                                               |
 
-A record-level job writes `metadata-en` and its paradata. No ALTO is produced or stored.
+A record-level job writes `metadata-en` and its paradata. No ALTO is produced or stored. An office
+document's rendered PDF is not stored either: every office document's paradata name it (`rendered-pdf`, a
+stand-in name, by its SHA-512, `stored: false`), because the docproc's pages and boxes are its.
 
 **Four routes into the same record.**
 
@@ -89,8 +91,8 @@ A record-level job writes `metadata-en` and its paradata. No ALTO is produced or
 - **Mixed (W3):** digital-convert found some pages without usable text, so the whole document went through
   the ATR. ocr-postprocess merges the two docprocs: it keeps digital-convert's exact lines on the good
   pages and takes the ATR's lines for the forced pages and for blocks that have no born-digital line,
-  such as text inside a figure. An office document's forced page keeps its own lines too, beside the ATR's
-  reading of its objects. The ATR's docproc is the stored one.
+  such as text inside a figure. An office document's forced page is read as a forced PDF page is, by the
+  ATR alone. The ATR's docproc is the stored one.
 - **Existing OCR:** the earlier OCR of the two collections (ALTO from ABBYY FineReader) is converted once
   into docproc, and builds records the same way.
 
@@ -109,9 +111,9 @@ Two things travel between the steps: the stored layout and the record.
 * **nlp-enrich takes its layout from the record.** Its TEITOK file has the record's pages, lines and boxes.
 * **keyword-extract reads the record** nlp-enrich left. Outside the pipeline it also reads nlp-enrich's
   CoNLL-U or TEITOK files and line tables.
-* **page-classification reads the page images** of the pages that need the ATR and of the pages that show
-  graphics (digital-convert's `graphics_pages`), from the PDF or an office document's rendered PDF, and writes
-  its categories into the record's page rows. Its categories may be offered to the ATR as a weak signal; they never route.
+* **page-classification reads the page images** of the pages that need the ATR and of the pages with
+  `figure` blocks in the docproc, from the PDF or an office document's rendered PDF, and writes its
+  categories into the record's page rows; its paradata state that selection rule. Its categories may be offered to the ATR as a weak signal; they never route.
 
 ### Layer 1 — the file DAG
 
@@ -151,19 +153,19 @@ The record names no run: what each step read and wrote is in that step's paradat
 **Purpose.** Take a document whose pages need text recognition and end with a searchable, enriched
 record of it.
 
-**Inputs.** The original and its AMČR seed. For the forced pages, digital-convert's verdicts and its pages
-that show graphics; for an office document, its rendered PDF; for an image, nothing more.
+**Inputs.** The original and its AMČR seed. For the forced pages, digital-convert's verdicts and its docproc's
+`figure` blocks; for an office document, its rendered PDF; for an image, nothing more.
 
 **Stages.**
 
-| # | Stage               | Reads                                                       | Writes                                                                                                          |
-|---|---------------------|-------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
-| 1 | digital-convert     | the original (not for an image)                             | a verdict for every page; the forced pages; `graphics_pages`; an office document's rendered PDF when it is read |
-| 2 | the ATR (AIS CR)    | the whole document, the forced pages                        | `atr/docproc-json`, the stored layout                                                                           |
-| 2 | page-classification | the page images of the forced pages and of `graphics_pages` | `page_categories`, `pages[].category`, `category_confidence`                                                    |
-| 3 | ocr-postprocess     | the stored docproc, the seed                                | the record: `source`, `pages`, `lines`, `content`, scores                                                       |
-| 4 | nlp-enrich          | the record                                                  | lemmas, tags, entities; `atr/teitok-xml`                                                                        |
-| 5 | keyword-extract     | the record                                                  | `keywords`, `enrichment`, `entities[].pid`                                                                      |
+| # | Stage               | Reads                                                                  | Writes                                                                                                         |
+|---|---------------------|------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| 1 | digital-convert     | the original (not for an image)                                        | a verdict for every page; the forced pages; `figure` blocks; an office document's rendered PDF when it is read |
+| 2 | the ATR (AIS CR)    | the whole document, the forced pages                                   | `atr/docproc-json`, the stored layout                                                                          |
+| 2 | page-classification | the page images of the forced pages and the pages with `figure` blocks | `page_categories`, `pages[].category`, `category_confidence`                                                   |
+| 3 | ocr-postprocess     | the stored docproc, the seed                                           | the record: `source`, `pages`, `lines`, `content`, scores                                                      |
+| 4 | nlp-enrich          | the record                                                             | lemmas, tags, entities; `atr/teitok-xml`                                                                       |
+| 5 | keyword-extract     | the record                                                             | `keywords`, `enrichment`, `entities[].pid`                                                                     |
 
 **Outputs.** The stored docproc, the record and the TEITOK file, each with its paradata.
 

@@ -30,7 +30,7 @@ What holds them together is the hub, `atrium-project`, and it does so in two way
 ```mermaid
 flowchart TB
   subgraph HUB["atrium-project — the hub"]
-    SHARED["docs/templates/shared/<br/>26 canonical files + MANIFEST.json"]
+    SHARED["docs/templates/shared/<br/>27 canonical files + MANIFEST.json"]
     REUSE["8 reusable workflows<br/>pinned by callers to a commit"]
     E2E["3 end-to-end workflows"]
     SITE["this site"]
@@ -105,6 +105,7 @@ its destination in a tool repository, and whether it has a `--selftest` that CI 
 | `atrium_vocab.schema.json`                  | `atrium_vocab.schema.json`                  |          | schema for the registry's JSON-LD export                                                                                       |
 | `atrium_rocrate.py`                         | `atrium_rocrate.py`                         | ✓        | the RO-Crate exporter                                                                                                          |
 | `check_version.py`                          | `check_version.py`                          |          | the release gate: tag = `CITATION.cff` = `para_config.txt`                                                                     |
+| `atrium_page_selection.py`                  | `atrium_page_selection.py`                  |          | which pages page-classification classifies: the forced pages and the pages with figure blocks, with the rule's statement       |
 | `atrium_limits.py`                          | `atrium_limits.py`                          | ✓        | every service limit as a setting, and the `limits_applied` record                                                              |
 | `atrium_openapi.py`                         | `atrium_openapi.py`                         | ✓        | the committed `service/openapi.json`: export, check, compare with the last release                                             |
 | `atrium_service.py`                         | `service/atrium_service.py`                 |          | the shared HTTP service contract — `/info`, `/health`, `/ready`, drain                                                         |
@@ -239,7 +240,7 @@ This table records **provenance**: what this page was written from, not a build 
 
 | Source                                                                                                             | What was taken from it                                             |
 |--------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| `atrium-project/docs/templates/shared/MANIFEST.json`                                                               | the 26 files and their destinations                                |
+| `atrium-project/docs/templates/shared/MANIFEST.json`                                                               | the 27 files and their destinations                                |
 | `atrium-page-classification@adee922`, `atrium-translator@71feaef`                                                  | vendored destinations, repository-local helpers, Dockerfile stages |
 | `atrium-project/scripts/revendor_shared.sh`                                                                        | the re-vendoring procedure and its exit semantics                  |
 | `atrium-project/.github/workflows/*.reusable.yml` and the hub-own workflows                                        | the federation                                                     |
