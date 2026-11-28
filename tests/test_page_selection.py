@@ -20,7 +20,10 @@ import atrium_page_selection as sel  # noqa: E402
 
 
 def _page(number, *types, needs_atr=False):
-    page = {"pageNumber": number, "blocks": [{"id": f"p{number}-b{i}", "type": t, "readingOrder": i} for i, t in enumerate(types)]}
+    page = {
+        "pageNumber": number,
+        "blocks": [{"id": f"p{number}-b{i}", "type": t, "readingOrder": i} for i, t in enumerate(types)],
+    }
     if needs_atr:
         page["needsAtr"] = True
     return page
@@ -31,10 +34,17 @@ def digital_convert():
     return {
         "version": "1.0",
         "pages": [_page(1, "paragraph"), _page(2, needs_atr=True), _page(3, "paragraph", "figure"), _page(4, "table")],
-        "metadata": {"routing": {"pages": [
-            {"page": 1, "route": "text-layer"}, {"page": 2, "route": "atr"},
-            {"page": 3, "route": "text-layer"}, {"page": 4, "route": "text-layer"}, {"page": 5, "route": "empty"},
-        ]}},
+        "metadata": {
+            "routing": {
+                "pages": [
+                    {"page": 1, "route": "text-layer"},
+                    {"page": 2, "route": "atr"},
+                    {"page": 3, "route": "text-layer"},
+                    {"page": 4, "route": "text-layer"},
+                    {"page": 5, "route": "empty"},
+                ]
+            }
+        },
     }
 
 

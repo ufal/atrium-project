@@ -81,7 +81,9 @@ def test_the_rendered_pdf_has_one_stand_in_name():
 
 
 def _logger(tmp_path):
-    return ParadataLogger(program="ocr-postprocess", config={"model": "Qwen/Qwen2.5-0.5B"}, paradata_dir=str(tmp_path / "paradata"))
+    return ParadataLogger(
+        program="ocr-postprocess", config={"model": "Qwen/Qwen2.5-0.5B"}, paradata_dir=str(tmp_path / "paradata")
+    )
 
 
 def test_files_become_entries_by_name_and_sha512(tmp_path):
@@ -136,7 +138,9 @@ def test_the_record_names_no_path_anywhere(tmp_path):
 
 
 def _cli(*args, cwd):
-    return subprocess.run([sys.executable, str(_SHARED / "atrium_paradata.py"), *args], capture_output=True, text=True, cwd=cwd)
+    return subprocess.run(
+        [sys.executable, str(_SHARED / "atrium_paradata.py"), *args], capture_output=True, text=True, cwd=cwd
+    )
 
 
 def test_the_shell_cli_names_several_files_and_folders_in_one_call(tmp_path):
@@ -145,8 +149,17 @@ def test_the_shell_cli_names_several_files_and_folders_in_one_call(tmp_path):
     (tmp_path / "UDP" / "d1.conllu").write_text("# x", encoding="utf-8")
     (tmp_path / "UDP" / "d2.conllu").write_text("# y", encoding="utf-8")
     (tmp_path / "manifest.tsv").write_text("doc", encoding="utf-8")
-    started = _cli("start", "--program", "nlp-enrich", "--paradata-dir", str(paradata), "--config",
-                   "script=api_2_udp.sh", "model=czech-pdt-ud-2.15", cwd=_SHARED)
+    started = _cli(
+        "start",
+        "--program",
+        "nlp-enrich",
+        "--paradata-dir",
+        str(paradata),
+        "--config",
+        "script=api_2_udp.sh",
+        "model=czech-pdt-ud-2.15",
+        cwd=_SHARED,
+    )
     assert started.returncode == 0, started.stderr
     state = started.stdout.strip()
     done = _cli("input", "--state", state, "--file", str(tmp_path / "manifest.tsv"), cwd=_SHARED)
@@ -169,7 +182,9 @@ def test_the_shell_cli_keeps_distribution_entries_and_has_no_config_name(tmp_pat
     assert done.returncode == 0, done.stderr
     entry = json.loads(Path(state).read_text(encoding="utf-8"))["outputs"][0]
     assert entry["name"] == "atrium/document-json" and entry["stored"] is True
-    two = _cli("output", "--state", state, "--name", "atrium/document-json", "--file", str(record), str(record), cwd=_SHARED)
+    two = _cli(
+        "output", "--state", state, "--name", "atrium/document-json", "--file", str(record), str(record), cwd=_SHARED
+    )
     assert two.returncode == 2
     gone = _cli("start", "--program", "x", "--paradata-dir", str(paradata), "--config-name", "a=b", cwd=_SHARED)
     assert gone.returncode != 0
